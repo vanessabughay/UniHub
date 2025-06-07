@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">UniHub</string>
     <string name="titulo_disciplinas">Disciplinas</string>
+    <string name="titulo_manter_info_disciplinas">Manter Disciplina</string>
     <string name="hint_busca">Buscar disciplina...</string>
     <string name="botao_adicionar">Adicionar disciplina</string>
     <string name="semestre_atual">Semestre - 2025/1</string>
@@ -8,5 +9,20 @@
     <string name="exemplo_titulo_disciplina">DS436 Disciplina 1</string>
     <string name="exemplo_info_disciplina">Terça-feira - Sala A13\n19:00 - 22:00</string>
     <string name="compartilhar">Compartilhar</string>
+
+    <string-array name="periodos_array">
+        <item>2025/1</item>
+        <item>2025/2</item>
+        <item>2026/1</item>
+        <item>2026/2</item>
+        <item>2027/1</item>
+        <item>2027/2</item>
+    </string-array>
+
+    <string-array name="estado_disciplina_array">
+        <item>Ativa</item>
+        <item>Inativa</item>
+    </string-array>
+
 
 </resources>

@@ -6,6 +6,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.appcompat.widget.SearchView
+import android.content.Intent
+import android.widget.ImageButton
+
 
 class DisciplinasActivity : AppCompatActivity() {
 
@@ -14,10 +17,10 @@ class DisciplinasActivity : AppCompatActivity() {
     private lateinit var searchView: SearchView
 
     private val todasDisciplinas = listOf(
-        Disciplina("DS436", "Disciplina 1", "Terça-feira", "A13", "19:00 - 22:00"),
-        Disciplina("DS437", "Disciplina 2", "Quarta-feira", "C02", "19:00 - 22:00"),
-        Disciplina("DS438", "Disciplina 3", "Quinta-feira", "A09", "19:00 - 22:00"),
-        Disciplina("DS439", "Disciplina 4", "Sexta-feira", "A15", "19:00 - 22:00", selecionada = true)
+        Disciplina("DS436", "Disciplina 1", "Terça-feira", "A13", "19:00 - 22:00", "2025/1", "Ativa"),
+        Disciplina("DS437", "Disciplina 2", "Quarta-feira", "C02", "19:00 - 22:00", "2025/1", "Ativa"),
+        Disciplina("DS438", "Disciplina 3", "Quinta-feira", "A09", "19:00 - 22:00", "2025/1", "Ativa"),
+        Disciplina("DS439", "Disciplina 4", "Sexta-feira", "A15", "19:00 - 22:00", "2025/1", "Ativa", selecionada = true)
     )
 
     private var disciplinasFiltradas = todasDisciplinas.toMutableList()
@@ -32,6 +35,13 @@ class DisciplinasActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         configurarAdapter()
         configurarBusca()
+
+        val addButton = findViewById<ImageButton>(R.id.addButton)
+        addButton.setOnClickListener {
+            val intent = Intent(this, ManterInfoDisciplina::class.java)
+            startActivity(intent)
+        }
+
     }
 
     private fun configurarAdapter() {

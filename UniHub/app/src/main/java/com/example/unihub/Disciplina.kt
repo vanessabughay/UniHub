@@ -6,5 +6,7 @@ data class Disciplina(
     val dia: String,
     val sala: String,
     val horario: String,
+    val periodo: String,
+    val estado: String,
     val selecionada: Boolean = false
 )

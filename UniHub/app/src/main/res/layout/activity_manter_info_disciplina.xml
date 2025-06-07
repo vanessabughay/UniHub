@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#ffffff"
+    android:padding="16dp"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Título -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Manter Disciplina"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:gravity="center"
+            android:paddingBottom="16dp" />
+
+        <!-- Card: Dados principais -->
+        <LinearLayout
+            android:id="@+id/cardDadosPrincipais"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="#e6f0fa"
+            android:backgroundTint="#e6f0fa"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- ID Disciplina -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ID Disciplina"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/editCodigo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="DS435" />
+            </LinearLayout>
+
+            <!-- Período -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Período"
+                    android:textStyle="bold" />
+
+                <Spinner
+                    android:id="@+id/spinnerPeriodo"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1" />
+            </LinearLayout>
+
+            <!-- Nome da disciplina -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nome Disciplina"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/editNome"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Estrutura de dados I" />
+            </LinearLayout>
+
+            <!-- Nome do professor -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Nome Professor"
+                    android:textStyle="bold" />
+
+                <EditText
+                    android:id="@+id/editProfessor"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Carlos Magno" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Card: Sobre as aulas -->
+        <LinearLayout
+            android:id="@+id/cardSobreAulas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#e6f0fa"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sobre as aulas" android:textStyle="bold" android:layout_marginBottom="8dp"/>
+
+            <!-- CH e quantidade de aulas por semana -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="CH Total:" android:textStyle="bold"/>
+
+                <EditText
+                    android:id="@+id/editCH"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="90" />
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Aulas/semana:" android:textStyle="bold" android:layout_marginStart="8dp"/>
+
+                <EditText
+                    android:id="@+id/editAulasSemana"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="2" />
+            </LinearLayout>
+
+            <!-- Aqui vão os subcards criados dinamicamente -->
+            <LinearLayout
+                android:id="@+id/containerSubcards"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="12dp"/>
+
+            <!-- Datas -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:layout_marginTop="12dp">
+                <EditText android:id="@+id/editDataInicio" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:hint="Data de início" android:background="@android:color/transparent"/>
+
+                <EditText
+                    android:id="@+id/editDataFim"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
+                    android:background="@android:color/transparent"
+                    android:hint="Data de fim" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Card: Contato com o professor -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="#e6f0fa"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contato com o professor"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <!-- E-mail -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="E-mail"
+                    android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/editEmail"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="exemplo@email.com"
+                    android:background="@android:color/transparent"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+            <!-- Plataformas utilizadas -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Plataformas utilizadas"
+                    android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/editPlataformas"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="UFPR Virtual, Teams"
+                    android:background="@android:color/transparent"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+            <!-- Telefone -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Telefone"
+                    android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/editTelefone"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="(xx) xxxx-xxxx"
+                    android:inputType="phone"
+                    android:background="@android:color/transparent"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+
+            <!-- Sala -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Sala"
+                    android:textStyle="bold" />
+                <EditText
+                    android:id="@+id/editSala"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="wrap_content"
+                    android:hint="B12"
+                    android:background="@android:color/transparent"
+                    android:layout_marginStart="8dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- Ações -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Estado" android:textStyle="bold"/>
+            <Spinner android:id="@+id/spinnerEstado" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:layout_marginStart="8dp"/>
+
+            <Button
+                android:id="@+id/btnExcluir"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:backgroundTint="#86a0f0"
+                android:text="Excluir disciplina"
+                android:textColor="@color/black" />
+        </LinearLayout>
+
+        <CheckBox android:id="@+id/checkNotificacoes" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Receber notificações" android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/btnSalvar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:backgroundTint="#86a0f0"
+            android:text="Confirmar" />
+    </LinearLayout>
+</ScrollView>
