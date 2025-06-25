@@ -20,4 +20,13 @@ public class DisciplinaService {
     public Disciplina salvar(Disciplina disciplina) {
         return repository.save(disciplina);
     }
+
+     public Disciplina buscarPorId(Long id) {
+        return repository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Disciplina não encontrada"));
+    }
+
+    public void excluir(Long id) {
+        repository.deleteById(id);
+    }
 }
