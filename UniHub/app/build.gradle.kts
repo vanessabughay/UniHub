@@ -31,17 +31,18 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "1.8"
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = libs.versions.kotlinCompilerExtension.get()
     }
     packaging {
         resources {
@@ -52,12 +53,10 @@ android {
 
 dependencies {
 
-    //Core e Views
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
 
-    //Jetpack Compose Essencial
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -65,11 +64,17 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.tooling.preview)
     debugImplementation(libs.androidx.ui.tooling)
-    implementation("androidx.compose.material:material-icons-extended:1.6.8")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+    implementation(libs.androidx.material.icons.extended)
 
-    // Para navegar entre telas do Compose
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+
     implementation(libs.androidx.navigation.compose)
+
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
 
     // Para usar Firebase
     // implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
@@ -80,10 +85,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-<<<<<<< Updated upstream
-=======
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.test.manifest)
->>>>>>> Stashed changes
 }
