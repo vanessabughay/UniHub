@@ -12,15 +12,26 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.UniHub"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
+<<<<<<< Updated upstream
             android:exported="true">
+=======
+            android:exported="true"
+            android:theme="@style/Theme.UniHub">
+>>>>>>> Stashed changes
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
+
+        <activity
+            android:name=".ui.ManterDisciplina.ManterInfoDisciplina"
+            />
+        <activity
+            android:name=".ui.ListarDisciplinas.DisciplinasActivity"
+            /> </application>
 
 </manifest>
