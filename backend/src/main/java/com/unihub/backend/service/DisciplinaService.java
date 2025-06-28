@@ -29,4 +29,9 @@ public class DisciplinaService {
     public void excluir(Long id) {
         repository.deleteById(id);
     }
+
+    public List<Disciplina> buscarPorNome(String nome) {
+    return repository.findByNomeContainingIgnoreCase(nome);
+    }
+
 }

@@ -1,6 +1,7 @@
 package com.unihub.backend.controller;
 
 import com.unihub.backend.model.Disciplina;
+import com.unihub.backend.model.HorarioAula;
 import com.unihub.backend.service.DisciplinaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -15,12 +16,10 @@ public class DisciplinaController {
     @Autowired
     private DisciplinaService service;
 
-
     @GetMapping
     public List<Disciplina> listarTodas() {
         return service.listarTodas();
     }
-
 
     @GetMapping("/{id}")
     public Disciplina buscarPorId(@PathVariable Long id) {
@@ -32,11 +31,9 @@ public class DisciplinaController {
         return service.salvar(disciplina);
     }
 
-
     @PutMapping("/{id}")
     public Disciplina atualizar(@PathVariable Long id, @RequestBody Disciplina novaDisciplina) {
         Disciplina existente = service.buscarPorId(id);
-
 
         existente.setNome(novaDisciplina.getNome());
         existente.setProfessor(novaDisciplina.getProfessor());
@@ -51,15 +48,26 @@ public class DisciplinaController {
         existente.setAtiva(novaDisciplina.isAtiva());
         existente.setReceberNotificacoes(novaDisciplina.isReceberNotificacoes());
 
-
-        existente.setAulas(novaDisciplina.getAulas());
+    
+        existente.getAulas().clear();
+        if (novaDisciplina.getAulas() != null) {
+            for (HorarioAula aula : novaDisciplina.getAulas()) {
+                aula.setDisciplina(existente);
+                existente.getAulas().add(aula);
+            }
+        }
 
         return service.salvar(existente);
     }
-
 
     @DeleteMapping("/{id}")
     public void excluir(@PathVariable Long id) {
         service.excluir(id);
     }
+
+    @GetMapping("/pesquisa")
+    public List<Disciplina> buscarPorNome(@RequestParam String nome) {
+    return service.buscarPorNome(nome);
+}
+
 }
