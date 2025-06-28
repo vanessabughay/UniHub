@@ -1,79 +1,60 @@
 package com.example.unihub.ui.ListarDisciplinas
 
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel // Importando ViewModel
 import com.example.unihub.components.CabecalhoPrincipal
 import com.example.unihub.components.SearchBox
-// O import de 'Disciplina' não é mais usado aqui, mas foi mantido como pediu.
-// A classe 'DisciplinaResumo' foi adicionada abaixo para garantir que o código funcione.
-import com.example.unihub.data.model.Disciplina
-
-data class DisciplinaResumo(
-    val id: String,
-    val nome: String,
-    val dia: String,
-    val sala: String,
-    val horario: String
-)
+import com.example.unihub.data.model.HorarioAula // Importando HorarioAula
+import com.example.unihub.data.repository.DisciplinaRepository // Para o Preview
+import com.example.unihub.data.repository.DisciplinaResumo // Importando o DisciplinaResumo do repositório
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
 val CardBackgroundColorSelected = Color(0xFFB2DDF3)
 
-
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun ListarDisciplinasScreen(
+    viewModel: ListarDisciplinasViewModel = viewModel(),
     onAddDisciplina: () -> Unit,
     onDisciplinaDoubleClick: (disciplinaId: String) -> Unit
 ) {
     val context = LocalContext.current
-
-    // Lista de disciplinas exemplo
-    val todasDisciplinas = remember {
-        listOf(
-            DisciplinaResumo("DS436", "Engenharia de Software I", "Terça-feira", "A13", "19:00 - 22:00"),
-            DisciplinaResumo("DS437", "Banco de Dados II", "Quarta-feira", "C02", "19:00 - 22:00"),
-            DisciplinaResumo("DS438", "Redes de Computadores", "Quinta-feira", "A09", "19:00 - 22:00"),
-            DisciplinaResumo("DS439", "Análise de Algoritmos", "Sexta-feira", "A15", "19:00 - 22:00"),
-            DisciplinaResumo("DS440", "Cálculo Numérico", "Segunda-feira", "B01", "08:00 - 11:00"),
-            DisciplinaResumo("DS441", "Sistemas Operacionais", "Terça-feira", "D05", "14:00 - 17:00"),
-            DisciplinaResumo("DS442", "Compiladores", "Quarta-feira", "A03", "10:00 - 13:00"),
-            DisciplinaResumo("DS443", "Segurança da Informação", "Quinta-feira", "C10", "19:00 - 22:00"),
-            DisciplinaResumo("DS444", "Inteligência Artificial", "Sexta-feira", "B07", "08:00 - 11:00"),
-            DisciplinaResumo("DS445", "Projeto de Software", "Segunda-feira", "E02", "19:00 - 22:00")
-        )
-    }
+    val disciplinasState by viewModel.disciplinas.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var idDisciplinaSelecionada by remember { mutableStateOf<String?>(null) }
 
-    // filtro busca
+    errorMessage?.let { message ->
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
+
     val disciplinasFiltradas = if (searchQuery.isBlank()) {
-        todasDisciplinas
+        disciplinasState
     } else {
-        todasDisciplinas.filter {
+        disciplinasState.filter {
             it.nome.contains(searchQuery, ignoreCase = true) ||
                     it.id.contains(searchQuery, ignoreCase = true)
         }
@@ -83,7 +64,7 @@ fun ListarDisciplinasScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddDisciplina,
-                containerColor = CardBackgroundColorSelected,
+                containerColor = Color(0xFFEFEFEF),
                 contentColor = Color.Black
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
@@ -115,7 +96,7 @@ fun ListarDisciplinasScreen(
                             singleLine = true,
                         )
                         if (searchQuery.isEmpty()) {
-                            Text(text = "Buscar por nome ou código", color = Color.Gray)
+                            Text(text = "Buscar por nome ou id", color = Color.Gray)
                         }
                     }
                 }
@@ -144,15 +125,14 @@ fun ListarDisciplinasScreen(
     }
 }
 
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun DisciplinaItem(
-    disciplina: DisciplinaResumo,
+    disciplina: DisciplinaResumoUi, // Usa o modelo de UI do ViewModel
     isSelected: Boolean,
     onSingleClick: () -> Unit,
     onDoubleClick: () -> Unit,
-    onShareClicked: (DisciplinaResumo) -> Unit
+    onShareClicked: (DisciplinaResumoUi) -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -162,7 +142,7 @@ fun DisciplinaItem(
                 onClick = { onSingleClick() },
                 onDoubleClick = { onDoubleClick() }
             ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) CardBackgroundColorSelected else CardBackgroundColor
         )
@@ -175,20 +155,30 @@ fun DisciplinaItem(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    // CORREÇÃO: Usando 'disciplina.id'
                     text = "${disciplina.id} ${disciplina.nome}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = "${disciplina.dia} - Sala ${disciplina.sala}\n${disciplina.horario}",
-                    fontSize = 14.sp,
-                    lineHeight = 20.sp
-                )
+                if (disciplina.horariosAulas.isNotEmpty()) {
+                    disciplina.horariosAulas.forEach { horario ->
+                        Text(
+                            text = "${horario.diaDaSemana} - Sala ${horario.sala} | Horários: ${horario.horarioInicio} - ${horario.horarioFim}",
+                            fontSize = 14.sp,
+                            lineHeight = 20.sp
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Sem horários definidos",
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        color = Color.Gray
+                    )
+                }
             }
 
             if (isSelected) {
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.size(8.dp)) // Ajustado para size
                 IconButton(onClick = { onShareClicked(disciplina) }) {
                     Icon(
                         imageVector = Icons.Default.Share,
@@ -201,12 +191,47 @@ fun DisciplinaItem(
     }
 }
 
-
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Preview(showBackground = true)
 @Composable
 fun ListarDisciplinasScreenPreview() {
     MaterialTheme {
+        // Mock do backend para o Preview
+        val mockBackend = object : com.example.unihub.data.repository._disciplinabackend {
+            override suspend fun getDisciplinasResumoApi(): List<DisciplinaResumo> {
+                return listOf(
+                    DisciplinaResumo(
+                        id = "DS430",
+                        nome = "Engenharia de Software",
+                        aulas = listOf(
+                            HorarioAula(diaDaSemana = "Segunda", sala = "A01", horarioInicio = "08:00", horarioFim = "10:00"),
+                            HorarioAula(diaDaSemana = "Quarta", sala = "A02", horarioInicio = "14:00", horarioFim = "16:00")
+                        )
+                    ),
+                    DisciplinaResumo(
+                        id = "DS431",
+                        nome = "Banco de Dados",
+                        aulas = listOf(
+                            HorarioAula(diaDaSemana = "Terça", sala = "B05", horarioInicio = "19:00", horarioFim = "22:00")
+                        )
+                    )
+                )
+            }
+            // Outros métodos do backend mockados, conforme o mínimo necessário para o preview
+            override suspend fun getDisciplinaByIdApi(id: String): com.example.unihub.data.model.Disciplina? = null
+            override suspend fun addDisciplinaApi(disciplina: com.example.unihub.data.model.Disciplina) {}
+            override suspend fun updateDisciplinaApi(disciplina: com.example.unihub.data.model.Disciplina): Boolean = true
+            override suspend fun deleteDisciplinaApi(id: String): Boolean = true
+        }
+
+        // Instância mock do repositório
+        val mockRepository = DisciplinaRepository(mockBackend)
+
+        // Instância do ViewModel com o repositório mock
+        val mockViewModel = ListarDisciplinasViewModel(mockRepository)
+
         ListarDisciplinasScreen(
+            viewModel = mockViewModel,
             onAddDisciplina = {},
             onDisciplinaDoubleClick = {}
         )
