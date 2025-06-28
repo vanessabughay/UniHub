@@ -1,5 +1,7 @@
 package com.unihub.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 import jakarta.persistence.*;
 
 @Entity
@@ -16,6 +18,7 @@ public class HorarioAula {
 
     @ManyToOne
     @JoinColumn(name = "disciplina_id")
+    @JsonBackReference
     private Disciplina disciplina;
 
     public Long getId() { return id; }

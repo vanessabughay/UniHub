@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
 @Entity
 public class Disciplina {
 
@@ -23,7 +25,9 @@ public class Disciplina {
     private String salaProfessor;
     private boolean isAtiva;
     private boolean receberNotificacoes;
+    
     @OneToMany(mappedBy = "disciplina", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<HorarioAula> aulas;
 
     public Long getId() { return id; }
