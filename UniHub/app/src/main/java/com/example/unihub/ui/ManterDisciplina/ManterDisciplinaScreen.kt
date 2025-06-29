@@ -35,6 +35,10 @@ import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.border
 import androidx.compose.ui.viewinterop.AndroidView
+import java.text.SimpleDateFormat
+import java.time.ZoneId
+import java.time.Instant
+import androidx.compose.ui.unit.sp
 
 
 
@@ -78,30 +82,50 @@ fun CampoDeTextoComTitulo(
 }
 
 @Composable
-fun CampoDeData(
+fun CampoData(
     label: String,
-    dataSelecionada: String,
-    onDataSelecionada: (String) -> Unit,
+    value: Long,
+    onDateSelected: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-        OutlinedTextField(
-            value = dataSelecionada,
-            onValueChange = { onDataSelecionada(it) },
+    val showDatePicker = {
+        val calendar = Calendar.getInstance().apply {
+            if (value != 0L) timeInMillis = value
+        }
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                calendar.set(year, month, day)
+                onDateSelected(calendar.timeInMillis)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    Box(modifier = modifier.clickable { showDatePicker() }) {
+        TextField(
+            value = if (value != 0L) dateFormat.format(Date(value)) else "",
+            onValueChange = { },
+            label = { Text(label, fontSize = 12.sp) },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("DD/MM/AAAA") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            readOnly = true,
+            enabled = false, // impede o teclado
+            colors = TextFieldDefaults.colors(
+                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+            )
+
         )
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +134,7 @@ fun CampoSelecaoDia(
     onDiaSelecionado: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dias = listOf("Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado")
+    val dias = listOf("Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo")
     var expandido by remember { mutableStateOf(false) }
 
     Column(modifier) {
@@ -180,8 +204,8 @@ fun ManterDisciplinaScreen(
     var nomeProfessor by remember { mutableStateOf("") }
     var cargaHoraria by remember { mutableStateOf("") }
     var qtdAulasSemana by remember { mutableStateOf("1") }
-    var dataInicioSemestre by remember { mutableStateOf("") }
-    var dataFimSemestre by remember { mutableStateOf("") }
+    var dataInicioSemestre by remember { mutableStateOf(0L) }
+    var dataFimSemestre by remember { mutableStateOf(0L) }
     var aulas by remember { mutableStateOf(listOf(AulaInfo())) }
     var emailProfessor by remember { mutableStateOf("") }
     var plataformas by remember { mutableStateOf("") }
@@ -227,8 +251,8 @@ fun ManterDisciplinaScreen(
                     horarioFim = it.horarioFim
                 )
             }
-            dataInicioSemestre = d.dataInicioSemestre.toString()
-            dataFimSemestre = d.dataFimSemestre.toString()
+            dataInicioSemestre = d.dataInicioSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            dataFimSemestre = d.dataFimSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             emailProfessor = d.emailProfessor
             plataformas = d.plataforma
             telefoneProfessor = d.telefoneProfessor
@@ -267,8 +291,8 @@ fun ManterDisciplinaScreen(
                     onClick = {
                         val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-                        val inicio = try { LocalDate.parse(dataInicioSemestre, formatter) } catch (e: Exception) { LocalDate.now() }
-                        val fim = try { LocalDate.parse(dataFimSemestre, formatter) } catch (e: Exception) { LocalDate.now() }
+                        val inicio = Instant.ofEpochMilli(dataInicioSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
+                        val fim = Instant.ofEpochMilli(dataFimSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
 
 
                         val disciplina = com.example.unihub.data.model.Disciplina(
@@ -371,8 +395,8 @@ fun ManterDisciplinaScreen(
                     }
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
-                        CampoDeData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
+                        CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
+                        CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
                     }
                 }
             }
