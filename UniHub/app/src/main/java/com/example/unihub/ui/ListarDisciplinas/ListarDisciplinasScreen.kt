@@ -166,15 +166,18 @@ fun DisciplinaItem(
                 )
                 if (disciplina.horariosAulas.isNotEmpty()) {
                     disciplina.horariosAulas.forEach { horario ->
+                        val inicio = String.format("%02d:%02d", horario.horarioInicio / 60, horario.horarioInicio % 60)
+                        val fim = String.format("%02d:%02d", horario.horarioFim / 60, horario.horarioFim % 60)
+
                         Text(
-                            text = "${horario.diaDaSemana} - Sala ${horario.sala} | Horários: ${horario.horarioInicio} - ${horario.horarioFim}",
+                            text = "${horario.diaDaSemana} - Sala ${horario.sala} | Horário: $inicio - $fim",
                             fontSize = 14.sp,
                             lineHeight = 20.sp
                         )
                     }
                 } else {
                     Text(
-                        text = "Sem horários definidos",
+                        text = "Sem horário definido",
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         color = Color.Gray
