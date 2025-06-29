@@ -3,15 +3,15 @@ package com.example.unihub.data.repository
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import com.example.unihub.data.model.Disciplina
-import com.example.unihub.data.model.HorarioAula
-import com.example.unihub.data.remote.DisciplinaApiService
-import com.example.unihub.data.remote.DisciplinaResumo
+import com.example.unihub.data.model.HorarioAula // Certifique-se de que HorarioAula está disponível
+import com.example.unihub.data.remote.DisciplinaApiService // Importe a interface do Retrofit
+import com.example.unihub.data.remote.DisciplinaResumo // Importe o DisciplinaResumo do pacote remote se definido lá
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.io.IOException
 import retrofit2.HttpException
-import java.lang.IllegalArgumentException
+import java.lang.IllegalArgumentException // Importar explicitamente
 
 
 // O repositório agora recebe a implementação da API (gerada pelo Retrofit)
