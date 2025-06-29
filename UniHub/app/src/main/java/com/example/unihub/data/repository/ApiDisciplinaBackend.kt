@@ -3,12 +3,19 @@ package com.example.unihub.data.repository
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.util.LocalDateAdapter
+import com.google.gson.GsonBuilder
+import java.time.LocalDate
 
 class ApiDisciplinaBackend : _disciplinabackend {
     private val api: DisciplinaApi by lazy {
+        val gson = GsonBuilder()
+            .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
+            .create()
+
         Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8080/")   // emulator loopback
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(DisciplinaApi::class.java)
     }
