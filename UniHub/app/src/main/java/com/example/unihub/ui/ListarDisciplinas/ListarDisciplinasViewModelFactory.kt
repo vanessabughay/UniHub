@@ -11,7 +11,7 @@ import com.example.unihub.data.repository.FakeDisciplinaBackend
 object ListarDisciplinasViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val repository = DisciplinaRepository(FakeDisciplinaBackend())
+        val repository = DisciplinaRepository(ApiDisciplinaBackend())
         return ListarDisciplinasViewModel(repository) as T
     }
 }
