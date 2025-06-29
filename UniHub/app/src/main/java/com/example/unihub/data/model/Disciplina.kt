@@ -4,6 +4,7 @@ import java.time.LocalDate
 
 // HorarioAula é uma classe simples para representar um horário de aula em um dia específico.
 data class HorarioAula(
+    val id: Long? = null,
     val diaDaSemana: String,
     val sala: String,
     val horarioInicio: String,
@@ -12,7 +13,7 @@ data class HorarioAula(
 
 data class Disciplina(
     // --- Informações Gerais ---
-    val id: String,
+    val id: Long?,
     val nome: String,
     val professor: String,
     val periodo: String,
@@ -20,8 +21,8 @@ data class Disciplina(
     // --- Informações de Aula ---
     val cargaHoraria: Int, // Tipo Int é melhor
     val aulas: List<HorarioAula>, // lista com as aulas que a disciplina tem, precisa por no diagrama
-    val dataInicioSemestre: LocalDate,
-    val dataFimSemestre: LocalDate, //ALTERAR TIPO
+    val dataInicioSemestre: String,
+    val dataFimSemestre: String, //ALTERAR TIPO
 
     // --- Informações do Professor ---
     val emailProfessor: String,

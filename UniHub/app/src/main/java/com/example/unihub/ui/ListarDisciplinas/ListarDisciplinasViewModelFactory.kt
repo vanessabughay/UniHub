@@ -2,16 +2,15 @@ package com.example.unihub.ui.ListarDisciplinas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.example.unihub.data.remote.RetrofitClient
 import com.example.unihub.data.repository.DisciplinaRepository
-import com.example.unihub.data.repository.FakeDisciplinaBackend
+import com.example.unihub.data.repository.RealDisciplinaBackend
 
-/**
- * Provides [ListarDisciplinasViewModel] instances with a simple in-memory backend.
- */
 object ListarDisciplinasViewModelFactory : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        val repository = DisciplinaRepository(FakeDisciplinaBackend())
+        val backend = RealDisciplinaBackend(RetrofitClient.disciplinaApiService)
+        val repository = DisciplinaRepository(backend)
         return ListarDisciplinasViewModel(repository) as T
     }
 }
