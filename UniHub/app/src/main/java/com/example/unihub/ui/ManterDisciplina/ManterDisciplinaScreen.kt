@@ -223,6 +223,7 @@ fun CampoSelecaoDia(
 fun ManterDisciplinaScreen(
     disciplinaId: String?,
     onVoltar: () -> Unit,
+    onExcluirSucesso: () -> Unit,
     viewModel: ManterDisciplinaViewModel
 ) {
     var codigo by remember { mutableStateOf("") }
@@ -240,6 +241,7 @@ fun ManterDisciplinaScreen(
     var salaProfessor by remember { mutableStateOf("") }
     var isAtiva by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
+    var isExclusao by remember { mutableStateOf(false) }
 
     LaunchedEffect(qtdAulasSemana) {
         val quantidade = qtdAulasSemana.toIntOrNull() ?: 0
@@ -291,7 +293,11 @@ fun ManterDisciplinaScreen(
 
     LaunchedEffect(sucesso.value) {
         if (sucesso.value) {
-            onVoltar()
+            if (isExclusao) {
+                onExcluirSucesso()
+            } else {
+                onVoltar()
+            }
         }
     }
 
@@ -370,6 +376,7 @@ fun ManterDisciplinaScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         showDialog = false
+                        isExclusao = true
                         disciplinaId?.let { viewModel.deleteDisciplina(it) }
                     }) {
                         Text("Confirmar")

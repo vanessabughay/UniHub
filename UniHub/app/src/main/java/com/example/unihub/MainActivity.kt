@@ -89,6 +89,9 @@ class MainActivity : ComponentActivity() {
                         com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen(
                             disciplinaId = disciplinaId,
                             onVoltar = { navController.popBackStack() },
+                            onExcluirSucesso = {
+                                navController.popBackStack(Screen.ListarDisciplinas.route, false)
+                            },
                             viewModel = viewModel
                         )
                     }
