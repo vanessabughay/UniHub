@@ -35,6 +35,7 @@ public class DisciplinaController {
     public Disciplina atualizar(@PathVariable Long id, @RequestBody Disciplina novaDisciplina) {
         Disciplina existente = service.buscarPorId(id);
 
+        existente.setCodigo(novaDisciplina.getCodigo());
         existente.setNome(novaDisciplina.getNome());
         existente.setProfessor(novaDisciplina.getProfessor());
         existente.setPeriodo(novaDisciplina.getPeriodo());
