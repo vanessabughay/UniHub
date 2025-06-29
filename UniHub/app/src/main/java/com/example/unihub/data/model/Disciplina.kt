@@ -12,7 +12,8 @@ data class HorarioAula(
 
 data class Disciplina(
     // --- Informações Gerais ---
-    val id: String,
+    val id: Long?=null,
+    val codigo: String,
     val nome: String,
     val professor: String,
     val periodo: String,

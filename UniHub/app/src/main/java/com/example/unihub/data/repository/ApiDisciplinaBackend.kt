@@ -21,7 +21,7 @@ class ApiDisciplinaBackend : _disciplinabackend {
     }
 
     override suspend fun getDisciplinasResumoApi(): List<DisciplinaResumo> =
-        api.list().map { DisciplinaResumo(it.id.toString(), it.nome, it.aulas) }
+        api.list().map { DisciplinaResumo(it.id!!,it.codigo, it.nome, it.aulas) }
 
     override suspend fun getDisciplinaByIdApi(id: String): Disciplina? =
         api.get(id.toLong())
@@ -30,13 +30,14 @@ class ApiDisciplinaBackend : _disciplinabackend {
         api.add(disciplina)
     }
 
-    override suspend fun updateDisciplinaApi(disciplina: Disciplina): Boolean {
-        api.update(disciplina.id.toLong(), disciplina)
+    override suspend fun updateDisciplinaApi(id: Long, disciplina: Disciplina): Boolean {
+        api.update(id, disciplina)
         return true
     }
 
-    override suspend fun deleteDisciplinaApi(id: String): Boolean {
-        api.delete(id.toLong())
+    override suspend fun deleteDisciplinaApi(id: Long): Boolean {
+        api.delete(id)
         return true
     }
+
 }

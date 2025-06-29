@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.ui.tooling.preview)
+    implementation(libs.androidx.runtime.livedata)
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.androidx.material.icons.extended)
 
@@ -75,6 +76,9 @@ dependencies {
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+
 
     // Para usar Firebase
     // implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
