@@ -3,6 +3,7 @@ package com.example.unihub.ui.ManterDisciplina
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.icu.util.Calendar
+import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -30,6 +31,12 @@ import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
 import java.util.*
+import android.widget.Toast
+import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.border
+import androidx.compose.ui.viewinterop.AndroidView
+
+
 
 
 val FormCardColor = Color(0x365AB9D6)
@@ -77,31 +84,21 @@ fun CampoDeData(
     onDataSelecionada: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val calendario = Calendar.getInstance()
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, ano, mes, dia -> onDataSelecionada("$dia/${mes + 1}/$ano") },
-        calendario.get(Calendar.YEAR),
-        calendario.get(Calendar.MONTH),
-        calendario.get(Calendar.DAY_OF_MONTH)
-    )
-
-    Column(modifier) {
+    Column(modifier = modifier) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
         OutlinedTextField(
             value = dataSelecionada,
-            onValueChange = {},
-            readOnly = true,
-            trailingIcon = { Icon(Icons.Default.CalendarToday, "Abrir Calendário") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { datePickerDialog.show() }
+            onValueChange = { onDataSelecionada(it) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            placeholder = { Text("DD/MM/AAAA") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
 }
@@ -150,43 +147,32 @@ fun CampoDeHora(
     onHoraSelecionada: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val calendario = Calendar.getInstance()
-    val hora = calendario.get(Calendar.HOUR_OF_DAY)
-    val minuto = calendario.get(Calendar.MINUTE)
-
-    val timePickerDialog = TimePickerDialog(
-        context,
-        { _, h, m -> onHoraSelecionada(String.format("%02d:%02d", h, m)) },
-        hora, minuto, true
-    )
-
-    Column(modifier) {
+    Column(modifier = modifier) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
+
         OutlinedTextField(
             value = horaSelecionada,
-            onValueChange = {},
-            readOnly = true,
+            onValueChange = { onHoraSelecionada(it) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
             placeholder = { Text("HH:mm") },
-            trailingIcon = { Icon(Icons.Default.Schedule, "Abrir Relógio") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { timePickerDialog.show() }
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
     }
 }
 
-@androidx.annotation.RequiresExtension(extension = android.os.Build.VERSION_CODES.S, version = 7)
+
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun ManterDisciplinaScreen(
     disciplinaId: String?,
     onVoltar: () -> Unit,
-    viewModel: ManterDisciplinaViewModel = viewModel(factory = ManterDisciplinaViewModelFactory)
+    viewModel: ManterDisciplinaViewModel
 ) {
     var codigo by remember { mutableStateOf("") }
     var periodo by remember { mutableStateOf("") }
@@ -202,12 +188,66 @@ fun ManterDisciplinaScreen(
     var telefoneProfessor by remember { mutableStateOf("") }
     var salaProfessor by remember { mutableStateOf("") }
     var isAtiva by remember { mutableStateOf(true) }
+    var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(qtdAulasSemana) {
         val quantidade = qtdAulasSemana.toIntOrNull() ?: 0
         if (quantidade > aulas.size) aulas = aulas + List(quantidade - aulas.size) { AulaInfo() }
         else if (quantidade < aulas.size && quantidade >= 0) aulas = aulas.take(quantidade)
     }
+
+    val context = LocalContext.current
+    val disciplina = viewModel.disciplina.collectAsState()
+    val erro = viewModel.erro.collectAsState()
+    val sucesso = viewModel.sucesso.collectAsState()
+
+
+
+
+    LaunchedEffect(disciplinaId) {
+        if (disciplinaId != null) {
+            viewModel.loadDisciplina(disciplinaId)
+        }
+    }
+
+
+    LaunchedEffect(disciplina.value) {
+        disciplina.value?.let { d ->
+            codigo = d.codigo
+            nomeDisciplina = d.nome
+            nomeProfessor = d.professor
+            periodo = d.periodo
+            cargaHoraria = d.cargaHoraria.toString()
+            qtdAulasSemana = d.aulas.size.toString()
+            aulas = d.aulas.map {
+                AulaInfo(
+                    dia = it.diaDaSemana,
+                    ensalamento = it.sala,
+                    horarioInicio = it.horarioInicio,
+                    horarioFim = it.horarioFim
+                )
+            }
+            dataInicioSemestre = d.dataInicioSemestre.toString()
+            dataFimSemestre = d.dataFimSemestre.toString()
+            emailProfessor = d.emailProfessor
+            plataformas = d.plataforma
+            telefoneProfessor = d.telefoneProfessor
+            salaProfessor = d.salaProfessor
+            isAtiva = d.isAtiva
+        }
+    }
+
+
+    LaunchedEffect(sucesso.value) {
+        if (sucesso.value) {
+            onVoltar()
+        }
+    }
+
+    erro.value?.let {
+        Toast.makeText(context, "Erro: $it", Toast.LENGTH_LONG).show()
+    }
+
 
     Scaffold(
         topBar = {
@@ -225,28 +265,42 @@ fun ManterDisciplinaScreen(
             ) {
                 Button(
                     onClick = {
-                        val formatter = DateTimeFormatter.ofPattern("d/M/yyyy")
-                        val inicio = if (dataInicioSemestre.isNotBlank()) LocalDate.parse(dataInicioSemestre, formatter) else LocalDate.now()
-                        val fim = if (dataFimSemestre.isNotBlank()) LocalDate.parse(dataFimSemestre, formatter) else inicio
+                        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
-                        val disciplina = Disciplina(
-                            id = codigo,
+                        val inicio = try { LocalDate.parse(dataInicioSemestre, formatter) } catch (e: Exception) { LocalDate.now() }
+                        val fim = try { LocalDate.parse(dataFimSemestre, formatter) } catch (e: Exception) { LocalDate.now() }
+
+
+                        val disciplina = com.example.unihub.data.model.Disciplina(
+                            id = disciplinaId?.toLongOrNull(),
+                            codigo = codigo,
                             nome = nomeDisciplina,
                             professor = nomeProfessor,
                             periodo = periodo,
                             cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
-                            aulas = aulas.map { HorarioAula(it.dia, it.ensalamento, it.horarioInicio, it.horarioFim) },
-                            dataInicioSemestre = inicio,
+                            dataInicioSemestre = inicio, // ✅ já no formato certo
                             dataFimSemestre = fim,
                             emailProfessor = emailProfessor,
                             plataforma = plataformas,
                             telefoneProfessor = telefoneProfessor,
                             salaProfessor = salaProfessor,
                             isAtiva = isAtiva,
-                            receberNotificacoes = true
+                            receberNotificacoes = true,
+                            aulas = aulas.map {
+                                com.example.unihub.data.model.HorarioAula(
+                                    diaDaSemana = it.dia,
+                                    sala = it.ensalamento,
+                                    horarioInicio = it.horarioInicio,
+                                    horarioFim = it.horarioFim
+                                )
+                            }
                         )
-                        viewModel.adicionarDisciplina(disciplina)
-                        onVoltar()
+
+                        if (disciplinaId == null) {
+                            viewModel.createDisciplina(disciplina)
+                        } else {
+                            viewModel.updateDisciplina(disciplina)
+                        }
                     },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(8.dp),
@@ -256,7 +310,29 @@ fun ManterDisciplinaScreen(
                 }
             }
         }
-    ) { paddingValues ->
+    )
+
+    { paddingValues ->
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDialog = false
+                        disciplinaId?.let { viewModel.deleteDisciplina(it) }
+                    }) {
+                        Text("Confirmar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDialog = false }) {
+                        Text("Cancelar")
+                    }
+                },
+                title = { Text("Confirmar exclusão") },
+                text = { Text("Tem certeza de que deseja excluir esta disciplina? Essa ação não pode ser desfeita.") }
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(paddingValues),
             contentPadding = PaddingValues(16.dp),
@@ -266,7 +342,7 @@ fun ManterDisciplinaScreen(
             item {
                 CampoDisciplina(title = "Informações Gerais") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo("ID Disciplina", codigo, { codigo = it }, Modifier.weight(1f), placeholder = "DSXXX")
+                        CampoDeTextoComTitulo("Código da Disciplina", codigo, { codigo = it }, Modifier.weight(1f), placeholder = "DSXXX")
                         CampoDeTextoComTitulo("Período", periodo, { periodo = it }, Modifier.weight(1f), placeholder = "20XX/X")
                     }
                     CampoDeTextoComTitulo("Nome da Disciplina", nomeDisciplina, { nomeDisciplina = it }, placeholder = "Disciplina X")
@@ -324,19 +400,25 @@ fun ManterDisciplinaScreen(
             }
 
             item {
-                OutlinedButton(onClick = { /* Lógica de exclusão */ }, modifier = Modifier.fillMaxWidth().padding(start= 80.dp, end = 80.dp)) {
+                OutlinedButton(
+                    onClick = { showDialog = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 80.dp, end = 80.dp)
+                ) {
                     Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFE91E1E))
                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text("Excluir Disciplina", color= Color(0xFFE91E1E))
+                    Text("Excluir Disciplina", color = Color(0xFFE91E1E))
                 }
+
             }
+
         }
     }
 }
 
-@androidx.annotation.RequiresExtension(extension = android.os.Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true, widthDp = 380)
-@Composable
-fun ManterDisciplinaScreenPreview() {
-    MaterialTheme { ManterDisciplinaScreen(disciplinaId = null, onVoltar = {}) }
-}
+//@Preview(showBackground = true, widthDp = 380)
+//@Composable
+//fun ManterDisciplinaScreenPreview() {
+//   MaterialTheme { ManterDisciplinaScreen(disciplinaId = null, onVoltar = {}) }
+//}

@@ -13,7 +13,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 data class DisciplinaResumoUi(
-    val id: String,
+    val id: Long,
+    val codigo: String,
     val nome: String,
     val horariosAulas: List<HorarioAula>
 )
@@ -44,6 +45,7 @@ class ListarDisciplinasViewModel(
                     val uiDisciplinas = disciplinasRaw.map { disciplina ->
                         DisciplinaResumoUi(
                             id = disciplina.id,
+                            codigo = disciplina.codigo,
                             nome = disciplina.nome,
                             horariosAulas = disciplina.aulas
                         )

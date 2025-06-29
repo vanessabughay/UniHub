@@ -1,8 +1,10 @@
 package com.example.unihub
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +42,7 @@ sealed class Screen(val route: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -75,11 +78,21 @@ class MainActivity : ComponentActivity() {
                         })
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
-                        ManterDisciplinaScreen(
+
+                        val repository = com.example.unihub.data.repository.DisciplinaRepository(
+                            com.example.unihub.data.repository.ApiDisciplinaBackend()
+                        )
+                        val factory = com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory(repository)
+                        val viewModel: com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel =
+                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+
+                        com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen(
                             disciplinaId = disciplinaId,
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = { navController.popBackStack() },
+                            viewModel = viewModel
                         )
                     }
+
 
                     // ROTA 3: Tela de Visualizar
                     composable(
@@ -88,16 +101,24 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
 
-                        // A chamada para a tela agora inclui a lógica de navegação para edição
+                        // Criação do ViewModel diretamente, sem remember (fora do escopo composable válido)
+                        val repository = com.example.unihub.data.repository.DisciplinaRepository(
+                            com.example.unihub.data.repository.ApiDisciplinaBackend()
+                        )
+                        val factory = com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(repository)
+                        val viewModel: com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel =
+                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+
                         VisualizarDisciplinaScreen(
                             disciplinaId = disciplinaId,
                             onVoltar = { navController.popBackStack() },
                             onNavigateToEdit = { idDaDisciplinaParaEditar ->
-                                // Navega para a tela Manter, passando o ID para o modo de edição
                                 navController.navigate(Screen.ManterDisciplina.createRoute(idDaDisciplinaParaEditar))
-                            }
+                            },
+                            viewModel = viewModel
                         )
                     }
+
                 }
             }
         }

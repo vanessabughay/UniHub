@@ -44,8 +44,13 @@ fun ListarDisciplinasScreen(
     val disciplinasState by viewModel.disciplinas.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
+    LaunchedEffect(Unit) {
+        viewModel.loadDisciplinas()
+    }
+
     var searchQuery by remember { mutableStateOf("") }
-    var idDisciplinaSelecionada by remember { mutableStateOf<String?>(null) }
+    var idDisciplinaSelecionada by remember { mutableStateOf<Long?>(null) }
+
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -56,7 +61,7 @@ fun ListarDisciplinasScreen(
     } else {
         disciplinasState.filter {
             it.nome.contains(searchQuery, ignoreCase = true) ||
-                    it.id.contains(searchQuery, ignoreCase = true)
+                    it.codigo.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -114,7 +119,7 @@ fun ListarDisciplinasScreen(
                         }
                     },
                     onDoubleClick = {
-                        onDisciplinaDoubleClick(disciplina.id)
+                        onDisciplinaDoubleClick(disciplina.id.toString())
                     },
                     onShareClicked = {
                         Toast.makeText(context, "Compartilhar ${it.nome}", Toast.LENGTH_SHORT).show()
@@ -155,7 +160,7 @@ fun DisciplinaItem(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${disciplina.id} ${disciplina.nome}",
+                    text = "${disciplina.codigo} ${disciplina.nome}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -191,49 +196,4 @@ fun DisciplinaItem(
     }
 }
 
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true)
-@Composable
-fun ListarDisciplinasScreenPreview() {
-    MaterialTheme {
-        // Mock do backend para o Preview
-        val mockBackend = object : com.example.unihub.data.repository._disciplinabackend {
-            override suspend fun getDisciplinasResumoApi(): List<DisciplinaResumo> {
-                return listOf(
-                    DisciplinaResumo(
-                        id = "DS430",
-                        nome = "Engenharia de Software",
-                        aulas = listOf(
-                            HorarioAula(diaDaSemana = "Segunda", sala = "A01", horarioInicio = "08:00", horarioFim = "10:00"),
-                            HorarioAula(diaDaSemana = "Quarta", sala = "A02", horarioInicio = "14:00", horarioFim = "16:00")
-                        )
-                    ),
-                    DisciplinaResumo(
-                        id = "DS431",
-                        nome = "Banco de Dados",
-                        aulas = listOf(
-                            HorarioAula(diaDaSemana = "Terça", sala = "B05", horarioInicio = "19:00", horarioFim = "22:00")
-                        )
-                    )
-                )
-            }
-            // Outros métodos do backend mockados, conforme o mínimo necessário para o preview
-            override suspend fun getDisciplinaByIdApi(id: String): com.example.unihub.data.model.Disciplina? = null
-            override suspend fun addDisciplinaApi(disciplina: com.example.unihub.data.model.Disciplina) {}
-            override suspend fun updateDisciplinaApi(disciplina: com.example.unihub.data.model.Disciplina): Boolean = true
-            override suspend fun deleteDisciplinaApi(id: String): Boolean = true
-        }
 
-        // Instância mock do repositório
-        val mockRepository = DisciplinaRepository(mockBackend)
-
-        // Instância do ViewModel com o repositório mock
-        val mockViewModel = ListarDisciplinasViewModel(mockRepository)
-
-        ListarDisciplinasScreen(
-            viewModel = mockViewModel,
-            onAddDisciplina = {},
-            onDisciplinaDoubleClick = {}
-        )
-    }
-}
