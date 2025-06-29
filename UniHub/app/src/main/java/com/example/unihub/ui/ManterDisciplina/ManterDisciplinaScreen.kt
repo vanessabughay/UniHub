@@ -22,6 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.model.HorarioAula
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
 import java.util.*
@@ -176,10 +181,12 @@ fun CampoDeHora(
     }
 }
 
+@androidx.annotation.RequiresExtension(extension = android.os.Build.VERSION_CODES.S, version = 7)
 @Composable
 fun ManterDisciplinaScreen(
     disciplinaId: String?,
-    onVoltar: () -> Unit
+    onVoltar: () -> Unit,
+    viewModel: ManterDisciplinaViewModel = viewModel(factory = ManterDisciplinaViewModelFactory)
 ) {
     var codigo by remember { mutableStateOf("") }
     var periodo by remember { mutableStateOf("") }
@@ -217,7 +224,30 @@ fun ManterDisciplinaScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { /* Lógica para salvar/atualizar */ },
+                    onClick = {
+                        val formatter = DateTimeFormatter.ofPattern("d/M/yyyy")
+                        val inicio = if (dataInicioSemestre.isNotBlank()) LocalDate.parse(dataInicioSemestre, formatter) else LocalDate.now()
+                        val fim = if (dataFimSemestre.isNotBlank()) LocalDate.parse(dataFimSemestre, formatter) else inicio
+
+                        val disciplina = Disciplina(
+                            id = codigo,
+                            nome = nomeDisciplina,
+                            professor = nomeProfessor,
+                            periodo = periodo,
+                            cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
+                            aulas = aulas.map { HorarioAula(it.dia, it.ensalamento, it.horarioInicio, it.horarioFim) },
+                            dataInicioSemestre = inicio,
+                            dataFimSemestre = fim,
+                            emailProfessor = emailProfessor,
+                            plataforma = plataformas,
+                            telefoneProfessor = telefoneProfessor,
+                            salaProfessor = salaProfessor,
+                            isAtiva = isAtiva,
+                            receberNotificacoes = true
+                        )
+                        viewModel.adicionarDisciplina(disciplina)
+                        onVoltar()
+                    },
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
@@ -304,6 +334,7 @@ fun ManterDisciplinaScreen(
     }
 }
 
+@androidx.annotation.RequiresExtension(extension = android.os.Build.VERSION_CODES.S, version = 7)
 @Preview(showBackground = true, widthDp = 380)
 @Composable
 fun ManterDisciplinaScreenPreview() {
