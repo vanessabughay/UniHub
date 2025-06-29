@@ -1,15 +1,14 @@
 package com.example.unihub
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Box
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -18,28 +17,23 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
-import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
     object ListarDisciplinas : Screen("lista_disciplinas")
 
+    // Rota única para Manter Disciplina (Criar, Visualizar e Editar)
+    // id=null -> Criar
+    // id=existente -> Visualizar/Editar (a tela ManterDisciplinaScreen decidirá o modo)
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
-        // Função para criar a rota de "manter", com ou sem ID
-        fun createRoute(id: String?): String {
+        fun createRoute(id: String? = null): String {
             return if (id != null) "manter_disciplina?id=$id" else "manter_disciplina"
-        }
-    }
-
-    object VisualizarDisciplina : Screen("visualizar_disciplina/{id}") {
-        // Função para criar a rota de "visualizar", que sempre exige um ID
-        fun createRoute(id: String): String {
-            return "visualizar_disciplina/$id"
         }
     }
 }
 
 class MainActivity : ComponentActivity() {
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -47,54 +41,46 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
             ) {
-                // Configuração da Navegação
                 val navController = rememberNavController()
 
                 NavHost(
                     navController = navController,
                     startDestination = Screen.ListarDisciplinas.route
                 ) {
-                    // ROTA 1: Tela de Listar
+                    // ROTA 1: Tela de Listar Disciplinas
                     composable(Screen.ListarDisciplinas.route) {
                         ListarDisciplinasScreen(
                             onAddDisciplina = {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(null))
                             },
                             onDisciplinaDoubleClick = { disciplinaId ->
-                                navController.navigate(Screen.VisualizarDisciplina.createRoute(disciplinaId))
+                                navController.navigate(Screen.ManterDisciplina.createRoute(disciplinaId))
                             }
                         )
                     }
 
-                    // ROTA 2: Tela de Manter (Criar/Editar)
+                    // ROTA 2: Tela de Manter Disciplina (Criar/Visualizar/Editar)
                     composable(
                         route = Screen.ManterDisciplina.route,
                         arguments = listOf(navArgument("id") {
                             type = NavType.StringType
                             nullable = true
+                            defaultValue = null
                         })
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
-                        ManterDisciplinaScreen(
-                            disciplinaId = disciplinaId,
-                            onVoltar = { navController.popBackStack() }
-                        )
-                    }
 
-                    // ROTA 3: Tela de Visualizar
-                    composable(
-                        route = Screen.VisualizarDisciplina.route,
-                        arguments = listOf(navArgument("id") { type = NavType.StringType })
-                    ) { backStackEntry ->
-                        val disciplinaId = backStackEntry.arguments?.getString("id")
-
-                        // A chamada para a tela agora inclui a lógica de navegação para edição
-                        VisualizarDisciplinaScreen(
+                        ManterDisciplinaScreen( // Referencia a tela do pacote corrigido
                             disciplinaId = disciplinaId,
-                            onVoltar = { navController.popBackStack() },
-                            onNavigateToEdit = { idDaDisciplinaParaEditar ->
-                                // Navega para a tela Manter, passando o ID para o modo de edição
-                                navController.navigate(Screen.ManterDisciplina.createRoute(idDaDisciplinaParaEditar))
+                            onBack = { navController.popBackStack() },
+                            onSaveSuccess = {
+                                // Volta para a tela de listagem e limpa a pilha acima dela
+                                // Isso garante que a lista pode ser recarregada ao voltar
+                                navController.popBackStack(Screen.ListarDisciplinas.route, inclusive = false)
+                            },
+                            onDeleteSuccess = {
+                                // Volta para a tela de listagem após a exclusão
+                                navController.popBackStack(Screen.ListarDisciplinas.route, inclusive = false)
                             }
                         )
                     }

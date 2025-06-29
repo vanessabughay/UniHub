@@ -21,13 +21,18 @@ android {
         }
     }
 
-    buildTypes {
+    buildTypes {///chatgpt pediu pra mudar
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = false // Se você não usa release agora, pode deixar assim por enquanto.
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+        // ADICIONE OU MODIFIQUE ESTE BLOCO:
+        debug {
+            isMinifyEnabled = false // <-- GARANTA QUE ISSO ESTEJA COMO FALSE
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") // Mantenha, mas com false acima não fará efeito
         }
     }
     compileOptions {
@@ -76,10 +81,8 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
 
-    // Para usar Firebase
-    // implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
-    // implementation("com.google.firebase:firebase-auth")
-    // implementation("com.google.firebase:firebase-firestore")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     //Testes
     testImplementation(libs.junit)
