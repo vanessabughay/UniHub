@@ -114,7 +114,7 @@ fun CampoData(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        OutlinedTextField(
+        TextField(
             value = if (value != 0L) dateFormat.format(Date(value)) else "",
             onValueChange = {},
             modifier = Modifier
@@ -163,7 +163,7 @@ fun CampoHorario(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        OutlinedTextField(
+        TextField(
             value = String.format("%02d:%02d", hour, minute),
             onValueChange = {},
             modifier = Modifier
