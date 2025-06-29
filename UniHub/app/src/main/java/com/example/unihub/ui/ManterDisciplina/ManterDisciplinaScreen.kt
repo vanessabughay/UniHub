@@ -50,8 +50,8 @@ data class AulaInfo(
     val id: Int = UUID.randomUUID().hashCode(),
     var dia: String = "Segunda-feira",
     var ensalamento: String = "",
-    var horarioInicio: String = "",
-    var horarioFim: String = ""
+    var horarioInicio: Int = 0 ,
+    var horarioFim: Int = 0
 )
 
 @Composable
@@ -107,24 +107,74 @@ fun CampoData(
         ).show()
     }
 
-    Box(modifier = modifier.clickable { showDatePicker() }) {
-        TextField(
+    Column(modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        OutlinedTextField(
             value = if (value != 0L) dateFormat.format(Date(value)) else "",
-            onValueChange = { },
-            label = { Text(label, fontSize = 12.sp) },
-            modifier = Modifier.fillMaxWidth(),
+            onValueChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showDatePicker() },
             readOnly = true,
-            enabled = false, // impede o teclado
+            singleLine = true,
             colors = TextFieldDefaults.colors(
                 disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
-
         )
     }
 }
+
+@Composable
+fun CampoHorario(
+    label: String,
+    value: Int,
+    onTimeSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val hour = value / 60
+    val minute = value % 60
+
+    val showTimePicker = {
+        val timePickerDialog = TimePickerDialog(
+            context,
+            { _, hourOfDay, minuteOfHour ->
+                onTimeSelected(hourOfDay * 60 + minuteOfHour)
+            },
+            hour,
+            minute,
+            true
+        )
+        timePickerDialog.show()
+    }
+
+    Column(modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        OutlinedTextField(
+            value = String.format("%02d:%02d", hour, minute),
+            onValueChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showTimePicker() },
+            readOnly = true,
+            singleLine = true
+        )
+    }
+}
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,33 +213,6 @@ fun CampoSelecaoDia(
         }
     }
 }
-
-@Composable
-fun CampoDeHora(
-    label: String,
-    horaSelecionada: String,
-    onHoraSelecionada: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-
-        OutlinedTextField(
-            value = horaSelecionada,
-            onValueChange = { onHoraSelecionada(it) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            placeholder = { Text("HH:mm") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-    }
-}
-
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
@@ -249,7 +272,7 @@ fun ManterDisciplinaScreen(
                     ensalamento = it.sala,
                     horarioInicio = it.horarioInicio,
                     horarioFim = it.horarioFim
-                )
+                    )
             }
             dataInicioSemestre = d.dataInicioSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
             dataFimSemestre = d.dataFimSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -388,8 +411,8 @@ fun ManterDisciplinaScreen(
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CampoDeTextoComTitulo("Ensalamento", aula.ensalamento, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(ensalamento = novoValor) } }, Modifier.weight(1f))
-                            CampoDeTextoComTitulo("Início", aula.horarioInicio, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } }, Modifier.weight(1f))
-                            CampoDeTextoComTitulo("Fim", aula.horarioFim, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } }, Modifier.weight(1f))
+                            CampoHorario("Início", aula.horarioInicio, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } }, Modifier.weight(1f))
+                            CampoHorario("Fim", aula.horarioFim, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } }, Modifier.weight(1f))
                         }
                         if (index < aulas.size - 1) Divider(modifier = Modifier.padding(vertical = 12.dp))
                     }

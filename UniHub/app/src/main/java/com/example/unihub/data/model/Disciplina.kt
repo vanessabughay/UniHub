@@ -6,8 +6,8 @@ import java.time.LocalDate
 data class HorarioAula(
     val diaDaSemana: String,
     val sala: String,
-    val horarioInicio: String,
-    val horarioFim: String
+    val horarioInicio: Int,
+    val horarioFim: Int
 )
 
 data class Disciplina(
