@@ -2,7 +2,7 @@ package com.example.unihub.ui.ManterDisciplina
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
-import android.icu.util.Calendar
+import java.util.Calendar
 import android.os.Build
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -30,7 +30,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.border
@@ -114,21 +116,22 @@ fun CampoData(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        TextField(
-            value = if (value != 0L) dateFormat.format(Date(value)) else "",
-            onValueChange = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showDatePicker() },
-            readOnly = true,
-            singleLine = true,
-            colors = TextFieldDefaults.colors(
-                disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+        Box(modifier = Modifier.clickable { showDatePicker() }) {
+            TextField(
+                value = if (value != 0L) dateFormat.format(Date(value)) else "",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
             )
-        )
+        }
     }
 }
 
@@ -163,15 +166,16 @@ fun CampoHorario(
             fontWeight = FontWeight.Medium,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        TextField(
-            value = String.format("%02d:%02d", hour, minute),
-            onValueChange = {},
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { showTimePicker() },
-            readOnly = true,
-            singleLine = true
-        )
+        Box(modifier = Modifier.clickable { showTimePicker() }) {
+            TextField(
+                value = String.format("%02d:%02d", hour, minute),
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                singleLine = true
+            )
+        }
     }
 }
 
