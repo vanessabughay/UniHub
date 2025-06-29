@@ -13,8 +13,8 @@ public class HorarioAula {
 
     private String diaDaSemana;
     private String sala;
-    private String horarioInicio;
-    private String horarioFim;
+    private int horarioInicio;
+    private int horarioFim;
 
     @ManyToOne
     @JoinColumn(name = "disciplina_id")
@@ -30,11 +30,11 @@ public class HorarioAula {
     public String getSala() { return sala; }
     public void setSala(String sala) { this.sala = sala; }
 
-    public String getHorarioInicio() { return horarioInicio; }
-    public void setHorarioInicio(String horarioInicio) { this.horarioInicio = horarioInicio; }
+    public int getHorarioInicio() { return horarioInicio; }
+    public void setHorarioInicio(int horarioInicio) { this.horarioInicio = horarioInicio; }
 
-    public String getHorarioFim() { return horarioFim; }
-    public void setHorarioFim(String horarioFim) { this.horarioFim = horarioFim; }
+    public int getHorarioFim() { return horarioFim; }
+    public void setHorarioFim(int horarioFim) { this.horarioFim = horarioFim; }
 
     public Disciplina getDisciplina() { return disciplina; }
     public void setDisciplina(Disciplina disciplina) { this.disciplina = disciplina; }
