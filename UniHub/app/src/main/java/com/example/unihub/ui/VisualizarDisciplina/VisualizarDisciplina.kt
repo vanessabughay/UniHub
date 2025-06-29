@@ -58,7 +58,7 @@ fun VisualizarDisciplinaScreen(
     val disciplina = remember(disciplinaId) {
         // TODO: Substituir pela busca de dados reais
         Disciplina(
-            id = disciplinaId ?: "id_padrao_se_nulo",
+            id = null,
             nome = "Desenvolvimento Web II",
             professor = "Prof. Ricardo Alves",
             periodo = "2025/1",
@@ -71,8 +71,8 @@ fun VisualizarDisciplinaScreen(
                     horarioFim = "22:00"
                 )
             ),
-            dataInicioSemestre = LocalDate.of(2025, 2, 18),
-            dataFimSemestre = LocalDate.of(2025, 6, 28),
+            dataInicioSemestre = "2025-02-18",
+            dataFimSemestre = "2025-06-28",
             emailProfessor = "ricardo.alves@unihub.edu",
             plataforma = "GitHub, VS Code, Discord",
             telefoneProfessor = "(41) 99999-0303",
@@ -84,8 +84,7 @@ fun VisualizarDisciplinaScreen(
 
     val opcoes = listOf(
         OpcaoDisciplina("Informações da disciplina", Icons.Outlined.Info, Color(0xFFD7EFF5)) {
-            // Ao clicar aqui, navega para a tela de edição passando o ID
-            onNavigateToEdit(disciplina.id)
+            onNavigateToEdit(disciplina.id?.toString() ?: "")
         },
         OpcaoDisciplina("Ausências", Icons.Outlined.CalendarToday, Color(0xFFF3E4F8)) {
             Toast.makeText(context, "Abrir Ausências", Toast.LENGTH_SHORT).show()
