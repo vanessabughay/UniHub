@@ -23,6 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel // Importando ViewModel
+import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasViewModelFactory
 import com.example.unihub.components.CabecalhoPrincipal
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.HorarioAula // Importando HorarioAula
@@ -36,7 +37,7 @@ val CardBackgroundColorSelected = Color(0xFFB2DDF3)
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun ListarDisciplinasScreen(
-    viewModel: ListarDisciplinasViewModel = viewModel(),
+    viewModel: ListarDisciplinasViewModel = viewModel(factory = ListarDisciplinasViewModelFactory),
     onAddDisciplina: () -> Unit,
     onDisciplinaDoubleClick: (disciplinaId: String) -> Unit
 ) {
