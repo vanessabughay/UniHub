@@ -23,7 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel // Importando ViewModel
-import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasViewModelFactory
 import com.example.unihub.components.CabecalhoPrincipal
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.HorarioAula // Importando HorarioAula

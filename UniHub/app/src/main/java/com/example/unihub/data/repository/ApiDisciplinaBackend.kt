@@ -2,6 +2,7 @@ package com.example.unihub.data.repository
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.example.unihub.data.model.Disciplina
 
 class ApiDisciplinaBackend : _disciplinabackend {
     private val api: DisciplinaApi by lazy {

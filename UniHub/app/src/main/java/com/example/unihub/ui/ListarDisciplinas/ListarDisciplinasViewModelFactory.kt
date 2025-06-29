@@ -3,7 +3,6 @@ package com.example.unihub.ui.ListarDisciplinas
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.DisciplinaRepository
-import com.example.unihub.data.repository.FakeDisciplinaBackend
 
 /**
  * Provides [ListarDisciplinasViewModel] instances with a simple in-memory backend.
