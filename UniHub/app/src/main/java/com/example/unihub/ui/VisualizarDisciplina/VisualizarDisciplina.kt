@@ -54,6 +54,7 @@ fun VisualizarDisciplinaScreen(
     disciplinaId: String?,
     onVoltar: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToAusencias: (String) -> Unit,
     viewModel: VisualizarDisciplinaViewModel
 ) {
     val context = LocalContext.current
@@ -75,7 +76,8 @@ fun VisualizarDisciplinaScreen(
 
             },
             OpcaoDisciplina("Ausências", Icons.Outlined.CalendarToday, Color(0xFFF3E4F8)) {
-                Toast.makeText(context, "Abrir Ausências", Toast.LENGTH_SHORT).show()
+                // Toast.makeText(context, "Abrir Ausências", Toast.LENGTH_SHORT).show()
+                onNavigateToAusencias(disciplina.id.toString())
             },
             OpcaoDisciplina("Notas", Icons.Outlined.StarOutline, Color(0xFFE0E1F8)) {
                 Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()

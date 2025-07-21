@@ -21,6 +21,7 @@ import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
+import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -39,6 +40,13 @@ sealed class Screen(val route: String) {
             return "visualizar_disciplina/$id"
         }
     }
+
+    object ManterAusencia : Screen("manter_ausencia/{disciplinaId}") {
+        fun createRoute(disciplinaId: String): String {
+            return "manter_ausencia/$disciplinaId"
+        }
+    }
+
 }
 
 class MainActivity : ComponentActivity() {
@@ -118,6 +126,31 @@ class MainActivity : ComponentActivity() {
                             onNavigateToEdit = { idDaDisciplinaParaEditar ->
                                 navController.navigate(Screen.ManterDisciplina.createRoute(idDaDisciplinaParaEditar))
                             },
+
+                            onNavigateToAusencias = { discId ->
+                                navController.navigate(Screen.ManterAusencia.createRoute(discId))
+                            },
+                            viewModel = viewModel
+                        )
+                    }
+
+                    // ROTA 4: Tela de Ausência
+                    composable(
+                        route = Screen.ManterAusencia.route,
+                        arguments = listOf(navArgument("disciplinaId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val disciplinaIdArg = backStackEntry.arguments?.getString("disciplinaId") ?: ""
+
+                        val repository = com.example.unihub.data.repository.AusenciaRepository(
+                            com.example.unihub.data.repository.ApiAusenciaBackend(),
+                        )
+                        val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(repository)
+                        val viewModel: com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel =
+                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+
+                        ManterAusenciaScreen(
+                            disciplinaId = disciplinaIdArg,
+                            onVoltar = { navController.popBackStack() },
                             viewModel = viewModel
                         )
                     }
