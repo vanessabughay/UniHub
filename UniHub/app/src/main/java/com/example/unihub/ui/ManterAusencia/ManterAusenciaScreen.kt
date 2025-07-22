@@ -6,12 +6,19 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,6 +30,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun ManterAusenciaScreen(
@@ -35,8 +43,14 @@ fun ManterAusenciaScreen(
     var data by remember { mutableStateOf(LocalDate.now()) }
     var justificativa by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
+    val categorias = remember { mutableStateListOf("Saúde", "Trabalho", "Pessoal") }
+    var expandCategoria by remember { mutableStateOf(false) }
+    var showAddCategoria by remember { mutableStateOf(false) }
+    var novaCategoria by remember { mutableStateOf("") }
 
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    val disciplina by viewModel.disciplina.collectAsState()
 
     val showDatePicker = {
         val now = Calendar.getInstance()
@@ -53,6 +67,10 @@ fun ManterAusenciaScreen(
 
     val sucesso by viewModel.sucesso.collectAsState()
     val erro by viewModel.erro.collectAsState()
+
+    LaunchedEffect(disciplinaId) {
+        viewModel.loadDisciplina(disciplinaId)
+    }
 
     LaunchedEffect(sucesso) {
         if (sucesso) onVoltar()
@@ -71,6 +89,14 @@ fun ManterAusenciaScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
+                value = disciplina?.nome ?: "",
+                onValueChange = {},
+                label = { Text("Disciplina") },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false
+            )
+            OutlinedTextField(
                 value = data.format(formatter),
                 onValueChange = {},
                 label = { Text("Data da ausência") },
@@ -79,16 +105,37 @@ fun ManterAusenciaScreen(
                     .clickable { showDatePicker() },
                 readOnly = true
             )
+
+            ExposedDropdownMenuBox(
+                expanded = expandCategoria,
+                onExpandedChange = { expandCategoria = !expandCategoria }
+            ) {
+                OutlinedTextField(
+                    value = categoria,
+                    onValueChange = {},
+                    label = { Text("Categoria") },
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandCategoria) },
+                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                )
+                ExposedDropdownMenu(expanded = expandCategoria, onDismissRequest = { expandCategoria = false }) {
+                    categorias.forEach { cat ->
+                        DropdownMenuItem(text = { Text(cat) }, onClick = {
+                            categoria = cat
+                            expandCategoria = false
+                        })
+                    }
+                    HorizontalDivider()
+                    DropdownMenuItem(text = { Text("Adicionar categoria") }, onClick = {
+                        expandCategoria = false
+                        showAddCategoria = true
+                    })
+                }
+            }
             OutlinedTextField(
                 value = justificativa,
                 onValueChange = { justificativa = it },
                 label = { Text("Justificativa") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = categoria,
-                onValueChange = { categoria = it },
-                label = { Text("Categoria") },
                 modifier = Modifier.fillMaxWidth()
             )
             Button(
@@ -96,8 +143,9 @@ fun ManterAusenciaScreen(
                     val aus = Ausencia(
                         disciplinaId = disciplinaId.toLong(),
                         data = data,
-                        justificativa = justificativa.takeIf { it.isNotBlank() },
-                        categoria = categoria.takeIf { it.isNotBlank() }
+                        categoria = categoria.takeIf { it.isNotBlank() },
+                        justificativa = justificativa.takeIf { it.isNotBlank() }
+
                     )
                     viewModel.criarAusencia(aus)
                 },
@@ -105,6 +153,33 @@ fun ManterAusenciaScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6))
             ) { Text("Salvar", color = Color.Black) }
             erro?.let { Text(text = it, color = Color.Red) }
+
+            if (showAddCategoria) {
+                AlertDialog(
+                    onDismissRequest = { showAddCategoria = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            if (novaCategoria.isNotBlank()) {
+                                categorias.add(novaCategoria)
+                                categoria = novaCategoria
+                            }
+                            novaCategoria = ""
+                            showAddCategoria = false
+                        }) { Text("Adicionar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showAddCategoria = false }) { Text("Cancelar") }
+                    },
+                    title = { Text("Nova Categoria") },
+                    text = {
+                        OutlinedTextField(
+                            value = novaCategoria,
+                            onValueChange = { novaCategoria = it },
+                            label = { Text("Categoria") }
+                        )
+                    }
+                )
+            }
         }
     }
 }

@@ -141,10 +141,16 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val disciplinaIdArg = backStackEntry.arguments?.getString("disciplinaId") ?: ""
 
-                        val repository = com.example.unihub.data.repository.AusenciaRepository(
+                        val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
                             com.example.unihub.data.repository.ApiAusenciaBackend(),
                         )
-                        val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(repository)
+                        val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
+                            com.example.unihub.data.repository.ApiDisciplinaBackend(),
+                        )
+                        val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
+                            ausenciaRepository,
+                            disciplinaRepository
+                        )
                         val viewModel: com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
 
