@@ -6,13 +6,15 @@ import com.example.unihub.data.model.Ausencia
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
+
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 class ManterAusenciaViewModel(
     private val ausenciaRepository: AusenciaRepository,
-    private val disciplinaRepository: DisciplinaRepository
+    private val disciplinaRepository: DisciplinaRepository,
+    private val categoriaRepository: CategoriaRepository
 ) : ViewModel() {
     private val _sucesso = MutableStateFlow(false)
     val sucesso: StateFlow<Boolean> = _sucesso
@@ -22,6 +24,9 @@ class ManterAusenciaViewModel(
 
     private val _disciplina = MutableStateFlow<Disciplina?>(null)
     val disciplina: StateFlow<Disciplina?> = _disciplina
+
+    private val _categorias = MutableStateFlow<List<Categoria>>(emptyList())
+    val categorias: StateFlow<List<Categoria>> = _categorias
 
     fun criarAusencia(ausencia: Ausencia) {
         viewModelScope.launch {
@@ -42,6 +47,30 @@ class ManterAusenciaViewModel(
                 disciplinaRepository.getDisciplinaById(longId).collect {
                     _disciplina.value = it
                 }
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
+
+
+    fun loadCategorias() {
+        viewModelScope.launch {
+            try {
+                categoriaRepository.listCategorias().collect { cats ->
+                    _categorias.value = cats
+                }
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
+
+    fun addCategoria(nome: String) {
+        viewModelScope.launch {
+            try {
+                categoriaRepository.addCategoria(nome)
+                loadCategorias()
             } catch (e: Exception) {
                 _erro.value = e.message
             }

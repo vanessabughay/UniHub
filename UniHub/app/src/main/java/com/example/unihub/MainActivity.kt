@@ -154,9 +154,11 @@ class MainActivity : ComponentActivity() {
                         val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
                             com.example.unihub.data.repository.ApiDisciplinaBackend(),
                         )
+                        val categoriaRepository = com.example.unihub.data.repository.CategoriaRepository()
                         val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
                             ausenciaRepository,
-                            disciplinaRepository
+                            disciplinaRepository,
+                            categoriaRepository
                         )
                         val viewModel: com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)

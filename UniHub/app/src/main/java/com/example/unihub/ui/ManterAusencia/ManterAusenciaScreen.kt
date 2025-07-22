@@ -43,7 +43,7 @@ fun ManterAusenciaScreen(
     var data by remember { mutableStateOf(LocalDate.now()) }
     var justificativa by remember { mutableStateOf("") }
     var categoria by remember { mutableStateOf("") }
-    val categorias = remember { mutableStateListOf("Saúde", "Trabalho", "Pessoal") }
+    val categorias by viewModel.categorias.collectAsState()
     var expandCategoria by remember { mutableStateOf(false) }
     var showAddCategoria by remember { mutableStateOf(false) }
     var novaCategoria by remember { mutableStateOf("") }
@@ -70,6 +70,10 @@ fun ManterAusenciaScreen(
 
     LaunchedEffect(disciplinaId) {
         viewModel.loadDisciplina(disciplinaId)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadCategorias()
     }
 
     LaunchedEffect(sucesso) {
@@ -120,8 +124,9 @@ fun ManterAusenciaScreen(
                 )
                 ExposedDropdownMenu(expanded = expandCategoria, onDismissRequest = { expandCategoria = false }) {
                     categorias.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat) }, onClick = {
-                            categoria = cat
+                        DropdownMenuItem(text = { Text(cat.nome) }, onClick = {
+                            categoria = cat.nome
+
                             expandCategoria = false
                         })
                     }
@@ -160,7 +165,7 @@ fun ManterAusenciaScreen(
                     confirmButton = {
                         TextButton(onClick = {
                             if (novaCategoria.isNotBlank()) {
-                                categorias.add(novaCategoria)
+                                viewModel.addCategoria(novaCategoria)
                                 categoria = novaCategoria
                             }
                             novaCategoria = ""
