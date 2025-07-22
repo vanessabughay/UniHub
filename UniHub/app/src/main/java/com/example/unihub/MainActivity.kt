@@ -22,6 +22,7 @@ import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
+import com.example.unihub.data.repository.ApiCategoriaBackend
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -154,7 +155,9 @@ class MainActivity : ComponentActivity() {
                         val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
                             com.example.unihub.data.repository.ApiDisciplinaBackend(),
                         )
-                        val categoriaRepository = com.example.unihub.data.repository.CategoriaRepository()
+                        val categoriaRepository = com.example.unihub.data.repository.CategoriaRepository(
+                            ApiCategoriaBackend(),
+                        )
                         val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
                             ausenciaRepository,
                             disciplinaRepository,

@@ -5,9 +5,11 @@ import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.model.Categoria
 import com.example.unihub.data.model.Ausencia
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.AusenciaRepository
+import com.example.unihub.data.repository.CategoriaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

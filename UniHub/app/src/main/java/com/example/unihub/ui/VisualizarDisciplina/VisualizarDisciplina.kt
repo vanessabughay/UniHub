@@ -159,6 +159,9 @@ fun VisualizarDisciplinaScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
+                    BotaoOpcao(item = opcoes.first())
+                }
+                item {
                     AusenciasCard(
                         expanded = expandAusencias,
                         ausencias = ausencias,
@@ -166,7 +169,7 @@ fun VisualizarDisciplinaScreen(
                         onAdd = { onNavigateToAusencias(disciplina.id.toString()) }
                     )
                 }
-                items(opcoes) { opcao ->
+                items(opcoes.drop(1)) { opcao ->
                     BotaoOpcao(item = opcao)
                 }
             }
