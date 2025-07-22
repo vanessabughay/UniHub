@@ -69,7 +69,8 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-
+    implementation(project(":core"))
+    implementation(project(":data"))
     implementation(libs.androidx.navigation.compose)
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)

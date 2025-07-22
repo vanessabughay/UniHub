@@ -14,6 +14,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
+import com.example.unihub.data.model.Categoria
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -165,7 +166,8 @@ fun ManterAusenciaScreen(
                     confirmButton = {
                         TextButton(onClick = {
                             if (novaCategoria.isNotBlank()) {
-                                viewModel.addCategoria(novaCategoria)
+                                val newCategoriaObject = Categoria(nome = novaCategoria)
+                                viewModel.addCategoria(newCategoriaObject) // Or viewModel.addCategoria(novaCategoria) depending on your VM
                                 categoria = novaCategoria
                             }
                             novaCategoria = ""
