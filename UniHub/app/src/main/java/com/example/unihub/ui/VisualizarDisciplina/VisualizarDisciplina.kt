@@ -7,19 +7,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import java.time.format.DateTimeFormatter
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.model.Ausencia
 
 data class OpcaoDisciplina(
     val title: String,
@@ -48,6 +53,55 @@ fun BotaoOpcao(item: OpcaoDisciplina) {
     }
 }
 
+@Composable
+fun AusenciasCard(
+    expanded: Boolean,
+    ausencias: List<Ausencia>,
+    onToggle: () -> Unit,
+    onAdd: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF3E4F8)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onToggle() }
+                    .padding(vertical = 20.dp, horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(imageVector = Icons.Outlined.CalendarToday, contentDescription = null, modifier = Modifier.size(26.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(text = "Ausências", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.weight(1f))
+                IconButton(onClick = onAdd) {
+                    Icon(Icons.Default.Add, contentDescription = "Adicionar Ausência")
+                }
+            }
+            if (expanded) {
+                val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                if (ausencias.isEmpty()) {
+                    Text(
+                        text = "Nenhuma ausência registrada",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                } else {
+                    ausencias.forEach { aus ->
+                        Text(
+                            text = aus.data.format(formatter) + (aus.categoria?.let { " - $it" } ?: ""),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun VisualizarDisciplinaScreen(
@@ -60,6 +114,8 @@ fun VisualizarDisciplinaScreen(
     val context = LocalContext.current
     val disciplina by viewModel.disciplina.collectAsStateWithLifecycle()
     val erro by viewModel.erro.collectAsStateWithLifecycle()
+    val ausencias by viewModel.ausencias.collectAsStateWithLifecycle()
+    var expandAusencias by remember { mutableStateOf(false) }
 
     LaunchedEffect(disciplinaId) {
         disciplinaId?.let { viewModel.loadDisciplina(it) }
@@ -75,10 +131,7 @@ fun VisualizarDisciplinaScreen(
                 onNavigateToEdit(disciplina.id.toString())
 
             },
-            OpcaoDisciplina("Ausências", Icons.Outlined.CalendarToday, Color(0xFFF3E4F8)) {
-                // Toast.makeText(context, "Abrir Ausências", Toast.LENGTH_SHORT).show()
-                onNavigateToAusencias(disciplina.id.toString())
-            },
+
             OpcaoDisciplina("Notas", Icons.Outlined.StarOutline, Color(0xFFE0E1F8)) {
                 Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()
             },
@@ -105,6 +158,14 @@ fun VisualizarDisciplinaScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                item {
+                    AusenciasCard(
+                        expanded = expandAusencias,
+                        ausencias = ausencias,
+                        onToggle = { expandAusencias = !expandAusencias },
+                        onAdd = { onNavigateToAusencias(disciplina.id.toString()) }
+                    )
+                }
                 items(opcoes) { opcao ->
                     BotaoOpcao(item = opcao)
                 }

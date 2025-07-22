@@ -113,10 +113,17 @@ class MainActivity : ComponentActivity() {
                         val disciplinaId = backStackEntry.arguments?.getString("id")
 
                         // Criação do ViewModel diretamente, sem remember (fora do escopo composable válido)
-                        val repository = com.example.unihub.data.repository.DisciplinaRepository(
-                            com.example.unihub.data.repository.ApiDisciplinaBackend()
+                        val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
+                            com.example.unihub.data.repository.ApiDisciplinaBackend(),
                         )
-                        val factory = com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(repository)
+                        val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
+                            com.example.unihub.data.repository.ApiAusenciaBackend(),
+                        )
+                        val factory = com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(
+                            disciplinaRepository,
+                            ausenciaRepository
+                        )
+
                         val viewModel: com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
 
