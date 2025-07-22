@@ -27,9 +27,10 @@ class CategoriaRepository(private val backend: _categoriabackend) {
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun addCategoria(categoria: Categoria) {
+    suspend fun addCategoria(nomeDaCategoria: String) {
+        val novaCategoria = Categoria(nome = nomeDaCategoria)
         try {
-            backend.addCategoriaApi(categoria)
+            backend.addCategoriaApi(novaCategoria)
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {

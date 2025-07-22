@@ -6,6 +6,7 @@ import com.example.unihub.data.model.Ausencia
 import com.example.unihub.data.model.Categoria
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.repository.AusenciaRepository
+import com.example.unihub.data.repository.CategoriaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,8 +71,7 @@ class ManterAusenciaViewModel(
     fun addCategoria(nomeDaNovaCategoria: String) {
         viewModelScope.launch {
             try {
-                val categoriaObjectToSave = Categoria(nome = nomeDaNovaCategoria)
-                categoriaRepository.addCategoria(nome)
+                categoriaRepository.addCategoria(nomeDaNovaCategoria)
                 loadCategorias()
             } catch (e: Exception) {
                 _erro.value = e.message

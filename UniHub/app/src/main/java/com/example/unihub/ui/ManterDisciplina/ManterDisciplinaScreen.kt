@@ -414,7 +414,7 @@ fun ManterDisciplinaScreen(
                         CampoDeTextoComTitulo("CH Total", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Aulas/Semana", qtdAulasSemana, { qtdAulasSemana = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     }
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     aulas.forEachIndexed { index, aula ->
                         CampoSelecaoDia(
                             diaSelecionado = aula.dia,
@@ -425,9 +425,9 @@ fun ManterDisciplinaScreen(
                             CampoHorario("Início", aula.horarioInicio, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } }, Modifier.weight(1f))
                             CampoHorario("Fim", aula.horarioFim, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } }, Modifier.weight(1f))
                         }
-                        if (index < aulas.size - 1) Divider(modifier = Modifier.padding(vertical = 12.dp))
+                        if (index < aulas.size - 1) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     }
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
                         CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
