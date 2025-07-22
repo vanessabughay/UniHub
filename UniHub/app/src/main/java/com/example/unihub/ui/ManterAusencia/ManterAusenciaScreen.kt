@@ -124,13 +124,16 @@ fun ManterAusenciaScreen(
                     modifier = Modifier.menuAnchor().fillMaxWidth()
                 )
                 ExposedDropdownMenu(expanded = expandCategoria, onDismissRequest = { expandCategoria = false }) {
-                    categorias.forEach { cat ->
-                        DropdownMenuItem(text = { Text(cat.nome) }, onClick = {
-                            categoria = cat.nome
-
-                            expandCategoria = false
-                        })
+                    for (cat in categorias) {
+                        DropdownMenuItem(
+                            text = { Text(cat.nome) },
+                            onClick = {
+                                categoria = cat.nome
+                                expandCategoria = false
+                            }
+                        )
                     }
+
                     HorizontalDivider()
                     DropdownMenuItem(text = { Text("Adicionar categoria") }, onClick = {
                         expandCategoria = false
@@ -166,8 +169,7 @@ fun ManterAusenciaScreen(
                     confirmButton = {
                         TextButton(onClick = {
                             if (novaCategoria.isNotBlank()) {
-                                val newCategoriaObject = Categoria(nome = novaCategoria)
-                                viewModel.addCategoria(newCategoriaObject) // Or viewModel.addCategoria(novaCategoria) depending on your VM
+                                viewModel.addCategoria(novaCategoria) // Or viewModel.addCategoria(novaCategoria) depending on your VM
                                 categoria = novaCategoria
                             }
                             novaCategoria = ""

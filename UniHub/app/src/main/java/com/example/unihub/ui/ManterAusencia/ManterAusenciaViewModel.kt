@@ -3,6 +3,7 @@ package com.example.unihub.ui.ManterAusencia
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Ausencia
+import com.example.unihub.data.model.Categoria
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
@@ -66,9 +67,10 @@ class ManterAusenciaViewModel(
         }
     }
 
-    fun addCategoria(nome: String) {
+    fun addCategoria(nomeDaNovaCategoria: String) {
         viewModelScope.launch {
             try {
+                val categoriaObjectToSave = Categoria(nome = nomeDaNovaCategoria)
                 categoriaRepository.addCategoria(nome)
                 loadCategorias()
             } catch (e: Exception) {
