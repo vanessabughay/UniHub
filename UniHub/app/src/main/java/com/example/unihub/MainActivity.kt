@@ -42,9 +42,12 @@ sealed class Screen(val route: String) {
         }
     }
 
-    object ManterAusencia : Screen("manter_ausencia/{disciplinaId}") {
-        fun createRoute(disciplinaId: String): String {
-            return "manter_ausencia/$disciplinaId"
+    object ManterAusencia : Screen("manter_ausencia?disciplinaId={disciplinaId}&id={id}") {
+        fun createRoute(disciplinaId: String, id: String? = null): String {
+            return buildString {
+                append("manter_ausencia?disciplinaId=$disciplinaId")
+                if (id != null) append("&id=$id")
+            }
         }
     }
 
@@ -135,8 +138,8 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(idDaDisciplinaParaEditar))
                             },
 
-                            onNavigateToAusencias = { discId ->
-                                navController.navigate(Screen.ManterAusencia.createRoute(discId))
+                            onNavigateToAusencias = { discId, ausId ->
+                                navController.navigate(Screen.ManterAusencia.createRoute(discId, ausId))
                             },
                             viewModel = viewModel
                         )
@@ -145,9 +148,13 @@ class MainActivity : ComponentActivity() {
                     // ROTA 4: Tela de Ausência
                     composable(
                         route = Screen.ManterAusencia.route,
-                        arguments = listOf(navArgument("disciplinaId") { type = NavType.StringType })
+                        arguments = listOf(
+                            navArgument("disciplinaId") { type = NavType.StringType },
+                            navArgument("id") { type = NavType.StringType; nullable = true }
+                        )
                     ) { backStackEntry ->
                         val disciplinaIdArg = backStackEntry.arguments?.getString("disciplinaId") ?: ""
+                        val ausenciaIdArg = backStackEntry.arguments?.getString("id")
 
                         val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
                             com.example.unihub.data.repository.ApiAusenciaBackend(),
@@ -168,6 +175,7 @@ class MainActivity : ComponentActivity() {
 
                         ManterAusenciaScreen(
                             disciplinaId = disciplinaIdArg,
+                            ausenciaId = ausenciaIdArg,
                             onVoltar = { navController.popBackStack() },
                             viewModel = viewModel
                         )

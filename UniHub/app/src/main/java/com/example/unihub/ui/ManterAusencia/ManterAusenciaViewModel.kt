@@ -30,6 +30,9 @@ class ManterAusenciaViewModel(
     private val _categorias = MutableStateFlow<List<Categoria>>(emptyList())
     val categorias: StateFlow<List<Categoria>> = _categorias
 
+    private val _ausencia = MutableStateFlow<Ausencia?>(null)
+    val ausencia: StateFlow<Ausencia?> = _ausencia
+
     fun criarAusencia(ausencia: Ausencia) {
         viewModelScope.launch {
             try {
@@ -41,6 +44,40 @@ class ManterAusenciaViewModel(
         }
     }
 
+    fun atualizarAusencia(ausencia: Ausencia) {
+        viewModelScope.launch {
+            try {
+                val result = ausenciaRepository.updateAusencia(ausencia)
+                _sucesso.value = result
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
+
+    fun loadAusencia(id: String) {
+        val longId = id.toLongOrNull() ?: return
+        viewModelScope.launch {
+            try {
+                ausenciaRepository.getAusenciaById(longId).collect {
+                    _ausencia.value = it
+                }
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
+
+    fun deleteAusencia(id: Long) {
+        viewModelScope.launch {
+            try {
+                val result = ausenciaRepository.deleteAusencia(id)
+                _sucesso.value = result
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
 
     fun loadDisciplina(id: String) {
         val longId = id.toLongOrNull() ?: return

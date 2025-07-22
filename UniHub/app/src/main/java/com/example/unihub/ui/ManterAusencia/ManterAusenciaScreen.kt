@@ -19,6 +19,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -36,6 +37,7 @@ import java.util.Calendar
 @Composable
 fun ManterAusenciaScreen(
     disciplinaId: String,
+    ausenciaId: String?,
     onVoltar: () -> Unit,
     viewModel: ManterAusenciaViewModel
 ) {
@@ -48,10 +50,12 @@ fun ManterAusenciaScreen(
     var expandCategoria by remember { mutableStateOf(false) }
     var showAddCategoria by remember { mutableStateOf(false) }
     var novaCategoria by remember { mutableStateOf("") }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     val disciplina by viewModel.disciplina.collectAsState()
+    val ausenciaLoaded by viewModel.ausencia.collectAsState()
 
     val showDatePicker = {
         val now = Calendar.getInstance()
@@ -73,6 +77,10 @@ fun ManterAusenciaScreen(
         viewModel.loadDisciplina(disciplinaId)
     }
 
+    LaunchedEffect(ausenciaId) {
+        ausenciaId?.let { viewModel.loadAusencia(it) }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.loadCategorias()
     }
@@ -81,8 +89,21 @@ fun ManterAusenciaScreen(
         if (sucesso) onVoltar()
     }
 
+    LaunchedEffect(ausenciaLoaded) {
+        ausenciaLoaded?.let { aus ->
+            data = aus.data
+            justificativa = aus.justificativa ?: ""
+            categoria = aus.categoria ?: ""
+        }
+    }
+
     Scaffold(
-        topBar = { CabecalhoAlternativo("Registrar Ausência", onVoltar) }
+        topBar = {
+            CabecalhoAlternativo(
+                titulo = if (ausenciaId == null) "Registrar Ausência" else "Editar Ausência",
+                onVoltar = onVoltar
+            )
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -150,18 +171,31 @@ fun ManterAusenciaScreen(
             Button(
                 onClick = {
                     val aus = Ausencia(
+                        id = ausenciaId?.toLongOrNull(),
                         disciplinaId = disciplinaId.toLong(),
                         data = data,
                         categoria = categoria.takeIf { it.isNotBlank() },
                         justificativa = justificativa.takeIf { it.isNotBlank() }
-
                     )
-                    viewModel.criarAusencia(aus)
+                    if (ausenciaId == null) {
+                        viewModel.criarAusencia(aus)
+                    } else {
+                        viewModel.atualizarAusencia(aus)
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6))
             ) { Text("Salvar", color = Color.Black) }
             erro?.let { Text(text = it, color = Color.Red) }
+
+            if (ausenciaId != null) {
+                OutlinedButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Excluir Ausência", color = Color(0xFFE91E1E))
+                }
+            }
 
             if (showAddCategoria) {
                 AlertDialog(
@@ -187,6 +221,20 @@ fun ManterAusenciaScreen(
                             label = { Text("Categoria") }
                         )
                     }
+                )
+            }
+            if (showDeleteDialog && ausenciaId != null) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            showDeleteDialog = false
+                            viewModel.deleteAusencia(ausenciaId.toLong())
+                        }) { Text("Confirmar") }
+                    },
+                    dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") } },
+                    title = { Text("Confirmar exclusão") },
+                    text = { Text("Tem certeza de que deseja excluir esta ausência?") }
                 )
             }
         }

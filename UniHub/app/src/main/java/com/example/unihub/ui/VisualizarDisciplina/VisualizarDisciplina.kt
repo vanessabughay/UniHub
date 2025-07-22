@@ -58,7 +58,8 @@ fun AusenciasCard(
     expanded: Boolean,
     ausencias: List<Ausencia>,
     onToggle: () -> Unit,
-    onAdd: () -> Unit
+    onAdd: () -> Unit,
+    onItemClick: (Ausencia) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -92,7 +93,9 @@ fun AusenciasCard(
                     ausencias.forEach { aus ->
                         Text(
                             text = aus.data.format(formatter) + (aus.categoria?.let { " - $it" } ?: ""),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .clickable { onItemClick(aus) }
                         )
                     }
                 }
@@ -108,7 +111,7 @@ fun VisualizarDisciplinaScreen(
     disciplinaId: String?,
     onVoltar: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
-    onNavigateToAusencias: (String) -> Unit,
+    onNavigateToAusencias: (String, String?) -> Unit,
     viewModel: VisualizarDisciplinaViewModel
 ) {
     val context = LocalContext.current
@@ -166,7 +169,10 @@ fun VisualizarDisciplinaScreen(
                         expanded = expandAusencias,
                         ausencias = ausencias,
                         onToggle = { expandAusencias = !expandAusencias },
-                        onAdd = { onNavigateToAusencias(disciplina.id.toString()) }
+                        onAdd = { onNavigateToAusencias(disciplina.id.toString(), null) },
+                        onItemClick = { aus ->
+                            onNavigateToAusencias(disciplina.id.toString(), aus.id?.toString())
+                        }
                     )
                 }
                 items(opcoes.drop(1)) { opcao ->
