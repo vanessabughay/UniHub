@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
+import com.example.unihub.ui.ManterConta.ManterContaScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
@@ -50,7 +51,7 @@ sealed class Screen(val route: String) {
             }
         }
     }
-
+    object ManterConta : Screen("manter_conta")
 }
 
 class MainActivity : ComponentActivity() {
@@ -74,6 +75,9 @@ class MainActivity : ComponentActivity() {
                         ListarDisciplinasScreen(
                             onAddDisciplina = {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(null))
+                            },
+                            onNavigateToManterConta = {
+                                navController.navigate(Screen.ManterConta.route)
                             },
                             onDisciplinaDoubleClick = { disciplinaId ->
                                 navController.navigate(Screen.VisualizarDisciplina.createRoute(disciplinaId))
@@ -141,6 +145,7 @@ class MainActivity : ComponentActivity() {
                             onNavigateToAusencias = { discId, ausId ->
                                 navController.navigate(Screen.ManterAusencia.createRoute(discId, ausId))
                             },
+
                             viewModel = viewModel
                         )
                     }
@@ -178,6 +183,12 @@ class MainActivity : ComponentActivity() {
                             ausenciaId = ausenciaIdArg,
                             onVoltar = { navController.popBackStack() },
                             viewModel = viewModel
+                        )
+                    }
+                    // ROTA 5: Tela de Manter Conta
+                    composable(Screen.ManterConta.route) {
+                        ManterContaScreen(
+                            onVoltar = { navController.popBackStack() }
                         )
                     }
 

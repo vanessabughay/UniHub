@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Notes
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -112,6 +113,7 @@ fun VisualizarDisciplinaScreen(
     onVoltar: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
     onNavigateToAusencias: (String, String?) -> Unit,
+
     viewModel: VisualizarDisciplinaViewModel
 ) {
     val context = LocalContext.current
@@ -138,7 +140,7 @@ fun VisualizarDisciplinaScreen(
             OpcaoDisciplina("Notas", Icons.Outlined.StarOutline, Color(0xFFE0E1F8)) {
                 Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()
             },
-            OpcaoDisciplina("Minhas anotações", Icons.Outlined.Notes, Color(0xFFF8F1E1)) {
+            OpcaoDisciplina("Minhas anotações", Icons.AutoMirrored.Outlined.Notes, Color(0xFFF8F1E1)) {
                 Toast.makeText(context, "Abrir Anotações", Toast.LENGTH_SHORT).show()
             },
             OpcaoDisciplina("Arquivos", Icons.Outlined.Download, Color(0xFFE6F7EC)) {
@@ -152,6 +154,7 @@ fun VisualizarDisciplinaScreen(
                     titulo = disciplina.nome,
                     onVoltar = onVoltar
                 )
+
             }
         ) { paddingValues ->
             LazyColumn(

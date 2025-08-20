@@ -38,7 +38,9 @@ val CardBackgroundColorSelected = Color(0xFFB2DDF3)
 fun ListarDisciplinasScreen(
     viewModel: ListarDisciplinasViewModel = viewModel(factory = ListarDisciplinasViewModelFactory),
     onAddDisciplina: () -> Unit,
+    onNavigateToManterConta: () -> Unit,
     onDisciplinaDoubleClick: (disciplinaId: String) -> Unit
+
 ) {
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
@@ -73,6 +75,16 @@ fun ListarDisciplinasScreen(
                 contentColor = Color.Black
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
+            }
+        },
+        bottomBar = {
+            Button(
+                onClick = onNavigateToManterConta,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                Text("Manter Conta")
             }
         }
     ) { paddingValues ->
