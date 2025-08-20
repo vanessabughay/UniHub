@@ -1,6 +1,8 @@
 package com.example.unihub.ui.ManterConta
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -33,6 +35,7 @@ fun ManterContaScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
