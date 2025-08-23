@@ -1,43 +1,56 @@
 package com.example.unihub.data.repository
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import com.example.unihub.data.model.Instituicao
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import retrofit2.HttpException
+import java.io.IOException
 
-/**
- * Repositório simples em memória para buscar e salvar instituições.
- */
-class InstituicaoRepository {
 
-    private val instituicoes = mutableListOf(
-        Instituicao(
-            id = 1,
-            nome = "UNIVERSIDADE FEDERAL DO PARANÁ",
-            mediaAprovacao = 7.0,
-            frequenciaMinima = 75
-        ),
-        Instituicao(
-            id = 2,
-            nome = "UNIVERSIDADE DE SÃO PAULO",
-            mediaAprovacao = 5.0,
-            frequenciaMinima = 70
-        )
-    )
+interface _instituicaobackend {
+    suspend fun buscarInstituicoesApi(query: String): List<Instituicao>
+    suspend fun addInstituicaoApi(instituicao: Instituicao): Instituicao
+    suspend fun updateInstituicaoApi(id: Int, instituicao: Instituicao): Instituicao
+}
+
+class InstituicaoRepository(private val backend: _instituicaobackend) {
+
 
     private var instituicaoSelecionada: Instituicao? = null
 
-    fun buscarInstituicoes(query: String): List<Instituicao> {
-        return instituicoes.filter { it.nome.contains(query, ignoreCase = true) }
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun buscarInstituicoes(query: String): List<Instituicao> {
+        return backend.buscarInstituicoesApi(query)
+
+
     }
 
-    fun getInstituicaoPorNome(nome: String): Instituicao? {
-        return instituicoes.find { it.nome.equals(nome, ignoreCase = true) }
-    }
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun getInstituicaoPorNome(nome: String): Flow<Instituicao?> = flow {
+        try {
+            val instituicoesList = backend.buscarInstituicoesApi("")
+            emit(instituicoesList.find { it.nome.equals(nome, ignoreCase = true) })
+        } catch (e: IOException) {
 
-    fun salvarInstituicao(instituicao: Instituicao) {
-        instituicaoSelecionada = instituicao
-        if (instituicoes.none { it.nome.equals(instituicao.nome, ignoreCase = true) }) {
-            instituicoes.add(instituicao.copy(id = instituicoes.size + 1))
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+
+            throw Exception("Erro do servidor: ${e.code()}")
         }
     }
 
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun salvarInstituicao(instituicao: Instituicao) {
+        instituicaoSelecionada = if (instituicao.id != 0) {
+            backend.updateInstituicaoApi(instituicao.id, instituicao)
+        } else {
+            backend.addInstituicaoApi(instituicao)
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun instituicaoUsuario(): Instituicao? = instituicaoSelecionada
 }

@@ -1,19 +1,25 @@
 package com.example.unihub.ui.ManterConta
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.isEmpty
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.repository.InstituicaoRepository
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
 
 class ManterContaViewModel(
     private val repository: InstituicaoRepository
 ) : ViewModel() {
 
-    var nome by mutableStateOf("Victória Isabelle")
-    var email by mutableStateOf("Victória.sabelle@ufpr.br")
-    var senha by mutableStateOf("************")
+    var nome by mutableStateOf("")
+    var email by mutableStateOf("")
+    var senha by mutableStateOf("")
 
     var nomeInstituicao by mutableStateOf("")
     var media by mutableStateOf("")
@@ -22,10 +28,27 @@ class ManterContaViewModel(
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
-        nomeInstituicao = text
-        sugestoes = if (text.isBlank()) emptyList() else repository.buscarInstituicoes(text)
-        mostrarCadastrar = text.isNotBlank() && sugestoes.isEmpty()
+        fun onNomeInstituicaoChange(text: String) {
+            nomeInstituicao = text
+            if (text.isBlank()) {
+                sugestoes = emptyList()
+                mostrarCadastrar = false
+            } else {
+                viewModelScope.launch {
+                    try {
+                        repository.buscarInstituicoes(text).collect { lista ->
+                            sugestoes = lista
+                            mostrarCadastrar = lista.isEmpty()
+                        }
+                    } catch (e: Exception) {
+                        sugestoes = emptyList()
+                        mostrarCadastrar = true
+                    }
+                }
+            }
+        }
     }
 
     fun onInstituicaoSelecionada(inst: Instituicao) {
@@ -36,14 +59,21 @@ class ManterContaViewModel(
         mostrarCadastrar = false
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {
-        val inst = repository.getInstituicaoPorNome(nomeInstituicao)
-            ?: Instituicao(
-                id = 0,
-                nome = nomeInstituicao,
-                mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                frequenciaMinima = frequencia.toIntOrNull() ?: 0
-            )
-        repository.salvarInstituicao(inst)
+        viewModelScope.launch {
+            try {
+                repository.getInstituicaoPorNome(nomeInstituicao).collect { instRepo ->
+                    val inst = instRepo ?: Instituicao(
+                        id = 0,
+                        nome = nomeInstituicao,
+                        mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
+                        frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                    )
+                    repository.salvarInstituicao(inst)
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 }
