@@ -1,7 +1,6 @@
 package com.example.unihub.ui.ManterConta
 
-import android.os.Build
-import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -9,218 +8,151 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.data.model.Instituicao
+import androidx.compose.ui.tooling.preview.Preview
 
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManterContaScreen(
     onVoltar: () -> Unit,
     onNavigateToManterInstituicao: (String, String, String) -> Unit,
-    viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
-) {
-    val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
-    val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
+    ) {
+    var nome by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var senha by remember { mutableStateOf("") }
+    var instituicao by remember { mutableStateOf("") }
 
-    Scaffold { padding ->
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.School,
+            contentDescription = "Perfil",
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .size(96.dp)
+                .padding(top = 16.dp, bottom = 16.dp),
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+        )
+
+        Text(
+            text = "Informações gerais",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        OutlinedTextField(
+            value = nome,
+            onValueChange = { nome = it },
+            placeholder = { Text("Nome") },
+            trailingIcon = { Icon(Icons.Filled.Edit, null) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            placeholder = { Text("E-mail") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            trailingIcon = { Icon(Icons.Filled.Edit, null) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+        Spacer(Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = senha,
+            onValueChange = { senha = it },
+            placeholder = { Text("Senha") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = PasswordVisualTransformation(),
+            trailingIcon = { Icon(Icons.Filled.Edit, null) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        Text(
+            text = "Instituição",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(bottom = 8.dp)
+        )
+
+        OutlinedTextField(
+            value = instituicao,
+            onValueChange = { instituicao = it },
+            placeholder = { Text("Instituição de ensino") },
+            trailingIcon = { Icon(Icons.Filled.Edit, null) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        TextButton(
+            onClick = { /* TODO: deletar conta */ },
+            modifier = Modifier.align(Alignment.Start)
         ) {
-            CabecalhoAlternativo(titulo = "Perfil", onVoltar = onVoltar)
+            Icon(Icons.Filled.Delete, contentDescription = null, tint = Color.Red)
+            Spacer(Modifier.width(8.dp))
+            Text("Deletar conta", color = Color.Red)
+        }
 
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(96.dp)
-                    .padding(top = 32.dp)
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = { /* TODO: salvar */ },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF90CAF9))
+        ) {
+            Text("Salvar", color = Color.White)
+        }
+    }
+}
+
+@Preview(
+    name = "Perfil",
+    showBackground = true,
+    showSystemUi = true,
+    device = "id:pixel_5"
+)
+@Composable
+fun ManterContaScreenPreview() {
+    MaterialTheme {
+        Surface {
+            ManterContaScreen(
+                onVoltar = {},
+                onNavigateToManterInstituicao = { _, _, _ -> }
             )
 
-            Text(
-                text = "Informações gerais",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 24.dp)
-            )
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 8.dp),
-                thickness = DividerDefaults.Thickness,
-                color = DividerDefaults.color
-            )
 
-            OutlinedTextField(
-                value = viewModel.nome,
-                onValueChange = { viewModel.nome = it },
-                label = { Text("Nome") },
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = viewModel.email,
-                onValueChange = { viewModel.email = it },
-                label = { Text("E-mail") },
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-            OutlinedTextField(
-                value = viewModel.senha,
-                onValueChange = { viewModel.senha = it },
-                label = { Text("Senha") },
-                visualTransformation = PasswordVisualTransformation(),
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            Text(
-                text = "Instituição",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 24.dp)
-            )
-
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFB2DDF3))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                ) {
-                    var expanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it }
-                    ) {
-                        var expanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = viewModel.nomeInstituicao,
-                                onValueChange = {
-                                    viewModel.onNomeInstituicaoChange(it)
-                                    expanded = true
-                                },
-                                label = { Text("Instituição") },
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                                },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth()
-                            )
-                            if (sugestoes.isNotEmpty()) {
-                                ExposedDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false }
-                                ) {
-                                    sugestoes.forEach { inst: Instituicao ->
-                                        DropdownMenuItem(
-                                            text = { Text(inst.nome) },
-                                            onClick = {
-                                                viewModel.onInstituicaoSelecionada(inst)
-                                                expanded = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = viewModel.media,
-                            onValueChange = { viewModel.media = it },
-                            label = { Text("Média aprovação") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = viewModel.frequencia,
-                            onValueChange = { viewModel.frequencia = it },
-                            label = { Text("Frequência mínima (%)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                        )
-
-                        if (mostrarCadastrar) {
-                            Text(
-                                text = "Instituição não cadastrada",
-                                color = Color.Red,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                            TextButton(
-                                onClick = {
-                                    onNavigateToManterInstituicao(
-                                        viewModel.nomeInstituicao,
-                                        viewModel.media,
-                                        viewModel.frequencia
-                                    )
-                                }
-                            ) {
-                                Text("Cadastrar nova instituição")
-                            }
-                        }
-                    }
-
-                    IconButton(
-                        onClick = { /* editar instituição */ },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
-                    }
-                }
-            }
-
-            TextButton(
-                onClick = { /* deletar conta */ },
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 16.dp)
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Deletar conta", color = Color.Red)
-            }
-
-            Button(
-                onClick = { viewModel.salvar() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            ) {
-                Text("Salvar", color = Color.White)
-            }
         }
     }
 }
