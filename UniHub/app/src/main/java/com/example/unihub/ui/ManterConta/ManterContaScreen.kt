@@ -29,7 +29,7 @@ import com.example.unihub.data.model.Instituicao
 @Composable
 fun ManterContaScreen(
     onVoltar: () -> Unit,
-    onNavigateToManterInstituicao: (String, String, String) -> Unit,
+    onNavigateToManterInstituicao: () -> Unit,
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
 ) {
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
@@ -106,15 +106,11 @@ fun ManterContaScreen(
                     .padding(top = 8.dp),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFB2DDF3))
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                ) {
-                    var expanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = expanded,
-                        onExpandedChange = { expanded = it }
+                Box(Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
                     ) {
                         var expanded by remember { mutableStateOf(false) }
                         ExposedDropdownMenuBox(

@@ -1,11 +1,8 @@
 package com.example.unihub.ui.ManterInstituicao
 
-import android.os.Build
-import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,24 +17,14 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.ui.text.input.KeyboardType
 
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManterInstituicaoScreen(
     onVoltar: () -> Unit,
-    nome: String? = null,
-    media: String? = null,
-    frequencia: String? = null,
     viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory())
 ) {
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
     val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
-
-    LaunchedEffect(nome, media, frequencia) {
-        if (!nome.isNullOrBlank()) viewModel.nomeInstituicao = nome
-        if (!media.isNullOrBlank()) viewModel.media = media
-        if (!frequencia.isNullOrBlank()) viewModel.frequencia = frequencia
-    }
 
     Scaffold { padding ->
         Column(
