@@ -50,14 +50,15 @@ class ManterInstituicaoViewModel(
     fun salvar(onSaved: () -> Unit) {
         viewModelScope.launch {
             try {
-                val inst = repository.getInstituicaoPorNome(nomeInstituicao)
-                    .getOrThrow()
-                    ?: Instituicao(
-
-                        nome = nomeInstituicao,
-                        mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                        frequenciaMinima = frequencia.toIntOrNull() ?: 0
-                    )
+                val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrThrow()
+                val inst = instExistente?.copy(
+                    mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
+                    frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
+                ) ?: Instituicao(
+                    nome = nomeInstituicao,
+                    mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
+                    frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                )
                 repository.salvarInstituicao(inst)
                 errorMessage = null
                 onSaved()

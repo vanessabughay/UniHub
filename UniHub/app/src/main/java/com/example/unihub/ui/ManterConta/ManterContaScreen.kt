@@ -35,6 +35,10 @@ fun ManterContaScreen(
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
     val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
 
+    LaunchedEffect(Unit) {
+        viewModel.carregarInstituicaoUsuario()
+    }
+
     Scaffold { padding ->
         Column(
             modifier = Modifier

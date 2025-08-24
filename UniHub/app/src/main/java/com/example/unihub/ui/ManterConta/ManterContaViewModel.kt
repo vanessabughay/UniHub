@@ -27,6 +27,19 @@ class ManterContaViewModel(
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
 
+    init {
+        carregarInstituicaoUsuario()
+    }
+
+    fun carregarInstituicaoUsuario() {
+        repository.instituicaoUsuario()?.let { inst ->
+            nomeInstituicao = inst.nome
+            media = inst.mediaAprovacao.toString()
+            frequencia = inst.frequenciaMinima.toString()
+        }
+    }
+
+
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
@@ -59,8 +72,11 @@ class ManterContaViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {
         viewModelScope.launch {
-            val inst = repository.getInstituicaoPorNome(nomeInstituicao)
-                .getOrThrow() ?: Instituicao(
+            val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrThrow()
+            val inst = instExistente?.copy(
+                mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
+                frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
+            ) ?: Instituicao(
 
                 nome = nomeInstituicao,
                 mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
