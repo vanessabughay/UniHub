@@ -2,6 +2,7 @@ package com.example.unihub
 
 import android.os.Build
 import android.os.Bundle
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresExtension
@@ -53,7 +54,12 @@ sealed class Screen(val route: String) {
         }
     }
     object ManterConta : Screen("manter_conta")
-    object ManterInstituicao : Screen("manter_instituicao")
+    object ManterInstituicao :
+        Screen("manter_instituicao?nome={nome}&media={media}&frequencia={frequencia}") {
+        fun createRoute(nome: String, media: String, frequencia: String): String {
+            return "manter_instituicao?nome=${Uri.encode(nome)}&media=${Uri.encode(media)}&frequencia=${Uri.encode(frequencia)}"
+        }
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -191,15 +197,31 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.ManterConta.route) {
                         ManterContaScreen(
                             onVoltar = { navController.popBackStack() },
-                            onNavigateToManterInstituicao = {
-                                navController.navigate(Screen.ManterInstituicao.route)
+                            onNavigateToManterInstituicao = { nome, media, frequencia ->
+                                navController.navigate(
+                                    Screen.ManterInstituicao.createRoute(nome, media, frequencia)
+                                )
                             }
                         )
                     }
                     // ROTA 6: Tela de Manter Instituição
-                    composable(Screen.ManterInstituicao.route) {
+                    composable(
+                        route = Screen.ManterInstituicao.route,
+                        arguments = listOf(
+                            navArgument("nome") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("media") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("frequencia") { type = NavType.StringType; defaultValue = "" }
+                        )
+                    ) { backStackEntry ->
+                        val nomeArg = backStackEntry.arguments?.getString("nome") ?: ""
+                        val mediaArg = backStackEntry.arguments?.getString("media") ?: ""
+                        val frequenciaArg = backStackEntry.arguments?.getString("frequencia") ?: ""
+
                         ManterInstituicaoScreen(
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = { navController.popBackStack() },
+                            nome = nomeArg,
+                            media = mediaArg,
+                            frequencia = frequenciaArg
                         )
                     }
 

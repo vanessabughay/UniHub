@@ -29,7 +29,7 @@ import com.example.unihub.data.model.Instituicao
 @Composable
 fun ManterContaScreen(
     onVoltar: () -> Unit,
-    onNavigateToManterInstituicao: () -> Unit,
+    onNavigateToManterInstituicao: (String, String, String) -> Unit,
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
 ) {
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
@@ -174,14 +174,28 @@ fun ManterContaScreen(
                                 color = Color.Red,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
-                            TextButton(onClick = onNavigateToManterInstituicao) {
+                            TextButton(
+                                onClick = {
+                                    onNavigateToManterInstituicao(
+                                        viewModel.nomeInstituicao,
+                                        viewModel.media,
+                                        viewModel.frequencia
+                                    )
+                                }
+                            ) {
                                 Text("Cadastrar nova instituição")
                             }
                         }
                     }
 
                     IconButton(
-                        onClick = onNavigateToManterInstituicao,
+                        onClick = {
+                            onNavigateToManterInstituicao(
+                                viewModel.nomeInstituicao,
+                                viewModel.media,
+                                viewModel.frequencia
+                            )
+                        },
                         modifier = Modifier.align(Alignment.TopEnd)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)

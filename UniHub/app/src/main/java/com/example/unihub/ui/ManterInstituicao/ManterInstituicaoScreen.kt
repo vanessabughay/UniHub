@@ -21,8 +21,18 @@ import androidx.compose.ui.text.input.KeyboardType
 @Composable
 fun ManterInstituicaoScreen(
     onVoltar: () -> Unit,
+    nome: String = "",
+    media: String = "",
+    frequencia: String = "",
     viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory())
 ) {
+    LaunchedEffect(nome, media, frequencia) {
+        if (nome.isNotBlank()) {
+            viewModel.nomeInstituicao = nome
+            viewModel.media = media
+            viewModel.frequencia = frequencia
+        }
+    }
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
     val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
 
