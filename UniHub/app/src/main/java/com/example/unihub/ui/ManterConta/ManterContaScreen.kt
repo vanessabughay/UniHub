@@ -1,5 +1,7 @@
 package com.example.unihub.ui.ManterConta
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -22,10 +24,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Instituicao
 
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ManterContaScreen(
     onVoltar: () -> Unit,
+    onNavigateToManterInstituicao: () -> Unit,
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
 ) {
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
@@ -170,7 +174,7 @@ fun ManterContaScreen(
                                 color = Color.Red,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
-                            TextButton(onClick = { /* ação cadastrar */ }) {
+                            TextButton(onClick = onNavigateToManterInstituicao) {
                                 Text("Cadastrar nova instituição")
                             }
                         }

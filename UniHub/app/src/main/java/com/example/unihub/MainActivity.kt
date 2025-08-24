@@ -22,6 +22,7 @@ import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ManterConta.ManterContaScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
+import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
 
@@ -52,6 +53,7 @@ sealed class Screen(val route: String) {
         }
     }
     object ManterConta : Screen("manter_conta")
+    object ManterInstituicao : Screen("manter_instituicao")
 }
 
 class MainActivity : ComponentActivity() {
@@ -188,6 +190,15 @@ class MainActivity : ComponentActivity() {
                     // ROTA 5: Tela de Manter Conta
                     composable(Screen.ManterConta.route) {
                         ManterContaScreen(
+                            onVoltar = { navController.popBackStack() },
+                            onNavigateToManterInstituicao = {
+                                navController.navigate(Screen.ManterInstituicao.route)
+                            }
+                        )
+                    }
+                    // ROTA 6: Tela de Manter Instituição
+                    composable(Screen.ManterInstituicao.route) {
+                        ManterInstituicaoScreen(
                             onVoltar = { navController.popBackStack() }
                         )
                     }
