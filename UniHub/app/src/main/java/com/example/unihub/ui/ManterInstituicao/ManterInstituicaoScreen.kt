@@ -118,7 +118,7 @@ fun ManterInstituicaoScreen(
             }
 
             Button(
-                onClick = { viewModel.salvar() },
+                onClick = { viewModel.salvar(onVoltar) },
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
                 modifier = Modifier
                     .fillMaxWidth()

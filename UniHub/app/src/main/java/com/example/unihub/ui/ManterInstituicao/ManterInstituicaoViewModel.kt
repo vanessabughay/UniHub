@@ -1,5 +1,7 @@
 package com.example.unihub.ui.ManterInstituicao
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,6 +23,7 @@ class ManterInstituicaoViewModel(
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
         if (text.isBlank()) {
@@ -43,7 +46,8 @@ class ManterInstituicaoViewModel(
         mostrarCadastrar = false
     }
 
-    fun salvar() {
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun salvar(onSaved: () -> Unit) {
         viewModelScope.launch {
             val inst = repository.getInstituicaoPorNome(nomeInstituicao)
                 .firstOrNull()
@@ -54,6 +58,7 @@ class ManterInstituicaoViewModel(
                     frequenciaMinima = frequencia.toIntOrNull() ?: 0
                 )
             repository.salvarInstituicao(inst)
+            onSaved()
         }
     }
 }
