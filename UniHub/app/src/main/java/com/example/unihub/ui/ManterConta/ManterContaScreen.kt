@@ -181,7 +181,7 @@ fun ManterContaScreen(
                     }
 
                     IconButton(
-                        onClick = { /* editar instituição */ },
+                        onClick = onNavigateToManterInstituicao,
                         modifier = Modifier.align(Alignment.TopEnd)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
