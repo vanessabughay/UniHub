@@ -178,7 +178,15 @@ fun ManterContaScreen(
                                 color = Color.Red,
                                 modifier = Modifier.padding(top = 8.dp)
                             )
-                            TextButton(onClick = onNavigateToManterInstituicao) {
+                            TextButton(
+                                onClick = {
+                                    onNavigateToManterInstituicao(
+                                        viewModel.nomeInstituicao,
+                                        viewModel.media,
+                                        viewModel.frequencia
+                                    )
+                                }
+                            ) {
                                 Text("Cadastrar nova instituição")
                             }
                         }
@@ -186,7 +194,7 @@ fun ManterContaScreen(
 
                     IconButton(
                         onClick = { /* editar instituição */ },
-                        modifier = Modifier.align(Alignment.TopEnd)
+                        modifier = Modifier.align(Alignment.End)
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = null)
                     }
