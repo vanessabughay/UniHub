@@ -28,8 +28,8 @@ class InstituicaoRepository(private val backend: _instituicaobackend) {
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun getInstituicaoPorNome(nome: String): Result<Instituicao?> {
         return try {
-            val instituicoesList = backend.buscarInstituicoesApi("")
-            Result.success(instituicoesList.find { it.nome.equals(nome, ignoreCase = true) })
+            val instituicoesList = backend.buscarInstituicoesApi(nome)
+            Result.success(instituicoesList.firstOrNull { it.nome.equals(nome, ignoreCase = true) })
         } catch (e: IOException) {
             Result.failure(Exception("Erro de rede: ${e.message}"))
         } catch (e: HttpException) {

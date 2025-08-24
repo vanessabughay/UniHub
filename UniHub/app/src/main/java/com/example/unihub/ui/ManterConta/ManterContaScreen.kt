@@ -21,6 +21,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Instituicao
 
@@ -34,6 +37,17 @@ fun ManterContaScreen(
 ) {
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
     val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.carregarInstituicaoUsuario()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.carregarInstituicaoUsuario()
