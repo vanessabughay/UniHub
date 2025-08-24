@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.repository.InstituicaoRepository
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class ManterInstituicaoViewModel(
@@ -45,6 +46,7 @@ class ManterInstituicaoViewModel(
     fun salvar() {
         viewModelScope.launch {
             val inst = repository.getInstituicaoPorNome(nomeInstituicao)
+                .firstOrNull()
                 ?: Instituicao(
                     id = 0,
                     nome = nomeInstituicao,
