@@ -10,8 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.collect
+
 
 class ManterContaViewModel(
     private val repository: InstituicaoRepository
@@ -61,7 +60,7 @@ class ManterContaViewModel(
     fun salvar() {
         viewModelScope.launch {
             val inst = repository.getInstituicaoPorNome(nomeInstituicao)
-                .firstOrNull() ?: Instituicao(
+                .getOrThrow() ?: Instituicao(
                 id = 0,
                 nome = nomeInstituicao,
                 mediaAprovacao = media.toDoubleOrNull() ?: 0.0,

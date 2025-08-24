@@ -3,8 +3,6 @@ package com.example.unihub.data.repository
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import com.example.unihub.data.model.Instituicao
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -28,16 +26,14 @@ class InstituicaoRepository(private val backend: _instituicaobackend) {
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun getInstituicaoPorNome(nome: String): Flow<Instituicao?> = flow {
-        try {
+    suspend fun getInstituicaoPorNome(nome: String): Result<Instituicao?> {
+        return try {
             val instituicoesList = backend.buscarInstituicoesApi("")
-            emit(instituicoesList.find { it.nome.equals(nome, ignoreCase = true) })
+            Result.success(instituicoesList.find { it.nome.equals(nome, ignoreCase = true) })
         } catch (e: IOException) {
-
-            throw Exception("Erro de rede: ${e.message}")
+            Result.failure(Exception("Erro de rede: ${e.message}"))
         } catch (e: HttpException) {
-
-            throw Exception("Erro do servidor: ${e.code()}")
+            Result.failure(Exception("Erro do servidor: ${e.code()}"))
         }
     }
 

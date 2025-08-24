@@ -9,7 +9,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.repository.InstituicaoRepository
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 class ManterInstituicaoViewModel(
@@ -22,6 +21,7 @@ class ManterInstituicaoViewModel(
 
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
@@ -49,16 +49,21 @@ class ManterInstituicaoViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar(onSaved: () -> Unit) {
         viewModelScope.launch {
-            val inst = repository.getInstituicaoPorNome(nomeInstituicao)
-                .firstOrNull()
-                ?: Instituicao(
-                    id = 0,
-                    nome = nomeInstituicao,
-                    mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                    frequenciaMinima = frequencia.toIntOrNull() ?: 0
-                )
-            repository.salvarInstituicao(inst)
-            onSaved()
+            try {
+                val inst = repository.getInstituicaoPorNome(nomeInstituicao)
+                    .getOrThrow()
+                    ?: Instituicao(
+                        id = 0,
+                        nome = nomeInstituicao,
+                        mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
+                        frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                    )
+                repository.salvarInstituicao(inst)
+                errorMessage = null
+                onSaved()
+            } catch (e: Exception) {
+                errorMessage = e.message ?: "Erro ao salvar instituição"
+            }
         }
     }
 }
