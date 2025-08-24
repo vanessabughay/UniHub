@@ -3,10 +3,12 @@ package com.example.unihub.ui.ManterConta
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.InstituicaoRepository
-import com.example.unihub.data.repository.ApiInstituicaoBackend
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
+
 
 class ManterContaViewModelFactory(
-    private val repository: InstituicaoRepository = InstituicaoRepository(ApiInstituicaoBackend())) : ViewModelProvider.Factory {
+    private val repository: InstituicaoRepository = InstituicaoRepositoryProvider.repository
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ManterContaViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
