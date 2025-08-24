@@ -53,7 +53,7 @@ class ManterInstituicaoViewModel(
                 val inst = repository.getInstituicaoPorNome(nomeInstituicao)
                     .getOrThrow()
                     ?: Instituicao(
-                        id = 0,
+
                         nome = nomeInstituicao,
                         mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
                         frequenciaMinima = frequencia.toIntOrNull() ?: 0

@@ -20,6 +20,6 @@ class ApiInstituicaoBackend : _instituicaobackend {
     override suspend fun addInstituicaoApi(instituicao: Instituicao): Instituicao =
         api.add(instituicao)
 
-    override suspend fun updateInstituicaoApi(id: Int, instituicao: Instituicao): Instituicao =
+    override suspend fun updateInstituicaoApi(id: Long, instituicao: Instituicao): Instituicao =
         api.update(id, instituicao)
 }

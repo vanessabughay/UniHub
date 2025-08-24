@@ -11,5 +11,5 @@ interface InstituicaoApi {
     suspend fun add(@Body instituicao: Instituicao): Instituicao
 
     @PUT("instituicoes/{id}")
-    suspend fun update(@Path("id") id: Int, @Body instituicao: Instituicao): Instituicao
+    suspend fun update(@Path("id") id: Long, @Body instituicao: Instituicao): Instituicao
 }

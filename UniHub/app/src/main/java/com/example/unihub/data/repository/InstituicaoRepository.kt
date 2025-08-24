@@ -10,7 +10,7 @@ import java.io.IOException
 interface _instituicaobackend {
     suspend fun buscarInstituicoesApi(query: String): List<Instituicao>
     suspend fun addInstituicaoApi(instituicao: Instituicao): Instituicao
-    suspend fun updateInstituicaoApi(id: Int, instituicao: Instituicao): Instituicao
+    suspend fun updateInstituicaoApi(id: Long, instituicao: Instituicao): Instituicao
 }
 
 class InstituicaoRepository(private val backend: _instituicaobackend) {
@@ -40,8 +40,8 @@ class InstituicaoRepository(private val backend: _instituicaobackend) {
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun salvarInstituicao(instituicao: Instituicao) {
-        instituicaoSelecionada = if (instituicao.id != 0) {
-            backend.updateInstituicaoApi(instituicao.id, instituicao)
+        instituicaoSelecionada = if (instituicao.id != null) {
+            backend.updateInstituicaoApi(instituicao.id!!, instituicao)
         } else {
             backend.addInstituicaoApi(instituicao)
         }
