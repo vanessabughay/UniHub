@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -148,60 +149,73 @@ fun ManterContaScreen(
                 modifier = Modifier.padding(top = 24.dp)
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF6FD))
-            ) {
-                Box(Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = viewModel.nomeInstituicao,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text("Média de aprovação: ${viewModel.media}")
-                        Text("Frequência mínima: ${viewModel.frequencia}")
-                    }
-
-                    IconButton(
-                        onClick = {
-                            onNavigateToManterInstituicao(
-                                viewModel.nomeInstituicao,
-                                viewModel.media,
-                                viewModel.frequencia
+            if (viewModel.nomeInstituicao.isBlank()) {
+                OutlinedButton(
+                    onClick = { onNavigateToManterInstituicao("", "", "") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text("Cadastrar instituição")
+                }
+            } else {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF6FD))
+                ) {
+                    Box(Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = viewModel.nomeInstituicao,
+                                fontWeight = FontWeight.Bold
                             )
-                        },
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = null)
+                            Text("Média de aprovação: ${viewModel.media}")
+                            Text("Frequência mínima: ${viewModel.frequencia}")
+                        }
+
+                        IconButton(
+                            onClick = {
+                                onNavigateToManterInstituicao(
+                                    viewModel.nomeInstituicao,
+                                    viewModel.media,
+                                    viewModel.frequencia
+                                )
+                            },
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null)
+                        }
                     }
                 }
-            }
 
-            TextButton(
-                onClick = { /* deletar conta */ },
-                modifier = Modifier
-                    .align(Alignment.Start)
-                    .padding(top = 16.dp)
-            ) {
-                Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Deletar conta", color = Color.Red)
-            }
+                TextButton(
+                    onClick = { /* deletar conta */ },
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(top = 16.dp)
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Deletar conta", color = Color.Red)
+                }
 
-            Button(
-                onClick = { viewModel.salvar() },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp)
-            ) {
-                Text("Salvar", color = Color.White)
+                Button(
+                    onClick = { viewModel.salvar() },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp)
+                ) {
+                    Text("Salvar", color = Color.White)
+                }
             }
         }
     }
