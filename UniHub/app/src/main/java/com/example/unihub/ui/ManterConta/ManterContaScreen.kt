@@ -2,30 +2,30 @@ package com.example.unihub.ui.ManterConta
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.School
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.data.model.Instituicao
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,8 +35,6 @@ fun ManterContaScreen(
     onNavigateToManterInstituicao: (String, String, String) -> Unit,
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
 ) {
-    val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
-    val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -53,24 +51,41 @@ fun ManterContaScreen(
         viewModel.carregarInstituicaoUsuario()
     }
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Perfil") },
+                navigationIcon = {
+                    IconButton(onClick = onVoltar) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
                 .padding(horizontal = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            CabecalhoAlternativo(titulo = "Perfil", onVoltar = onVoltar)
-
-            Icon(
-                imageVector = Icons.Default.School,
-                contentDescription = null,
+            Box(
                 modifier = Modifier
                     .size(96.dp)
-                    .padding(top = 32.dp)
-            )
+                    .background(Color(0xFFB2DDF3), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.School,
+                    contentDescription = null,
+                    tint = Color(0xFF0D47A1),
+                    modifier = Modifier.size(56.dp)
+                )
+            }
 
             Text(
                 text = "Informações gerais",
@@ -89,6 +104,11 @@ fun ManterContaScreen(
                 onValueChange = { viewModel.nome = it },
                 label = { Text("Nome") },
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFE3F2FD),
+                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -96,6 +116,11 @@ fun ManterContaScreen(
                 onValueChange = { viewModel.email = it },
                 label = { Text("E-mail") },
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFE3F2FD),
+                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -106,6 +131,11 @@ fun ManterContaScreen(
                 label = { Text("Senha") },
                 visualTransformation = PasswordVisualTransformation(),
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color(0xFFE3F2FD),
+                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -122,7 +152,7 @@ fun ManterContaScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFB2DDF3))
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF6FD))
             ) {
                 Box(Modifier.fillMaxWidth()) {
                     Column(
@@ -130,80 +160,12 @@ fun ManterContaScreen(
                             .fillMaxWidth()
                             .padding(16.dp)
                     ) {
-                        var expanded by remember { mutableStateOf(false) }
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = it }
-                        ) {
-                            OutlinedTextField(
-                                value = viewModel.nomeInstituicao,
-                                onValueChange = {
-                                    viewModel.onNomeInstituicaoChange(it)
-                                    expanded = true
-                                },
-                                label = { Text("Instituição") },
-                                trailingIcon = {
-                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                                },
-                                modifier = Modifier
-                                    .menuAnchor()
-                                    .fillMaxWidth()
-                            )
-                            if (sugestoes.isNotEmpty()) {
-                                ExposedDropdownMenu(
-                                    expanded = expanded,
-                                    onDismissRequest = { expanded = false }
-                                ) {
-                                    sugestoes.forEach { inst: Instituicao ->
-                                        DropdownMenuItem(
-                                            text = { Text(inst.nome) },
-                                            onClick = {
-                                                viewModel.onInstituicaoSelecionada(inst)
-                                                expanded = false
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        OutlinedTextField(
-                            value = viewModel.media,
-                            onValueChange = { viewModel.media = it },
-                            label = { Text("Média aprovação") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
+                        Text(
+                            text = viewModel.nomeInstituicao,
+                            fontWeight = FontWeight.Bold
                         )
-                        OutlinedTextField(
-                            value = viewModel.frequencia,
-                            onValueChange = { viewModel.frequencia = it },
-                            label = { Text("Frequência mínima (%)") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                        )
-
-                        if (mostrarCadastrar) {
-                            Text(
-                                text = "Instituição não cadastrada",
-                                color = Color.Red,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                            TextButton(
-                                onClick = {
-                                    onNavigateToManterInstituicao(
-                                        viewModel.nomeInstituicao,
-                                        viewModel.media,
-                                        viewModel.frequencia
-                                    )
-                                }
-                            ) {
-                                Text("Cadastrar nova instituição")
-                            }
-                        }
+                        Text("Média de aprovação: ${viewModel.media}")
+                        Text("Frequência mínima: ${viewModel.frequencia}")
                     }
 
                     IconButton(
