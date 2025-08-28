@@ -5,28 +5,30 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.example.unihub.data.repository.ApiInstituicaoBackend
+import com.example.unihub.R
+import com.example.unihub.data.repository.InstituicaoRepository
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +63,7 @@ fun ManterContaScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))
             )
         }
     ) { padding ->
@@ -69,6 +71,9 @@ fun ManterContaScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .background (
+                    color = Color(0xFFF2F2F2),
+                )
                 .padding(padding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -77,15 +82,17 @@ fun ManterContaScreen(
             Box(
                 modifier = Modifier
                     .size(96.dp)
-                    .background(Color(0xFFB2DDF3), CircleShape),
+                    // .background(Color(0xFFB2DDF3), CircleShape)
+                ,
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.School,
+                    painter = painterResource(id = R.drawable.ph_student),
                     contentDescription = null,
-                    tint = Color(0xFF0D47A1),
-                    modifier = Modifier.size(56.dp)
+                    tint = Color(0xFF243C5B),
+                    modifier = Modifier.size(96.dp)
                 )
+
             }
 
             Text(
@@ -107,8 +114,10 @@ fun ManterContaScreen(
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFE3F2FD),
-                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                    focusedContainerColor = Color(0xA8C1D5E4),
+                    unfocusedContainerColor = Color(0xA8C1D5E4),
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
                 ),
                 modifier = Modifier.fillMaxWidth()
             )
@@ -119,8 +128,10 @@ fun ManterContaScreen(
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFE3F2FD),
-                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                    focusedContainerColor = Color(0xA8C1D5E4),
+                    unfocusedContainerColor = Color(0xA8C1D5E4),
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,8 +145,10 @@ fun ManterContaScreen(
                 trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFE3F2FD),
-                    unfocusedContainerColor = Color(0xFFE3F2FD)
+                    focusedContainerColor = Color(0xA8C1D5E4),
+                    unfocusedContainerColor = Color(0xA8C1D5E4),
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -219,4 +232,17 @@ fun ManterContaScreen(
             }
         }
     }
+}
+
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+@Preview(showBackground = true)
+@Composable
+fun ManterContaScreenPreview() {
+    ManterContaScreen(
+        onVoltar = {},
+        onNavigateToManterInstituicao = { _, _, _ -> },
+        viewModel = ManterContaViewModel(
+            InstituicaoRepository(ApiInstituicaoBackend())
+        )
+    )
 }

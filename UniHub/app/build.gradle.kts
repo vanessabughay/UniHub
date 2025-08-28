@@ -88,6 +88,7 @@ dependencies {
     implementation(libs.retrofit.converter.gson)
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
+    implementation("com.github.skydoves:landscapist-coil3:2.4.8")
 
 
     // Para usar Firebase
