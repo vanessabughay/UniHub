@@ -38,7 +38,7 @@ fun CabecalhoAlternativo(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top=50.dp)
+            .padding(top=25.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -23,7 +23,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel // Importando ViewModel
-import com.example.unihub.components.CabecalhoPrincipal
+import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.HorarioAula // Importando HorarioAula
 import com.example.unihub.data.repository.DisciplinaRepository // Para o Preview
@@ -38,9 +38,8 @@ val CardBackgroundColorSelected = Color(0xFFB2DDF3)
 fun ListarDisciplinasScreen(
     viewModel: ListarDisciplinasViewModel = viewModel(factory = ListarDisciplinasViewModelFactory),
     onAddDisciplina: () -> Unit,
-    onNavigateToManterConta: () -> Unit,
+    onVoltar: () -> Unit,
     onDisciplinaDoubleClick: (disciplinaId: String) -> Unit
-
 ) {
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
@@ -76,18 +75,76 @@ fun ListarDisciplinasScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
-        },
-        bottomBar = {
-            Button(
-                onClick = onNavigateToManterConta,
+        }
+    ) { _ ->
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                ,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            //CabecalhoAlternativo
+            CabecalhoAlternativo(
+                titulo = "Disciplinas",
+                onVoltar = onVoltar,
+
+            )
+
+            //  SearchBox
+            SearchBox(modifier = Modifier.padding(16.dp)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(start = 8.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                    if (searchQuery.isEmpty()) {
+                        Text(text = "Buscar por nome ou id", color = Color.Gray)
+                    }
+                }
+            }
+
+            LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Manter Conta")
+                // O seu items(disciplinasFiltradas) vai aqui, intacto
+                items(disciplinasFiltradas) { disciplina ->
+                    DisciplinaItem(
+                        disciplina = disciplina,
+                        isSelected = (idDisciplinaSelecionada == disciplina.id),
+                        onSingleClick = {
+                            idDisciplinaSelecionada = if (idDisciplinaSelecionada == disciplina.id) {
+                                null
+                            } else {
+                                disciplina.id
+                            }
+                        },
+                        onDoubleClick = {
+                            onDisciplinaDoubleClick(disciplina.id.toString())
+                        },
+                        onShareClicked = {
+                            Toast.makeText(context, "Compartilhar ${it.nome}", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
             }
-        }
-    ) { paddingValues ->
+
+
+
+        /*
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -96,7 +153,9 @@ fun ListarDisciplinasScreen(
             verticalArrangement = Arrangement.spacedBy(0.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
         ) {
-            item { CabecalhoPrincipal(titulo = "Disciplinas") }
+            item { CabecalhoAlternativo(
+                titulo = "Disciplinas",
+                onVoltar = onVoltar) }
 
             item {
                 SearchBox(modifier = Modifier.padding(vertical = 16.dp)) {
@@ -137,7 +196,7 @@ fun ListarDisciplinasScreen(
                         Toast.makeText(context, "Compartilhar ${it.nome}", Toast.LENGTH_SHORT).show()
                     }
                 )
-            }
+            }*/
         }
     }
 }
