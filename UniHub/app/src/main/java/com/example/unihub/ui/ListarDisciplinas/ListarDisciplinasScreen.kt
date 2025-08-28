@@ -75,15 +75,16 @@ fun ListarDisciplinasScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
-        }
-    ) { _ ->
+        },
+        content = { paddingValues ->
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                ,
+                .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
 
             //CabecalhoAlternativo
             CabecalhoAlternativo(
@@ -198,8 +199,10 @@ fun ListarDisciplinasScreen(
                 )
             }*/
         }
+        }
+    )
     }
-}
+
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
