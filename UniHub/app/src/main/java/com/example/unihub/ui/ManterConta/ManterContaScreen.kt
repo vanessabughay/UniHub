@@ -178,7 +178,7 @@ fun ManterContaScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFEAF6FD))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xA8C1D5E4))
                 ) {
                     Box(Modifier.fillMaxWidth()) {
                         Column(
