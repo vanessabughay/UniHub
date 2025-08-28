@@ -24,6 +24,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import com.example.unihub.Screen
+
 @Composable
 fun LoginScreen(
     navController: NavController,
@@ -41,8 +43,8 @@ fun LoginScreen(
         if (viewModel.success) {
             Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
-            navController.navigate("tela_inicial") { // Rota de navegação adaptada para a tela principal do UniHub
-                popUpTo("login") { inclusive = true }
+            navController.navigate(Screen.TelaInicial.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
     }
@@ -134,7 +136,7 @@ fun LoginScreen(
                     color = Color(0xFF234A6A), // Cor de link do UniHub
                     fontSize = 13.sp,
                     modifier = Modifier.clickable {
-                        navController.navigate("register")
+                        navController.navigate(Screen.Register.route)
                     }
                 )
             }

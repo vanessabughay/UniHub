@@ -27,9 +27,13 @@ import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
 import com.example.unihub.ui.TelaInicial.TelaInicial
+import com.example.unihub.ui.login.LoginScreen
+import com.example.unihub.ui.register.RegisterScreen
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
+    object Login : Screen("login")
+    object Register : Screen("register")
     object TelaInicial : Screen("tela_inicial")
     object ListarDisciplinas : Screen("lista_disciplinas")
 
@@ -78,8 +82,18 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.TelaInicial.route
+                    startDestination = Screen.Login.route
                 ) {
+                    // ROTA LOGIN: Tela de Login
+                    composable(Screen.Login.route) {
+                        LoginScreen(navController = navController)
+                    }
+
+                    // ROTA REGISTER: Tela de Registro
+                    composable(Screen.Register.route) {
+                        RegisterScreen(navController = navController)
+                    }
+
                     // ROTA 1: Tela de Listar
                     composable(Screen.ListarDisciplinas.route) {
                         ListarDisciplinasScreen(
