@@ -23,9 +23,11 @@ import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.ui.TelaInicial.TelaInicial
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
+    object TelaInicial : Screen("tela_inicial")
     object ListarDisciplinas : Screen("lista_disciplinas")
 
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
@@ -67,7 +69,7 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.ListarDisciplinas.route
+                    startDestination = Screen.TelaInicial.route
                 ) {
                     // ROTA 1: Tela de Listar
                     composable(Screen.ListarDisciplinas.route) {
@@ -76,8 +78,10 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(null))
                             },
                             onDisciplinaDoubleClick = { disciplinaId ->
-                                navController.navigate(Screen.VisualizarDisciplina.createRoute(disciplinaId))
-                            }
+                                navController.navigate(Screen.VisualizarDisciplina.createRoute(disciplinaId))},
+
+                            onVoltar = { navController.popBackStack()}
+
                         )
                     }
 
@@ -180,6 +184,13 @@ class MainActivity : ComponentActivity() {
                             viewModel = viewModel
                         )
                     }
+
+                    //TELA INICIAL
+
+                    composable(Screen.TelaInicial.route) {
+                        TelaInicial(navController = navController)
+                    }
+
 
                 }
             }
