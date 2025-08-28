@@ -8,6 +8,10 @@ android {
     namespace = "com.example.unihub"
     compileSdk = 35
 
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
+
     defaultConfig {
         applicationId = "com.example.unihub"
         minSdk = 28
