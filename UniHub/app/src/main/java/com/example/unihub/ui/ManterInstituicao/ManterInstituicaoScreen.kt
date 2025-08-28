@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,8 +45,7 @@ fun ManterInstituicaoScreen(
     nome: String = "",
     media: String = "",
     frequencia: String = "",
-    viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory())
-) {
+    viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory(LocalContext.current))) {
     LaunchedEffect(nome, media, frequencia) {
         if (nome.isNotBlank()) {
             viewModel.nomeInstituicao = nome
@@ -235,11 +235,12 @@ fun ManterInstituicaoScreen(
 @Preview(showBackground = true)
 @Composable
 fun ManterInstituicaoScreenPreview() {
+    val context = LocalContext.current
     ManterInstituicaoScreen(
         onVoltar = {},
         viewModel = ManterInstituicaoViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend())
-        )
+            InstituicaoRepository(ApiInstituicaoBackend(), context)
+        ),
 
     )
 }

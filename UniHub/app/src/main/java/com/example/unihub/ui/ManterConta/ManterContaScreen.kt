@@ -29,6 +29,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.repository.ApiInstituicaoBackend
 import com.example.unihub.R
 import com.example.unihub.data.repository.InstituicaoRepository
+import androidx.compose.ui.platform.LocalContext
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,8 +37,7 @@ import com.example.unihub.data.repository.InstituicaoRepository
 fun ManterContaScreen(
     onVoltar: () -> Unit,
     onNavigateToManterInstituicao: (String, String, String) -> Unit,
-    viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory())
-) {
+    viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory(LocalContext.current))) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
@@ -238,11 +238,11 @@ fun ManterContaScreen(
 @Preview(showBackground = true)
 @Composable
 fun ManterContaScreenPreview() {
+    val context = LocalContext.current
     ManterContaScreen(
         onVoltar = {},
         onNavigateToManterInstituicao = { _, _, _ -> },
         viewModel = ManterContaViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend())
-        )
+            InstituicaoRepository(ApiInstituicaoBackend(), context)        )
     )
 }

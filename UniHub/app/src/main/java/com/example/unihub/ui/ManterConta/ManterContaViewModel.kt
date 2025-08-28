@@ -32,10 +32,12 @@ class ManterContaViewModel(
     }
 
     fun carregarInstituicaoUsuario() {
-        repository.instituicaoUsuario()?.let { inst ->
-            nomeInstituicao = inst.nome
-            media = inst.mediaAprovacao.toString()
-            frequencia = inst.frequenciaMinima.toString()
+        viewModelScope.launch {
+            repository.instituicaoUsuario()?.let { inst ->
+                nomeInstituicao = inst.nome
+                media = inst.mediaAprovacao.toString()
+                frequencia = inst.frequenciaMinima.toString()
+            }
         }
     }
 

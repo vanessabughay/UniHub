@@ -90,6 +90,7 @@ dependencies {
 
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.2")
     implementation("com.github.skydoves:landscapist-coil3:2.4.8")
