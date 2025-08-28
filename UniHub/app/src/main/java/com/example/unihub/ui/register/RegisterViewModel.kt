@@ -2,30 +2,39 @@ package com.example.unihub.ui.register
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
-import android.util.Patterns
+import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.AuthRepository
+import android.util.Patterns
+import kotlinx.coroutines.launch
 
-class RegisterViewModel(
+open class RegisterViewModel(
     private val repository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
-    var name by mutableStateOf("")
-    var email by mutableStateOf("")
-    var password by mutableStateOf("")
-    var isLoading by mutableStateOf(false)
-    var errorMessage by mutableStateOf<String?>(null)
-    var success by mutableStateOf(false)
+    open var name by mutableStateOf("")
+    open var email by mutableStateOf("")
+    open var password by mutableStateOf("")
+    open var confirmPassword by mutableStateOf("")
+    open var isLoading by mutableStateOf(false)
+    open var errorMessage by mutableStateOf<String?>(null)
+    open var success by mutableStateOf(false)
 
-    fun registerUser() {
+    open fun registerUser() {
         errorMessage = null
         success = false
 
         val cleanName = name.trim()
         val cleanEmail = email.trim()
         val cleanPassword = password.trim()
+        val cleanConfirmPassword = confirmPassword.trim()
 
-        if (cleanName.isEmpty() || cleanEmail.isEmpty() || cleanPassword.isEmpty()) {
+        if (cleanName.isEmpty() || cleanEmail.isEmpty() || cleanPassword.isEmpty() || cleanConfirmPassword.isEmpty()) {
             errorMessage = "Preencha todos os campos."
+            return
+        }
+
+        if (cleanPassword != cleanConfirmPassword) {
+            errorMessage = "As senhas não coincidem."
             return
         }
 
@@ -46,18 +55,21 @@ class RegisterViewModel(
 
         isLoading = true
 
-        repository.registerUser(
-            name = cleanName,
-            email = cleanEmail,
-            password = cleanPassword,
-            onSuccess = {
-                isLoading = false
-                success = true
-            },
-            onError = { error ->
-                isLoading = false
-                errorMessage = error
-            }
-        )
+        // Usa viewModelScope para iniciar a coroutine
+        viewModelScope.launch {
+            repository.registerUser(
+                name = cleanName,
+                email = cleanEmail,
+                password = cleanPassword,
+                onSuccess = {
+                    isLoading = false
+                    success = true
+                },
+                onError = { error ->
+                    isLoading = false
+                    errorMessage = error
+                }
+            )
+        }
     }
 }
