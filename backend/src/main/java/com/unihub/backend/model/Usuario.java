@@ -12,6 +12,8 @@ public class Usuario {
 
     private String nomeUsuario;
 
+    private String email;
+
     private String senha;
 
     public Long getId() {
@@ -28,6 +30,14 @@ public class Usuario {
 
     public void setNomeUsuario(String nomeUsuario) {
         this.nomeUsuario = nomeUsuario;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getSenha() {
