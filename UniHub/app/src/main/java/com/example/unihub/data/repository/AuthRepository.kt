@@ -25,20 +25,21 @@ class AuthRepository(
                 val response = api.registerUser(request)
 
                 if (response.isSuccessful) {
-                    onSuccess()
+                    withContext(Dispatchers.Main) { onSuccess() }
                 } else {
                     val errorBody = response.errorBody()?.string()
-                    onError(errorBody ?: "Erro desconhecido ao cadastrar usuário.")
-                }
+                    withContext(Dispatchers.Main) {
+                        onError(errorBody ?: "Erro desconhecido ao cadastrar usuário.")
+                    }                }
             } catch (e: HttpException) {
                 // Erros de HTTP como 404, 401, etc.
-                onError("Erro de servidor: ${e.code()}")
+                withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
             } catch (e: IOException) {
                 // Erros de conexão (sem internet, timeout, etc.)
-                onError("Falha na conexão. Verifique sua rede.")
+                withContext(Dispatchers.Main) { onError("Falha na conexão. Verifique sua rede.") }
             } catch (e: Exception) {
                 // Outros erros genéricos
-                onError("Ocorreu um erro inesperado: ${e.message}")
+                withContext(Dispatchers.Main) { onError("Ocorreu um erro inesperado: ${e.message}") }
             }
         }
     }
@@ -55,17 +56,18 @@ class AuthRepository(
                 val response = api.loginUser(request)
 
                 if (response.isSuccessful) {
-                    onSuccess()
+                    withContext(Dispatchers.Main) { onSuccess() }
                 } else {
                     val errorBody = response.errorBody()?.string()
-                    onError(errorBody ?: "Erro desconhecido ao fazer login.")
-                }
+                    withContext(Dispatchers.Main) {
+                        onError(errorBody ?: "Erro desconhecido ao fazer login.")
+                    }                }
             } catch (e: HttpException) {
-                onError("Erro de servidor: ${e.code()}")
+                withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
             } catch (e: IOException) {
-                onError("Falha na conexão. Verifique sua rede.")
+                withContext(Dispatchers.Main) { onError("Falha na conexão. Verifique sua rede.") }
             } catch (e: Exception) {
-                onError("Ocorreu um erro inesperado: ${e.message}")
+                withContext(Dispatchers.Main) { onError("Ocorreu um erro inesperado: ${e.message}") }
             }
         }
     }
