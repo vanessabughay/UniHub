@@ -4,6 +4,7 @@ import com.unihub.backend.model.Instituicao;
 import com.unihub.backend.service.InstituicaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -16,20 +17,20 @@ public class InstituicaoController {
     private InstituicaoService service;
 
     @GetMapping
-    public List<Instituicao> listar(@RequestParam(required = false) String nome) {
+    public List<Instituicao> listar(@RequestParam(required = false) String nome, @AuthenticationPrincipal Long usuarioId) {
         if (nome != null && !nome.isEmpty()) {
-            return service.buscarPorNome(nome);
+            return service.buscarPorNome(nome, usuarioId);
         }
-        return service.listarTodas();
+        return service.listarTodas(usuarioId);
     }
 
     @PostMapping
-    public Instituicao criar(@RequestBody Instituicao instituicao) {
-        return service.salvar(instituicao);
+    public Instituicao criar(@RequestBody Instituicao instituicao, @AuthenticationPrincipal Long usuarioId) {
+        return service.salvar(instituicao, usuarioId);
     }
 
     @PutMapping("/{id}")
-    public Instituicao atualizar(@PathVariable Long id, @RequestBody Instituicao instituicao) {
-        return service.atualizar(id, instituicao);
+    public Instituicao atualizar(@PathVariable Long id, @RequestBody Instituicao instituicao, @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizar(id, instituicao, usuarioId);
     }
 }

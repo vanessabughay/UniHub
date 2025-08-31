@@ -1,6 +1,8 @@
 package com.unihub.backend.model;
 
 import jakarta.persistence.*;
+import java.util.List;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "usuarios")
@@ -15,6 +17,19 @@ public class Usuario {
     private String email;
 
     private String senha;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-disciplinas")
+    private List<Disciplina> disciplinas;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-instituicoes")
+    private List<Instituicao> instituicoes;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-ausencias")
+    private List<Ausencia> ausencias;
+
 
     public Long getId() {
         return id;
@@ -47,4 +62,13 @@ public class Usuario {
     public void setSenha(String senha) {
         this.senha = senha;
     }
+
+    public List<Disciplina> getDisciplinas() { return disciplinas; }
+    public void setDisciplinas(List<Disciplina> disciplinas) { this.disciplinas = disciplinas; }
+
+    public List<Instituicao> getInstituicoes() { return instituicoes; }
+    public void setInstituicoes(List<Instituicao> instituicoes) { this.instituicoes = instituicoes; }
+
+    public List<Ausencia> getAusencias() { return ausencias; }
+    public void setAusencias(List<Ausencia> ausencias) { this.ausencias = ausencias; }
 }

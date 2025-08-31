@@ -1,6 +1,7 @@
 package com.unihub.backend.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 public class Instituicao {
@@ -11,6 +12,11 @@ public class Instituicao {
     private String nome;
     private Double mediaAprovacao;
     private Integer frequenciaMinima;
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    @JsonBackReference("usuario-instituicoes")
+    private Usuario usuario;
 
     public Long getId() {
         return id;
@@ -43,4 +49,7 @@ public class Instituicao {
     public void setFrequenciaMinima(Integer frequenciaMinima) {
         this.frequenciaMinima = frequenciaMinima;
     }
+
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 }
