@@ -18,8 +18,8 @@ public class DisciplinaController {
     private DisciplinaService service;
 
     @GetMapping
-    public List<Disciplina> listarTodas() {
-        return service.listarTodas();
+    public List<Disciplina> listarTodas(@AuthenticationPrincipal Long usuarioId) {
+        return service.listarTodas(usuarioId);
     }
 
     @GetMapping("/{id}")
