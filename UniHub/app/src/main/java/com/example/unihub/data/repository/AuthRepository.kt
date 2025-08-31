@@ -1,6 +1,7 @@
 package com.example.unihub.data.repository
 
 import com.example.unihub.data.api.RetrofitClient
+import com.example.unihub.data.api.TokenManager
 import com.example.unihub.data.api.UniHubApi // Assume que esta é a sua interface de API
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
@@ -56,12 +57,21 @@ class AuthRepository(
                 val response = api.loginUser(request)
 
                 if (response.isSuccessful) {
-                    withContext(Dispatchers.Main) { onSuccess() }
+                    val token = response.body()?.token
+                    if (token != null) {
+                        TokenManager.token = token
+                        withContext(Dispatchers.Main) { onSuccess() }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            onError("Token não encontrado na resposta.")
+                        }
+                    }
                 } else {
                     val errorBody = response.errorBody()?.string()
                     withContext(Dispatchers.Main) {
                         onError(errorBody ?: "Erro desconhecido ao fazer login.")
-                    }                }
+                    }
+                }
             } catch (e: HttpException) {
                 withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
             } catch (e: IOException) {

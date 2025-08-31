@@ -4,8 +4,10 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.util.LocalDateAdapter
+import com.example.unihub.data.api.TokenManager
 import com.google.gson.GsonBuilder
 import java.time.LocalDate
+import okhttp3.OkHttpClient
 
 class ApiDisciplinaBackend : _disciplinabackend {
     private val api: DisciplinaApi by lazy {
@@ -13,8 +15,20 @@ class ApiDisciplinaBackend : _disciplinabackend {
             .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
             .create()
 
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val requestBuilder = original.newBuilder()
+                TokenManager.token?.let { token ->
+                    requestBuilder.addHeader("Authorization", "Bearer $token")
+                }
+                chain.proceed(requestBuilder.build())
+            }
+            .build()
+
         Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8080/")   // emulator loopback
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(DisciplinaApi::class.java)

@@ -1,5 +1,6 @@
 package com.example.unihub.data.api
 
+import com.example.unihub.data.api.model.AuthResponse
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
 import retrofit2.Response
@@ -11,5 +12,5 @@ interface UniHubApi {
     suspend fun registerUser(@Body request: RegisterRequest): Response<Void>
 
     @POST("api/auth/login")
-    suspend fun loginUser(@Body request: LoginRequest): Response<Void>
+    suspend fun loginUser(@Body request: LoginRequest): Response<AuthResponse>
 }
