@@ -20,12 +20,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
+import com.example.unihub.ui.ListarContato.ListarContatoScreen
+
 import com.example.unihub.ui.ManterConta.ManterContaScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.ui.ManterContato.ManterContatoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 
 // Definição das telas e suas rotas
@@ -60,6 +63,15 @@ sealed class Screen(val route: String) {
         Screen("manter_instituicao?nome={nome}&media={media}&frequencia={frequencia}") {
         fun createRoute(nome: String, media: String, frequencia: String): String {
             return "manter_instituicao?nome=${Uri.encode(nome)}&media=${Uri.encode(media)}&frequencia=${Uri.encode(frequencia)}"
+        }
+    }
+
+    // PAULO //
+
+    object ListarContato : Screen("lista_contato") // Rota é "lista_contato"
+    object ManterContato : Screen("manter_contato?id={id}") {
+        fun createRoute(id: String?): String {
+            return if (id != null) "manter_contato?id=$id" else "manter_contato"
         }
     }
 }
@@ -224,6 +236,42 @@ class MainActivity : ComponentActivity() {
                             nome = nomeArg,
                             media = mediaArg,
                             frequencia = frequenciaArg
+                        )
+                    }
+
+
+                    // ROTA 7: Tela de Listar Contatos
+                    composable(Screen.ListarContato.route) { // Usa a rota "lista_contato"
+                        ListarContatoScreen(
+                            onAddContato = {
+                                navController.navigate(Screen.ManterContato.createRoute(null))
+                            },
+                            onContatoClick = { contatoId ->
+                                navController.navigate(Screen.ManterContato.createRoute(contatoId))
+                            },
+                            onVoltar = { navController.popBackStack() }
+
+                        )
+                    }
+
+
+
+
+                    // ROTA 8: manter Contatos
+                    composable(
+                        route = Screen.ManterContato.route,
+                        arguments = listOf(navArgument("id") {
+                            type = NavType.StringType
+                            nullable = true
+                        })
+                    ) { backStackEntry ->
+                        val contatoId = backStackEntry.arguments?.getString("id")
+                        ManterContatoScreen(
+                            contatoId = contatoId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = {
+                                navController.popBackStack()
+                            }
                         )
                     }
 
