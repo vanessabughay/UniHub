@@ -53,15 +53,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import kotlin.text.contains
-import androidx.compose.material.icons.filled.Delete // Ícone de lixeira
-import androidx.compose.material3.IconButton // Para o botão do ícone
-import androidx.compose.material3.AlertDialog // Para o diálogo de confirmação
-import androidx.compose.material3.TextButton // Para os botões do diálogo
 
-// Removida a importação duplicada de viewModel que estava no final
-
-
-// Se você definiu cores específicas para o card, pode mantê-las aqui ou no ViewModel/tema
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
 
@@ -317,6 +309,14 @@ fun ContatoItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
+                    if (contato.pendente) {
+                        Text(
+                            text = "PENDENTE",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
                 }
             }
             IconButton(onClick = onDeleteClick) {

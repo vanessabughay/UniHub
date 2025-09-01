@@ -12,9 +12,9 @@ public class Contato {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nome;
     private String email;
+    private Boolean pendente;
 
     // Construtor vazio (necessário para JPA)
     public Contato() {
@@ -50,6 +50,12 @@ public class Contato {
     public void setEmail(String email) {
         this.email = email;
     }
+    public Boolean getPendente() {
+        return pendente;
+    }
+    public void setPendente(Boolean pendente) {
+        this.pendente = pendente;
+    }
 
 
     @Override
@@ -58,6 +64,7 @@ public class Contato {
                 "id=" + id +
                 ", nome='" + nome + '\'' +
                 ", email='" + email + '\'' +
+                ", pendente=" + pendente +
                 '}';
     }
 

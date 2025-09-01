@@ -173,6 +173,16 @@ fun ManterContatoScreen(
             ) {
                 // Botão Salvar/Atualizar
                 Button(
+                    
+                    ////////////////////////////////
+                    ////////////////////////////////
+                    /*
+                    FALTA IMPLEMENTAR  AS FUNÇÃO DE ENVIAR EMAIL
+                    FALTA IMPLEMENTAR  AS FUNÇÃO DE CONVIDAR
+                     */
+                    ////////////////////////////////
+                    ////////////////////////////////
+
                     onClick = {
                         if (contatoId == null) {
                             viewModel.createContato(nomeState, emailState)
@@ -195,37 +205,7 @@ fun ManterContatoScreen(
                         fontWeight = FontWeight.Medium
                     )
                 }
-                /*
-                                // Botão Excluir (se estiver editando)
-                                if (contatoId != null) {
-                                    OutlinedButton( // Usar OutlinedButton para ação secundária ou destrutiva
-                                        onClick = { showDeleteDialog = true },
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(48.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.outlinedButtonColors(
-                                            contentColor = DeleteButtonErrorColor // Cor do texto e ícone
-                                        ),
-                                        border = BorderStroke(1.dp, DeleteButtonErrorColor.copy(alpha = 0.5f))
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = DeleteButtonErrorColor)
-                                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                                        Text("Excluir Contato")
-                                    }
-                                }
 
-                                // Botão Cancelar/Voltar (pode ser TextButton para menor ênfase)
-                                TextButton(
-                                    onClick = onVoltar,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(48.dp)
-                                ) {
-                                    Text("Cancelar / Voltar")
-                                }
-
-                 */
             }
             Spacer(modifier = Modifier.height(8.dp)) // Espaço extra no final antes da borda da tela
         }

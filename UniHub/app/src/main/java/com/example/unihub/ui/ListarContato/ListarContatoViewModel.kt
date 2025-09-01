@@ -15,7 +15,8 @@ import kotlinx.coroutines.launch
 data class ContatoResumoUi(
     val id: Long,
     val nome: String,
-    val email: String
+    val email: String,
+    val pendente: Boolean = false
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -49,6 +50,7 @@ class ListarContatoViewModel(
                             id = contato.id,
                             nome = contato.nome,
                             email = contato.email
+
                         )
                     }.sortedBy { it.nome.lowercase() }
                 }
