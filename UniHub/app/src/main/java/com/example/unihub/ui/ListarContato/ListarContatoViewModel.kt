@@ -1,4 +1,4 @@
-package com.example.unihub.ui.ListarContato // Certifique-se que o package está correto
+package com.example.unihub.ui.ListarContato
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
@@ -9,10 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
-// Data class para o estado da UI, representa um item na lista de contatos
 data class ContatoResumoUi(
     val id: Long,
     val nome: String,
@@ -24,62 +23,91 @@ class ListarContatoViewModel(
     private val repository: ContatoRepository
 ) : ViewModel() {
 
-    // StateFlow para a lista de contatos a ser exibida na UI
     private val _contatos = MutableStateFlow<List<ContatoResumoUi>>(emptyList())
     val contatos: StateFlow<List<ContatoResumoUi>> = _contatos.asStateFlow()
 
-    // StateFlow para controlar a visibilidade do indicador de carregamento
     private val _isLoading = MutableStateFlow<Boolean>(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    // StateFlow para mensagens de erro a serem exibidas na UI
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    /**
-     * Bloco de inicialização: Carrega os contatos assim que o ViewModel é criado.
-     */
     init {
         loadContatos()
     }
 
-    /**
-     * Carrega a lista de resumos de contatos do repositório e atualiza os StateFlows.
-     * Trata possíveis erros durante a busca de dados.
-     */
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun loadContatos() {
         viewModelScope.launch {
-            _isLoading.value = true // Indica que o carregamento começou
-            _errorMessage.value = null // Limpa qualquer mensagem de erro anterior
+            _isLoading.value = true
+            _errorMessage.value = null
 
-            repository.getContatoResumo() // Retorna Flow<List<AlgumTipoDeContatoDoRepositorio>>
+            repository.getContatoResumo()
                 .map { contatosDoRepositorio ->
-                    // Mapeia para ContatoResumoUi E ORDENA AQUI
                     contatosDoRepositorio.map { contato ->
                         ContatoResumoUi(
                             id = contato.id,
-                            nome = contato.nome, // Assumindo que contato.nome não é nulo
-                            email = contato.email // Assumindo que contato.email não é nulo
+                            nome = contato.nome,
+                            email = contato.email
                         )
-                    }.sortedBy { it.nome.lowercase() } // <<<<<<<<<<<<<<<<<<<< ORDENAÇÃO ADICIONADA
+                    }.sortedBy { it.nome.lowercase() }
                 }
                 .catch { exception ->
                     _errorMessage.value = "Falha ao carregar contatos: ${exception.message}"
-                    _contatos.value = emptyList() // Opcional: limpar a lista em caso de erro
+                    _contatos.value = emptyList()
                     _isLoading.value = false
                 }
                 .collect { contatosOrdenadosParaUi ->
-                    _contatos.value = contatosOrdenadosParaUi // Atualiza a UI com a lista já mapeada e ordenada
+                    _contatos.value = contatosOrdenadosParaUi
                     _isLoading.value = false
                 }
         }
     }
 
     /**
-     * Limpa a mensagem de erro. Deve ser chamado pela UI após a mensagem ser exibida.
+     * Exclui um contato pelo ID.
+     * @param contatoId O ID do contato a ser excluído.
+     * @param onResult Callback que informa o resultado da operação (true para sucesso, false para falha).
      */
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun deleteContato(contatoId: String, onResult: (sucesso: Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true // Mostrar indicador de carregamento durante a exclusão
+            _errorMessage.value = null // Limpar mensagens de erro antigas
+
+            try {
+                val id = contatoId.toLongOrNull()
+                if (id == null) {
+                    _errorMessage.value = "ID de contato inválido."
+                    _isLoading.value = false
+                    onResult(false)
+                    return@launch
+                }
+
+                val deleteSuccess = repository.deleteContato(id.toString())
+
+                if (deleteSuccess) {
+                    // Após a exclusão bem-sucedida, recarregue a lista de contatos.
+                    // loadContatos() já define _isLoading.value = false no seu final.
+                    loadContatos()
+                    onResult(true)
+                } else {
+                    _errorMessage.value = "Falha ao excluir o contato no servidor/banco de dados."
+                    _isLoading.value = false
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                // Tratar exceções de rede, banco de dados, etc.
+                _errorMessage.value = "Erro ao excluir contato: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            }
+
+        }
+    }
+
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
 }
+

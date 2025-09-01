@@ -17,16 +17,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator // Para o estado de loading
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect // <<<<<<<<<<<<<<<<<<<< ADICIONAR IMPORT
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,21 +42,27 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner // <<<<<<<<<<<<<<< ADICIONAR IMPORT
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADICIONAR IMPORT
-import androidx.lifecycle.LifecycleEventObserver // <<<<<<<<<<<<<<<<<<< ADICIONAR IMPORT
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
+import kotlin.text.contains
+import androidx.compose.material.icons.filled.Delete // Ícone de lixeira
+import androidx.compose.material3.IconButton // Para o botão do ícone
+import androidx.compose.material3.AlertDialog // Para o diálogo de confirmação
+import androidx.compose.material3.TextButton // Para os botões do diálogo
+
 // Removida a importação duplicada de viewModel que estava no final
 
 
 // Se você definiu cores específicas para o card, pode mantê-las aqui ou no ViewModel/tema
-val CardDefaultBackgroundColor = Color(0xFFD9EDF6) // Exemplo de cor padrão
+val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -62,12 +73,14 @@ fun ListarContatoScreen(
     onVoltar: () -> Unit,
     onContatoClick: (contatoId: String) -> Unit
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current // MANTIDO AQUI, CORRETO
-
+    val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val contatosState by viewModel.contatos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    // Novo: Estado para controlar o diálogo de exclusão
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var contatoParaExcluir by remember { mutableStateOf<ContatoResumoUi?>(null) }
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -75,19 +88,15 @@ fun ListarContatoScreen(
     LaunchedEffect(errorMessage) {
         errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-            viewModel.clearErrorMessage() // Limpa a mensagem após ser exibida
+            viewModel.clearErrorMessage()
         }
     }
+
 
     // Efeito para recarregar os dados quando a tela se torna ativa (ON_RESUME)
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                // Não é estritamente necessário se o init do ViewModel já carrega
-                // e não há operações fora desta tela que alterem os contatos
-                // e exijam recarregamento ao voltar.
-                // Mas, para garantir que a lista está sempre atualizada ao voltar de ManterContato,
-
                 viewModel.loadContatos()
             }
         }
@@ -105,6 +114,49 @@ fun ListarContatoScreen(
                     it.email.contains(searchQuery, ignoreCase = true) ||
                     it.id.toString().contains(searchQuery, ignoreCase = true)
         }
+    }
+
+    // Diálogo de Confirmação de Exclusão
+    if (showDeleteDialog && contatoParaExcluir != null) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+                contatoParaExcluir = null
+            },
+            title = { Text("Confirmar Exclusão") },
+            text = { Text("Deseja realmente excluir o contato \"${contatoParaExcluir?.nome}\"?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        contatoParaExcluir?.let {
+                            // Chame a função de exclusão no ViewModel
+                            viewModel.deleteContato(it.id.toString()) { sucesso ->
+                                if (sucesso) {
+                                    Toast.makeText(context, "Contato excluído!", Toast.LENGTH_SHORT).show()
+                                    // A lista deve ser recarregada pelo ViewModel após a exclusão
+                                } else {
+                                    // O ViewModel deve tratar o errorMessage
+                                }
+                            }
+                        }
+                        showDeleteDialog = false
+                        contatoParaExcluir = null
+                    }
+                ) {
+                    Text("Excluir", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        contatoParaExcluir = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -193,19 +245,28 @@ fun ListarContatoScreen(
                         }
                     }
                     else -> {
+                        if (isLoading) { // Mostrar um indicador de progresso menor no topo se atualizando
+                            LinearProgressIndicator(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 4.dp))
+                        }
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
                                 .padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp)
+                            contentPadding = PaddingValues(bottom = 16.dp) // Adicionado para espaçamento no final
                         ) {
                             items(contatosFiltrados, key = { it.id }) { contato ->
                                 ContatoItem(
                                     contato = contato,
                                     onClick = {
                                         onContatoClick(contato.id.toString())
+                                    },
+                                    onDeleteClick = { // Nova ação para o clique na lixeira
+                                        contatoParaExcluir = contato
+                                        showDeleteDialog = true
                                     }
                                 )
                             }
@@ -220,7 +281,8 @@ fun ListarContatoScreen(
 @Composable
 fun ContatoItem(
     contato: ContatoResumoUi,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -233,11 +295,15 @@ fun ContatoItem(
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+            ) {
                 Text(
                     text = contato.nome,
                     fontSize = 18.sp,
@@ -252,6 +318,13 @@ fun ContatoItem(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+            }
+            IconButton(onClick = onDeleteClick) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Excluir Contato",
+                    tint = MaterialTheme.colorScheme.error // Cor de erro para o ícone de exclusão
+                )
             }
         }
     }
