@@ -54,7 +54,7 @@ fun ManterContatoScreen( // << NOME DA FUNÇÃO EXATO e DESCOMENTADO
         }
     }
 
-    // Layout da sua tela
+    // Layout da tela
     Column(
         modifier = Modifier
             .fillMaxSize()

@@ -86,8 +86,8 @@ fun ListarContatoScreen(
                 // Não é estritamente necessário se o init do ViewModel já carrega
                 // e não há operações fora desta tela que alterem os contatos
                 // e exijam recarregamento ao voltar.
-                // Mas, para garantir que a lista está sempre fresca ao voltar de ManterContato,
-                // esta é uma boa prática.
+                // Mas, para garantir que a lista está sempre atualizada ao voltar de ManterContato,
+
                 viewModel.loadContatos()
             }
         }

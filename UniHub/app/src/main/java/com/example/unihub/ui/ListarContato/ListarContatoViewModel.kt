@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.map
 
 // Data class para o estado da UI, representa um item na lista de contatos
 data class ContatoResumoUi(
@@ -52,23 +53,25 @@ class ListarContatoViewModel(
             _isLoading.value = true // Indica que o carregamento começou
             _errorMessage.value = null // Limpa qualquer mensagem de erro anterior
 
-            repository.getContatoResumo() // Chama a função do repositório que retorna um Flow
-                .catch { exception ->
-                    // Em caso de erro na coleta do Flow (ex: IOException, HttpException)
-                    _errorMessage.value = "Falha ao carregar contatos: ${exception.message}"
-                    _isLoading.value = false // Indica que o carregamento terminou (com erro)
-                }
-                .collect { contatosDoRepositorio ->
-                    // Mapeia a lista de modelos do repositório para a lista de modelos da UI
-                    val contatosParaUi = contatosDoRepositorio.map { contato ->
+            repository.getContatoResumo() // Retorna Flow<List<AlgumTipoDeContatoDoRepositorio>>
+                .map { contatosDoRepositorio ->
+                    // Mapeia para ContatoResumoUi E ORDENA AQUI
+                    contatosDoRepositorio.map { contato ->
                         ContatoResumoUi(
                             id = contato.id,
-                            nome = contato.nome,
-                            email = contato.email
+                            nome = contato.nome, // Assumindo que contato.nome não é nulo
+                            email = contato.email // Assumindo que contato.email não é nulo
                         )
-                    }
-                    _contatos.value = contatosParaUi // Atualiza a lista de contatos na UI
-                    _isLoading.value = false // Indica que o carregamento terminou (com sucesso)
+                    }.sortedBy { it.nome.lowercase() } // <<<<<<<<<<<<<<<<<<<< ORDENAÇÃO ADICIONADA
+                }
+                .catch { exception ->
+                    _errorMessage.value = "Falha ao carregar contatos: ${exception.message}"
+                    _contatos.value = emptyList() // Opcional: limpar a lista em caso de erro
+                    _isLoading.value = false
+                }
+                .collect { contatosOrdenadosParaUi ->
+                    _contatos.value = contatosOrdenadosParaUi // Atualiza a UI com a lista já mapeada e ordenada
+                    _isLoading.value = false
                 }
         }
     }
