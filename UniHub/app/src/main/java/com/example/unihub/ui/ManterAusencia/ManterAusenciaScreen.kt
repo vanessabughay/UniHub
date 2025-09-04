@@ -31,6 +31,7 @@ import com.example.unihub.data.model.Ausencia
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -82,8 +83,15 @@ fun ManterAusenciaScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.loadCategorias()
         viewModel.limparErro()
+        viewModel.loadCategorias()
+    }
+
+    LaunchedEffect(erro) {
+        if (erro != null) {
+            delay(1000)
+            viewModel.limparErro()
+        }
     }
 
     LaunchedEffect(sucesso) {
