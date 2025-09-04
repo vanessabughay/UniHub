@@ -59,10 +59,9 @@ class AuthRepository(
                 val response = api.loginUser(request)
 
                 if (response.isSuccessful) {
-                    val authResponse = response.body()
-                    if (authResponse != null) {
-                        TokenManager.token = authResponse.token
-                        TokenManager.nomeUsuario = authResponse.nomeUsuario
+                    val token = response.body()
+                    if (token != null) {
+                        TokenManager.saveToken(context, token)
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
                         withContext(Dispatchers.Main) {
