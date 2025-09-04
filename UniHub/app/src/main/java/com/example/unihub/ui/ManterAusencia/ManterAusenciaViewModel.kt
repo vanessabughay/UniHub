@@ -122,4 +122,7 @@ class ManterAusenciaViewModel(
             }
         }
     }
+    fun limparErro() {
+        _erro.value = null
+    }
 }

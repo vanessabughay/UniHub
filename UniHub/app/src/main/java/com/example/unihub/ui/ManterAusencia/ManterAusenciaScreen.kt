@@ -83,6 +83,7 @@ fun ManterAusenciaScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadCategorias()
+        viewModel.limparErro()
     }
 
     LaunchedEffect(sucesso) {
