@@ -471,7 +471,7 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
 @Composable
 private fun Preview_TelaInicialView() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = false,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
@@ -503,7 +503,7 @@ private fun Preview_TelaInicialView() {
 @Composable
 private fun Preview_MenuAberto() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = true,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.example.unihub.data.api.TokenManager
 
 
 /*  Modelos exemplo  */
@@ -110,7 +111,7 @@ class TelaInicialViewModel : ViewModel() {
 
     private fun criarEstadoInicial(): EstadoTelaInicial {
         return EstadoTelaInicial(
-            usuario = Usuario(nome = "Paulo Cueto"),
+            usuario = Usuario(nome = TokenManager.nomeUsuario ?: ""),
             menuAberto = false,
             avaliacoes = listOf(
                 Avaliacao(

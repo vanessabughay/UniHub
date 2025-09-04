@@ -35,6 +35,7 @@ object TokenManager {
     /** Clears the persisted token, e.g. on logout. */
     fun clearToken(context: Context) {
         token = null
+        var nomeUsuario: String? = null
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().remove(TOKEN_KEY).apply()
     }
