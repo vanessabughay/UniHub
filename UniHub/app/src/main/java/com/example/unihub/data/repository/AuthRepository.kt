@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
+import android.content.Context
 
 class AuthRepository(
     private val api: UniHubApi = RetrofitClient.api // Assumindo uma classe para inicializar o Retrofit
@@ -46,6 +47,7 @@ class AuthRepository(
     }
 
     suspend fun loginUser(
+        context: Context,
         email: String,
         password: String,
         onSuccess: () -> Unit,
@@ -59,7 +61,7 @@ class AuthRepository(
                 if (response.isSuccessful) {
                     val token = response.body()?.token
                     if (token != null) {
-                        TokenManager.token = token
+                        TokenManager.saveToken(context, token)
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
                         withContext(Dispatchers.Main) {

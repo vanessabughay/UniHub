@@ -29,6 +29,7 @@ import com.example.unihub.data.repository.ApiCategoriaBackend
 import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
+import com.example.unihub.data.api.TokenManager
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        TokenManager.loadToken(applicationContext)
         setContent {
             Surface(
                 modifier = Modifier.fillMaxSize(),

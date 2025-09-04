@@ -6,6 +6,7 @@ import com.example.unihub.data.repository.AuthRepository
 import android.util.Patterns
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
+import android.content.Context
 
 open class AuthViewModel(
     private val repository: AuthRepository = AuthRepository()
@@ -17,7 +18,7 @@ open class AuthViewModel(
     open var errorMessage by mutableStateOf<String?>(null)
     open var success by mutableStateOf(false)
 
-    open fun loginUser() {
+    open fun loginUser(context: Context) {
         errorMessage = null
         success = false
 
@@ -46,6 +47,7 @@ open class AuthViewModel(
         // automaticamente quando o ViewModel for destruído.
         viewModelScope.launch {
             repository.loginUser(
+                context = context,
                 email = cleanEmail,
                 password = cleanPassword,
                 onSuccess = {

@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.example.unihub.Screen
+import android.content.Context
 
 @Composable
 fun LoginScreen(
@@ -90,7 +91,7 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
-                            viewModel.loginUser()
+                            viewModel.loginUser(context)
                         },
                         enabled = !viewModel.isLoading,
                         modifier = Modifier
@@ -160,7 +161,7 @@ private fun Preview_LoginScreen() {
                 override var success by remember { mutableStateOf(false) }
 
                 // Sobrescreva as funções para que elas não façam nada no preview
-                override fun loginUser() {
+                override fun loginUser(context: Context) {
                     this.isLoading = true
                 }
             }
