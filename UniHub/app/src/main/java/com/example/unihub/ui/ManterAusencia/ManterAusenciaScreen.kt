@@ -89,7 +89,7 @@ fun ManterAusenciaScreen(
 
     LaunchedEffect(erro) {
         if (erro != null) {
-            delay(1000)
+            delay(100)
             viewModel.limparErro()
         }
     }
