@@ -1,0 +1,4 @@
+package com.example.unihub.ui.ManterGrupo
+
+class ManterGrupoViewModelFactory {
+}

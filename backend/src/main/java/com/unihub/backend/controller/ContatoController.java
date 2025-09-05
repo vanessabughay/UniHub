@@ -1,7 +1,6 @@
 package com.unihub.backend.controller;
 
 import com.unihub.backend.model.Contato;
-import com.unihub.backend.model.HorarioAula;
 import com.unihub.backend.service.ContatoService;
 
 import org.springframework.beans.factory.annotation.Autowired;

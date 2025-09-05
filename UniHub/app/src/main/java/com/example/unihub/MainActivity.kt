@@ -28,6 +28,7 @@ import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 
@@ -66,14 +67,14 @@ sealed class Screen(val route: String) {
         }
     }
 
-    // PAULO //
-
     object ListarContato : Screen("lista_contato") // Rota é "lista_contato"
     object ManterContato : Screen("manter_contato?id={id}") {
         fun createRoute(id: String?): String {
             return if (id != null) "manter_contato?id=$id" else "manter_contato"
         }
     }
+    object ListarGrupo : Screen("lista_grupo")
+    object ManterGrupo : Screen("manter_grupo?id={id}")
 }
 
 class MainActivity : ComponentActivity() {
@@ -275,6 +276,41 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    // ROTA 9: Tela de Listar Grupo
+                    composable(Screen.ListarGrupo.route) {
+                        ListarGrupoScreen(
+                            onAddGrupo = {
+                            //    navController.navigate(Screen.ManterGrupo.createRoute(null))
+                            },
+                            onGrupoClick = { grupoId ->
+                            //  navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
+                            },
+                            onVoltar = { navController.popBackStack() }
+
+                        )
+                    }
+
+                    // ROTA 10: manter Grupo
+/*
+                    composable(
+                        route = Screen.ManterGrupo.route,
+                        arguments = listOf(navArgument("id") {
+                            type = NavType.StringType
+                            nullable = true
+                        })
+                    ) { backStackEntry ->
+                        val grupoId = backStackEntry.arguments?.getString("id")
+                        ManterGrupoScreen(
+                            grupoId = grupoId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+
+ */
                     //TELA INICIAL
 
                     composable(Screen.TelaInicial.route) {

@@ -73,7 +73,7 @@ fun TelaInicial(
                 "perfil" -> navController.navigate("manter_conta")
                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 "contatos" -> navController.navigate("lista_contato")
-                //"grupos" -> navController.navigate("grupos")
+                "grupos" -> navController.navigate("lista_grupo")
                 //"configurar notificações" -> navController.navigate("configurar_notificacoes")
                 //"atividades" -> navController.navigate("atividades")
                 else -> {} // fallback

@@ -2,36 +2,37 @@ package com.example.unihub.data.repository
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
-import com.example.unihub.data.model.Contato
+import com.example.unihub.data.model.Grupo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
 
-
-data class ContatoResumo(
+/*
+data class GrupoResumo(
     val id: Long,
     val nome: String,
     val email: String
 )
+*/
 
 
-interface Contatobackend { // Removi o "_" inicial, é uma convenção melhor
-    suspend fun getContatoResumoApi(): List<ContatoResumo>
-    suspend fun getContatoByIdApi(id: String): Contato?
-    suspend fun addContatoApi(contato: Contato)
-    suspend fun updateContatoApi(id: Long, contato: Contato): Boolean
-    suspend fun deleteContatoApi(id: Long): Boolean
+interface Grupobackend { // Removi o "_" inicial, é uma convenção melhor
+    suspend fun getGrupoApi(): List<Grupo>
+    suspend fun getGrupoByIdApi(id: String): Grupo?
+    suspend fun addGrupoApi(grupo: Grupo)
+    suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean
+    suspend fun deleteGrupoApi(id: Long): Boolean
 }
 
-// Esta é agora a única classe ContatoRepository
-class ContatoRepository(private val backend: Contatobackend) {
+// Esta é agora a única classe GrupoRepository
+class GrupoRepository(private val backend: Grupobackend) {
 
-    //LISTA RESUMO
+    //LISTA
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun getContatoResumo(): Flow<List<ContatoResumo>> = flow {
+    fun getGrupo(): Flow<List<Grupo>> = flow {
         try {
-            emit(backend.getContatoResumoApi())
+            emit(backend.getGrupoApi())
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {
@@ -41,9 +42,9 @@ class ContatoRepository(private val backend: Contatobackend) {
 
     //BUSCA POR ID
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun getContatoById(id: Long): Flow<Contato?> = flow {
+    fun getGrupoById(id: Long): Flow<Grupo?> = flow {
         try {
-            emit(backend.getContatoByIdApi(id.toString()))
+            emit(backend.getGrupoByIdApi(id.toString()))
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {
@@ -51,11 +52,11 @@ class ContatoRepository(private val backend: Contatobackend) {
         }
     }
 
-    //ADD CONTATO
+    //ADD Grupo
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun addContato(contato: Contato) {
+    suspend fun addGrupo(grupo: Grupo) {
         try {
-            backend.addContatoApi(contato)
+            backend.addGrupoApi(grupo)
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {
@@ -63,12 +64,12 @@ class ContatoRepository(private val backend: Contatobackend) {
         }
     }
 
-    //PATCH DE ATUALIZAÇÃO DO CONTATO
+    //PATCH DE ATUALIZAÇÃO DO Grupo
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun updateContato(contato: Contato): Boolean {
-        val id = contato.id ?: throw Exception("ID do contato não pode ser nulo para atualização.")
+    suspend fun updateGrupo(grupo: Grupo): Boolean {
+        val id = grupo.id ?: throw Exception("ID do Grupo não pode ser nulo para atualização.")
         return try {
-            backend.updateContatoApi(id, contato)
+            backend.updateGrupoApi(id, grupo)
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {
@@ -76,12 +77,12 @@ class ContatoRepository(private val backend: Contatobackend) {
         }
     }
 
-    //EXCLUSÃO CONTATO
+    //EXCLUSÃO Grupo
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun deleteContato(id: String): Boolean {
+    suspend fun deleteGrupo(id: String): Boolean {
         val longId = id.toLongOrNull() ?: throw Exception("ID inválido")
         return try {
-            backend.deleteContatoApi(longId)
+            backend.deleteGrupoApi(longId)
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {
