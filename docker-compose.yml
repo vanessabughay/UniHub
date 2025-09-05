@@ -21,5 +21,18 @@ services:
     depends_on:
       - db
 
+    environment: # Adicione esta seção ou adicione à existente
+      # Opção 1: Configuração de debug geral do Spring Boot (mais verbosa)
+      - DEBUG=true
+      # Opção 2: Debug específico para auto-configuração (mais focado no problema de inicialização)
+      # - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_AUTOCONFIGURE=DEBUG
+      # --- SUAS VARIÁVEIS DE AMBIENTE EXISTENTES PARA O BANCO DE DADOS DEVEM VIR AQUI ---
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/unihub_db # Nota: 'db' é o nome do serviço do banco
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      # Adicione outras variáveis de ambiente do Spring se necessário
+      # Exemplo: - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+
+
 volumes:
   pgdata:

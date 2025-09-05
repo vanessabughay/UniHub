@@ -177,8 +177,8 @@ fun ManterContatoScreen(
                     ////////////////////////////////
                     ////////////////////////////////
                     /*
-                    FALTA IMPLEMENTAR  AS FUNÇÃO DE ENVIAR EMAIL
-                    FALTA IMPLEMENTAR  AS FUNÇÃO DE CONVIDAR
+                    FALTA IMPLEMENTAR  A FUNÇÃO DE ENVIAR EMAIL
+                    FALTA IMPLEMENTAR  A FUNÇÃO DE CONVIDAR
                      */
                     ////////////////////////////////
                     ////////////////////////////////

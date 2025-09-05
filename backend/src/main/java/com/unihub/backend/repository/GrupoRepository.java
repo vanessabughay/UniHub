@@ -12,5 +12,3 @@ public interface GrupoRepository extends JpaRepository<Grupo, Long> {
 
 }
 
-
-

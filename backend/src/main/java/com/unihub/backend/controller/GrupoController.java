@@ -47,7 +47,7 @@ import java.util.List;
             Grupo existente = service.buscarPorId(id);
 
 
-            existente.setNomeGrupo(novoGrupo.getNomeGrupo());
+            existente.setNome(novoGrupo.getNome());
             existente.setId(novoGrupo.getId());
             existente.setContatoLista(novoGrupo.getContatoLista());
 

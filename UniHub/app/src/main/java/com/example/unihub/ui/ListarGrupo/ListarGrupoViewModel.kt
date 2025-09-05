@@ -1,6 +1,7 @@
 package com.example.unihub.ui.ListarGrupo
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -50,7 +51,14 @@ class ListarGrupoViewModel(
                     }.sortedBy { it.nome.lowercase() }
                 }
                 .catch { exception ->
-                    _errorMessage.value = "Falha ao carregar Grupos: ${exception.message}"
+                    val detalheErro = if (exception.message.isNullOrBlank()) {
+                        "Causa desconhecida. Verifique os logs." // Ou uma mensagem mais genérica
+                    } else {
+                        exception.message
+                    }
+                    _errorMessage.value = "Falha ao carregar Grupos: $detalheErro"
+                    // Adicionar log para depuração
+                    Log.e("ListarGrupoViewModel", "Erro em loadGrupo: ", exception)
                     _grupos.value = emptyList()
                     _isLoading.value = false
                 }

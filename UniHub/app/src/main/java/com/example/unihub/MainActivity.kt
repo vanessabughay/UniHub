@@ -30,6 +30,7 @@ import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
+import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 
 // Definição das telas e suas rotas
@@ -74,7 +75,11 @@ sealed class Screen(val route: String) {
         }
     }
     object ListarGrupo : Screen("lista_grupo")
-    object ManterGrupo : Screen("manter_grupo?id={id}")
+    object ManterGrupo : Screen("manter_grupo?id={id}"){
+        fun createRoute(id: String?): String {
+            return if (id != null) "manter_grupo?id=$id" else "manter_grupo"
+        }
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -255,9 +260,6 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-
-
-
                     // ROTA 8: manter Contatos
                     composable(
                         route = Screen.ManterContato.route,
@@ -280,10 +282,10 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.ListarGrupo.route) {
                         ListarGrupoScreen(
                             onAddGrupo = {
-                            //    navController.navigate(Screen.ManterGrupo.createRoute(null))
+                                navController.navigate(Screen.ManterGrupo.createRoute(null))
                             },
                             onGrupoClick = { grupoId ->
-                            //  navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
+                              navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
                             },
                             onVoltar = { navController.popBackStack() }
 
@@ -291,7 +293,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     // ROTA 10: manter Grupo
-/*
+
                     composable(
                         route = Screen.ManterGrupo.route,
                         arguments = listOf(navArgument("id") {
@@ -310,7 +312,7 @@ class MainActivity : ComponentActivity() {
                     }
 
 
- */
+
                     //TELA INICIAL
 
                     composable(Screen.TelaInicial.route) {

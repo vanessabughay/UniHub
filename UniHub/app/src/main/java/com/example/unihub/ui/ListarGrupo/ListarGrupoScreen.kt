@@ -53,11 +53,12 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.Grupo
+import androidx.compose.runtime.derivedStateOf
 //import com.example.unihub.ui.ListarGrupo.Grupo
 import com.example.unihub.ui.ListarGrupo.ListarGrupoViewModel
 import com.example.unihub.ui.ListarGrupo.ListarGrupoViewModelFactory
 
-val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
+val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Exemplo de cor padrão
 
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -101,13 +102,23 @@ fun ListarGrupoScreen(
         }
     }
 
-    val gruposFiltrados = if (searchQuery.isBlank()) {
-        gruposState
-    } else {
-        gruposState.filter {
-            it.nome.contains(searchQuery, ignoreCase = true) ||
-                    //it.membros.any { membro -> membro.nome.contains(searchQuery, ignoreCase = true) } ||
-                    it.id.toString().contains(searchQuery, ignoreCase = true)
+    val gruposComIdValido by remember(gruposState) {
+        derivedStateOf {
+            gruposState.filter { it.id != null }
+        }
+    }
+
+    val gruposFiltrados by remember(searchQuery, gruposComIdValido) {
+        derivedStateOf {
+            if (searchQuery.isBlank()) {
+                gruposComIdValido
+            } else {
+                gruposComIdValido.filter { grupo -> // 'grupo' aqui tem id não nulo
+                    val nomeMatches = grupo.nome.contains(searchQuery, ignoreCase = true)
+                    val idMatches = grupo.id!!.toString().contains(searchQuery, ignoreCase = true)
+                    nomeMatches || idMatches // || membrosMatch
+                }
+            }
         }
     }
 
@@ -123,15 +134,17 @@ fun ListarGrupoScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        grupoParaExcluir?.let {
-                            // Chame a função de exclusão no ViewModel
-                            viewModel.deleteGrupo(it.id.toString()) { sucesso ->
-                                if (sucesso) {
-                                    Toast.makeText(context, "Grupo excluído!", Toast.LENGTH_SHORT).show()
-                                    // A lista deve ser recarregada pelo ViewModel após a exclusão
-                                } else {
-                                    // O ViewModel deve tratar o errorMessage
+                        grupoParaExcluir?.let { grupo ->
+                            grupo.id?.let { idNaoNulo -> // Garante que o ID não é nulo antes de excluir
+                                viewModel.deleteGrupo(idNaoNulo.toString()) { sucesso ->
+                                    if (sucesso) {
+                                        Toast.makeText(context, "Grupo excluído!", Toast.LENGTH_SHORT).show()
+                                        // A lista é recarregada pelo ViewModel
+                                    }
+                                    // errorMessage será tratado pelo LaunchedEffect
                                 }
+                            } ?: run {
+                                Toast.makeText(context, "ID do grupo inválido para exclusão.", Toast.LENGTH_SHORT).show()
                             }
                         }
                         showDeleteDialog = false
@@ -213,37 +226,20 @@ fun ListarGrupoScreen(
                             CircularProgressIndicator()
                         }
                     }
-                    gruposState.isEmpty() && !isLoading && errorMessage == null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            //contentAlignment = Alignment.Center''
-                        ) {
-                            Text(
-                                "Nenhum grupo cadastrado.",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                    gruposComIdValido.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
+                        Box( modifier = Modifier.fillMaxSize().padding(16.dp) ) {
+                            Text("Nenhum grupo cadastrado.", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
+                    // A condição para "Nenhum grupo encontrado para a busca" usa gruposFiltrados
                     gruposFiltrados.isEmpty() && searchQuery.isNotBlank() && !isLoading && errorMessage == null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Nenhum grupo encontrado para \"$searchQuery\"",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                        Box( modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center ) {
+                            Text("Nenhum grupo encontrado para \"$searchQuery\"", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                     else -> {
-                        if (isLoading) { // Mostrar um indicador de progresso menor no topo se atualizando
-                            LinearProgressIndicator(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 4.dp))
+                        if (isLoading && gruposComIdValido.isNotEmpty()) { // Mostrar LinearProgressIndicator apenas se já houver itens
+                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp))
                         }
                         LazyColumn(
                             modifier = Modifier
@@ -251,25 +247,27 @@ fun ListarGrupoScreen(
                                 .weight(1f)
                                 .padding(horizontal = 16.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp),
-                            contentPadding = PaddingValues(bottom = 16.dp) // Adicionado para espaçamento no final
+                            contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            /*
-                            items(gruposFiltrados, key = { it.id }) { grupo ->
+                            // Agora é seguro usar id!! para a key, pois gruposFiltrados
+                            // deriva de gruposComIdValido, que só tem IDs não nulos.
+                            items(
+                                items = gruposFiltrados,
+                                key = { grupo -> grupo.id!! } // SEGURO
+                            ) { grupo ->
+                                // 'grupo' aqui tem um 'id' que é garantidamente não nulo
                                 GrupoItem(
                                     grupo = grupo,
                                     onClick = {
-                                        onGrupoClick(grupo.id.toString())
+                                        // grupo.id!! é seguro
+                                        onGrupoClick(grupo.id!!.toString())
                                     },
-                                    onDeleteClick = { // Nova ação para o clique na lixeira
-                                        grupoParaExcluir = grupo
+                                    onDeleteClick = {
+                                        grupoParaExcluir = grupo // grupoParaExcluir ainda pode ser um Grupo com id: Long?
                                         showDeleteDialog = true
                                     }
                                 )
                             }
-
-                             */
-
-
                         }
                     }
                 }
@@ -311,7 +309,7 @@ fun GrupoItem(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                if (grupo.membros.isEmpty()) {
+                if (grupo.membros?.isEmpty() ?: true)  {
                     /*Text(
                         text = grupo.membros,
                         fontSize = 14.sp,
