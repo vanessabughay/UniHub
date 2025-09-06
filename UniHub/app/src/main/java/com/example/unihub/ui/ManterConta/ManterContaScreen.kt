@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import android.widget.Toast
 import com.example.unihub.data.repository.AuthRepository
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,6 +42,7 @@ fun ManterContaScreen(
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory(LocalContext.current))) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -55,6 +57,21 @@ fun ManterContaScreen(
         viewModel.carregarInstituicaoUsuario()
     }
 
+    LaunchedEffect(viewModel.errorMessage) {
+        viewModel.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.errorMessage = null
+        }
+    }
+
+    LaunchedEffect(viewModel.success) {
+        if (viewModel.success) {
+            Toast.makeText(context, "alteração salva com sucesso!", Toast.LENGTH_SHORT).show()
+            viewModel.success = false
+            onVoltar()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -64,14 +81,7 @@ fun ManterContaScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
-                actions = {
-                    TextButton(onClick = {
-                        viewModel.salvar()
-                        onVoltar()
-                    }) {
-                        Text("Salvar")
-                    }
-                },
+
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))
             )
         }
@@ -209,6 +219,7 @@ fun ManterContaScreen(
                                     viewModel.media,
                                     viewModel.frequencia
                                 )
+
                             },
                             modifier = Modifier.align(Alignment.TopEnd)
                         ) {
@@ -229,7 +240,10 @@ fun ManterContaScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.salvar() },
+                    onClick = {
+                        viewModel.salvar()
+
+                              },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
                     modifier = Modifier
                         .fillMaxWidth()

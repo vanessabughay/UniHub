@@ -32,6 +32,9 @@ class ManterContaViewModel(
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
 
+    var success by mutableStateOf(false)
+    var errorMessage by mutableStateOf<String?>(null)
+
     private var nomeOriginal = ""
     private var emailOriginal = ""
 
@@ -98,12 +101,6 @@ class ManterContaViewModel(
                     frequenciaMinima = frequencia.toIntOrNull() ?: 0
                 )
                 repository.salvarInstituicao(inst)
-                TokenManager.saveToken(
-                    context,
-                    TokenManager.token ?: "",
-                    nome,
-                    email
-                )
 
                 val nomeAlterado = nome != nomeOriginal
                 val emailAlterado = email != emailOriginal
@@ -115,15 +112,23 @@ class ManterContaViewModel(
                         nome,
                         email,
                         if (senhaAlterada) senha else null,
-                        onSuccess = {},
-                        onError = {}
+                        onSuccess = {
+                            TokenManager.saveToken(context, TokenManager.token ?: "", nome, email)
+                            nomeOriginal = nome
+                            emailOriginal = email
+                            if (senhaAlterada) senha = ""
+                            success = true
+                        },
+                        onError = { error ->
+                            errorMessage = error
+                        }
                     )
-                    nomeOriginal = nome
-                    emailOriginal = email
-                    if (senhaAlterada) senha = ""
+                } else {
+                    success = true
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                errorMessage = e.message
             }
         }
     }
