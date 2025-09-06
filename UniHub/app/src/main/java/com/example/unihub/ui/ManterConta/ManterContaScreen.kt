@@ -68,7 +68,7 @@ fun ManterContaScreen(
                         viewModel.salvar()
                         onVoltar()
                     }) {
-                        Text("Saltar")
+                        Text("Salvar")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))

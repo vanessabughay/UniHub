@@ -12,10 +12,12 @@ import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.api.TokenManager
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
+import com.example.unihub.data.repository.AuthRepository
 
 
 class ManterContaViewModel(
     private val repository: InstituicaoRepository,
+    private val authRepository: AuthRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -30,10 +32,15 @@ class ManterContaViewModel(
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
 
+    private var nomeOriginal = ""
+    private var emailOriginal = ""
+
     init {
         TokenManager.loadToken(context)
-        nome = TokenManager.nomeUsuario ?: ""
-        email = TokenManager.emailUsuario ?: ""
+        nomeOriginal = TokenManager.nomeUsuario ?: ""
+        emailOriginal = TokenManager.emailUsuario ?: ""
+        nome = nomeOriginal
+        email = emailOriginal
         carregarInstituicaoUsuario()
     }
 
@@ -97,6 +104,24 @@ class ManterContaViewModel(
                     nome,
                     email
                 )
+
+                val nomeAlterado = nome != nomeOriginal
+                val emailAlterado = email != emailOriginal
+                val senhaAlterada = senha.isNotBlank()
+
+                if (nomeAlterado || emailAlterado || senhaAlterada) {
+                    authRepository.updateUser(
+                        context,
+                        nome,
+                        email,
+                        if (senhaAlterada) senha else null,
+                        onSuccess = {},
+                        onError = {}
+                    )
+                    nomeOriginal = nome
+                    emailOriginal = email
+                    if (senhaAlterada) senha = ""
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

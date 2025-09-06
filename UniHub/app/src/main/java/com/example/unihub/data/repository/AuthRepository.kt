@@ -5,6 +5,7 @@ import com.example.unihub.data.api.TokenManager
 import com.example.unihub.data.api.UniHubApi // Assume que esta é a sua interface de API
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
+import com.example.unihub.data.api.model.UpdateUsuarioRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
@@ -77,6 +78,38 @@ class AuthRepository(
                     val errorBody = response.errorBody()?.string()
                     withContext(Dispatchers.Main) {
                         onError(errorBody ?: "Erro desconhecido ao fazer login.")
+                    }
+                }
+            } catch (e: HttpException) {
+                withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) { onError("Falha na conexão. Verifique sua rede.") }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onError("Ocorreu um erro inesperado: ${e.message}") }
+            }
+        }
+    }
+
+    suspend fun updateUser(
+        context: Context,
+        name: String,
+        email: String,
+        password: String?,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                val request = UpdateUsuarioRequest(name, email, password)
+                val token = TokenManager.token ?: ""
+                val response = api.updateUser("Bearer $token", request)
+                if (response.isSuccessful) {
+                    TokenManager.saveToken(context, token, name, email)
+                    withContext(Dispatchers.Main) { onSuccess() }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    withContext(Dispatchers.Main) {
+                        onError(errorBody ?: "Erro desconhecido ao atualizar usuário.")
                     }
                 }
             } catch (e: HttpException) {
