@@ -28,6 +28,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Ausencia
+import androidx.compose.ui.tooling.preview.Preview
+import com.example.unihub.data.repository.AusenciaRepository
+import com.example.unihub.data.repository.DisciplinaRepository
+import com.example.unihub.data.repository.CategoriaRepository
+import com.example.unihub.data.repository.ApiAusenciaBackend
+import com.example.unihub.data.repository.ApiDisciplinaBackend
+import com.example.unihub.data.repository.ApiCategoriaBackend
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -116,8 +123,7 @@ fun ManterAusenciaScreen(
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .width(375.dp)
-                .height(714.dp)
+                .fillMaxSize()
                 .background(Color(0xFFF2F2F2))
                 .padding(paddingValues)
                 .padding(16.dp),
@@ -248,4 +254,20 @@ fun ManterAusenciaScreen(
             }
         }
     }
+}
+
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+@Preview(showBackground = true)
+@Composable
+fun ManterAusenciaScreenPreview() {
+    ManterAusenciaScreen(
+        disciplinaId = "1",
+        ausenciaId = null,
+        onVoltar = {},
+        viewModel = ManterAusenciaViewModel(
+            AusenciaRepository(ApiAusenciaBackend()),
+            DisciplinaRepository(ApiDisciplinaBackend()),
+            CategoriaRepository(ApiCategoriaBackend())
+        )
+    )
 }
