@@ -80,23 +80,26 @@ class ManterContaViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {
         viewModelScope.launch {
-            val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrThrow()
-            val inst = instExistente?.copy(
-                mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
-                frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
-            ) ?: Instituicao(
-
-                nome = nomeInstituicao,
-                mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                frequenciaMinima = frequencia.toIntOrNull() ?: 0
-            )
-            repository.salvarInstituicao(inst)
-            TokenManager.saveToken(
-                context,
-                TokenManager.token ?: "",
-                nome,
-                email
-            )
+            try {
+                val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrNull()
+                val inst = instExistente?.copy(
+                    mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
+                    frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
+                ) ?: Instituicao(
+                    nome = nomeInstituicao,
+                    mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
+                    frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                )
+                repository.salvarInstituicao(inst)
+                TokenManager.saveToken(
+                    context,
+                    TokenManager.token ?: "",
+                    nome,
+                    email
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

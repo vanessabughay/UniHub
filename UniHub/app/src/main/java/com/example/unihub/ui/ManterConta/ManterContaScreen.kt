@@ -63,6 +63,14 @@ fun ManterContaScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
+                actions = {
+                    TextButton(onClick = {
+                        viewModel.salvar()
+                        onVoltar()
+                    }) {
+                        Text("Saltar")
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))
             )
         }
