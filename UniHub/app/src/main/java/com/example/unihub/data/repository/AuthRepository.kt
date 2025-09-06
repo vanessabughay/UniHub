@@ -101,7 +101,14 @@ class AuthRepository(
         withContext(Dispatchers.IO) {
             try {
                 val request = UpdateUsuarioRequest(name, email, password)
-                val token = TokenManager.token ?: ""
+                val token = TokenManager.token
+
+                if (token.isNullOrBlank()) {
+                    withContext(Dispatchers.Main) {
+                        onError("Token inválido. Faça login novamente.")
+                    }
+                    return@withContext
+                }
                 val response = api.updateUser("Bearer $token", request)
                 if (response.isSuccessful) {
                     TokenManager.saveToken(context, token, name, email)
