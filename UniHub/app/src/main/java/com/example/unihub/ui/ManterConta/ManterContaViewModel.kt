@@ -1,6 +1,7 @@
 package com.example.unihub.ui.ManterConta
 
 import android.os.Build
+import android.content.Context
 import androidx.annotation.RequiresExtension
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -8,12 +9,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
+import com.example.unihub.data.api.TokenManager
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
 
 
 class ManterContaViewModel(
-    private val repository: InstituicaoRepository
+    private val repository: InstituicaoRepository,
+    private val context: Context
 ) : ViewModel() {
 
     var nome by mutableStateOf("")
@@ -28,6 +31,9 @@ class ManterContaViewModel(
     var mostrarCadastrar by mutableStateOf(false)
 
     init {
+        TokenManager.loadToken(context)
+        nome = TokenManager.nomeUsuario ?: ""
+        email = TokenManager.emailUsuario ?: ""
         carregarInstituicaoUsuario()
     }
 
@@ -57,10 +63,10 @@ class ManterContaViewModel(
                 } catch (e: Exception) {
                     sugestoes = emptyList()
                     mostrarCadastrar = true
-                    }
                 }
             }
         }
+    }
 
 
     fun onInstituicaoSelecionada(inst: Instituicao) {
@@ -85,6 +91,12 @@ class ManterContaViewModel(
                 frequenciaMinima = frequencia.toIntOrNull() ?: 0
             )
             repository.salvarInstituicao(inst)
-            }
+            TokenManager.saveToken(
+                context,
+                TokenManager.token ?: "",
+                nome,
+                email
+            )
         }
     }
+}

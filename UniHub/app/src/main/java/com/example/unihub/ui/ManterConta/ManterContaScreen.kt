@@ -243,6 +243,7 @@ fun ManterContaScreenPreview() {
         onVoltar = {},
         onNavigateToManterInstituicao = { _, _, _ -> },
         viewModel = ManterContaViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend(), context)        )
+            InstituicaoRepository(ApiInstituicaoBackend(), context)
+        )
     )
 }

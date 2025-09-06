@@ -14,7 +14,7 @@ class ManterContaViewModelFactory(
         if (modelClass.isAssignableFrom(ManterContaViewModel::class.java)) {
             val repository = InstituicaoRepositoryProvider.getRepository(context)
             @Suppress("UNCHECKED_CAST")
-            return ManterContaViewModel(repository) as T
+            return ManterContaViewModel(repository, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

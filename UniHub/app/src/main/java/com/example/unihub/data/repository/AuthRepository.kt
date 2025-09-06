@@ -64,7 +64,8 @@ class AuthRepository(
                         TokenManager.saveToken(
                             context,
                             authResponse.token,
-                            authResponse.nomeUsuario
+                            authResponse.nomeUsuario,
+                            email
                         )
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
