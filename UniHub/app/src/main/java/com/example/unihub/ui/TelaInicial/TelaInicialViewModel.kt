@@ -109,6 +109,10 @@ class TelaInicialViewModel : ViewModel() {
         _estado.update { it.copy(secaoTarefasAberta = !it.secaoTarefasAberta) }
     }
 
+    fun atualizarNomeUsuario() {
+        _estado.update { it.copy(usuario = Usuario(nome = TokenManager.nomeUsuario ?: "")) }
+    }
+
     private fun criarEstadoInicial(): EstadoTelaInicial {
         return EstadoTelaInicial(
             usuario = Usuario(nome = TokenManager.nomeUsuario ?: ""),

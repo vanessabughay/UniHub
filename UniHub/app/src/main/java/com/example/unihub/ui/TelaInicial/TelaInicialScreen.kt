@@ -39,6 +39,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -60,7 +63,20 @@ fun TelaInicial(
     viewModel: TelaInicialViewModel = viewModel()) {
     val estado by viewModel.estado.collectAsStateWithLifecycleCompat()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.atualizarNomeUsuario()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+
     LaunchedEffect(Unit) {
+        viewModel.atualizarNomeUsuario()
         // Chama a função para filtrar avaliações e tarefas logo após o carregamento da tela
         viewModel.filtrarAvaliacoesEValidarTarefas()
 
