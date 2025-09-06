@@ -94,7 +94,6 @@ fun ManterContaScreen(
                 )
 
             }
-
             Text(
                 text = "Informações gerais",
                 style = MaterialTheme.typography.titleMedium,
@@ -243,7 +242,8 @@ fun ManterContaScreenPreview() {
         onVoltar = {},
         onNavigateToManterInstituicao = { _, _, _ -> },
         viewModel = ManterContaViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend(), context)
+            InstituicaoRepository(ApiInstituicaoBackend(), context),
+            context
         )
     )
 }
