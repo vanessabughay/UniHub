@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.unihub.data.repository.AuthRepository
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -251,6 +252,7 @@ fun ManterContaScreenPreview() {
         onNavigateToManterInstituicao = { _, _, _ -> },
         viewModel = ManterContaViewModel(
             InstituicaoRepository(ApiInstituicaoBackend(), context),
+            AuthRepository(),
             context
         )
     )
