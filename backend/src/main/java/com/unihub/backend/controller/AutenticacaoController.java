@@ -2,6 +2,7 @@ package com.unihub.backend.controller;
 
 import com.unihub.backend.dto.LoginRequest;
 import com.unihub.backend.dto.RegisterRequest;
+import com.unihub.backend.dto.LoginResponse;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.service.AutenticacaoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +36,9 @@ public class AutenticacaoController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        String token = servico.login(request.getEmail(), request.getPassword());
-        if (token != null) {
-            return ResponseEntity.ok(Map.of("token", token));
+        LoginResponse response = servico.login(request.getEmail(), request.getPassword());
+        if (response != null) {
+            return ResponseEntity.ok(response);
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Credenciais inválidas"));
     }

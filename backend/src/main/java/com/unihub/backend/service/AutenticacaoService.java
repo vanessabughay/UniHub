@@ -5,6 +5,7 @@ import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.unihub.backend.dto.LoginResponse;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -31,12 +32,12 @@ public class AutenticacaoService {
         return repository.save(usuario);
     }
 
-    public String login(String email, String senha) {
+    public LoginResponse login(String email, String senha) {
         Optional<Usuario> usuarioOpt = repository.findByEmail(email);
         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
             String token = UUID.randomUUID().toString();
             tokens.put(token, usuarioOpt.get().getId());
-            return token;
+            return new LoginResponse(token, usuarioOpt.get().getNomeUsuario());
         }
         return null;
     }
