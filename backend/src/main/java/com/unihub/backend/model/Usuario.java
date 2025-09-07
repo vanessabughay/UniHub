@@ -30,6 +30,10 @@ public class Usuario {
     @JsonManagedReference("usuario-ausencias")
     private List<Ausencia> ausencias;
 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-categorias")
+    private List<Categoria> categorias;
+
 
     public Long getId() {
         return id;
@@ -71,4 +75,7 @@ public class Usuario {
 
     public List<Ausencia> getAusencias() { return ausencias; }
     public void setAusencias(List<Ausencia> ausencias) { this.ausencias = ausencias; }
+
+    public List<Categoria> getCategorias() { return categorias; }
+    public void setCategorias(List<Categoria> categorias) { this.categorias = categorias; }
 }

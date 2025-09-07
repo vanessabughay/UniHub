@@ -29,7 +29,7 @@ public class AusenciaService {
 
     public Ausencia salvar(Ausencia ausencia, Long usuarioId) {
         if (ausencia.getCategoria() != null && !ausencia.getCategoria().isBlank()) {
-            categoriaService.buscarOuCriar(ausencia.getCategoria());
+            categoriaService.buscarOuCriar(ausencia.getCategoria(), usuarioId);
         }
         if (ausencia.getDisciplinaId() != null) {
             disciplinaRepository.findByIdAndUsuarioId(ausencia.getDisciplinaId(), usuarioId)
