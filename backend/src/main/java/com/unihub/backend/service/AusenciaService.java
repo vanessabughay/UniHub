@@ -3,6 +3,7 @@ package com.unihub.backend.service;
 import com.unihub.backend.model.Ausencia;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.AusenciaRepository;
+import com.unihub.backend.model.Disciplina;
 import com.unihub.backend.repository.DisciplinaRepository;
 import com.unihub.backend.service.CategoriaService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,8 +33,9 @@ public class AusenciaService {
             categoriaService.buscarOuCriar(ausencia.getCategoria(), usuarioId);
         }
         if (ausencia.getDisciplinaId() != null) {
-            disciplinaRepository.findByIdAndUsuarioId(ausencia.getDisciplinaId(), usuarioId)
-                    .ifPresent(ausencia::setDisciplina);
+            Disciplina disciplina = disciplinaRepository.findByIdAndUsuarioId(ausencia.getDisciplinaId(), usuarioId)
+                    .orElseThrow(() -> new RuntimeException("Disciplina com ID " + ausencia.getDisciplinaId() + " não encontrada para este usuário."));
+            ausencia.setDisciplina(disciplina);
         }
         Usuario usuario = new Usuario();
         usuario.setId(usuarioId);

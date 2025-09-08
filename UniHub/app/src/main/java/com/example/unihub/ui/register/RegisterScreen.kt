@@ -17,6 +17,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import androidx.navigation.NavController
 import com.example.unihub.ui.register.RegisterViewModel // Importação do ViewModel específico de registro
 
@@ -33,6 +34,8 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
 
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
+            val repository = InstituicaoRepositoryProvider.getRepository(context)
+            repository.limparInstituicao()
             Toast.makeText(context, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
             navController.navigate("login") {

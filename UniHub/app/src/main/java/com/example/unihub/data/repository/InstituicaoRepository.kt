@@ -74,4 +74,11 @@ class InstituicaoRepository(
         }
         return instituicaoSelecionada
     }
+
+    suspend fun limparInstituicao() {
+        dataStore.edit { prefs ->
+            prefs.remove(INSTITUICAO_KEY)
+        }
+        instituicaoSelecionada = null
+    }
 }

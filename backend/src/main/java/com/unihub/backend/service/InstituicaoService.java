@@ -14,13 +14,10 @@ public class InstituicaoService {
     @Autowired
     private InstituicaoRepository repository;
 
-    public List<Instituicao> listarTodas(Long usuarioId) {
-        return repository.findByUsuarioId(usuarioId);
-    }
-
     public List<Instituicao> buscarPorNome(String nome, Long usuarioId) {
         return repository.findByUsuarioIdAndNomeContainingIgnoreCase(usuarioId, nome);
     }
+
 
     public Instituicao salvar(Instituicao instituicao, Long usuarioId) {
         Usuario usuario = new Usuario();

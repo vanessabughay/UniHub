@@ -18,10 +18,7 @@ public class InstituicaoController {
 
     @GetMapping
     public List<Instituicao> listar(@RequestParam(required = false) String nome, @AuthenticationPrincipal Long usuarioId) {
-        if (nome != null && !nome.isEmpty()) {
-            return service.buscarPorNome(nome, usuarioId);
-        }
-        return service.listarTodas(usuarioId);
+        return service.buscarPorNome(nome, usuarioId);
     }
 
     @PostMapping
