@@ -18,7 +18,7 @@ public class InstituicaoController {
 
     @GetMapping
     public List<Instituicao> listar(@RequestParam(required = false) String nome, @AuthenticationPrincipal Long usuarioId) {
-        return service.buscarPorNome(nome, usuarioId);
+        return service.buscarPorNome(nome);
     }
 
     @PostMapping

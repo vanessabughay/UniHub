@@ -37,6 +37,7 @@ class ManterContaViewModel(
 
     private var nomeOriginal = ""
     private var emailOriginal = ""
+    private var instituicaoId: Long? = null
 
     init {
         TokenManager.loadToken(context)
@@ -53,6 +54,7 @@ class ManterContaViewModel(
                 nomeInstituicao = inst.nome
                 media = inst.mediaAprovacao.toString()
                 frequencia = inst.frequenciaMinima.toString()
+                instituicaoId = inst.id
             }
         }
     }
@@ -61,6 +63,7 @@ class ManterContaViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
+        instituicaoId = null
         if (text.isBlank()) {
             sugestoes = emptyList()
             mostrarCadastrar = false
@@ -68,7 +71,7 @@ class ManterContaViewModel(
             viewModelScope.launch {
                 try {
                     val lista = repository.buscarInstituicoes(text)
-                    sugestoes = lista
+                    sugestoes = lista.distinctBy { it.nome }
                     mostrarCadastrar = lista.isEmpty()
                 } catch (e: Exception) {
                     sugestoes = emptyList()
@@ -85,22 +88,21 @@ class ManterContaViewModel(
         frequencia = inst.frequenciaMinima.toString()
         sugestoes = emptyList()
         mostrarCadastrar = false
+        instituicaoId = null
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {
         viewModelScope.launch {
             try {
-                val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrNull()
-                val inst = instExistente?.copy(
-                    mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
-                    frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
-                ) ?: Instituicao(
+                val inst = Instituicao(
+                    id = instituicaoId,
                     nome = nomeInstituicao,
                     mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
                     frequenciaMinima = frequencia.toIntOrNull() ?: 0
                 )
                 repository.salvarInstituicao(inst)
+                instituicaoId = repository.instituicaoUsuario()?.id
 
                 val nomeAlterado = nome != nomeOriginal
                 val emailAlterado = email != emailOriginal

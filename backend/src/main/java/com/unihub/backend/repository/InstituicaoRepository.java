@@ -13,4 +13,6 @@ public interface InstituicaoRepository extends JpaRepository<Instituicao, Long> 
     @Query("SELECT i FROM Instituicao i WHERE i.usuario.id = :usuarioId AND (:nome IS NULL OR LOWER(i.nome) LIKE LOWER(CONCAT('%', :nome, '%')))")
     List<Instituicao> findByUsuarioIdAndNomeContainingIgnoreCase(Long usuarioId, String nome);
     Optional<Instituicao> findByIdAndUsuarioId(Long id, Long usuarioId);
+    List<Instituicao> findByNomeContainingIgnoreCase(String nome);
+    List<Instituicao> findByUsuarioId(Long usuarioId);
 }
