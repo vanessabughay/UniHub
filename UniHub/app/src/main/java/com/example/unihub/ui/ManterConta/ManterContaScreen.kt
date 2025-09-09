@@ -5,6 +5,8 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -155,23 +157,57 @@ fun ManterContaScreen(
                     .fillMaxWidth()
                     .padding(top = 8.dp)
             )
-            OutlinedTextField(
-                value = viewModel.senha,
-                onValueChange = { viewModel.senha = it },
-                label = { Text("Senha") },
-                visualTransformation = PasswordVisualTransformation(),
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xA8C1D5E4),
-                    unfocusedContainerColor = Color(0xA8C1D5E4),
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
-                ),
+            var expandirSenha by remember { mutableStateOf(false) }
+
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-            )
+                    .animateContentSize(),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+            ) {
+                Column(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(0.dp)
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.senha,
+                        onValueChange = { viewModel.senha = it },
+                        label = { Text("Senha") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xA8C1D5E4),
+                            unfocusedContainerColor = Color(0xA8C1D5E4),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (it.isFocused) expandirSenha = true }
+                    )
+                    if (expandirSenha) {
+                        OutlinedTextField(
+                            value = viewModel.confirmarSenha,
+                            onValueChange = { viewModel.confirmarSenha = it },
+                            label = { Text("Confirmar senha") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xA8C1D5E4),
+                                unfocusedContainerColor = Color(0xA8C1D5E4),
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
 
             Text(
                 text = "Instituição",

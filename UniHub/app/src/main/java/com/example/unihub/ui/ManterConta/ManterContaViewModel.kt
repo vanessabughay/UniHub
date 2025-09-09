@@ -24,6 +24,7 @@ class ManterContaViewModel(
     var nome by mutableStateOf("")
     var email by mutableStateOf("")
     var senha by mutableStateOf("")
+    var confirmarSenha by mutableStateOf("")
 
     var nomeInstituicao by mutableStateOf("")
     var media by mutableStateOf("")
@@ -37,6 +38,7 @@ class ManterContaViewModel(
 
     private var nomeOriginal = ""
     private var emailOriginal = ""
+    private var senhaOriginal = ""
     private var instituicaoId: Long? = null
 
     init {
@@ -106,19 +108,44 @@ class ManterContaViewModel(
 
                 val nomeAlterado = nome != nomeOriginal
                 val emailAlterado = email != emailOriginal
-                val senhaAlterada = senha.isNotBlank()
+                val senhaAlterada = senha.isNotBlank() || confirmarSenha.isNotBlank()
+
+                if (senhaAlterada) {
+                    val cleanSenha = senha.trim()
+                    val cleanConfirmar = confirmarSenha.trim()
+                    if (cleanSenha.isEmpty() || cleanConfirmar.isEmpty()) {
+                        errorMessage = "Preencha todos os campos de senha."
+                        return@launch
+                    }
+                    if (cleanSenha != cleanConfirmar) {
+                        errorMessage = "As senhas não coincidem."
+                        return@launch
+                    }
+                    if (cleanSenha.length < 6) {
+                        errorMessage = "A senha deve ter pelo menos 6 caracteres."
+                        return@launch
+                    }
+                    if (cleanSenha == senhaOriginal) {
+                        errorMessage = "A nova senha deve ser diferente da senha anterior."
+                        return@launch
+                    }
+                }
 
                 if (nomeAlterado || emailAlterado || senhaAlterada) {
                     authRepository.updateUser(
                         context,
                         nome,
                         email,
-                        if (senhaAlterada) senha else null,
+                        if (senhaAlterada) senha.trim() else null,
                         onSuccess = {
                             TokenManager.saveToken(context, TokenManager.token ?: "", nome, email)
                             nomeOriginal = nome
                             emailOriginal = email
-                            if (senhaAlterada) senha = ""
+                            if (senhaAlterada) {
+                                senhaOriginal = senha.trim()
+                                senha = ""
+                                confirmarSenha = ""
+                            }
                             success = true
                         },
                         onError = { error ->
