@@ -5,6 +5,8 @@ import com.example.unihub.data.util.LocalDateAdapter
 import com.google.gson.GsonBuilder
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import com.example.unihub.data.api.TokenManager
+import okhttp3.OkHttpClient
 import java.time.LocalDate
 
 class ApiCategoriaBackend : _categoriabackend {
@@ -13,8 +15,20 @@ class ApiCategoriaBackend : _categoriabackend {
             .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
             .create()
 
+        val client = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val original = chain.request()
+                val requestBuilder = original.newBuilder()
+                TokenManager.token?.let { token ->
+                    requestBuilder.addHeader("Authorization", "Bearer $token")
+                }
+                chain.proceed(requestBuilder.build())
+            }
+            .build()
+
         Retrofit.Builder()
             .baseUrl("http://10.0.2.2:8080/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(CategoriaApi::class.java)

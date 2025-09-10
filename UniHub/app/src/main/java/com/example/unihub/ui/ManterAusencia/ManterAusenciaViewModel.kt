@@ -35,6 +35,7 @@ class ManterAusenciaViewModel(
 
     fun criarAusencia(ausencia: Ausencia) {
         viewModelScope.launch {
+            _erro.value = null
             try {
                 ausenciaRepository.addAusencia(ausencia)
                 _sucesso.value = true
@@ -46,6 +47,7 @@ class ManterAusenciaViewModel(
 
     fun atualizarAusencia(ausencia: Ausencia) {
         viewModelScope.launch {
+            _erro.value = null
             try {
                 val result = ausenciaRepository.updateAusencia(ausencia)
                 _sucesso.value = result
@@ -58,6 +60,7 @@ class ManterAusenciaViewModel(
     fun loadAusencia(id: String) {
         val longId = id.toLongOrNull() ?: return
         viewModelScope.launch {
+            _erro.value = null
             try {
                 ausenciaRepository.getAusenciaById(longId).collect {
                     _ausencia.value = it
@@ -70,6 +73,7 @@ class ManterAusenciaViewModel(
 
     fun deleteAusencia(id: Long) {
         viewModelScope.launch {
+            _erro.value = null
             try {
                 val result = ausenciaRepository.deleteAusencia(id)
                 _sucesso.value = result
@@ -82,6 +86,7 @@ class ManterAusenciaViewModel(
     fun loadDisciplina(id: String) {
         val longId = id.toLongOrNull() ?: return
         viewModelScope.launch {
+            _erro.value = null
             try {
                 disciplinaRepository.getDisciplinaById(longId).collect {
                     _disciplina.value = it
@@ -95,6 +100,7 @@ class ManterAusenciaViewModel(
 
     fun loadCategorias() {
         viewModelScope.launch {
+            _erro.value = null
             try {
                 categoriaRepository.listCategorias().collect { cats ->
                     _categorias.value = cats
@@ -107,6 +113,7 @@ class ManterAusenciaViewModel(
 
     fun addCategoria(nomeDaNovaCategoria: String) {
         viewModelScope.launch {
+            _erro.value = null
             try {
                 categoriaRepository.addCategoria(nomeDaNovaCategoria)
                 loadCategorias()
@@ -114,5 +121,8 @@ class ManterAusenciaViewModel(
                 _erro.value = e.message
             }
         }
+    }
+    fun limparErro() {
+        _erro.value = null
     }
 }

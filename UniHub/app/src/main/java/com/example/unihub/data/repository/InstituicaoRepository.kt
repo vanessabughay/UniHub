@@ -4,8 +4,6 @@ import android.os.Build
 import android.content.Context
 import androidx.annotation.RequiresExtension
 import com.example.unihub.data.model.Instituicao
-import retrofit2.HttpException
-import java.io.IOException
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -41,19 +39,6 @@ class InstituicaoRepository(
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun getInstituicaoPorNome(nome: String): Result<Instituicao?> {
-        return try {
-            val instituicoesList = backend.buscarInstituicoesApi(nome)
-            Result.success(instituicoesList.firstOrNull { it.nome.equals(nome, ignoreCase = true) })
-        } catch (e: IOException) {
-            Result.failure(Exception("Erro de rede: ${e.message}"))
-        } catch (e: HttpException) {
-            Result.failure(Exception("Erro do servidor: ${e.code()}"))
-        }
-    }
-
-
-    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun salvarInstituicao(instituicao: Instituicao) {
         instituicaoSelecionada = if (instituicao.id != null) {
             backend.updateInstituicaoApi(instituicao.id!!, instituicao)
@@ -73,5 +58,12 @@ class InstituicaoRepository(
             }
         }
         return instituicaoSelecionada
+    }
+
+    suspend fun limparInstituicao() {
+        dataStore.edit { prefs ->
+            prefs.remove(INSTITUICAO_KEY)
+        }
+        instituicaoSelecionada = null
     }
 }

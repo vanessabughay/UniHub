@@ -96,26 +96,52 @@ fun ManterInstituicaoScreen(
                     modifier = Modifier
                         .padding(top = 2.dp, bottom = 2.dp, start = 17.dp, end = 54.dp)
                 )
-                OutlinedTextField(
-                    value = viewModel.nomeInstituicao,
-                    onValueChange = { viewModel.onNomeInstituicaoChange(it) },
-                    modifier = Modifier
-                        .border(
-                            width = 1.dp,
-                            color = Color(0x0D000000),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clip(RoundedCornerShape(10.dp))
-                        .width(266.dp)
-                        .height(44.dp)
-                        .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        containerColor = Color.Transparent,
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
-                    ),
-                    singleLine = true
-                )
+                var expanded by remember { mutableStateOf(false) }
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.nomeInstituicao,
+                        onValueChange = {
+                            viewModel.onNomeInstituicaoChange(it)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .border(
+                                width = 1.dp,
+                                color = Color(0x0D000000),
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clip(RoundedCornerShape(10.dp))
+                            .width(266.dp)
+                            .height(44.dp)
+                            .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
+                        colors = TextFieldDefaults.outlinedTextFieldColors(
+                            containerColor = Color.Transparent,
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        singleLine = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+                    )
+                    LaunchedEffect(sugestoes) { expanded = sugestoes.isNotEmpty() }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        sugestoes.forEach { inst ->
+                            DropdownMenuItem(
+                                text = { Text(inst.nome) },
+                                onClick = {
+                                    viewModel.onInstituicaoSelecionada(inst)
+                                    expanded = false
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                            )
+                        }
+                    }
+                }
             }
             Row (
                 horizontalArrangement = Arrangement.Center,

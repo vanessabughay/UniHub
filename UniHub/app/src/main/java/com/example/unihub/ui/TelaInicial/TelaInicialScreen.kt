@@ -39,6 +39,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -60,7 +63,20 @@ fun TelaInicial(
     viewModel: TelaInicialViewModel = viewModel()) {
     val estado by viewModel.estado.collectAsStateWithLifecycleCompat()
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.atualizarNomeUsuario()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+
     LaunchedEffect(Unit) {
+        viewModel.atualizarNomeUsuario()
         // Chama a função para filtrar avaliações e tarefas logo após o carregamento da tela
         viewModel.filtrarAvaliacoesEValidarTarefas()
 
@@ -471,7 +487,7 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
 @Composable
 private fun Preview_TelaInicialView() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = false,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
@@ -503,7 +519,7 @@ private fun Preview_TelaInicialView() {
 @Composable
 private fun Preview_MenuAberto() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = true,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),

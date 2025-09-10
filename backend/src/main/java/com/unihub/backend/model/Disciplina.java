@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 public class Disciplina {
@@ -26,6 +27,11 @@ public class Disciplina {
     private String salaProfessor;
     private boolean isAtiva;
     private boolean receberNotificacoes;
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    @JsonBackReference("usuario-disciplinas")
+    private Usuario usuario;
     
     @OneToMany(mappedBy = "disciplina", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -72,6 +78,9 @@ public class Disciplina {
 
     public boolean isReceberNotificacoes() { return receberNotificacoes; }
     public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }
+
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 
     public List<HorarioAula> getAulas() { return aulas; }
     public void setAulas(List<HorarioAula> aulas) {

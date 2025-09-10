@@ -5,6 +5,7 @@ import com.unihub.backend.model.HorarioAula;
 import com.unihub.backend.service.DisciplinaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -17,23 +18,23 @@ public class DisciplinaController {
     private DisciplinaService service;
 
     @GetMapping
-    public List<Disciplina> listarTodas() {
-        return service.listarTodas();
+    public List<Disciplina> listarTodas(@AuthenticationPrincipal Long usuarioId) {
+        return service.listarTodas(usuarioId);
     }
 
     @GetMapping("/{id}")
-    public Disciplina buscarPorId(@PathVariable Long id) {
-        return service.buscarPorId(id);
+      public Disciplina buscarPorId(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        return service.buscarPorId(id, usuarioId);
     }
 
     @PostMapping
-    public Disciplina criar(@RequestBody Disciplina disciplina) {
-        return service.salvar(disciplina);
+    public Disciplina criar(@RequestBody Disciplina disciplina, @AuthenticationPrincipal Long usuarioId) {
+        return service.salvar(disciplina, usuarioId);
     }
 
     @PutMapping("/{id}")
-    public Disciplina atualizar(@PathVariable Long id, @RequestBody Disciplina novaDisciplina) {
-        Disciplina existente = service.buscarPorId(id);
+    public Disciplina atualizar(@PathVariable Long id, @RequestBody Disciplina novaDisciplina, @AuthenticationPrincipal Long usuarioId) {
+        Disciplina existente = service.buscarPorId(id, usuarioId);
 
         existente.setCodigo(novaDisciplina.getCodigo());
         existente.setNome(novaDisciplina.getNome());
@@ -58,17 +59,17 @@ public class DisciplinaController {
             }
         }
 
-        return service.salvar(existente);
+        return service.salvar(existente, usuarioId);
     }
 
     @DeleteMapping("/{id}")
-    public void excluir(@PathVariable Long id) {
-        service.excluir(id);
+    public void excluir(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        service.excluir(id, usuarioId);
     }
 
     @GetMapping("/pesquisa")
-    public List<Disciplina> buscarPorNome(@RequestParam String nome) {
-    return service.buscarPorNome(nome);
-}
+    public List<Disciplina> buscarPorNome(@RequestParam String nome, @AuthenticationPrincipal Long usuarioId) {
+        return service.buscarPorNome(nome, usuarioId);
+    }
 
 }
