@@ -3,6 +3,9 @@ package com.example.unihub.ui.ManterGrupo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.ApiGrupoBackend
+import com.example.unihub.data.repository.ApiContatoBackend
+import com.example.unihub.data.repository.ContatoRepository
+import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.Grupobackend
 
@@ -12,8 +15,12 @@ class ManterGrupoViewModelFactory : ViewModelProvider.Factory {
         if (modelClass.isAssignableFrom(ManterGrupoViewModel::class.java)) {
             val backend: Grupobackend = ApiGrupoBackend()
             val repository = GrupoRepository(backend)
-            return ManterGrupoViewModel(repository) as T
+            val contatoBackend: Contatobackend = ApiContatoBackend()
+            val contatoRepository = ContatoRepository(contatoBackend)
+            //return ManterGrupoViewModel(repository, contatoRepository) as T
+            return ManterGrupoViewModel(repository, contatoRepository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
+

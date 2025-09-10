@@ -282,18 +282,17 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.ListarGrupo.route) {
                         ListarGrupoScreen(
                             onAddGrupo = {
-                                navController.navigate(Screen.ManterGrupo.createRoute(null))
+                                navController.navigate(Screen.ManterGrupo.createRoute(null)) // Para novo grupo
                             },
-                            onGrupoClick = { grupoId ->
-                              navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
+                            // onNavigateToManterGrupo é usado PELO DIÁLOGO para a ação de EDITAR
+                            onNavigateToManterGrupo = { grupoId -> // Este grupoId virá do diálogo de detalhes
+                                navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
                             },
                             onVoltar = { navController.popBackStack() }
-
                         )
                     }
 
                     // ROTA 10: manter Grupo
-
                     composable(
                         route = Screen.ManterGrupo.route,
                         arguments = listOf(navArgument("id") {
@@ -306,7 +305,7 @@ class MainActivity : ComponentActivity() {
                             grupoId = grupoId,
                             onVoltar = { navController.popBackStack() },
                             onExcluirSucessoNavegarParaLista = {
-                                navController.popBackStack()
+                                navController.popBackStack() // Volta para a lista após exclusão
                             }
                         )
                     }

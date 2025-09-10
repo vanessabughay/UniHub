@@ -70,7 +70,6 @@ fun ListarContatoScreen(
     val contatosState by viewModel.contatos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    // Novo: Estado para controlar o diálogo de exclusão
     var showDeleteDialog by remember { mutableStateOf(false) }
     var contatoParaExcluir by remember { mutableStateOf<ContatoResumoUi?>(null) }
 

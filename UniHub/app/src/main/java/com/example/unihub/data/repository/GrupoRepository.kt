@@ -8,13 +8,6 @@ import kotlinx.coroutines.flow.flow
 import retrofit2.HttpException
 import java.io.IOException
 
-/*
-data class GrupoResumo(
-    val id: Long,
-    val nome: String,
-    val email: String
-)
-*/
 
 
 interface Grupobackend { // Removi o "_" inicial, é uma convenção melhor

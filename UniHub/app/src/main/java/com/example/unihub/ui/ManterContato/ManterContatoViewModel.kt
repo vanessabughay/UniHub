@@ -72,7 +72,7 @@ class ManterContatoViewModel(
         viewModelScope.launch {
             try {
                 // Criar o objeto Contato do modelo de dados
-                val novoContato = Contato(nome = nome, email = email)
+                val novoContato = Contato(id = null, nome = nome, email = email)
                 repository.addContato(novoContato) // addContato agora não retorna nada significativo
                 _uiState.value = _uiState.value.copy(sucesso = true, isLoading = false)
             } catch (e: Exception) {
