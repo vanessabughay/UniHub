@@ -3,13 +3,19 @@ package com.example.unihub.ui.ManterGrupo
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -18,11 +24,14 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,9 +50,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.ui.ManterGrupo.CardDefaultBackgroundColor
-import com.example.unihub.ui.ManterGrupo.ManterGrupoViewModel
-import com.example.unihub.ui.ManterGrupo.ManterGrupoViewModelFactory
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle // Ícone para adicionar
+import androidx.compose.material.icons.filled.Delete // Ícone para remover
+import androidx.compose.material.icons.filled.Person // Ícone para membro
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Divider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box // Para o indicador de loading sobre a lista
+import androidx.compose.material3.Surface // Para o diálogo
+import com.example.unihub.ui.ListarContato.ContatoResumoUi
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
 val DeleteButtonErrorColor = Color(0xFFB00020) // Uma cor de erro típica para o botão excluir
@@ -60,7 +82,11 @@ fun ManterGrupoScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Efeitos (sucesso, erro, loadGrupo) - Mantidos como estão
+    // Estados para controlar a visibilidade dos diálogos de seleção de membros
+    var showAddMembrosDialog by remember { mutableStateOf(false) }
+    var showRemoveMembrosDialog by remember { mutableStateOf(false) }
+
+    // Efeitos (mantidos como estão)
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
         if (uiState.sucesso) {
             if (uiState.isExclusao) {
@@ -85,6 +111,8 @@ fun ManterGrupoScreen(
         if (grupoId != null) {
             viewModel.loadGrupo(grupoId)
         }
+        // Sempre carregar contatos disponíveis, ou recarregar se necessário
+        // viewModel.loadAllAvailableContatos() // Já está no init do ViewModel
     }
     // ---
 
@@ -93,15 +121,11 @@ fun ManterGrupoScreen(
             CabecalhoAlternativo(
                 titulo = if (grupoId == null) "Novo Grupo" else "Editar Grupo",
                 onVoltar = onVoltar
-                // Se o CabecalhoAlternativo tiver opções de cor, configure-as aqui
-                // backgroundColor = MaterialTheme.colorScheme.primary, // Exemplo
-                // contentColor = MaterialTheme.colorScheme.onPrimary  // Exemplo
             )
-        },
-        // Não teremos um FAB aqui, mas sim botões de ação no final do formulário
+        }
     ) { paddingValues ->
 
-        if (showDeleteDialog) {
+        if (showDeleteDialog) { // Diálogo de exclusão do grupo (mantido)
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = { Text("Confirmar Exclusão") },
@@ -120,91 +144,180 @@ fun ManterGrupoScreen(
             )
         }
 
+        // Diálogo para Adicionar Membros
+        if (showAddMembrosDialog) {
+            SelecaoContatosDialog(
+                titulo = "Adicionar Contatos ao Grupo",
+                contatosDisponiveis = uiState.todosOsContatosDisponiveis,
+                idsContatosJaSelecionados = uiState.membrosDoGrupo.map { it.id }.toSet(), // Para desabilitar/marcar os já membros
+                onDismissRequest = { showAddMembrosDialog = false },
+                onConfirmarSelecao = { idsSelecionadosParaAdicionar ->
+                    idsSelecionadosParaAdicionar.forEach { viewModel.addMembroAoGrupoPeloId(it) }
+                    showAddMembrosDialog = false
+                },
+                isLoading = uiState.isLoadingAllContatos,
+                loadingError = uiState.errorLoadingAllContatos
+            )
+        }
+
+        // Diálogo para Remover Membros
+        if (showRemoveMembrosDialog) {
+            SelecaoContatosDialog(
+                titulo = "Remover Contatos do Grupo",
+                // Mostra apenas os membros atuais para remoção
+                contatosDisponiveis = uiState.membrosDoGrupo,
+                idsContatosJaSelecionados = emptySet(), // Não aplicável aqui, pois todos são selecionáveis para remoção
+                onDismissRequest = { showRemoveMembrosDialog = false },
+                onConfirmarSelecao = { idsSelecionadosParaRemover ->
+                    idsSelecionadosParaRemover.forEach { viewModel.removeMembroDoGrupoPeloId(it) }
+                    showRemoveMembrosDialog = false
+                },
+                isForRemoval = true // Flag para diferenciar a lógica de seleção/exibição
+            )
+        }
+
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Padding do Scaffold
-                .padding(horizontal = 16.dp, vertical = 16.dp) // Padding geral do conteúdo
-                .verticalScroll(rememberScrollState()), // Adicionar rolagem
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 16.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp) // Espaço entre os elementos principais
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             var nomeState by remember(uiState.nome) { mutableStateOf(uiState.nome) }
+            LaunchedEffect(uiState.nome) {
+                nomeState = uiState.nome
+                viewModel.setNomeGrupo(uiState.nome) // Sincroniza o nome no ViewModel também
+            }
 
 
-            LaunchedEffect(uiState.nome) { nomeState = uiState.nome }
-
-
-            // Card para os campos de entrada
+            // Card para os DADOS DO GRUPO (mantido)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp), // Similar ao CardItem
-                colors = CardDefaults.cardColors(
-                    containerColor = CardDefaultBackgroundColor // Mesma cor do CardItem
-                ),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp) // Espaço entre os campos
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
                         text = "Dados do Grupo",
-                        style = MaterialTheme.typography.titleMedium, // Um título para a seção
+                        style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
-
-                    OutlinedTextField( // Usar OutlinedTextField para um visual mais definido
+                    OutlinedTextField(
                         value = nomeState,
-                        onValueChange = { nomeState = it },
+                        onValueChange = {
+                            nomeState = it
+                            viewModel.setNomeGrupo(it) // Atualiza o nome no ViewModel
+                        },
                         label = { Text("Nome do Grupo") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors( // Cores podem ser ajustadas
+                        colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
                     )
-
                 }
             }
 
-            // Indicador de Carregamento
+            // NOVO CARD PARA GERENCIAR MEMBROS
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Membros do Grupo",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Exibição dos membros atuais (opcional)
+                    if (uiState.membrosDoGrupo.isNotEmpty()) {
+
+                        //Text("Membros Atuais:", style = MaterialTheme.typography.labelMedium)
+
+                        uiState.membrosDoGrupo.take(5).forEach { membro -> // Mostra até 5 para não poluir
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Filled.Person, contentDescription = "Membro", modifier = Modifier.padding(end = 8.dp))
+                                Text(membro.nome, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                        if (uiState.membrosDoGrupo.size > 5) {
+                            Text("... e mais ${uiState.membrosDoGrupo.size - 5}", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    } else {
+                        Text("Nenhum membro adicionado.", style = MaterialTheme.typography.bodyMedium)
+                    }
+
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = { showAddMembrosDialog = true },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(Icons.Filled.AddCircle, contentDescription = "Adicionar", modifier = Modifier.padding(end = 4.dp))
+                            Text("Adicionar ao Grupo")
+                        }
+                        Button(
+                            onClick = { showRemoveMembrosDialog = true },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD3D3D3),
+                                contentColor = Color.Black
+                            ),
+                            enabled = uiState.membrosDoGrupo.isNotEmpty() // Habilita só se houver membros
+                        ) {
+                            Icon(Icons.Filled.Delete, contentDescription = "Remover", modifier = Modifier.padding(end = 4.dp))
+                            Text("Remover do Grupo")
+                        }
+                    }
+                }
+            }
+
+            // Indicador de Carregamento (mantido)
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(vertical = 16.dp))
             }
 
-            // Botões de Ação
-            // Usar um Column para os botões se precisar de mais de um com espaçamento
+            // Botões de Ação (Salvar/Atualizar e Excluir se for edição)
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp) // Espaço entre os botões
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Botão Salvar/Atualizar
-                Button(
-
-                    ////////////////////////////////
-                    ////////////////////////////////
-                    /*
-                    FALTA IMPLEMENTAR  A FUNÇÃO DE ENVIAR EMAIL
-                    FALTA IMPLEMENTAR  A FUNÇÃO DE CONVIDAR
-                     */
-                    ////////////////////////////////
-                    ////////////////////////////////
-
+                Button( // Botão Salvar/Atualizar Grupo
                     onClick = {
+                        // O nome já está sendo atualizado no ViewModel via setNomeGrupo
+                        // A lista de membros também já está no ViewModel (_idMembrosSelecionados)
                         if (grupoId == null) {
-                            viewModel.createGrupo(nomeState)
+                            viewModel.createGrupo(uiState.nome) // Passa o nome do uiState
                         } else {
-                            viewModel.updateGrupo(grupoId, nomeState)
+                            viewModel.updateGrupo(grupoId, uiState.nome) // Passa o nome do uiState
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors( // Estilo dos botões principais
-                        containerColor = Color(0xFFD3D3D3), // Cor
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD3D3D3),
                         contentColor = Color.Black
                     )
                 ) {
@@ -215,8 +328,114 @@ fun ManterGrupoScreen(
                     )
                 }
 
+                if (grupoId != null) { // Botão Excluir Grupo (somente em modo de edição)
+                    Button(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f),
+                            contentColor = DeleteButtonErrorColor
+                        )
+                    ) {
+                        Text("Excluir Grupo", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(8.dp)) // Espaço extra no final antes da borda da tela
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
+}
+
+
+@Composable
+fun SelecaoContatosDialog(
+    titulo: String,
+    contatosDisponiveis: List<ContatoResumoUi>,
+    idsContatosJaSelecionados: Set<Long> = emptySet(), // Para desabilitar/indicar os já membros no modo de adição
+    onDismissRequest: () -> Unit,
+    onConfirmarSelecao: (Set<Long>) -> Unit,
+    isLoading: Boolean = false,
+    loadingError: String? = null,
+    isForRemoval: Boolean = false // Se true, todos são selecionáveis para remover (não usa idsContatosJaSelecionados para desabilitar)
+) {
+    var idsTemporariamenteSelecionados by remember { mutableStateOf(emptySet<Long>()) }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(titulo) },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (isLoading) {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (loadingError != null) {
+                    Text("Erro: $loadingError", color = MaterialTheme.colorScheme.error)
+                } else if (contatosDisponiveis.isEmpty()) {
+                    Text(if (isForRemoval) "Nenhum membro para remover." else "Nenhum contato disponível.")
+                } else {
+                    Surface( // Usar Surface para dar um limite de altura à LazyColumn dentro do AlertDialog
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 300.dp) // Limita a altura
+                    ) {
+                        LazyColumn {
+                            items(contatosDisponiveis, key = { it.id }) { contato ->
+                                val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
+                                // No modo de adição, desabilita se já for membro (a menos que seja o próprio membro sendo 're-adicionado')
+                                val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable(enabled = isEnabled) {
+                                            if (isEnabled) {
+                                                idsTemporariamenteSelecionados = if (isChecked) {
+                                                    idsTemporariamenteSelecionados - contato.id
+                                                } else {
+                                                    idsTemporariamenteSelecionados + contato.id
+                                                }
+                                            }
+                                        }
+                                        .padding(vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = null, // Controlado pelo Row clickable
+                                        enabled = isEnabled
+                                    )
+                                    Text(
+                                        text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é membro)" else "",
+                                        modifier = Modifier.padding(start = 8.dp),
+                                        color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirmarSelecao(idsTemporariamenteSelecionados)
+                },
+                enabled = !isLoading && loadingError == null && contatosDisponiveis.isNotEmpty()
+            ) {
+                Text("Confirmar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Cancelar")
+            }
+        }
+    )
 }
