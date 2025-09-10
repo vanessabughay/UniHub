@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -59,6 +60,7 @@ val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
+
 fun ListarContatoScreen(
     viewModel: ListarContatoViewModel = viewModel(factory = ListarContatoViewModelFactory),
     onAddContato: () -> Unit,
@@ -269,12 +271,14 @@ fun ListarContatoScreen(
     )
 }
 
+
 @Composable
 fun ContatoItem(
     contato: ContatoResumoUi,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
