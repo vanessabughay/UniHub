@@ -20,12 +20,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
+import com.example.unihub.ui.ListarContato.ListarContatoScreen
+
 import com.example.unihub.ui.ManterConta.ManterContaScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
 import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
+import com.example.unihub.ui.ManterContato.ManterContatoScreen
+import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
@@ -65,6 +70,19 @@ sealed class Screen(val route: String) {
         Screen("manter_instituicao?nome={nome}&media={media}&frequencia={frequencia}") {
         fun createRoute(nome: String, media: String, frequencia: String): String {
             return "manter_instituicao?nome=${Uri.encode(nome)}&media=${Uri.encode(media)}&frequencia=${Uri.encode(frequencia)}"
+        }
+    }
+
+    object ListarContato : Screen("lista_contato") // Rota é "lista_contato"
+    object ManterContato : Screen("manter_contato?id={id}") {
+        fun createRoute(id: String?): String {
+            return if (id != null) "manter_contato?id=$id" else "manter_contato"
+        }
+    }
+    object ListarGrupo : Screen("lista_grupo")
+    object ManterGrupo : Screen("manter_grupo?id={id}"){
+        fun createRoute(id: String?): String {
+            return if (id != null) "manter_grupo?id=$id" else "manter_grupo"
         }
     }
 }
@@ -242,6 +260,73 @@ class MainActivity : ComponentActivity() {
                             frequencia = frequenciaArg
                         )
                     }
+
+
+                    // ROTA 7: Tela de Listar Contatos
+                    composable(Screen.ListarContato.route) { // Usa a rota "lista_contato"
+                        ListarContatoScreen(
+                            onAddContato = {
+                                navController.navigate(Screen.ManterContato.createRoute(null))
+                            },
+                            onContatoClick = { contatoId ->
+                                navController.navigate(Screen.ManterContato.createRoute(contatoId))
+                            },
+                            onVoltar = { navController.popBackStack() }
+
+                        )
+                    }
+
+                    // ROTA 8: manter Contatos
+                    composable(
+                        route = Screen.ManterContato.route,
+                        arguments = listOf(navArgument("id") {
+                            type = NavType.StringType
+                            nullable = true
+                        })
+                    ) { backStackEntry ->
+                        val contatoId = backStackEntry.arguments?.getString("id")
+                        ManterContatoScreen(
+                            contatoId = contatoId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    // ROTA 9: Tela de Listar Grupo
+                    composable(Screen.ListarGrupo.route) {
+                        ListarGrupoScreen(
+                            onAddGrupo = {
+                                navController.navigate(Screen.ManterGrupo.createRoute(null)) // Para novo grupo
+                            },
+                            // onNavigateToManterGrupo é usado PELO DIÁLOGO para a ação de EDITAR
+                            onNavigateToManterGrupo = { grupoId -> // Este grupoId virá do diálogo de detalhes
+                                navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
+                            },
+                            onVoltar = { navController.popBackStack() }
+                        )
+                    }
+
+                    // ROTA 10: manter Grupo
+                    composable(
+                        route = Screen.ManterGrupo.route,
+                        arguments = listOf(navArgument("id") {
+                            type = NavType.StringType
+                            nullable = true
+                        })
+                    ) { backStackEntry ->
+                        val grupoId = backStackEntry.arguments?.getString("id")
+                        ManterGrupoScreen(
+                            grupoId = grupoId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = {
+                                navController.popBackStack() // Volta para a lista após exclusão
+                            }
+                        )
+                    }
+
+
 
                     //TELA INICIAL
 
