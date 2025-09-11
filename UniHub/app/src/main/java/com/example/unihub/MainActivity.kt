@@ -99,6 +99,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         TokenManager.loadToken(applicationContext)
         setContent {
+            val navController = rememberNavController()
+            val startDest = if (TokenManager.token.isNullOrBlank())
+                Screen.Login.route
+            else
+                Screen.TelaInicial.route
+
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background

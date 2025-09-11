@@ -38,7 +38,6 @@ object TokenManager {
     /** Persists and updates the current token and basic user info. */
     fun saveToken(context: Context, value: String, nome: String? = null, email: String? = null) {
         token = value
-        token = value
         nomeUsuario = nome
         emailUsuario = email
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -53,6 +52,7 @@ object TokenManager {
     fun clearToken(context: Context) {
         token = null
         nomeUsuario = null
+        emailUsuario = null
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().remove(TOKEN_KEY).remove(USER_NAME_KEY).remove(USER_EMAIL_KEY).apply()
     }
