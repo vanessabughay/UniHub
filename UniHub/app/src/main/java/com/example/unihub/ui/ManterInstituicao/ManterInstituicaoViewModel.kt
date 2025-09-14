@@ -37,7 +37,6 @@ class ManterInstituicaoViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
-        instituicaoId = null
         if (text.isBlank()) {
             sugestoes = emptyList()
             mostrarCadastrar = false
@@ -56,7 +55,6 @@ class ManterInstituicaoViewModel(
         frequencia = inst.frequenciaMinima.toString()
         sugestoes = emptyList()
         mostrarCadastrar = false
-        instituicaoId = null
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
