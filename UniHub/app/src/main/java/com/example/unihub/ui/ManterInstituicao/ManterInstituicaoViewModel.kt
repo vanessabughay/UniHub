@@ -43,7 +43,7 @@ class ManterInstituicaoViewModel(
         } else {
             viewModelScope.launch {
                 val lista = runCatching { repository.buscarInstituicoes(text) }.getOrDefault(emptyList())
-                sugestoes = lista.distinctBy { it.nome }
+                sugestoes = lista.distinctBy { Triple(it.nome, it.mediaAprovacao, it.frequenciaMinima) }
                 mostrarCadastrar = lista.isEmpty()
             }
         }
