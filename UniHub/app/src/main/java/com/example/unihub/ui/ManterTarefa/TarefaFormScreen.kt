@@ -43,7 +43,9 @@ fun TarefaFormScreen(
     tarefaId: String?, // Renomeado de subtarefaId para tarefaId
     viewModelFactory: ViewModelProvider.Factory
 ) {
+
     val TarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
+
     val context = LocalContext.current
     val isEditing = tarefaId != null // Atualizada a verificação
 
@@ -170,24 +172,73 @@ fun TarefaFormScreen(
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
+    override suspend fun getTarefa(colunaId: String, tarefaId: String): Tarefa {
+        // Retorna um objeto de tarefa mockado para a prévia
+        return Tarefa(
+            id = tarefaId,
+            descricao = "Esta é uma descrição de exemplo.",
+            status = Status.INICIADA,
+            prazo = System.currentTimeMillis() + 86400000,
+            dataInicio = System.currentTimeMillis()
+        )
+    }
+
+    override suspend fun createTarefa(colunaId: String, tarefa: Tarefa): Tarefa {
+        return tarefa
+    }
+
+    override suspend fun updateTarefa(colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
+        return tarefa
+    }
+
+    override suspend fun deleteTarefa(colunaId: String, tarefaId: String) {
+        // Nada a ser feito aqui
+    }
+}) {
+    // Essa classe pode ficar vazia, já que a lógica de mock está na interface.
+}
+
+// Uma fábrica de ViewModel falsa para o preview, que injeta o repositório falso.
+class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
+    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(TarefaFormViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return TarefaFormViewModel(FakeTarefaRepository()) as T
+        }
+        throw IllegalArgumentException("Classe de ViewModel desconhecida")
+    }
+}
+
+// As suas funções de pré-visualização.
 @Preview(showBackground = true)
 @Composable
 fun TarefaFormScreenPreview() {
-    // Para o modo de cadastro (não está editando)
     TarefaFormScreen(
         navController = rememberNavController(),
         colunaId = "id-da-coluna-exemplo",
-        tarefaId = null // 'null' simula o modo de cadastro
+        tarefaId = null,
+        viewModelFactory = FakeTarefaFormViewModelFactory()
     )
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TarefaFormScreenEditingPreview() {
-    // Para o modo de edição
     TarefaFormScreen(
         navController = rememberNavController(),
         colunaId = "id-da-coluna-exemplo",
-        tarefaId = "id-da-tarefa-exemplo" // Um ID válido simula o modo de edição
+        tarefaId = "id-da-tarefa-exemplo",
+        viewModelFactory = FakeTarefaFormViewModelFactory()
     )
 }

@@ -2,7 +2,7 @@ package com.example.unihub.data.repository
 
 import com.example.unihub.data.model.Tarefa
 
-class TarefaRepository(private val apiService: TarefaApi) {
+open class TarefaRepository(private val apiService: TarefaApi) {
 
     suspend fun getTarefa(colunaId: String, tarefaId: String): Tarefa {
         return apiService.getTarefa(colunaId, tarefaId)
