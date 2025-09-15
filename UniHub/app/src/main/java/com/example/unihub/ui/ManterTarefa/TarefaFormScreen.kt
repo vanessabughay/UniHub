@@ -22,6 +22,9 @@ import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.ViewModelProvider
+import com.example.unihub.data.repository.TarefaRepository
+import com.example.unihub.data.repository.TarefaApi
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
@@ -38,8 +41,9 @@ fun TarefaFormScreen(
     navController: NavHostController,
     colunaId: String,
     tarefaId: String?, // Renomeado de subtarefaId para tarefaId
-    TarefaViewModel: TarefaFormViewModel = viewModel()
+    viewModelFactory: ViewModelProvider.Factory
 ) {
+    val TarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
     val context = LocalContext.current
     val isEditing = tarefaId != null // Atualizada a verificação
 
@@ -157,7 +161,6 @@ fun TarefaFormScreen(
                 },
                 onDelete = if (isEditing) {
                     {
-                        // AQUI: Passa tarefaId, corrigido da lógica original
                         TarefaViewModel.excluirTarefa(colunaId, tarefaId!!)
                         navController.popBackStack()
                     }
