@@ -2,6 +2,7 @@ package com.example.unihub.data.model
 
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
+import com.example.unihub.data.model.Priority
 import java.util.concurrent.TimeUnit
 
 data class Coluna(
@@ -15,14 +16,13 @@ data class Coluna(
     val prazoManual: Long = System.currentTimeMillis() + 86400000L,
     val tarefas: List<Tarefa> = emptyList()
 ) {
-   
+
     val todasTarefasConcluidas: Boolean
         get() = tarefas.isNotEmpty() && tarefas.all { it.status == Status.CONCLUIDA }
 
     // Duração formatada
     val duracao: String
         get() {
-            // Se a Coluna não tem tarefas, sua duração é baseada em seu próprio dataFim
             if (tarefas.isEmpty()) {
                 return if (dataFim != null) {
                     formatarDuracao(dataFim - dataInicio)
@@ -30,9 +30,7 @@ data class Coluna(
                     "N/A"
                 }
             } else {
-                // Se tem tarefas, a duração só é calculada se TODAS as tarefas estiverem concluídas
                 if (todasTarefasConcluidas && status == Status.CONCLUIDA) {
-                    // Encontra a data de fim mais recente entre as tarefas concluídas
                     val ultimaDataFimTarefa = tarefas
                         .filter { it.status == Status.CONCLUIDA && it.dataFim != null }
                         .maxOfOrNull { it.dataFim!! }
@@ -43,7 +41,6 @@ data class Coluna(
                         "N/A"
                     }
                 } else {
-                    // Se nem todas as tarefas estão concluídas ou a Coluna principal não está CONCLUIDA
                     return "N/A"
                 }
             }
@@ -52,8 +49,8 @@ data class Coluna(
     // Prazo calculado com base nas tarefas (ou manual se não tiver tarefas)
     val prazoCalculado: Long
         get() = if (tarefas.isNotEmpty()) {
-            // Pega o maior prazo entre as tarefas. Se nenhuma tiver prazo (null), usa o prazoManual da Coluna
-            tarefas.maxOfOrNull { it.prazo ?: 0L } ?: prazoManual
+            // MUDANÇA: A lógica foi simplificada
+            tarefas.maxOfOrNull { it.prazo } ?: prazoManual
         } else {
             prazoManual
         }
