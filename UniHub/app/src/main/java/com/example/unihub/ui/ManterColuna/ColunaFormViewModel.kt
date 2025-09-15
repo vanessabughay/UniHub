@@ -18,7 +18,6 @@ sealed class FormResult {
     data class Error(val message: String) : FormResult()
 }
 
-
 class ColunaFormViewModel(
     private val repository: ColunaRepository
 ) : ViewModel() {
@@ -29,17 +28,21 @@ class ColunaFormViewModel(
     private val _formResult = MutableStateFlow<FormResult>(FormResult.Idle)
     val formResult: StateFlow<FormResult> = _formResult.asStateFlow()
 
-    fun carregarColuna(colunaId: String) {
+    //  Adiciona o quadroId como parâmetro
+    fun carregarColuna(quadroId: String, colunaId: String) {
         viewModelScope.launch {
-            _colunaState.value = repository.getColunaById(colunaId)
+            // Passa o quadroId para o repositório
+            _colunaState.value = repository.getColunaById(quadroId, colunaId)
         }
     }
 
-    fun salvarOuAtualizarColuna(coluna: Coluna) {
+    // Adiciona o quadroId como parâmetro
+    fun salvarOuAtualizarColuna(quadroId: String, coluna: Coluna) {
         viewModelScope.launch {
             try {
                 val existingColuna = if (coluna.id.isNotBlank()) {
-                    repository.getColunaById(coluna.id)
+                    // Passa o quadroId para o repositório
+                    repository.getColunaById(quadroId, coluna.id)
                 } else {
                     null
                 }
@@ -53,10 +56,12 @@ class ColunaFormViewModel(
                 }
 
                 if (colunaToSave.id.isNotBlank()) {
-                    repository.updateColuna(colunaToSave)
+                    // MUDANÇA: Passa o quadroId para o repositório
+                    repository.updateColuna(quadroId, colunaToSave)
                 } else {
+                    // MUDANÇA: Passa o quadroId para o repositório
                     val newColunaWithId = colunaToSave.copy(id = UUID.randomUUID().toString())
-                    repository.addColuna(newColunaWithId)
+                    repository.addColuna(quadroId, newColunaWithId)
                 }
 
                 _formResult.value = FormResult.Success
@@ -66,10 +71,12 @@ class ColunaFormViewModel(
         }
     }
 
-    fun excluirColuna(colunaId: String) {
+    //  Adiciona o quadroId como parâmetro
+    fun excluirColuna(quadroId: String, colunaId: String) {
         viewModelScope.launch {
             try {
-                repository.deleteColuna(colunaId)
+                // passa o quadroId para o repositório
+                repository.deleteColuna(quadroId, colunaId)
                 _formResult.value = FormResult.Success
             } catch (e: Exception) {
                 _formResult.value = FormResult.Error(e.message ?: "Erro ao excluir")

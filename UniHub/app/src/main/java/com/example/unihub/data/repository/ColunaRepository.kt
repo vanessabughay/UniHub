@@ -8,47 +8,52 @@ open class ColunaRepository(private val apiService: ColunaApi) {
 
     private val TAG = "ColunaRepository"
 
-    suspend fun getColunas(): List<Coluna> {
+    //  Agora recebe o quadroId
+    suspend fun getColunas(quadroId: String): List<Coluna> {
         return try {
-            apiService.getColunas()
+            apiService.getColunas(quadroId)
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao buscar colunas: ${e.message}", e)
+            Log.e(TAG, "Erro ao buscar colunas do quadro $quadroId: ${e.message}", e)
             emptyList()
         }
     }
 
-    suspend fun getColunaById(colunaId: String): Coluna? {
+    // Agora recebe o quadroId
+    suspend fun getColunaById(quadroId: String, colunaId: String): Coluna? {
         return try {
-            apiService.getColunaById(colunaId)
+            apiService.getColunaById(quadroId, colunaId)
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao buscar coluna por ID: ${e.message}", e)
+            Log.e(TAG, "Erro ao buscar coluna $colunaId do quadro $quadroId: ${e.message}", e)
             null
         }
     }
 
-    suspend fun addColuna(coluna: Coluna): Coluna? {
+    //  Agora recebe o quadroId
+    suspend fun addColuna(quadroId: String, coluna: Coluna): Coluna? {
         return try {
-            apiService.addColuna(coluna)
+            apiService.addColuna(quadroId, coluna)
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao adicionar coluna: ${e.message}", e)
+            Log.e(TAG, "Erro ao adicionar coluna no quadro $quadroId: ${e.message}", e)
             null
         }
     }
 
-    suspend fun updateColuna(coluna: Coluna): Coluna? {
+    //  Agora recebe o quadroId
+    suspend fun updateColuna(quadroId: String, coluna: Coluna): Coluna? {
         return try {
-            apiService.updateColuna(coluna.id, coluna)
+            apiService.updateColuna(quadroId, coluna.id, coluna)
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao atualizar coluna: ${e.message}", e)
+            Log.e(TAG, "Erro ao atualizar coluna ${coluna.id} no quadro $quadroId: ${e.message}", e)
             null
         }
     }
 
-    suspend fun deleteColuna(colunaId: String) {
+    // Agora recebe o quadroId
+    suspend fun deleteColuna(quadroId: String, colunaId: String) {
         try {
-            apiService.deleteColuna(colunaId)
+            apiService.deleteColuna(quadroId, colunaId)
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao excluir coluna: ${e.message}", e)
+            Log.e(TAG, "Erro ao excluir coluna $colunaId do quadro $quadroId: ${e.message}", e)
         }
     }
 }

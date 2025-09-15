@@ -4,19 +4,18 @@ import com.example.unihub.data.model.Coluna
 import retrofit2.http.*
 
 interface ColunaApi {
+    @GET("quadros/{quadroId}/colunas")
+    suspend fun getColunas(@Path("quadroId") quadroId: String): List<Coluna>
 
-    @GET("colunas")
-    suspend fun getColunas(): List<Coluna>
+    @GET("quadros/{quadroId}/colunas/{colunaId}")
+    suspend fun getColunaById(@Path("quadroId") quadroId: String, @Path("colunaId") colunaId: String): Coluna
 
-    @GET("colunas/{colunaId}")
-    suspend fun getColunaById(@Path("colunaId") colunaId: String): Coluna
+    @POST("quadros/{quadroId}/colunas")
+    suspend fun addColuna(@Path("quadroId") quadroId: String, @Body coluna: Coluna): Coluna
 
-    @POST("colunas")
-    suspend fun addColuna(@Body coluna: Coluna): Coluna
+    @PUT("quadros/{quadroId}/colunas/{colunaId}")
+    suspend fun updateColuna(@Path("quadroId") quadroId: String, @Path("colunaId") colunaId: String, @Body coluna: Coluna): Coluna
 
-    @PUT("colunas/{colunaId}")
-    suspend fun updateColuna(@Path("colunaId") colunaId: String, @Body coluna: Coluna): Coluna
-
-    @DELETE("colunas/{colunaId}")
-    suspend fun deleteColuna(@Path("colunaId") colunaId: String)
+    @DELETE("quadros/{quadroId}/colunas/{colunaId}")
+    suspend fun deleteColuna(@Path("quadroId") quadroId: String, @Path("colunaId") colunaId: String)
 }

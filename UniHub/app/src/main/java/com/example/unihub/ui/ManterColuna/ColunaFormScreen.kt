@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -25,6 +26,7 @@ import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.TarefaApi
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.model.Tarefa
+import com.example.unihub.data.model.QuadroDePlanejamento
 import com.example.unihub.data.repository.ColunaRepository
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,6 +35,7 @@ import com.example.unihub.data.repository.ColunaApi
 @Composable
 fun ColunaFormScreen(
     navController: NavHostController,
+    quadroId: String,
     colunaId: String? = null,
     viewModelFactory: ViewModelProvider.Factory
 ) {
@@ -51,7 +54,7 @@ fun ColunaFormScreen(
 
     LaunchedEffect(key1 = colunaId) {
         if (isEditing) {
-            viewModel.carregarColuna(colunaId!!)
+            viewModel.carregarColuna(quadroId, colunaId!!)
         }
     }
 
@@ -145,12 +148,12 @@ fun ColunaFormScreen(
                             prazoManual = prazo,
                             tarefas = if (isEditing) colunaState?.tarefas ?: emptyList() else emptyList()
                         )
-                        viewModel.salvarOuAtualizarColuna(colunaParaSalvar)
+                        viewModel.salvarOuAtualizarColuna(quadroId, colunaParaSalvar)
                     } else {
                         Toast.makeText(context, "O título é obrigatório.", Toast.LENGTH_SHORT).show()
                     }
                 },
-                onDelete = if (isEditing) { { viewModel.excluirColuna(colunaId!!) } } else null
+                onDelete = if (isEditing) { { viewModel.excluirColuna(quadroId, colunaId!!) } } else null
             )
         }
     }
@@ -158,13 +161,20 @@ fun ColunaFormScreen(
 
 
 
+
+
+
+
+
+
 // Um repositório falso que simula a API real, mas sem chamadas de rede.
 class FakeColunaRepository : ColunaRepository(object : ColunaApi {
-    override suspend fun getColunas(): List<Coluna> {
+
+    override suspend fun getColunas(quadroId: String): List<Coluna> {
         return emptyList()
     }
 
-    override suspend fun getColunaById(colunaId: String): Coluna {
+    override suspend fun getColunaById(quadroId: String, colunaId: String): Coluna {
         // Retorna um objeto de coluna de exemplo para o modo de edição.
         return Coluna(
             id = colunaId,
@@ -178,22 +188,23 @@ class FakeColunaRepository : ColunaRepository(object : ColunaApi {
         )
     }
 
-    override suspend fun addColuna(coluna: Coluna): Coluna {
+
+    override suspend fun addColuna(quadroId: String, coluna: Coluna): Coluna {
         return coluna
     }
 
-    override suspend fun updateColuna(colunaId: String, coluna: Coluna): Coluna {
+    override suspend fun updateColuna(quadroId: String, colunaId: String, coluna: Coluna): Coluna {
         return coluna
     }
 
-    override suspend fun deleteColuna(colunaId: String) {
+    override suspend fun deleteColuna(quadroId: String, colunaId: String) {
         // Não faz nada, já que é uma simulação.
     }
 })
 
 // Uma fábrica de ViewModel falsa que injeta o repositório falso no ViewModel.
 class FakeColunaFormViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ColunaFormViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return ColunaFormViewModel(FakeColunaRepository()) as T
@@ -202,25 +213,15 @@ class FakeColunaFormViewModelFactory : ViewModelProvider.Factory {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
 // Prévia para o modo de cadastro de coluna.
 @Preview(showBackground = true)
 @Composable
 fun ColunaFormScreenPreview() {
     ColunaFormScreen(
         navController = rememberNavController(),
-        colunaId = null, // null para o modo de cadastro
-        viewModelFactory = FakeColunaFormViewModelFactory()
+        colunaId = null,
+        viewModelFactory = FakeColunaFormViewModelFactory(),
+        quadroId = "id-do-quadro-exemplo"
     )
 }
 
@@ -230,7 +231,8 @@ fun ColunaFormScreenPreview() {
 fun ColunaFormScreenEditingPreview() {
     ColunaFormScreen(
         navController = rememberNavController(),
-        colunaId = "id-da-coluna-exemplo", // Um ID de exemplo para o modo de edição
-        viewModelFactory = FakeColunaFormViewModelFactory()
+        colunaId = "id-da-coluna-exemplo",
+        viewModelFactory = FakeColunaFormViewModelFactory(),
+        quadroId = "id-do-quadro-exemplo"
     )
 }
