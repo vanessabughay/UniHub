@@ -51,7 +51,18 @@ class InstituicaoRepository(
     }
 
     suspend fun instituicaoUsuario(): Instituicao? {
-        if (instituicaoSelecionada == null) {
+        val atualizada = try {
+            backend.buscarInstituicoesApi("").firstOrNull()
+        } catch (_: Exception) {
+            null
+        }
+
+        if (atualizada != null) {
+            instituicaoSelecionada = atualizada
+            dataStore.edit { prefs ->
+                prefs[INSTITUICAO_KEY] = gson.toJson(atualizada)
+            }
+        } else if (instituicaoSelecionada == null) {
             val prefs = dataStore.data.first()
             prefs[INSTITUICAO_KEY]?.let { json ->
                 instituicaoSelecionada = gson.fromJson(json, Instituicao::class.java)
