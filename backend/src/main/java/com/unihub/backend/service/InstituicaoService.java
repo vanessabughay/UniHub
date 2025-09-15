@@ -14,8 +14,8 @@ public class InstituicaoService {
     @Autowired
     private InstituicaoRepository repository;
 
-    public List<Instituicao> buscarPorNome(String nome) {
-        return repository.findByNomeContainingIgnoreCase(nome);
+    public List<Instituicao> buscarPorNome(String nome, Long usuarioId) {
+        return repository.findByUsuarioIdAndNomeContainingIgnoreCase(usuarioId, nome);
     }
 
 
