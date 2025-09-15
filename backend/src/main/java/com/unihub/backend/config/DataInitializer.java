@@ -4,19 +4,21 @@ import com.unihub.backend.model.*;
 import com.unihub.backend.repository.*;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
 
 @Component
-@DependsOn("usuario")
 public class DataInitializer {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private InstituicaoRepository instituicaoRepository;
@@ -32,11 +34,30 @@ public class DataInitializer {
 
     @PostConstruct
     public void init() {
+        initUsuarios();
         usuarioRepository.findByEmail("vanessa@email.com").ifPresent(this::initVanessa);
         usuarioRepository.findByEmail("victoria@email.com").ifPresent(this::initVictoria);
         usuarioRepository.findByEmail("rafaella@email.com").ifPresent(this::initRafaella);
         usuarioRepository.findByEmail("paulo@email.com").ifPresent(this::initPaulo);
     }
+
+    private void initUsuarios() {
+        criarUsuarioSeNaoExistir("Vanessa", "vanessa@email.com", "vanessa");
+        criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
+        criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
+        criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
+    }
+
+    private void criarUsuarioSeNaoExistir(String nome, String email, String senha) {
+        if (usuarioRepository.findByEmail(email).isEmpty()) {
+            Usuario usuario = new Usuario();
+            usuario.setNomeUsuario(nome);
+            usuario.setEmail(email);
+            usuario.setSenha(passwordEncoder.encode(senha));
+            usuarioRepository.save(usuario);
+        }
+    }
+
 
     private void initVanessa(Usuario usuario) {
         criarInstituicaoSeNaoExistir(usuario, "UFPR", 70.0, 75);
