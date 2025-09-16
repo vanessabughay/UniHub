@@ -30,6 +30,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/unihub_db # Nota: 'db' é o nome do serviço do banco
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
       # Adicione outras variáveis de ambiente do Spring se necessário
       # Exemplo: - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
