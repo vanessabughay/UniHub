@@ -1,6 +1,7 @@
 package com.example.unihub.data.repository
 
 import com.example.unihub.data.api.AnotacoesApi
+import com.example.unihub.data.api.RetrofitClient
 import com.example.unihub.data.dto.AnotacoesRequest
 import com.example.unihub.data.model.Anotacao
 import com.example.unihub.data.util.LocalDateAdapter
@@ -12,16 +13,9 @@ import java.time.LocalDate
 class ApiAnotacoesBackend {
 
     private val api: AnotacoesApi by lazy {
-        val gson = GsonBuilder()
-            .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
-            .create()
-
-        Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/")
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-            .create(AnotacoesApi::class.java)
+        RetrofitClient.retrofit.create(AnotacoesApi::class.java)
     }
+
 
     suspend fun listAnotacoesApi(disciplinaId: Long): List<Anotacao> {
         val response = api.listar(disciplinaId)
