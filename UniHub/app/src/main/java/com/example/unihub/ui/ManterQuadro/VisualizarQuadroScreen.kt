@@ -44,6 +44,7 @@ import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
 import java.util.*
+import androidx.compose.material.icons.filled.Info
 
 private fun formatarPrazo(prazo: Long): String {
     return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(prazo))
@@ -98,9 +99,10 @@ fun VisualizarQuadroScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            Header(
+            HeaderSection(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
-                onVoltar = { navController.popBackStack() }
+                onVoltar = { navController.popBackStack() },
+                onClickIconeDireita = { navController.navigate("quadroForm/$quadroId") }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -275,11 +277,6 @@ private fun ColunaCard(
                                 color = contentColor.copy(alpha = 0.8f)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = tarefa.duracao,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = contentColor.copy(alpha = 0.8f)
-                            )
                         }
                     }
                 }
@@ -305,6 +302,46 @@ private fun ColunaCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HeaderSection(titulo: String, onVoltar: () -> Unit, onClickIconeDireita: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp)
+    ) {
+        // Ícone de voltar
+        IconButton(
+            onClick = onVoltar,
+            modifier = Modifier.align(Alignment.CenterStart)
+        ) {
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Voltar",
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            ),
+            modifier = Modifier.align(Alignment.Center)
+        )
+
+        IconButton(
+            onClick = onClickIconeDireita,
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Info,
+                contentDescription = "Informações do Quadro",
+                modifier = Modifier.size(28.dp)
+            )
         }
     }
 }
