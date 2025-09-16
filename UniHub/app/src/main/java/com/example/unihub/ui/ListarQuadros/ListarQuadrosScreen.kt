@@ -5,9 +5,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
@@ -82,6 +84,11 @@ fun ListarQuadrosScreen(
                 onVoltar = { navController.popBackStack() }
             )
 
+            SearchSection(
+                searchQuery = viewModel.uiState.collectAsState().value.searchQuery,
+                onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) }
+            )
+
             Spacer(modifier = Modifier.height(24.dp))
 
             if (uiState.isLoading) {
@@ -126,6 +133,23 @@ fun ListarQuadrosScreen(
             }
         }
     }
+}
+
+@Composable
+private fun SearchSection(searchQuery: String, onSearchQueryChanged: (String) -> Unit) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChanged,
+        placeholder = { Text("Buscar quadro...") },
+        modifier = Modifier.fillMaxWidth(),
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
+        shape = CircleShape,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+            focusedBorderColor = MaterialTheme.colorScheme.primary
+        ),
+        singleLine = true
+    )
 }
 
 // Composable para o título de seção, adaptado do seu modelo
@@ -187,6 +211,15 @@ private fun QuadroCard(quadro: QuadroDePlanejamento, onClick: () -> Unit) {
 }
 
 
+
+
+
+
+
+
+
+
+
 // --- Classes de Mock e Previews ---
 
 // Repositório falso para simular as chamadas de API do Quadro.
@@ -212,6 +245,7 @@ class FakeQuadroRepository3 : QuadroRepository(object : QuadroApi {
     }
 
     override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento? {
+        // Não é usado nesta tela, mas precisa de uma implementação
         return null
     }
 
@@ -228,16 +262,19 @@ class FakeQuadroRepository3 : QuadroRepository(object : QuadroApi {
     }
 })
 
-// Fábrica de ViewModel falsa para injetar o repositório falso no ViewModel.
+
 class FakeListarQuadrosViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ListarQuadrosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
+            // Instancia o ViewModel com o repositório falso
             return ListarQuadrosViewModel(FakeQuadroRepository3()) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable

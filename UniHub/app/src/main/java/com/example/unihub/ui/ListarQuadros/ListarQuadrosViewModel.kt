@@ -13,6 +13,7 @@ import kotlinx.coroutines.launch
 data class ListarQuadrosUiState(
     val isLoading: Boolean = false,
     val quadros: List<QuadroDePlanejamento> = emptyList(),
+    val searchQuery: String = "", // MUDANÇA: Adicionado o termo de busca
     val error: String? = null
 )
 
@@ -23,11 +24,14 @@ class ListarQuadrosViewModel(
     private val _uiState = MutableStateFlow(ListarQuadrosUiState())
     val uiState: StateFlow<ListarQuadrosUiState> = _uiState.asStateFlow()
 
+    private var allQuadros: List<QuadroDePlanejamento> = emptyList()
+
     fun carregarQuadros() {
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             try {
                 val quadrosCarregados = repository.getQuadros()
+                allQuadros = quadrosCarregados // Salva a lista completa
                 _uiState.update {
                     it.copy(
                         quadros = quadrosCarregados,
@@ -37,6 +41,23 @@ class ListarQuadrosViewModel(
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar quadros.") }
             }
+        }
+    }
+
+
+    fun onSearchQueryChanged(query: String) {
+        _uiState.update { currentState ->
+            val filteredList = if (query.isBlank()) {
+                allQuadros // Se a busca estiver vazia, retorna a lista completa
+            } else {
+                allQuadros.filter {
+                    it.nome.contains(query, ignoreCase = true)
+                }
+            }
+            currentState.copy(
+                searchQuery = query,
+                quadros = filteredList
+            )
         }
     }
 }
