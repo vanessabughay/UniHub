@@ -1,7 +1,10 @@
 package com.example.unihub.data.api
 
+
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import com.example.unihub.data.api.UniHubApi // Importa a sua interface de API
 import com.example.unihub.data.util.LocalDateAdapter
 import com.google.gson.GsonBuilder
@@ -16,8 +19,19 @@ object RetrofitClient {
         .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
         .create()
 
-    private val retrofit = Retrofit.Builder()
+    private val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY // ajuda a ver se o Authorization está indo
+    }
+
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(AuthHeaderInterceptor())
+        .addInterceptor(logging)
+        .build()
+
+
+    val retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
+        .client(client)
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
 
@@ -25,4 +39,6 @@ object RetrofitClient {
     val api: UniHubApi by lazy {
         retrofit.create(UniHubApi::class.java)
     }
+
+    fun <T> create(service: Class<T>): T = retrofit.create(service)
 }

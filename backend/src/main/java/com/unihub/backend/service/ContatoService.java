@@ -6,6 +6,9 @@ import com.unihub.backend.repository.ContatoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 import java.util.List;
 
 @Service
@@ -13,25 +16,35 @@ public class ContatoService {
     @Autowired
     private ContatoRepository repository;
 
-    public List<Contato> listarTodas() {
-        return repository.findAll();
-    }
+      private Long currentUserId() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || auth.getPrincipal() == null) return null;
+    return (auth.getPrincipal() instanceof Long)
+      ? (Long) auth.getPrincipal()
+      : Long.valueOf(auth.getName());
+  }
 
-    public Contato salvar(Contato contato) {
-        return repository.save(contato);
-    }
+  public List<Contato> listarTodas() {
+    return repository.findByOwnerId(currentUserId());
+  }
 
-    public Contato buscarPorId(Long id) {
-        return repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Contato não encontrado"));
-    }
+  public Contato salvar(Contato contato) {
+    contato.setOwnerId(currentUserId());
+    return repository.save(contato);
+  }
 
-    public void excluir(Long id) {
-        repository.deleteById(id);
-    }
+  public Contato buscarPorId(Long id) {
+    return repository.findByIdAndOwnerId(id, currentUserId())
+        .orElseThrow(() -> new RuntimeException("Contato não encontrado"));
+  }
 
-    public List<Contato> buscarPorNome(String nome) {
-        return repository.findByNomeContainingIgnoreCase(nome);
-    }
+  public void excluir(Long id) {
+    if (!repository.existsByIdAndOwnerId(id, currentUserId()))
+      throw new RuntimeException("Sem acesso");
+    repository.deleteById(id);
+  }
 
+  public List<Contato> buscarPorNome(String nome) {
+    return repository.findByNomeContainingIgnoreCaseAndOwnerId(nome, currentUserId());
+  }
 }

@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Column;
 
 
 @Entity
@@ -15,6 +16,9 @@ public class Contato {
     private String nome;
     private String email;
     private Boolean pendente;
+
+    @Column(nullable = false)
+    private Long ownerId;
 
     // Construtor vazio (necessário para JPA)
     public Contato() {
@@ -56,6 +60,14 @@ public class Contato {
     public void setPendente(Boolean pendente) {
         this.pendente = pendente;
     }
+    public Long getOwnerId() { 
+        return ownerId; 
+    }
+    public void setOwnerId(Long ownerId) { 
+        this.ownerId = ownerId; 
+    }
+
+
 
 
     @Override

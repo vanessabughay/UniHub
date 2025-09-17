@@ -2,10 +2,12 @@ package com.example.unihub.data.repository
 
 import android.util.Log
 import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.api.RetrofitClient
 import retrofit2.HttpException // Para tratar erros HTTP específicos do Retrofit
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException // Para exceções de I/O genéricas
+
 
 // Não precisa de GsonBuilder aqui a menos que você tenha adaptadores de tipo específicos para Grupo
 // import com.google.gson.GsonBuilder
@@ -13,15 +15,7 @@ import java.io.IOException // Para exceções de I/O genéricas
 class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     private val api: GrupoApi by lazy {
-        // Se você não precisar de adaptadores de tipo customizados para Grupo,
-        // a configuração Gson pode ser mais simples.
-        // val gson = GsonBuilder().create() // Descomente e personalize se necessário
-
-        Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/") // Sua URL base da API
-            .addConverterFactory(GsonConverterFactory.create()) // Use o GsonConverterFactory padrão
-            .build()
-            .create(GrupoApi::class.java)
+        RetrofitClient.retrofit.create(GrupoApi::class.java) // <<< usa o client com interceptor
     }
 
     override suspend fun getGrupoApi(): List<Grupo> {

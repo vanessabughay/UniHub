@@ -112,6 +112,7 @@ fun VisualizarDisciplinaScreen(
     disciplinaId: String?,
     onVoltar: () -> Unit,
     onNavigateToEdit: (String) -> Unit,
+    onNavigateToAnotacoes: (String) -> Unit,
     onNavigateToAusencias: (String, String?) -> Unit,
 
     viewModel: VisualizarDisciplinaViewModel
@@ -141,7 +142,9 @@ fun VisualizarDisciplinaScreen(
                 Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()
             },
             OpcaoDisciplina("Minhas anotações", Icons.AutoMirrored.Outlined.Notes, Color(0xFFF8F1E1)) {
-                Toast.makeText(context, "Abrir Anotações", Toast.LENGTH_SHORT).show()
+                disciplina.id?.let {
+                    onNavigateToAnotacoes(it.toString())
+                }
             },
             OpcaoDisciplina("Arquivos", Icons.Outlined.Download, Color(0xFFE6F7EC)) {
                 Toast.makeText(context, "Abrir Arquivos", Toast.LENGTH_SHORT).show()

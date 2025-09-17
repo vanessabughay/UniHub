@@ -1,5 +1,6 @@
 package com.example.unihub.data.repository // Mesmo pacote ou importe Contatobackend
 
+import com.example.unihub.data.api.RetrofitClient
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.util.LocalDateAdapter
 import com.google.gson.GsonBuilder
@@ -11,15 +12,7 @@ import java.time.LocalDate
 
 class ApiContatoBackend : Contatobackend {
     private val api: ContatoApi by lazy {
-        val gson = GsonBuilder()
-            .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
-            .create()
-
-        Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/")
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-            .create(ContatoApi::class.java)
+        RetrofitClient.create(ContatoApi::class.java) // usa o retrofit com interceptor
     }
 
 

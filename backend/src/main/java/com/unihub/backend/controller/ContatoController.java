@@ -20,39 +20,37 @@ import java.util.List;
 @RestController
 @RequestMapping("/contato")
 @CrossOrigin(origins = "*")
-
 public class ContatoController {
     @Autowired
     private ContatoService service;
 
     @GetMapping
     public List<Contato> listarTodas() {
-        return service.listarTodas();
+        return service.listarTodas(); // deve filtrar por owner no service
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public Contato buscarPorId(@PathVariable Long id) {
         return service.buscarPorId(id);
     }
 
     @PostMapping
     public Contato criar(@RequestBody Contato contato) {
+        contato.setId(null);             
         return service.salvar(contato);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     public Contato atualizar(@PathVariable Long id, @RequestBody Contato novoContato) {
-        Contato existente = service.buscarPorId(id);
-
-
+        Contato existente = service.buscarPorId(id); 
         existente.setNome(novoContato.getNome());
-        existente.setId(novoContato.getId());
         existente.setEmail(novoContato.getEmail());
-
+        existente.setPendente(novoContato.getPendente());
         return service.salvar(existente);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable Long id) {
         service.excluir(id);
     }

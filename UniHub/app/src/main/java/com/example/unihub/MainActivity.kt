@@ -57,6 +57,12 @@ sealed class Screen(val route: String) {
         }
     }
 
+    object Anotacoes : Screen("anotacoes/{id}") {
+        fun createRoute(id: String): String {
+            return "anotacoes/$id"
+        }
+    }
+
     object ManterAusencia : Screen("manter_ausencia?disciplinaId={disciplinaId}&id={id}") {
         fun createRoute(disciplinaId: String, id: String? = null): String {
             return buildString {
@@ -93,6 +99,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         TokenManager.loadToken(applicationContext)
         setContent {
+            val navController = rememberNavController()
+            val startDest = if (TokenManager.token.isNullOrBlank())
+                Screen.Login.route
+            else
+                Screen.TelaInicial.route
+
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = MaterialTheme.colorScheme.background
@@ -188,6 +200,9 @@ class MainActivity : ComponentActivity() {
 
                             onNavigateToAusencias = { discId, ausId ->
                                 navController.navigate(Screen.ManterAusencia.createRoute(discId, ausId))
+                            },
+                            onNavigateToAnotacoes = { idDaDisciplina ->
+                                navController.navigate(Screen.Anotacoes.createRoute(idDaDisciplina))
                             },
 
                             viewModel = viewModel
@@ -332,6 +347,21 @@ class MainActivity : ComponentActivity() {
 
                     composable(Screen.TelaInicial.route) {
                         TelaInicial(navController = navController)
+                    }
+
+                    // Anotações
+                    composable(
+                        route = Screen.Anotacoes.route,
+                        arguments = listOf(navArgument("id") { type = NavType.LongType }) // Use LongType para IDs
+                    ) { backStackEntry ->
+                        val disciplinaId = backStackEntry.arguments?.getLong("id")
+                        if (disciplinaId != null) {
+                            // Importe a AnotacoesView
+                            com.example.unihub.ui.Anotacoes.AnotacoesView(
+                                disciplinaId = disciplinaId,
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
                     }
 
 
