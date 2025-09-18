@@ -36,6 +36,10 @@ import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
 import com.example.unihub.data.api.TokenManager
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
+import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
+import com.example.unihub.data.repository.ApiQuadroBackend
+import com.example.unihub.data.repository.QuadroRepository
+
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -94,7 +98,7 @@ sealed class Screen(val route: String) {
         }
     }
 
-    
+
 }
 
 class MainActivity : ComponentActivity() {
@@ -342,6 +346,17 @@ class MainActivity : ComponentActivity() {
                             onExcluirSucessoNavegarParaLista = {
                                 navController.popBackStack() // Volta para a lista após exclusão
                             }
+                        )
+                    }
+
+                    // ROTA 11: Tela de Listar Quadros
+                    composable(Screen.ListarQuadros.route) {
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend.apiService)
+                        val viewModelFactory = ListarQuadrosViewModelFactory(quadroRepository)
+
+                        ListarQuadrosScreen(
+                            navController = navController,
+                            viewModelFactory = viewModelFactory
                         )
                     }
 
