@@ -35,6 +35,7 @@ import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
 import com.example.unihub.data.api.TokenManager
+import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -42,6 +43,7 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object TelaInicial : Screen("tela_inicial")
     object ListarDisciplinas : Screen("lista_disciplinas")
+    object ListarQuadros : Screen("lista_quadros")
 
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
         // Função para criar a rota de "manter", com ou sem ID
@@ -91,6 +93,8 @@ sealed class Screen(val route: String) {
             return if (id != null) "manter_grupo?id=$id" else "manter_grupo"
         }
     }
+
+    
 }
 
 class MainActivity : ComponentActivity() {
