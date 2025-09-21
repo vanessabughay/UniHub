@@ -9,6 +9,7 @@ import com.example.unihub.data.api.UniHubApi // Importa a sua interface de API
 import com.example.unihub.data.util.LocalDateAdapter
 import com.google.gson.GsonBuilder
 import java.time.LocalDate
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     // URL base do seu backend Spring Boot. Use o endereço do seu emulador.
@@ -41,4 +42,38 @@ object RetrofitClient {
     }
 
     fun <T> create(service: Class<T>): T = retrofit.create(service)
+
+    //TESTE DO JSON
+
+    // Função ou módulo que fornece a instância do OkHttpClient
+    fun provideOkHttpClient(): OkHttpClient {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            // Defina o nível de log.
+            // Level.BODY mostra cabeçalhos e corpo da requisição/resposta.
+            // Level.HEADERS mostra apenas cabeçalhos.
+            // Level.BASIC mostra a linha de requisição/resposta e o tempo.
+            // Level.NONE não loga nada (para produção).
+            level = HttpLoggingInterceptor.Level.BODY // <<< IMPORTANTE PARA VER O JSON
+        }
+
+        return OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor) // Adiciona o interceptor de logging
+            .connectTimeout(30, TimeUnit.SECONDS) // Exemplo de outras configurações
+            .readTimeout(30, TimeUnit.SECONDS)    // Exemplo de outras configurações
+            .writeTimeout(30, TimeUnit.SECONDS)   // Exemplo de outras configurações
+            // .addInterceptor(OutroInterceptorSeVoceTiver()) // Você pode adicionar outros interceptors
+            .build()
+    }
+    // Função ou módulo que fornece a instância do Retrofit
+    fun provideRetrofit(okHttpClient: OkHttpClient, baseUrl: String): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient) // <<< PASSA O OkHttpClient CONFIGURADO
+            .addConverterFactory(GsonConverterFactory.create()) // Ou seu conversor
+            .build()
+    }
+
+
+
+
 }

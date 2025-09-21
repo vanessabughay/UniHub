@@ -2,6 +2,7 @@ package com.unihub.backend.service;
 
 import com.unihub.backend.model.Disciplina;
 import com.unihub.backend.model.Usuario;
+import com.unihub.backend.repository.AvaliacaoRepository;
 import com.unihub.backend.repository.DisciplinaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,9 @@ public class DisciplinaService {
 
     @Autowired
     private DisciplinaRepository repository;
+
+    @Autowired
+    private AvaliacaoRepository avaliacaoRepository;
 
     public List<Disciplina> listarTodas(Long usuarioId) {
         return repository.findByUsuarioId(usuarioId);

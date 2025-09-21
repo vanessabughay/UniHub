@@ -343,6 +343,7 @@ fun ManterDisciplinaScreen(
                             salaProfessor = salaProfessor,
                             isAtiva = isAtiva,
                             receberNotificacoes = true,
+                            avaliacoes = emptyList(),
                             aulas = aulas.map {
                                 com.example.unihub.data.model.HorarioAula(
                                     diaDaSemana = it.dia,

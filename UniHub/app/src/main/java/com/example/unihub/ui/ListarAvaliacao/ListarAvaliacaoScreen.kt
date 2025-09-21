@@ -1,4 +1,4 @@
-package com.example.unihub.ui.ListarGrupo
+package com.example.unihub.ui.ListarAvaliacao
 
 import android.os.Build
 import android.widget.Toast
@@ -61,7 +61,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
-import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.model.Avaliacao
 
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
@@ -69,21 +69,21 @@ val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
-fun ListarGrupoScreen(
-    viewModel: ListarGrupoViewModel = viewModel(factory = ListarGrupoViewModelFactory),
-    onAddGrupo: () -> Unit,
+fun ListarAvaliacaoScreen(
+    viewModel: ListarAvaliacaoViewModel = viewModel(factory = ListarAvaliacaoViewModelFactory),
+    onAddAvaliacao: () -> Unit,
     onVoltar: () -> Unit,
-    onNavigateToManterGrupo: (grupoId: String) -> Unit
+    onNavigateToManterAvaliacao: (avaliacaoId: String) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
-    val gruposState by viewModel.grupos.collectAsState()
+    val avaliacoesState by viewModel.avaliacoes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    var grupoExpandidoId by remember { mutableStateOf<Long?>(null) }
+    var avaliacaoExpandidoId by remember { mutableStateOf<Long?>(null) }
     var showConfirmDeleteDialog by remember { mutableStateOf(false) } // MODIFICADO: Nome simplificado
-    var grupoParaExcluir by remember { mutableStateOf<Grupo?>(null) } // MODIFICADO: Usaremos este
+    var avaliacaoParaExcluir by remember { mutableStateOf<Avaliacao?>(null) } // MODIFICADO: Usaremos este
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -98,7 +98,7 @@ fun ListarGrupoScreen(
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.loadGrupo()
+                viewModel.loadAvaliacao()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -107,54 +107,55 @@ fun ListarGrupoScreen(
         }
     }
 
-    val gruposComIdValido by remember(gruposState) {
+    val avaliacoesComIdValido by remember(avaliacoesState) {
         derivedStateOf {
-            gruposState.filter { it.id != null }
+            avaliacoesState.filter { it.id != null }
         }
     }
 
-    val gruposFiltrados by remember(searchQuery, gruposComIdValido) {
+    val avaliacoesFiltrados by remember(searchQuery, avaliacoesComIdValido) {
         derivedStateOf {
             if (searchQuery.isBlank()) {
-                gruposComIdValido
+                avaliacoesComIdValido
             } else {
-                gruposComIdValido.filter { grupo ->
-                    val nomeMatches = grupo.nome.contains(searchQuery, ignoreCase = true)
-                    val idMatches = grupo.id!!.toString().contains(searchQuery, ignoreCase = true)
-                    nomeMatches || idMatches
+                avaliacoesComIdValido.filter { avaliacao ->
+                    val nomeMatches = avaliacao.descricao?.contains(searchQuery, ignoreCase = true)
+                    //val nomeMatches = avaliacao.descricao.contains(searchQuery, ignoreCase = true)
+                    val idMatches = avaliacao.id!!.toString().contains(searchQuery, ignoreCase = true)
+                    nomeMatches == true || idMatches
                 }
             }
         }
     }
 
-    // Diálogo de Confirmação de Exclusão (agora usando showConfirmDeleteDialog e grupoParaExcluir)
-    if (showConfirmDeleteDialog && grupoParaExcluir != null) {
-        val grupoParaExcluirAtual = grupoParaExcluir!! // Sabemos que não é nulo aqui
+    // Diálogo de Confirmação de Exclusão (agora usando showConfirmDeleteDialog e avaliacaoParaExcluir)
+    if (showConfirmDeleteDialog && avaliacaoParaExcluir != null) {
+        val avaliacaoParaExcluirAtual = avaliacaoParaExcluir!! // Sabemos que não é nulo aqui
         AlertDialog(
             onDismissRequest = {
                 showConfirmDeleteDialog = false
-                grupoParaExcluir = null // Limpa ao fechar
+                avaliacaoParaExcluir = null // Limpa ao fechar
             },
             title = { Text("Confirmar Exclusão") },
-            text = { Text("Deseja realmente excluir o grupo \"${grupoParaExcluirAtual.nome}\"?") },
+            text = { Text("Deseja realmente excluir a avaliação \"${avaliacaoParaExcluirAtual.descricao}\"?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // grupoParaExcluirAtual.id é não nulo porque vem de um item filtrado
-                        viewModel.deleteGrupo(grupoParaExcluirAtual.id!!.toString()) { sucesso ->
+                        // avaliacaoParaExcluirAtual.id é não nulo porque vem de um item filtrado
+                        viewModel.deleteAvaliacao(avaliacaoParaExcluirAtual.id!!.toString()) { sucesso ->
                             if (sucesso) {
-                                Toast.makeText(context, "Grupo excluído!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Avaliação excluída!", Toast.LENGTH_SHORT).show()
                             }
                         }
                         showConfirmDeleteDialog = false
-                        grupoParaExcluir = null
+                        avaliacaoParaExcluir = null
                     }
                 ) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     showConfirmDeleteDialog = false
-                    grupoParaExcluir = null
+                    avaliacaoParaExcluir = null
                 }) { Text("Cancelar") }
             }
         )
@@ -163,18 +164,19 @@ fun ListarGrupoScreen(
     Scaffold(
         topBar = {
             CabecalhoAlternativo(
-                titulo = "Grupos",
+                titulo = "Avaliações",
                 onVoltar = onVoltar,
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddGrupo,
+                onClick = onAddAvaliacao,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-
+                //containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                //contentColor = MaterialTheme.colorScheme.onTertiaryContainer
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Adicionar Grupo")
+                Icon(Icons.Default.Add, contentDescription = "Adicionar Avaliação")
             }
         },
         content = { paddingValues ->
@@ -203,7 +205,7 @@ fun ListarGrupoScreen(
                         decorationBox = { innerTextField ->
                             Box(contentAlignment = Alignment.CenterStart) {
                                 if (searchQuery.isEmpty()) {
-                                    Text("Buscar por nome do grupo", color = Color.Gray, fontSize = 16.sp)
+                                    Text("Buscar por nome da avaliação", color = Color.Gray, fontSize = 16.sp)
                                 }
                                 innerTextField()
                             }
@@ -220,28 +222,28 @@ fun ListarGrupoScreen(
                             CircularProgressIndicator()
                         }
                     }
-                    gruposComIdValido.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
+                    avaliacoesComIdValido.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
                         Box( modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp) ) {
-                            Text("Nenhum grupo cadastrado.", style = MaterialTheme.typography.bodyLarge)
+                            Text("Nenhuma avaliação cadastrada.", style = MaterialTheme.typography.bodyLarge)
                         }
                     }
-                    // A condição para "Nenhum grupo encontrado para a busca" usa gruposFiltrados
-                    gruposFiltrados.isEmpty() && searchQuery.isNotBlank() && !isLoading && errorMessage == null -> {
+                    // A condição para "Nenhum avaliacao encontrado para a busca" usa avaliacoesFiltrados
+                    avaliacoesFiltrados.isEmpty() && searchQuery.isNotBlank() && !isLoading && errorMessage == null -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(16.dp), contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Nenhum grupo encontrado para \"$searchQuery\"",
+                                "Nenhuma avaliação encontrada para \"$searchQuery\"",
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
                     else -> {
-                        if (isLoading && gruposComIdValido.isNotEmpty()) { // Mostrar LinearProgressIndicator apenas se já houver itens
+                        if (isLoading && avaliacoesComIdValido.isNotEmpty()) { // Mostrar LinearProgressIndicator apenas se já houver itens
                             LinearProgressIndicator(modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 4.dp))
@@ -255,27 +257,27 @@ fun ListarGrupoScreen(
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             items(
-                                items = gruposFiltrados,
-                                key = { grupo -> grupo.id!! }
-                            ) { grupo ->
-                                GrupoItemExpansivel( // Usando o novo item expansível
-                                    grupo = grupo,
-                                    isExpanded = grupoExpandidoId == grupo.id,
+                                items = avaliacoesFiltrados,
+                                key = { avaliacao -> avaliacao.id!! }
+                            ) { avaliacao ->
+                                AvaliacaoItemExpansivel( // Usando o novo item expansível
+                                    avaliacao = avaliacao,
+                                    isExpanded = avaliacaoExpandidoId == avaliacao.id,
                                     onHeaderClick = {
-                                        grupoExpandidoId = if (grupoExpandidoId == grupo.id) {
+                                        avaliacaoExpandidoId = if (avaliacaoExpandidoId == avaliacao.id) {
                                             null
                                         } else {
-                                            grupo.id
+                                            avaliacao.id
                                         }
                                     },
                                     onEditarClick = {
-                                        grupoExpandidoId = null // Recolhe ao editar
-                                        // grupo.id é não nulo aqui
-                                        onNavigateToManterGrupo(grupo.id!!.toString())
+                                        avaliacaoExpandidoId = null // Recolhe ao editar
+                                        // avaliacao.id é não nulo aqui
+                                        onNavigateToManterAvaliacao(avaliacao.id!!.toString())
                                     },
                                     onExcluirClick = {
-                                        grupoExpandidoId = null // Recolhe ao tentar excluir
-                                        grupoParaExcluir = grupo
+                                        avaliacaoExpandidoId = null // Recolhe ao tentar excluir
+                                        avaliacaoParaExcluir = avaliacao
                                         showConfirmDeleteDialog = true
                                     }
                                 )
@@ -290,8 +292,8 @@ fun ListarGrupoScreen(
 
 // Composable para o Item Expansível da Lista
 @Composable
-fun GrupoItemExpansivel(
-    grupo: Grupo,
+fun AvaliacaoItemExpansivel(
+    avaliacao: Avaliacao,
     isExpanded: Boolean,
     onHeaderClick: () -> Unit,
     onEditarClick: () -> Unit,
@@ -320,12 +322,12 @@ fun GrupoItemExpansivel(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Group,
-                        contentDescription = "Ícone de Grupo",
+                        contentDescription = "Ícone de Avaliação",
                         modifier = Modifier.padding(end = 12.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = grupo.nome,
+                        text = avaliacao.descricao ?: "",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
@@ -357,14 +359,15 @@ fun GrupoItemExpansivel(
                             .padding(horizontal = 32.dp)
                     ) {
 
-                        if (grupo.membros.isEmpty()) {
+                        /*
+                        if (avaliacao.membros.isEmpty()) {
                             Text(
-                                "Nenhum integrante neste grupo.",
+                                "Nenhum integrante neste avaliacao.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
                             )
                         } else {
-                            grupo.membros.forEach { contato ->
+                            avaliacao.membros.forEach { contato ->
                                 Text(
                                     text = "- ${contato.nome}",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -372,6 +375,8 @@ fun GrupoItemExpansivel(
                                 )
                             }
                         }
+
+                         */
                     }
 
 
@@ -387,7 +392,7 @@ fun GrupoItemExpansivel(
                         IconButton(onClick = onExcluirClick) {
                             Icon(
                                 imageVector = Icons.Filled.Delete,
-                                contentDescription = "Excluir Grupo",
+                                contentDescription = "Excluir Avaliação",
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -396,7 +401,7 @@ fun GrupoItemExpansivel(
                         IconButton(onClick = onEditarClick) {
                             Icon(
                                 imageVector = Icons.Filled.Edit,
-                                contentDescription = "Editar Grupo",
+                                contentDescription = "Editar Avaliação",
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }

@@ -31,6 +31,8 @@ import com.example.unihub.data.repository.ApiCategoriaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
 import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
+import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoScreen
+import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
@@ -91,6 +93,15 @@ sealed class Screen(val route: String) {
             return if (id != null) "manter_grupo?id=$id" else "manter_grupo"
         }
     }
+    object ListarAvaliacao : Screen("lista_avaliacao")
+
+    object ManterAvaliacao : Screen("manter_avaliacao?id={id}"){
+        fun createRoute(id: String?): String {
+            return if (id != null) "manter_avaliacao?id=$id" else "manter_avaliacao"
+        }
+    }
+
+
 }
 
 class MainActivity : ComponentActivity() {
@@ -340,6 +351,41 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
+
+                    // ROTA 11: Tela de Listar Avaliacao
+                    composable(Screen.ListarAvaliacao.route) {
+                        ListarAvaliacaoScreen(
+                            onAddAvaliacao = {
+                                navController.navigate(Screen.ManterAvaliacao.createRoute(null)) // Para nova Avaliacao
+                            },
+                            // onNavigateToManterAvaliacao é usado PELO DIÁLOGO para a ação de EDITAR
+                            onNavigateToManterAvaliacao = { avaliacaoId -> // Este avaliacaoId virá do diálogo de detalhes
+                                navController.navigate(Screen.ManterAvaliacao.createRoute(avaliacaoId))
+                            },
+                            onVoltar = { navController.popBackStack() }
+                        )
+                    }
+
+                    // ROTA 12: manter Avaliacao
+
+                    composable(
+                        route = Screen.ManterAvaliacao.route,
+                        arguments = listOf(navArgument("id") {
+                            type = NavType.StringType
+                            nullable = true
+                        })
+                    ) { backStackEntry ->
+                        val avaliacaoId = backStackEntry.arguments?.getString("id")
+                        ManterAvaliacaoScreen(
+                            avaliacaoId = avaliacaoId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = {
+                                navController.popBackStack() // Volta para a lista após exclusão
+                            }
+                        )
+                    }
+
+
 
 
 
