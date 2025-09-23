@@ -21,6 +21,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ListarContato.ListarContatoScreen
+import androidx.navigation.navDeepLink
+import androidx.navigation.navArgument
 
 import com.example.unihub.ui.ManterConta.ManterContaScreen
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
@@ -90,6 +92,11 @@ sealed class Screen(val route: String) {
         fun createRoute(id: String?): String {
             return if (id != null) "manter_grupo?id=$id" else "manter_grupo"
         }
+    }
+
+    object EsqueciSenha : Screen("esqueci_senha")
+    object RedefinirSenha : Screen("redefinir_senha?token={token}") {
+        fun createRoute(token: String) = "redefinir_senha?token=$token"
     }
 }
 
@@ -363,6 +370,30 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
+
+                    // ROTA 11: Esqueci minha senha
+                    composable(Screen.EsqueciSenha.route) {
+                        com.example.unihub.ui.login.TelaEsqueciSenha(navController = navController)
+                    }
+
+                    // ROTA 12: Redefinir senha via deep link unihub://reset?token=XYZ
+                    composable(
+                        route = Screen.RedefinirSenha.route,
+                        arguments = listOf(
+                            navArgument("token") { type = NavType.StringType }
+                        ),
+                        deepLinks = listOf(
+                            navDeepLink { uriPattern = "unihub://reset?token={token}" }
+                        )
+                    ) { backStackEntry ->
+                        val token = backStackEntry.arguments?.getString("token").orEmpty()
+                        com.example.unihub.ui.login.TelaRedefinirSenha(
+                            token = token,
+                            navController = navController
+                        )
+                    }
+
+
 
 
                 }

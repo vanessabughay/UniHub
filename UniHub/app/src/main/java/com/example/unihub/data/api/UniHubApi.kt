@@ -4,6 +4,8 @@ import com.example.unihub.data.api.model.AuthResponse
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
 import com.example.unihub.data.api.model.UpdateUsuarioRequest
+import com.example.unihub.data.api.model.SolicitarRedefinicaoSenhaRequest
+import com.example.unihub.data.api.model.RedefinirSenhaRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -21,5 +23,15 @@ interface UniHubApi {
     suspend fun updateUser(
         @Header("Authorization") token: String,
         @Body request: UpdateUsuarioRequest
+    ): Response<Void>
+
+    @POST("api/auth/forgot-password")
+    suspend fun solicitarRedefinicaoSenha(
+        @Body body: SolicitarRedefinicaoSenhaRequest
+    ): Response<Void>
+
+    @POST("api/auth/reset-password")
+    suspend fun redefinirSenha(
+        @Body body: RedefinirSenhaRequest
     ): Response<Void>
 }

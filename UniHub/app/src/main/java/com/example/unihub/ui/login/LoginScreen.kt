@@ -141,6 +141,16 @@ fun LoginScreen(
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Esqueceu a senha?",
+                color = Color(0xFF234A6A),
+                fontSize = 13.sp,
+                modifier = Modifier.clickable {
+                    navController.navigate(Screen.EsqueciSenha.route)
+                }
+            )
         }
     }
 }

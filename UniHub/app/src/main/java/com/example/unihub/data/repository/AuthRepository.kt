@@ -6,6 +6,8 @@ import com.example.unihub.data.api.UniHubApi // Assume que esta é a sua interfa
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
 import com.example.unihub.data.api.model.UpdateUsuarioRequest
+import com.example.unihub.data.api.model.SolicitarRedefinicaoSenhaRequest
+import com.example.unihub.data.api.model.RedefinirSenhaRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
@@ -128,4 +130,58 @@ class AuthRepository(
             }
         }
     }
+
+    suspend fun solicitarRedefinicaoSenha(
+        email: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = api.solicitarRedefinicaoSenha(
+                    SolicitarRedefinicaoSenhaRequest(email = email.trim())
+                )
+                if (resp.isSuccessful) {
+                    withContext(Dispatchers.Main) { onSuccess() }
+                } else {
+                    val msg = resp.errorBody()?.string() ?: "Falha ao solicitar redefinição."
+                    withContext(Dispatchers.Main) { onError(msg) }
+                }
+            } catch (e: HttpException) {
+                withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) { onError("Falha na conexão. Verifique sua rede.") }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onError("Erro inesperado: ${e.message}") }
+            }
+        }
+    }
+
+    suspend fun redefinirSenha(
+        token: String,
+        novaSenha: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = api.redefinirSenha(
+                    RedefinirSenhaRequest(token = token, novaSenha = novaSenha)
+                )
+                if (resp.isSuccessful) {
+                    withContext(Dispatchers.Main) { onSuccess() }
+                } else {
+                    val msg = resp.errorBody()?.string() ?: "Falha ao redefinir senha."
+                    withContext(Dispatchers.Main) { onError(msg) }
+                }
+            } catch (e: HttpException) {
+                withContext(Dispatchers.Main) { onError("Erro de servidor: ${e.code()}") }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) { onError("Falha na conexão. Verifique sua rede.") }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) { onError("Erro inesperado: ${e.message}") }
+            }
+        }
+    }
+
 }
