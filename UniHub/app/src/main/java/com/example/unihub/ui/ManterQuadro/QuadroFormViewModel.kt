@@ -43,10 +43,17 @@ class QuadroFormViewModel(
                     null
                 }
 
-                // Lógica para definir dataFim baseada na mudança de estado
-                if (quadroToSave.estado == Estado.INATIVO && existingQuadro?.estado != Estado.INATIVO) {
+                if (existingQuadro != null) {
+                    quadroToSave = quadroToSave.copy(
+                        dataInicio = existingQuadro.dataInicio,
+                        donoId = existingQuadro.donoId
+                    )
+                }
+
+                // Ajusta a data de fim automaticamente apenas quando necessário
+                if (quadroToSave.estado == Estado.INATIVO && existingQuadro?.estado != Estado.INATIVO && quadroToSave.dataFim == null) {
                     quadroToSave = quadroToSave.copy(dataFim = System.currentTimeMillis())
-                } else if (quadroToSave.estado != Estado.INATIVO && existingQuadro?.estado == Estado.INATIVO) {
+                } else if (quadroToSave.estado != Estado.INATIVO && existingQuadro?.estado == Estado.INATIVO && quadroToSave.dataFim == existingQuadro.dataFim) {
                     quadroToSave = quadroToSave.copy(dataFim = null)
                 }
 

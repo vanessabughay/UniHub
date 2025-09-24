@@ -2,10 +2,14 @@ package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.unihub.backend.model.enums.QuadroStatus;
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,16 +33,19 @@ public class QuadroPlanejamento {
     @Column(nullable = false)
     private QuadroStatus status = QuadroStatus.ATIVO;
 
-    @Column(nullable = false)
-    private LocalDateTime dataCriacao = LocalDateTime.now();
+    @Column(name = "data_criacao", nullable = false)
+    private Instant dataCriacao = Instant.now();
 
-    private LocalDateTime dataEncerramento;
+    @Column(name = "data_prazo")
+    private Instant dataPrazo;
 
-     private LocalDate dataPrazo;
+    @Column(name = "disciplina_nome")
+    private String disciplina;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "disciplina_id")
-    private Disciplina disciplina;
+    @ElementCollection
+    @CollectionTable(name = "quadros_planejamento_integrantes", joinColumns = @JoinColumn(name = "quadro_id"))
+    @Column(name = "integrante")
+    private List<String> integrantes = new ArrayList<>();
 
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,10 +71,12 @@ public class QuadroPlanejamento {
         this.id = id;
     }
 
+    @JsonProperty("nome")
     public String getTitulo() {
         return titulo;
     }
 
+    @JsonProperty("nome")
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
@@ -80,47 +89,62 @@ public class QuadroPlanejamento {
         this.descricao = descricao;
     }
 
+    
+    @JsonProperty("estado")
     public QuadroStatus getStatus() {
         return status;
     }
 
+    @JsonProperty("estado")
     public void setStatus(QuadroStatus status) {
         this.status = status;
     }
 
-    public LocalDateTime getDataCriacao() {
+    @JsonProperty("dataInicio")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public Instant getDataCriacao() {
         return dataCriacao;
     }
 
-    public void setDataCriacao(LocalDateTime dataCriacao) {
+    @JsonProperty("dataInicio")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public void setDataCriacao(Instant dataCriacao) {
         this.dataCriacao = dataCriacao;
     }
 
-    public LocalDateTime getDataEncerramento() {
-        return dataEncerramento;
-    }
-
-    public void setDataEncerramento(LocalDateTime dataEncerramento) {
-        this.dataEncerramento = dataEncerramento;
-    }
-
-     public LocalDate getDataPrazo() {
+    @JsonProperty("dataFim")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public Instant getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
+    @JsonProperty("dataFim")
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public void setDataPrazo(Instant dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 
-    public Disciplina getDisciplina() {
+    @JsonProperty("disciplina")
+    public String getDisciplina() {
         return disciplina;
     }
 
-    public void setDisciplina(Disciplina disciplina) {
+    @JsonProperty("disciplina")
+    public void setDisciplina(String disciplina) {
         this.disciplina = disciplina;
     }
 
+@JsonProperty("integrantes")
+    public List<String> getIntegrantes() {
+        return integrantes;
+    }
 
+    @JsonProperty("integrantes")
+    public void setIntegrantes(List<String> integrantes) {
+        this.integrantes = integrantes != null ? new ArrayList<>(integrantes) : new ArrayList<>();
+    }
+
+    @JsonIgnore
     public Usuario getUsuario() {
         return usuario;
     }
@@ -129,6 +153,11 @@ public class QuadroPlanejamento {
         this.usuario = usuario;
     }
 
+    @JsonProperty("donoId")
+    public Long getDonoId() {
+        return usuario != null ? usuario.getId() : null;
+    }
+    
     public Set<Contato> getMembros() {
         return membros;
     }

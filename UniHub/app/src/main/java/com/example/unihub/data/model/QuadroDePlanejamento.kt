@@ -4,6 +4,7 @@ import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Status
 import java.util.concurrent.TimeUnit
 
+
 // Enum para o estado do quadro
 enum class Estado {
     ATIVO,
@@ -18,7 +19,8 @@ data class QuadroDePlanejamento(
     val estado: Estado = Estado.ATIVO,
     val colunas: List<Coluna> = emptyList(),
     val dataInicio: Long = System.currentTimeMillis(),
-    val dataFim: Long? = null
+    val dataFim: Long? = null,
+    val donoId: Long? = null
 ) {
     val prazoCalculado: Long
         get() = if (colunas.isNotEmpty()) {

@@ -7,19 +7,21 @@ import com.unihub.backend.model.enums.QuadroStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
 public class QuadroPlanejamentoDetalhesResponse {
 
     private Long id;
-    private String titulo;
+    private String nome;
     private String descricao;
-    private QuadroStatus status;
-    private LocalDateTime dataCriacao;
-    private LocalDate dataPrazo;
-    private LocalDateTime dataEncerramento;
-    private Disciplina disciplina;
+    private QuadroStatus estado;
+    private Instant dataInicio;
+    private Instant dataFim;
+    private String disciplina;
+    private List<String> integrantes;
+    private Long donoId;
     private Set<Contato> membros;
     private List<ColunaPlanejamento> colunasEmAndamento;
     private List<ColunaPlanejamento> colunasConcluidas;
@@ -32,12 +34,12 @@ public class QuadroPlanejamentoDetalhesResponse {
         this.id = id;
     }
 
-    public String getTitulo() {
-        return titulo;
+    public String getNome() {
+        return nome;
     }
 
-    public void setTitulo(String titulo) {
-        this.titulo = titulo;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public String getDescricao() {
@@ -48,44 +50,54 @@ public class QuadroPlanejamentoDetalhesResponse {
         this.descricao = descricao;
     }
 
-    public QuadroStatus getStatus() {
-        return status;
+    public QuadroStatus getEstado() {
+        return estado;
     }
 
-    public void setStatus(QuadroStatus status) {
-        this.status = status;
+    public void setEstado(QuadroStatus estado) {
+        this.estado = estado;
     }
 
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
+    public Instant getDataInicio() {
+        return dataInicio;
     }
 
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
+    public void setDataInicio(Instant dataInicio) {
+        this.dataInicio = dataInicio;
     }
 
-    public LocalDate getDataPrazo() {
-        return dataPrazo;
+    public Instant getDataFim() {
+        return dataFim;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
-        this.dataPrazo = dataPrazo;
+    public void setDataFim(Instant dataFim) {
+        this.dataFim = dataFim;
     }
 
-    public LocalDateTime getDataEncerramento() {
-        return dataEncerramento;
-    }
-
-    public void setDataEncerramento(LocalDateTime dataEncerramento) {
-        this.dataEncerramento = dataEncerramento;
-    }
-
-    public Disciplina getDisciplina() {
+    public String getDisciplina() {
         return disciplina;
     }
 
-    public void setDisciplina(Disciplina disciplina) {
+    public void setDisciplina(String disciplina) {
         this.disciplina = disciplina;
+    }
+
+    public List<String> getIntegrantes() {
+        return integrantes;
+    }
+
+     public void setIntegrantes(List<String> integrantes) {
+        this.integrantes = integrantes;
+    }
+
+    public Long getDonoId() {
+        return donoId;
+    }
+
+    public void setDonoId(Long donoId) {
+     
+   this.donoId = donoId;
+
     }
 
     public Set<Contato> getMembros() {

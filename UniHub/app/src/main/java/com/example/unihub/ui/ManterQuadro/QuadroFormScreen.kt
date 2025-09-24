@@ -45,6 +45,8 @@ fun QuadroFormScreen(
     var integrantes by remember { mutableStateOf("") }
     var estado by remember { mutableStateOf(Estado.ATIVO) }
     var prazo by remember { mutableStateOf(System.currentTimeMillis()) }
+    var dataInicio by remember { mutableStateOf(System.currentTimeMillis()) }
+    var donoId by remember { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(key1 = quadroId) {
         if (isEditing) {
@@ -59,6 +61,9 @@ fun QuadroFormScreen(
                 disciplina = loadedQuadro.disciplina ?: ""
                 integrantes = loadedQuadro.integrantes?.joinToString(", ") ?: ""
                 estado = loadedQuadro.estado
+                prazo = loadedQuadro.dataFim ?: System.currentTimeMillis()
+                dataInicio = loadedQuadro.dataInicio
+                donoId = loadedQuadro.donoId
             }
         }
     }
@@ -102,7 +107,7 @@ fun QuadroFormScreen(
 
             CampoFormulario(label = "Nome", value = nome, onValueChange = { nome = it })
             CampoFormulario(label = "Disciplina (Opcional)", value = disciplina, onValueChange = { disciplina = it })
-            CampoFormulario(label = "Integrantes", value = integrantes, onValueChange = { integrantes = it })
+            CampoFormulario(label = "Integrantes/Grupo", value = integrantes, onValueChange = { integrantes = it })
 
             CampoCombobox(
                 label = "Estado",
@@ -112,20 +117,23 @@ fun QuadroFormScreen(
                 optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
             )
 
-            CampoData(label = "Prazo Manual", value = dateFormat.format(Date(prazo)), onClick = { showDatePicker() })
+            CampoData(label = "Prazo (Data de Fim)", value = dateFormat.format(Date(prazo)), onClick = { showDatePicker() })
 
             Spacer(modifier = Modifier.weight(1f))
 
             BotoesFormulario(
                 onConfirm = {
                     if (nome.isNotBlank()) {
+                        val integrantesList = integrantes.split(",").map { it.trim() }.filter { it.isNotBlank() }
                         val quadroParaSalvar = QuadroDePlanejamento(
                             id = if (isEditing) quadroId!! else "",
                             nome = nome,
                             disciplina = disciplina.ifBlank { null },
-                            integrantes = integrantes.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                            estado = estado,
-                            dataInicio = System.currentTimeMillis() // ou a data de início do quadro existente
+                            integrantes = if (integrantesList.isEmpty()) null else integrantesList,                            estado = estado,
+                            dataInicio = dataInicio,
+                            dataFim = prazo,
+                            donoId = donoId
+
                         )
                         viewModel.salvarOuAtualizarQuadro(quadroParaSalvar)
                     } else {
@@ -160,7 +168,9 @@ class FakeQuadroRepository : QuadroRepository(object : QuadroApi {
             integrantes = listOf("João", "Maria"),
             estado = Estado.ATIVO,
             colunas = emptyList(),
-            dataInicio = System.currentTimeMillis()
+            dataInicio = System.currentTimeMillis(),
+            dataFim = System.currentTimeMillis() + 86400000L,
+            donoId = 1L
         )
     }
 

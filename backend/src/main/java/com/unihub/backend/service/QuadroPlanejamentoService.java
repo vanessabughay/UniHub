@@ -26,6 +26,7 @@ import com.unihub.backend.repository.TarefaPlanejamentoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -52,9 +53,7 @@ public class QuadroPlanejamentoService {
     @Autowired
     private GrupoRepository grupoRepository;
 
-    @Autowired
-    private DisciplinaRepository disciplinaRepository;
-
+    
 
     public List<QuadroPlanejamento> listar(Long usuarioId, QuadroStatus status, String titulo) {
         boolean possuiTitulo = titulo != null && !titulo.trim().isEmpty();
@@ -82,36 +81,29 @@ public class QuadroPlanejamentoService {
     @Transactional
     public QuadroPlanejamento criar(QuadroPlanejamento quadro, Long usuarioId) {
         quadro.setId(null);
-        quadro.setDataCriacao(LocalDateTime.now());
+        quadro.setDataCriacao(Instant.now());
         quadro.setUsuario(referenciaUsuario(usuarioId));
-        aplicarDisciplina(quadro, usuarioId);
-        ajustarStatus(quadro);
+        
+        ajustarStatus(quadro, null);
         return repository.save(quadro);
     }
 
     @Transactional
     public QuadroPlanejamento atualizar(Long id, QuadroPlanejamento quadroAtualizado, Long usuarioId) {
         QuadroPlanejamento existente = buscarPorId(id, usuarioId);
+        QuadroStatus statusAnterior = existente.getStatus();
 
         existente.setTitulo(quadroAtualizado.getTitulo());
         existente.setDescricao(quadroAtualizado.getDescricao());
         existente.setDataPrazo(quadroAtualizado.getDataPrazo());
+        existente.setDisciplina(quadroAtualizado.getDisciplina());
+        existente.setIntegrantes(quadroAtualizado.getIntegrantes());
 
         if (quadroAtualizado.getStatus() != null) {
             existente.setStatus(quadroAtualizado.getStatus());
         }
 
-        if (quadroAtualizado.getDataEncerramento() != null) {
-            existente.setDataEncerramento(quadroAtualizado.getDataEncerramento());
-        }
-
-        existente.setDisciplina(null);
-        if (quadroAtualizado.getDisciplina() != null) {
-            aplicarDisciplina(existente, usuarioId, quadroAtualizado.getDisciplina().getId());
-        }
-
-
-        ajustarStatus(existente);
+        ajustarStatus(existente, statusAnterior);
 
         return repository.save(existente);
     }
@@ -137,13 +129,14 @@ public class QuadroPlanejamentoService {
 
         QuadroPlanejamentoDetalhesResponse response = new QuadroPlanejamentoDetalhesResponse();
         response.setId(quadro.getId());
-        response.setTitulo(quadro.getTitulo());
+        response.setNome(quadro.getTitulo());
         response.setDescricao(quadro.getDescricao());
-        response.setStatus(quadro.getStatus());
-        response.setDataCriacao(quadro.getDataCriacao());
-        response.setDataPrazo(quadro.getDataPrazo());
-        response.setDataEncerramento(quadro.getDataEncerramento());
+        response.setEstado(quadro.getStatus());
+        response.setDataInicio(quadro.getDataCriacao());
+        response.setDataFim(quadro.getDataPrazo());
         response.setDisciplina(quadro.getDisciplina());
+        response.setIntegrantes(quadro.getIntegrantes());
+        response.setDonoId(quadro.getDonoId());
         response.setMembros(quadro.getMembros());
         response.setColunasEmAndamento(andamento);
         response.setColunasConcluidas(concluidas);
@@ -253,36 +246,15 @@ public class QuadroPlanejamentoService {
         return usuario;
     }
 
-    private void ajustarStatus(QuadroPlanejamento quadro) {
+   private void ajustarStatus(QuadroPlanejamento quadro, QuadroStatus statusAnterior) {
         if (quadro.getStatus() == null) {
             quadro.setStatus(QuadroStatus.ATIVO);
         }
 
-        if (quadro.getStatus() == QuadroStatus.ENCERRADO) {
-            if (quadro.getDataEncerramento() == null) {
-                quadro.setDataEncerramento(LocalDateTime.now());
-            }
-        } else {
-            quadro.setDataEncerramento(null);
+        if (quadro.getStatus() == QuadroStatus.ENCERRADO && quadro.getDataPrazo() == null) {
+            quadro.setDataPrazo(Instant.now());
         }
-    }
-
-    private void aplicarDisciplina(QuadroPlanejamento quadro, Long usuarioId) {
-        if (quadro.getDisciplina() != null && quadro.getDisciplina().getId() != null) {
-            aplicarDisciplina(quadro, usuarioId, quadro.getDisciplina().getId());
-        } else {
-            quadro.setDisciplina(null);
-        }
-    }
-
-    private void aplicarDisciplina(QuadroPlanejamento quadro, Long usuarioId, Long disciplinaId) {
-        if (disciplinaId == null) {
-            quadro.setDisciplina(null);
-            return;
-        }
-        Disciplina disciplina = disciplinaRepository.findByIdAndUsuarioId(disciplinaId, usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Disciplina não encontrada"));
-        quadro.setDisciplina(disciplina);
+        
     }
 
     private void validarTitulo(String titulo) {
