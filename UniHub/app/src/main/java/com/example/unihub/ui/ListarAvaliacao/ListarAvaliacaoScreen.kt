@@ -320,14 +320,18 @@ fun AvaliacaoItemExpansivel(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
+                    /*
                     Icon(
-                        imageVector = Icons.Filled.Group,
+                        imageVector = Icons.Filled.,
                         contentDescription = "Ícone de Avaliação",
                         modifier = Modifier.padding(end = 12.dp),
                         tint = MaterialTheme.colorScheme.primary
                     )
+
+                     */
                     Text(
-                        text = avaliacao.descricao ?: "",
+                        //text = avaliacao.descricao ?: "",
+                        text = avaliacao.disciplina?.nome ?: "teste",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface

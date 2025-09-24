@@ -1,5 +1,6 @@
 package com.unihub.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.unihub.backend.model.enums.EstadoAvaliacao;
 import com.unihub.backend.model.enums.Prioridade;
 import com.unihub.backend.model.enums.Modalidade;

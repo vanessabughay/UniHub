@@ -5,6 +5,9 @@ import androidx.annotation.RequiresExtension
 // Removido: import androidx.core.graphics.values // Não parece estar sendo usado
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.dto.AvaliacaoRequest
+import com.example.unihub.data.dto.ContatoRef
+import com.example.unihub.data.dto.DisciplinaRef
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Disciplina
@@ -202,70 +205,6 @@ class ManterAvaliacaoViewModel(
         return true
     }
 
-    private fun construirAvaliacaoParaSalvar(idParaAtualizar: Long? = null): Avaliacao? {
-        val currentState = _uiState.value
-        //val dataHoraEntregaFinal = getLocalDateTimeFromUi() // Pode ser null se campos estiverem vazios
-        val dataHoraEntregaLocalDateTime: LocalDateTime? = getLocalDateTimeFromUi()
-        val dataEntregaStringFormatada: String? =
-            dataHoraEntregaLocalDateTime?.toLocalDate()?.format(dateFormatter)
-
-        val idsIntegrantesParaSalvar = _idIntegrantesSelecionados.value.toList()
-        val integrantesCompletosParaSalvar = currentState.todosOsContatosDisponiveis
-            .filter { contatoResumo -> idsIntegrantesParaSalvar.contains(contatoResumo.id) }
-            .map { resumo -> Contato(id = resumo.id, nome = resumo.nome, email = resumo.email) }
-
-        val disciplinaParaSalvar = currentState.disciplinaIdSelecionada?.let { discId ->
-            // Assumindo que seu data class Disciplina tem um construtor que aceita
-            // os campos obrigatórios e os opcionais com valores padrão ou anuláveis.
-            // Para enviar ao backend, idealmente você só precisa do ID.
-            // Ajuste conforme a definição real do seu data class Disciplina.
-            Disciplina(
-                id = discId,
-                nome = currentState.nomeDisciplinaSelecionada, // Pode ser útil para logs no backend
-                codigo = "", // Placeholder ou valor padrão
-                aulas = emptyList(), // Placeholder ou valor padrão
-                professor = "", // Placeholder ou valor padrão
-                periodo = "", // Placeholder ou valor padrão
-                cargaHoraria = 0, // Placeholder ou valor padrão
-                dataInicioSemestre = LocalDate.now(), // Placeholder ou valor padrão
-                dataFimSemestre = LocalDate.now(), // Placeholder ou valor padrão
-                emailProfessor = "", // Placeholder ou valor padrão
-                plataforma = "", // Placeholder ou valor padrão
-                telefoneProfessor = "", // Placeholder ou valor padrão
-                salaProfessor = "", // Placeholder ou valor padrão
-                isAtiva = true, // Valor padrão
-                receberNotificacoes = false, // Valor padrão
-                avaliacoes = emptyList() // Geralmente não enviado daqui
-            )
-        }
-
-        // Certifique-se que o construtor de `Avaliacao` e seus campos
-        // correspondem ao que o backend espera, especialmente para os campos opcionais.
-        return Avaliacao(
-            id = idParaAtualizar,
-            descricao = currentState.descricao.takeIf { it.isNotBlank() },
-            disciplina = disciplinaParaSalvar,
-            tipoAvaliacao = currentState.tipoAvaliacao.takeIf { it.isNotBlank() },
-            modalidade = currentState.modalidade,
-            prioridade = currentState.prioridade,
-            receberNotificacoes = currentState.receberNotificacoes,
-
-            dataEntrega = dataEntregaStringFormatada, // << ALTERAÇÃO APLICADA AQUI
-
-            peso = if (currentState.peso.isBlank()) null else currentState.peso.toDoubleOrNull(),
-            estado = currentState.estado,
-            integrantes = if (currentState.modalidade == Modalidade.EM_GRUPO && integrantesCompletosParaSalvar.isNotEmpty()) {
-                integrantesCompletosParaSalvar
-            } else {
-                emptyList()
-            },
-            nota = if (currentState.nota.isBlank()) null else currentState.nota.toDoubleOrNull(),
-            dificuldade = if (currentState.dificuldade.isBlank()) null else currentState.dificuldade.toIntOrNull()
-        )
-    }
-
-    // createAvaliacao e updateAvaliacao usam construirAvaliacaoParaSalvar
-    // e já estão estruturadas corretamente para isso.
 
     fun createAvaliacao() {
         if (!validateInput()) return
@@ -273,49 +212,28 @@ class ManterAvaliacaoViewModel(
         _uiState.update { it.copy(isLoading = true, erro = null, isExclusao = false) }
         viewModelScope.launch {
             try {
-                val novaAvaliacao = construirAvaliacaoParaSalvar()
-                // Se construirAvaliacaoParaSalvar retornar null devido a um erro interno (improvável com a lógica atual),
-                // o addAvaliacao não será chamado. A validação em validateInput é a principal barreira.
-                if (novaAvaliacao != null) {
-                    avaliacaoRepository.addAvaliacao(novaAvaliacao)
-                    _uiState.update { it.copy(sucesso = true, isLoading = false) }
-                } else {
-                    // Este else pode não ser atingido se validateInput já barrou
-                    _uiState.update { it.copy(isLoading = false, erro = _uiState.value.erro ?: "Falha ao preparar dados da avaliação.") }
-                }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(erro = "Erro ao criar avaliação: ${e.message}", isLoading = false, sucesso = false) }
+                val req = buildAvaliacaoRequest()
+                avaliacaoRepository.addAvaliacao(req)
+                _uiState.update { it.copy(sucesso = true, isLoading = false) }
+             } catch (e: Exception) {
+                _uiState.update { it.copy(erro = "Erro ao criar avaliação: ${e.message}", isLoading = false) }
             }
         }
     }
 
     fun updateAvaliacao() {
-        val id = _uiState.value.avaliacaoIdAtual ?: run {
-            _uiState.update { it.copy(erro = "ID de Avaliação não encontrado para atualização.") }
-            return
+        val id = _uiState.value.avaliacaoIdAtual?.toLongOrNull() ?: run {
+            _uiState.update { it.copy(erro = "ID inválido para atualização.") }; return
         }
-        val longId = id.toLongOrNull() ?: run {
-            _uiState.update { it.copy(erro = "ID de Avaliação inválido para atualização.") }
-            return
-        }
-
         if (!validateInput()) return
-
         _uiState.update { it.copy(isLoading = true, erro = null, isExclusao = false) }
         viewModelScope.launch {
             try {
-                val avaliacaoAtualizada = construirAvaliacaoParaSalvar(idParaAtualizar = longId)
-                if (avaliacaoAtualizada != null) {
-                    val result = avaliacaoRepository.updateAvaliacao(avaliacaoAtualizada)
-                    _uiState.update { it.copy(sucesso = result, isLoading = false) }
-                    if (!result) {
-                        _uiState.update { it.copy(erro = "Falha ao atualizar a Avaliação.") }
-                    }
-                } else {
-                    _uiState.update { it.copy(isLoading = false, erro = _uiState.value.erro ?: "Falha ao preparar dados da avaliação para atualização.") }
-                }
+                val req = buildAvaliacaoRequest(id)
+                val ok = avaliacaoRepository.updateAvaliacao(id, req)
+                _uiState.update { it.copy(sucesso = ok, isLoading = false, erro = if (ok) null else "Falha ao atualizar") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(erro = "Erro ao atualizar avaliação: ${e.message}", isLoading = false, sucesso = false) }
+                _uiState.update { it.copy(erro = "Erro ao atualizar avaliação: ${e.message}", isLoading = false) }
             }
         }
     }
@@ -484,5 +402,26 @@ class ManterAvaliacaoViewModel(
     fun onEventoConsumido() { // Seu código existente
         _uiState.update { it.copy(sucesso = false, erro = null, isExclusao = false, errorLoadingAllContatos = null, errorLoadingDisciplinas = null) }
     }
+
+    private fun buildAvaliacaoRequest(idParaAtualizar: Long? = null): AvaliacaoRequest {
+        val s = _uiState.value
+        val integrantesIds = _idIntegrantesSelecionados.value
+        return AvaliacaoRequest(
+            id = idParaAtualizar,
+            descricao = s.descricao.takeIf { it.isNotBlank() },
+            disciplina = s.disciplinaIdSelecionada?.let { DisciplinaRef(it) }, // <- aqui é DisciplinaRef
+            tipoAvaliacao = s.tipoAvaliacao.takeIf { it.isNotBlank() },
+            modalidade = s.modalidade,
+            dataEntrega = s.dataEntrega.takeIf { it.isNotBlank() },
+            nota = s.nota.toDoubleOrNull(),
+            peso = s.peso.toDoubleOrNull(),
+            integrantes = integrantesIds.map { ContatoRef(it) },
+            prioridade = s.prioridade,
+            estado = s.estado,
+            dificuldade = s.dificuldade.toIntOrNull(),
+            receberNotificacoes = s.receberNotificacoes
+        )
+    }
+
 }
 

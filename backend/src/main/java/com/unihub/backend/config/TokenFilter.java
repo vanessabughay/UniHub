@@ -32,6 +32,17 @@ public class TokenFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(usuarioId, null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(auth);
+                /* Talvez substituir tudo dentro do if (){...}
+                var auth = new UsernamePasswordAuthenticationToken(
+                        usuarioId,
+                        null,
+                        java.util.List.of(new SimpleGrantedAuthority("ROLE_USER")) // <<< importante
+                );
+                SecurityContextHolder.getContext().setAuthentication(auth);
+                 */
+
+
+
             }
         }
         filterChain.doFilter(request, response);

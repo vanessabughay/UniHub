@@ -14,7 +14,7 @@ data class Disciplina(
     // --- Informações Gerais ---
     val id: Long?=null,
     val codigo: String,
-    val nome: String,
+    val nome: String? = null,
     val professor: String,
     val periodo: String,
 
@@ -41,4 +41,9 @@ data class Disciplina(
     //ativar/desativar notificações ou a disciplina
     val isAtiva: Boolean, //equivalente a situação
     val receberNotificacoes: Boolean //implementar no diagrama
+)
+
+//Construtor só com ID para Avaliacao
+data class DisciplinaRef(
+    val id: Long
 )

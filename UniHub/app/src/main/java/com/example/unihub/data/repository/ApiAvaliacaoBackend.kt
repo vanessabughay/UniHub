@@ -3,6 +3,9 @@ package com.example.unihub.data.repository
 import android.util.Log
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.api.RetrofitClient
+import com.example.unihub.data.dto.AvaliacaoRequest
+import com.example.unihub.data.dto.ContatoRef
+import com.example.unihub.data.dto.DisciplinaRef
 import retrofit2.HttpException // Para tratar erros HTTP específicos do Retrofit
 import java.io.IOException // Para exceções de I/O genéricas
 
@@ -14,6 +17,26 @@ class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avali
 
     private val api: AvaliacaoApi by lazy {
         RetrofitClient.retrofit.create(AvaliacaoApi::class.java) // <<< usa o client com interceptor
+    }
+
+    private fun Avaliacao.toRequest(): AvaliacaoRequest {
+        return AvaliacaoRequest(
+            id = this.id,
+            descricao = this.descricao,
+            disciplina = this.disciplina?.id?.let { DisciplinaRef(it) },   // ← só id
+            tipoAvaliacao = this.tipoAvaliacao,
+            modalidade = this.modalidade ?: com.example.unihub.data.model.Modalidade.INDIVIDUAL,
+            dataEntrega = this.dataEntrega,                                 // "yyyy-MM-dd"
+            nota = this.nota,
+            peso = this.peso,
+            integrantes = (this.integrantes ?: emptyList())
+                .mapNotNull { it.id }                                       // pega só ids
+                .map { ContatoRef(it) },
+            prioridade = this.prioridade,
+            estado = this.estado,
+            dificuldade = this.dificuldade,
+            receberNotificacoes = this.receberNotificacoes
+        )
     }
 
     override suspend fun getAvaliacaoApi(): List<Avaliacao> {
@@ -66,34 +89,13 @@ class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avali
         }
     }
 
-    override suspend fun addAvaliacaoApi(avaliacao: Avaliacao) { // Retorno Unit (void) como na interface
-        try {
-            val response = api.add(avaliacao) // Chama o método 'add' da AvaliacaoApi
-            if (!response.isSuccessful) {
-                Log.e("ApiAvaliacaoBackend", "Erro ao adicionar avaliacao: ${response.code()} - ${response.message()}")
-                throw IOException("Erro na API ao adicionar avaliacao: ${response.code()} ${response.errorBody()?.string()}")
-            }
-            // Opcional: Logar o avaliacao retornado pela API (pode ter ID gerado, etc.)
-            Log.d("ApiAvaliacaoBackend", "Avaliacao adicionado com sucesso: ${response.body()}")
-        } catch (e: Exception) {
-            Log.e("ApiAvaliacaoBackend", "Exceção ao adicionar avaliacao", e)
-            throw IOException("Erro ao adicionar avaliacao: ${e.message}", e)
-        }
+    override suspend fun addAvaliacaoApi(request: AvaliacaoRequest) {
+        val resp = api.add(request)
+        if (!resp.isSuccessful) throw IOException("Erro: ${resp.code()} ${resp.errorBody()?.string()}")
     }
 
-    override suspend fun updateAvaliacaoApi(id: Long, avaliacao: Avaliacao): Boolean {
-        try {
-            val response = api.update(id, avaliacao) // Chama o método 'update' da AvaliacaoApi
-            if (!response.isSuccessful) {
-                Log.e("ApiAvaliacaoBackend", "Erro ao atualizar avaliacao $id: ${response.code()} - ${response.message()}")
-            }
-            return response.isSuccessful
-        } catch (e: Exception) {
-            Log.e("ApiAvaliacaoBackend", "Exceção ao atualizar avaliacao $id", e)
-            // Você pode querer relançar como IOException para ser tratado pelo Repository
-            // throw IOException("Erro ao atualizar avaliacao $id: ${e.message}", e)
-            return false // Retorna false em caso de exceção
-        }
+    override suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequest): Boolean {
+        return api.update(id, request).isSuccessful
     }
 
     override suspend fun deleteAvaliacaoApi(id: Long): Boolean {

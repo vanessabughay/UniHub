@@ -7,8 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects; // Para equals e hashCode
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+
+
+// evita expandir essas relações quando Disciplina vier como filha
+@JsonIgnoreProperties({
+        "hibernateLazyInitializer", "handler",
+        "avaliacoes", "aulas", "usuario"
+})
 
 @Entity
 public class Disciplina {
@@ -41,15 +49,28 @@ public class Disciplina {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    @JsonManagedReference("disciplina-avaliacoes") // Gerencia a serialização da lista de avaliações
-    private List<Avaliacao> avaliacoes = new ArrayList<>(); // Nomeado corretamente no plural
 
+
+
+    // ALTERADO TESTE PARA COMBINAR COM AVALIAçÕES
+    @JsonManagedReference("disciplina-avaliacoes")
+    private List<Avaliacao> avaliacoes = new ArrayList<>();
+
+    /*
+    @JsonBackReference("disciplina-avaliacoes")
+    private List<Avaliacao> avaliacoes = new ArrayList<>();
+    */
     @OneToMany(
             mappedBy = "disciplina", // Mapeado pelo campo 'disciplina' na entidade HorarioAula
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    @JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+
+    //Alteração para combinar com Avaliacoes
+    //@JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+
+    @JsonBackReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+
     private List<HorarioAula> aulas = new ArrayList<>();
 
     // --- Construtor Padrão (Requerido pelo JPA) ---
