@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,8 +28,10 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowDown // NOVO
 import androidx.compose.material.icons.filled.KeyboardArrowUp // NOVO
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -62,10 +65,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.Avaliacao
+import com.example.unihub.data.model.EstadoAvaliacao
+import androidx.compose.material3.Divider
 
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
-
+val LilasCard = Color(0xFFEDE7FF)        // fundo do card (lilás claro)
+val LilasButton = Color(0xFFD0C6FF)      // botões dentro do card
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
@@ -251,45 +257,81 @@ fun ListarAvaliacaoScreen(
                             )
                         }
 
-                        // agrupa por disciplinaId; -1L = sem disciplina
-                        val grupos = remember(avaliacoesFiltrados) {
-                            avaliacoesFiltrados.groupBy { it.disciplina?.id ?: -1L }
+                        // 2) SEÇÕES: Em andamento / Concluídas
+                        val emAndamento = remember(avaliacoesFiltrados) {
+                            avaliacoesFiltrados.filter { it.estado != EstadoAvaliacao.CONCLUIDA }
+                        }
+                        val concluidas = remember(avaliacoesFiltrados) {
+                            avaliacoesFiltrados.filter { it.estado == EstadoAvaliacao.CONCLUIDA }
+                        }
+
+                        // reuso para agrupar por disciplina
+                        fun agruparPorDisciplina(list: List<Avaliacao>) =
+                            list.groupBy { it.disciplina?.id ?: -1L }
                                 .toList()
                                 .sortedBy { (_, lista) -> (lista.firstOrNull()?.disciplina?.nome ?: "\uFFFF").lowercase() }
-                        }
+
+                        val gruposAndamento = remember(emAndamento) { agruparPorDisciplina(emAndamento) }
+                        val gruposConcluidas = remember(concluidas) { agruparPorDisciplina(concluidas) }
 
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .weight(1f)
                                 .padding(horizontal = 16.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            items(
-                                items = grupos,
-                                key = { (discId, _) -> discId }
-                            ) { (discId, listaDaDisciplina) ->
-
-                                val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
-                                DisciplinaGrupoCard(
-                                    nome = nomeDisciplina,
-                                    podeAdicionar = discId != -1L, // não mostra botão se não houver disciplina
-                                    avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
-                                    onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
-                                    onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
-                                    onExcluirClick = { av ->
-                                        av.id?.let {
-                                            viewModel.deleteAvaliacao(it.toString()) { sucesso ->
-                                                if (sucesso) {
-                                                    Toast.makeText(context, "Avaliação excluída!", Toast.LENGTH_SHORT).show()
+                            // Seção: Em andamento
+                            item {
+                                SecaoExpansivel(titulo = "Em andamento") {
+                                    gruposAndamento.forEach { (discId, listaDaDisciplina) ->
+                                        val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
+                                        DisciplinaGrupoCard(
+                                            nome = nomeDisciplina,
+                                            podeAdicionar = discId != -1L,
+                                            avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
+                                            onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
+                                            onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
+                                            onExcluirClick = { av ->
+                                                av.id?.let {
+                                                    viewModel.deleteAvaliacao(it.toString()) { sucesso ->
+                                                        if (sucesso) Toast.makeText(context, "Avaliação excluída!", Toast.LENGTH_SHORT).show()
+                                                    }
                                                 }
-                                            }
-                                        }
+                                            },
+                                            // 4) checkbox altera estado aqui:
+                                            onToggleConcluida = { av, marcado -> viewModel.toggleConcluida(av, marcado) }
+                                        )
                                     }
-                                )
+                                }
+                            }
+
+                            // Seção: Concluídas
+                            item {
+                                SecaoExpansivel(titulo = "Concluídas", inicialExpandida = false) {
+                                    gruposConcluidas.forEach { (discId, listaDaDisciplina) ->
+                                        val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
+                                        DisciplinaGrupoCard(
+                                            nome = nomeDisciplina,
+                                            podeAdicionar = discId != -1L,
+                                            avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
+                                            onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
+                                            onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
+                                            onExcluirClick = { av ->
+                                                av.id?.let {
+                                                    viewModel.deleteAvaliacao(it.toString()) { sucesso ->
+                                                        if (sucesso) Toast.makeText(context, "Avaliação excluída!", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            },
+                                            onToggleConcluida = { av, marcado -> viewModel.toggleConcluida(av, marcado) }
+                                        )
+                                    }
+                                }
                             }
                         }
+
                     }
                 }
             }
@@ -299,25 +341,55 @@ fun ListarAvaliacaoScreen(
 
 // Composable para o Item Expansível da Lista
 @Composable
+fun SecaoExpansivel(
+    titulo: String,
+    inicialExpandida: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    var expanded by remember { mutableStateOf(inicialExpandida) }
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = !expanded }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(titulo, style = MaterialTheme.typography.titleMedium)
+            Icon(
+                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                contentDescription = null
+            )
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column { content() }
+        }
+        Divider(modifier = Modifier.padding(top = 8.dp))
+    }
+}
+
+@Composable
 fun DisciplinaGrupoCard(
     nome: String,
     podeAdicionar: Boolean,
     avaliacoes: List<Avaliacao>,
     onAddClick: () -> Unit,
     onAvaliacaoClick: (Avaliacao) -> Unit,
-    onExcluirClick: (Avaliacao) -> Unit
+    onExcluirClick: (Avaliacao) -> Unit,
+    onToggleConcluida: (Avaliacao, Boolean) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        colors = CardDefaults.cardColors(containerColor = LilasCard)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp, horizontal = 16.dp)
+                .padding(vertical = 10.dp, horizontal = 12.dp)
         ) {
             // Cabeçalho da disciplina
             Row(
@@ -329,15 +401,13 @@ fun DisciplinaGrupoCard(
             ) {
                 Text(
                     text = nome,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (expanded) "Recolher" else "Expandir",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    contentDescription = null
                 )
             }
 
@@ -345,31 +415,31 @@ fun DisciplinaGrupoCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 12.dp, bottom = 4.dp)
+                        .padding(top = 8.dp)
                 ) {
-                    // Lista de avaliações da disciplina
+                    // Lista de avaliações com checkbox
                     if (avaliacoes.isEmpty()) {
                         Text(
                             "Sem avaliações nesta disciplina.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                            modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
                         )
                     } else {
                         avaliacoes.forEach { av ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { onAvaliacaoClick(av) }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                    .padding(vertical = 6.dp)
+                                    .clickable { onAvaliacaoClick(av) },
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = av.descricao ?: "[sem descrição]",
-                                        style = MaterialTheme.typography.bodyLarge
-                                    )
+                                Checkbox(
+                                    checked = av.estado == EstadoAvaliacao.CONCLUIDA,
+                                    onCheckedChange = { marcado -> onToggleConcluida(av, marcado) }
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(av.descricao ?: "[sem descrição]")
                                     val subtitulo = buildString {
                                         av.tipoAvaliacao?.let { append(it) }
                                         if (av.dataEntrega != null) {
@@ -385,33 +455,41 @@ fun DisciplinaGrupoCard(
                                         )
                                     }
                                 }
-                                // Excluir
                                 IconButton(onClick = { onExcluirClick(av) }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Delete,
-                                        contentDescription = "Excluir Avaliação",
-                                        tint = MaterialTheme.colorScheme.error
-                                    )
+                                    Icon(Icons.Filled.Delete, contentDescription = "Excluir")
                                 }
-                                // Editar
                                 IconButton(onClick = { onAvaliacaoClick(av) }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Edit,
-                                        contentDescription = "Editar Avaliação",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
+                                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
                                 }
                             }
                         }
                     }
 
-                    // Botão Adicionar avaliação (por disciplina)
-                    if (podeAdicionar) {
-                        Spacer(Modifier.height(8.dp))
-                        TextButton(onClick = onAddClick) {
-                            Icon(Icons.Filled.Add, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("Adicionar avaliação")
+                    // Botões no rodapé do card
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TextButton(
+                            onClick = { expanded = false },
+                            colors = ButtonDefaults.textButtonColors(
+                                containerColor = LilasButton,
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            ),
+                            modifier = Modifier.weight(1f)
+                        ) { Text("Cancelar") }
+
+                        if (podeAdicionar) {
+                            TextButton(
+                                onClick = onAddClick,
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = LilasButton,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                ),
+                                modifier = Modifier.weight(1f)
+                            ) { Text("Adicionar avaliação") }
                         }
                     }
                 }
@@ -419,4 +497,3 @@ fun DisciplinaGrupoCard(
         }
     }
 }
-

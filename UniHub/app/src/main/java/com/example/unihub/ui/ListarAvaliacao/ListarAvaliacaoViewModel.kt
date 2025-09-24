@@ -5,7 +5,13 @@ import android.util.Log
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.dto.AvaliacaoRequest
+import com.example.unihub.data.dto.ContatoRef
+import com.example.unihub.data.dto.DisciplinaRef
 import com.example.unihub.data.model.Avaliacao
+import com.example.unihub.data.model.EstadoAvaliacao
+import com.example.unihub.data.model.Modalidade
+import com.example.unihub.data.model.Prioridade
 import com.example.unihub.data.repository.AvaliacaoRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,6 +124,43 @@ class ListarAvaliacaoViewModel(
 
         }
     }
+
+    fun toggleConcluida(av: Avaliacao, concluida: Boolean) {
+        val id = av.id ?: return
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val req = AvaliacaoRequest(
+                    id = id,
+                    descricao = av.descricao,
+                    disciplina = av.disciplina?.id?.let { DisciplinaRef(it) },
+                    tipoAvaliacao = av.tipoAvaliacao,
+                    modalidade = av.modalidade ?: Modalidade.INDIVIDUAL,
+                    dataEntrega = av.dataEntrega,
+                    nota = av.nota,
+                    peso = av.peso,
+                    integrantes = av.integrantes
+                        .mapNotNull { it.id }
+                        .map { ContatoRef(it) },
+                    prioridade = av.prioridade ?: Prioridade.MEDIA,
+                    estado = if (concluida) EstadoAvaliacao.CONCLUIDA else EstadoAvaliacao.A_REALIZAR,
+                    dificuldade = av.dificuldade,
+                    receberNotificacoes = av.receberNotificacoes
+                )
+
+                val ok = repository.updateAvaliacao(id, req) // mesma assinatura usada no seu ManterAvaliacaoVM
+                if (!ok) _errorMessage.value = "Falha ao atualizar estado."
+                // Recarrega a lista para refletir o novo estado
+                loadAvaliacao()
+            } catch (e: Exception) {
+                _errorMessage.value = "Erro ao atualizar estado: ${e.message}"
+                _isLoading.value = false
+            }
+        }
+    }
+
+
 
     fun clearErrorMessage() {
         _errorMessage.value = null
