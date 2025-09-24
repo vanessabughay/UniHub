@@ -27,7 +27,11 @@ public class Avaliacao {
     // Se uma disciplina pode ter várias avaliações (ManyToOne)
     @ManyToOne(fetch = FetchType.LAZY) // LAZY para não carregar a disciplina desnecessariamente
     @JoinColumn(name = "disciplina_id") // Nome da coluna de chave estrangeira
-    @JsonBackReference("disciplina-avaliacoes")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties(
+            value = { "avaliacoes", "aulas", "usuario", "hibernateLazyInitializer", "handler" },
+            allowSetters = true
+    )
+
     private Disciplina disciplina;
 
     @Column(name = "tipo_avaliacao", length = 100)

@@ -57,6 +57,7 @@ import java.util.Calendar
 @Composable
 fun ManterAvaliacaoScreen(
     avaliacaoId: String?,
+    disciplinaId: String?,
     viewModel: ManterAvaliacaoViewModel = viewModel(factory = ManterAvaliacaoViewModelFactory()), // Certifique-se que a factory está correta
     onVoltar: () -> Unit,
     onExcluirSucessoNavegarParaLista: () -> Unit
@@ -117,8 +118,12 @@ fun ManterAvaliacaoScreen(
     }
 
     LaunchedEffect(avaliacaoId) {
-        if (avaliacaoId != null) {
-            viewModel.loadAvaliacao(avaliacaoId)
+        if (avaliacaoId != null) viewModel.loadAvaliacao(avaliacaoId)
+    }
+
+    LaunchedEffect(disciplinaId, avaliacaoId) {
+        if (avaliacaoId == null && !disciplinaId.isNullOrBlank()) {
+            viewModel.preselectDisciplinaId(disciplinaId)
         }
     }
 
@@ -523,6 +528,24 @@ fun ManterAvaliacaoScreen(
         }
     }
 }
+
+sealed class Screen(val route: String) {
+    // ...
+
+    object ManterAvaliacao : Screen("manter_avaliacao") {
+        fun createRoute(
+            avaliacaoId: String? = null,
+            disciplinaId: String? = null
+        ): String {
+            val qs = buildList {
+                if (!avaliacaoId.isNullOrBlank()) add("id=$avaliacaoId")
+                if (!disciplinaId.isNullOrBlank()) add("disciplinaId=$disciplinaId")
+            }.joinToString("&")
+            return if (qs.isEmpty()) route else "$route?$qs"
+        }
+    }
+}
+
 
 @Composable
 fun SelecaoContatosDialog(

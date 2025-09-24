@@ -87,7 +87,8 @@ data class ManterAvaliacaoUiState(
 class ManterAvaliacaoViewModel(
     private val avaliacaoRepository: AvaliacaoRepository,
     private val contatoRepository: ContatoRepository,
-    private val disciplinaRepository: DisciplinaRepository? = null
+    private val disciplinaRepository: DisciplinaRepository? = null,
+    private var disciplinaIdParaPreselecionar: Long? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ManterAvaliacaoUiState())
@@ -105,7 +106,8 @@ class ManterAvaliacaoViewModel(
             _idIntegrantesSelecionados.collect { idsAtuais ->
                 val integrantesAtualizados = _uiState.value.todosOsContatosDisponiveis
                     .filter { contato -> idsAtuais.contains(contato.id) }
-                _uiState.update { it.copy(integrantesDaAvaliacao = integrantesAtualizados) }
+                _uiState.update { it.copy(integrantesDaAvaliacao = integrantesAtualizados)
+                }
             }
         }
     }
@@ -376,6 +378,14 @@ class ManterAvaliacaoViewModel(
                                     isLoadingDisciplinas = false
                                 )
                             }
+                            disciplinaIdParaPreselecionar?.let { pend ->
+                                // não sobrescreve se já houver disciplina selecionada (ex.: ao editar)
+                                if (_uiState.value.disciplinaIdSelecionada == null) {
+                                    disciplinasUi.firstOrNull { it.id == pend }
+                                        ?.let { onDisciplinaSelecionada(it) }
+                                }
+                                disciplinaIdParaPreselecionar = null
+                            }
                         }
                 } catch (e: Exception) {
                     _uiState.update {
@@ -422,6 +432,19 @@ class ManterAvaliacaoViewModel(
             receberNotificacoes = s.receberNotificacoes
         )
     }
+
+    fun preselectDisciplinaId(disciplinaIdStr: String) {
+        val discId = disciplinaIdStr.toLongOrNull() ?: return
+        disciplinaIdParaPreselecionar = discId
+
+        // se a lista já estiver carregada, seleciona agora
+        val lista = _uiState.value.todasDisciplinasDisponiveis
+        if (lista.isNotEmpty() && _uiState.value.disciplinaIdSelecionada == null) {
+            lista.firstOrNull { it.id == discId }?.let { onDisciplinaSelecionada(it) }
+        }
+    }
+
+
 
 }
 

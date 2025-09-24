@@ -95,9 +95,20 @@ sealed class Screen(val route: String) {
     }
     object ListarAvaliacao : Screen("lista_avaliacao")
 
-    object ManterAvaliacao : Screen("manter_avaliacao?id={id}"){
-        fun createRoute(id: String?): String {
-            return if (id != null) "manter_avaliacao?id=$id" else "manter_avaliacao"
+    object ManterAvaliacao : Screen("manter_avaliacao") {
+        const val ARG_ID = "id"
+        const val ARG_DISC = "disciplinaId"
+
+        // rota usada no composable (com placeholders opcionais)
+        val fullRoute = "$route?$ARG_ID={$ARG_ID}&$ARG_DISC={$ARG_DISC}"
+
+        // helper para navegar com 0, 1 ou 2 parâmetros
+        fun createRoute(id: String? = null, disciplinaId: String? = null): String {
+            val qs = buildList {
+                if (!id.isNullOrBlank()) add("$ARG_ID=$id")
+                if (!disciplinaId.isNullOrBlank()) add("$ARG_DISC=$disciplinaId")
+            }.joinToString("&")
+            return if (qs.isEmpty()) route else "$route?$qs"
         }
     }
 
@@ -355,33 +366,52 @@ class MainActivity : ComponentActivity() {
                     // ROTA 11: Tela de Listar Avaliacao
                     composable(Screen.ListarAvaliacao.route) {
                         ListarAvaliacaoScreen(
-                            onAddAvaliacao = {
-                                navController.navigate(Screen.ManterAvaliacao.createRoute(null)) // Para nova Avaliacao
+                            onAddAvaliacaoGeral = {
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = null
+                                    )
+                                )
                             },
-                            // onNavigateToManterAvaliacao é usado PELO DIÁLOGO para a ação de EDITAR
-                            onNavigateToManterAvaliacao = { avaliacaoId -> // Este avaliacaoId virá do diálogo de detalhes
-                                navController.navigate(Screen.ManterAvaliacao.createRoute(avaliacaoId))
+                            onAddAvaliacaoParaDisciplina = { disciplinaId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = disciplinaId
+                                    )
+                                )
+                            },
+                            onNavigateToManterAvaliacao = { avaliacaoId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = null
+                                    )
+                                )
                             },
                             onVoltar = { navController.popBackStack() }
                         )
                     }
 
+
                     // ROTA 12: manter Avaliacao
 
                     composable(
-                        route = Screen.ManterAvaliacao.route,
-                        arguments = listOf(navArgument("id") {
-                            type = NavType.StringType
-                            nullable = true
-                        })
+                        route = Screen.ManterAvaliacao.fullRoute,
+                        arguments = listOf(
+                            navArgument(Screen.ManterAvaliacao.ARG_ID)   { type = NavType.StringType; nullable = true; defaultValue = null },
+                            navArgument(Screen.ManterAvaliacao.ARG_DISC) { type = NavType.StringType; nullable = true; defaultValue = null }
+                        )
                     ) { backStackEntry ->
-                        val avaliacaoId = backStackEntry.arguments?.getString("id")
+                        val avaliacaoId = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_ID)
+                        val disciplinaId = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_DISC)
+
                         ManterAvaliacaoScreen(
                             avaliacaoId = avaliacaoId,
+                            disciplinaId = disciplinaId,
                             onVoltar = { navController.popBackStack() },
-                            onExcluirSucessoNavegarParaLista = {
-                                navController.popBackStack() // Volta para a lista após exclusão
-                            }
+                            onExcluirSucessoNavegarParaLista = { navController.popBackStack() }
                         )
                     }
 

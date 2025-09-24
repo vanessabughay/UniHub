@@ -71,7 +71,8 @@ val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
 @Composable
 fun ListarAvaliacaoScreen(
     viewModel: ListarAvaliacaoViewModel = viewModel(factory = ListarAvaliacaoViewModelFactory),
-    onAddAvaliacao: () -> Unit,
+    onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit,
+    onAddAvaliacaoGeral: () -> Unit, // novo
     onVoltar: () -> Unit,
     onNavigateToManterAvaliacao: (avaliacaoId: String) -> Unit
 ) {
@@ -118,11 +119,12 @@ fun ListarAvaliacaoScreen(
             if (searchQuery.isBlank()) {
                 avaliacoesComIdValido
             } else {
+                val q = searchQuery.trim()
                 avaliacoesComIdValido.filter { avaliacao ->
-                    val nomeMatches = avaliacao.descricao?.contains(searchQuery, ignoreCase = true)
-                    //val nomeMatches = avaliacao.descricao.contains(searchQuery, ignoreCase = true)
-                    val idMatches = avaliacao.id!!.toString().contains(searchQuery, ignoreCase = true)
-                    nomeMatches == true || idMatches
+                    val descOk = avaliacao.descricao?.contains(q, ignoreCase = true) == true
+                    val idOk   = avaliacao.id?.toString()?.contains(q, ignoreCase = true) == true
+                    val discOk = avaliacao.disciplina?.nome?.contains(q, ignoreCase = true) == true
+                    descOk || idOk || discOk
                 }
             }
         }
@@ -170,11 +172,9 @@ fun ListarAvaliacaoScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onAddAvaliacao,
+                onClick = onAddAvaliacaoGeral,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-                //containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                //contentColor = MaterialTheme.colorScheme.onTertiaryContainer
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Avaliação")
             }
@@ -243,11 +243,21 @@ fun ListarAvaliacaoScreen(
                         }
                     }
                     else -> {
-                        if (isLoading && avaliacoesComIdValido.isNotEmpty()) { // Mostrar LinearProgressIndicator apenas se já houver itens
-                            LinearProgressIndicator(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 4.dp))
+                        if (isLoading && avaliacoesComIdValido.isNotEmpty()) {
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 4.dp)
+                            )
                         }
+
+                        // agrupa por disciplinaId; -1L = sem disciplina
+                        val grupos = remember(avaliacoesFiltrados) {
+                            avaliacoesFiltrados.groupBy { it.disciplina?.id ?: -1L }
+                                .toList()
+                                .sortedBy { (_, lista) -> (lista.firstOrNull()?.disciplina?.nome ?: "\uFFFF").lowercase() }
+                        }
+
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -257,28 +267,25 @@ fun ListarAvaliacaoScreen(
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
                             items(
-                                items = avaliacoesFiltrados,
-                                key = { avaliacao -> avaliacao.id!! }
-                            ) { avaliacao ->
-                                AvaliacaoItemExpansivel( // Usando o novo item expansível
-                                    avaliacao = avaliacao,
-                                    isExpanded = avaliacaoExpandidoId == avaliacao.id,
-                                    onHeaderClick = {
-                                        avaliacaoExpandidoId = if (avaliacaoExpandidoId == avaliacao.id) {
-                                            null
-                                        } else {
-                                            avaliacao.id
+                                items = grupos,
+                                key = { (discId, _) -> discId }
+                            ) { (discId, listaDaDisciplina) ->
+
+                                val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
+                                DisciplinaGrupoCard(
+                                    nome = nomeDisciplina,
+                                    podeAdicionar = discId != -1L, // não mostra botão se não houver disciplina
+                                    avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
+                                    onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
+                                    onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
+                                    onExcluirClick = { av ->
+                                        av.id?.let {
+                                            viewModel.deleteAvaliacao(it.toString()) { sucesso ->
+                                                if (sucesso) {
+                                                    Toast.makeText(context, "Avaliação excluída!", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
                                         }
-                                    },
-                                    onEditarClick = {
-                                        avaliacaoExpandidoId = null // Recolhe ao editar
-                                        // avaliacao.id é não nulo aqui
-                                        onNavigateToManterAvaliacao(avaliacao.id!!.toString())
-                                    },
-                                    onExcluirClick = {
-                                        avaliacaoExpandidoId = null // Recolhe ao tentar excluir
-                                        avaliacaoParaExcluir = avaliacao
-                                        showConfirmDeleteDialog = true
                                     }
                                 )
                             }
@@ -292,13 +299,16 @@ fun ListarAvaliacaoScreen(
 
 // Composable para o Item Expansível da Lista
 @Composable
-fun AvaliacaoItemExpansivel(
-    avaliacao: Avaliacao,
-    isExpanded: Boolean,
-    onHeaderClick: () -> Unit,
-    onEditarClick: () -> Unit,
-    onExcluirClick: () -> Unit
+fun DisciplinaGrupoCard(
+    nome: String,
+    podeAdicionar: Boolean,
+    avaliacoes: List<Avaliacao>,
+    onAddClick: () -> Unit,
+    onAvaliacaoClick: (Avaliacao) -> Unit,
+    onExcluirClick: (Avaliacao) -> Unit
 ) {
+    var expanded by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -307,107 +317,101 @@ fun AvaliacaoItemExpansivel(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onHeaderClick)
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         ) {
-            // Cabeçalho (Sempre Visível)
+            // Cabeçalho da disciplina
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Text(
+                    text = nome,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
-                ) {
-                    /*
-                    Icon(
-                        imageVector = Icons.Filled.,
-                        contentDescription = "Ícone de Avaliação",
-                        modifier = Modifier.padding(end = 12.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                     */
-                    Text(
-                        //text = avaliacao.descricao ?: "",
-                        text = avaliacao.disciplina?.nome ?: "teste",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                )
                 Icon(
-                    imageVector = if (isExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (isExpanded) "Recolher" else "Expandir",
+                    imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                    contentDescription = if (expanded) "Recolher" else "Expandir",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Conteúdo Expansível
-            AnimatedVisibility(visible = isExpanded) {
+            AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 8.dp)
+                        .padding(top = 12.dp, bottom = 4.dp)
                 ) {
-                    Text(
-                        "Integrantes:",
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 32.dp)
-                    ) {
-
-                        /*
-                        if (avaliacao.membros.isEmpty()) {
-                            Text(
-                                "Nenhum integrante neste avaliacao.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
-                            )
-                        } else {
-                            avaliacao.membros.forEach { contato ->
-                                Text(
-                                    text = "- ${contato.nome}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(bottom = 2.dp)
-                                )
+                    // Lista de avaliações da disciplina
+                    if (avaliacoes.isEmpty()) {
+                        Text(
+                            "Sem avaliações nesta disciplina.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+                        )
+                    } else {
+                        avaliacoes.forEach { av ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onAvaliacaoClick(av) }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = av.descricao ?: "[sem descrição]",
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    val subtitulo = buildString {
+                                        av.tipoAvaliacao?.let { append(it) }
+                                        if (av.dataEntrega != null) {
+                                            if (isNotEmpty()) append(" • ")
+                                            append(av.dataEntrega.toString())
+                                        }
+                                    }
+                                    if (subtitulo.isNotBlank()) {
+                                        Text(
+                                            text = subtitulo,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                // Excluir
+                                IconButton(onClick = { onExcluirClick(av) }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Delete,
+                                        contentDescription = "Excluir Avaliação",
+                                        tint = MaterialTheme.colorScheme.error
+                                    )
+                                }
+                                // Editar
+                                IconButton(onClick = { onAvaliacaoClick(av) }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "Editar Avaliação",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
                         }
-
-                         */
                     }
 
-
-                    Spacer(modifier = Modifier.height(24.dp)) // Aumentar o espaço antes dos botões
-
-                    // Botões de Ação (Editar e Excluir)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween // Para separar os ícones
-                    ) {
-                        // Botão Excluir (esquerda)
-                        IconButton(onClick = onExcluirClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "Excluir Avaliação",
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                        }
-
-                        // Botão Editar (direita)
-                        IconButton(onClick = onEditarClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "Editar Avaliação",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                    // Botão Adicionar avaliação (por disciplina)
+                    if (podeAdicionar) {
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = onAddClick) {
+                            Icon(Icons.Filled.Add, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Adicionar avaliação")
                         }
                     }
                 }
@@ -415,3 +419,4 @@ fun AvaliacaoItemExpansivel(
         }
     }
 }
+

@@ -101,4 +101,9 @@ public class AvaliacaoService {
     public List<Avaliacao> buscarPorNome(String descricao) {
         return avaliacaoRepository.findByDescricaoContainingIgnoreCaseAndDisciplinaIsNotNull(descricao);
     }
+
+    @Transactional(readOnly = true)
+    public List<Avaliacao> listarPorDisciplina(Long disciplinaId) {
+        return avaliacaoRepository.findByDisciplinaId(disciplinaId);
+    }
 }

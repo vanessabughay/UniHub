@@ -26,8 +26,12 @@ public class AvaliacaoController {
         this.avaliacaoService = avaliacaoService;
     }
 
-    @GetMapping
-    public ResponseEntity<List<Avaliacao>> listarTodos() {
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<Avaliacao>> listar(
+            @RequestParam(required = false) Long disciplinaId) {
+        if (disciplinaId != null) {
+            return ResponseEntity.ok(avaliacaoService.listarPorDisciplina(disciplinaId));
+        }
         return ResponseEntity.ok(avaliacaoService.listarTodas());
     }
 
@@ -45,7 +49,7 @@ public class AvaliacaoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("id", id));
     }
 
-    @PutMapping(path="//{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> atualizar(@PathVariable Long id,
                                        @RequestBody AvaliacaoRequest req,
                                        Authentication auth) {

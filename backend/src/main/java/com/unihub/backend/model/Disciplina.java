@@ -53,7 +53,7 @@ public class Disciplina {
 
 
     // ALTERADO TESTE PARA COMBINAR COM AVALIAçÕES
-    @JsonManagedReference("disciplina-avaliacoes")
+
     private List<Avaliacao> avaliacoes = new ArrayList<>();
 
     /*
