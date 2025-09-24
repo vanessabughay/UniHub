@@ -1,11 +1,22 @@
 package com.unihub.backend.controller;
 
+import com.unihub.backend.dto.planejamento.AdicionarGruposRequest;
+import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
+import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
+import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
+import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
+import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.QuadroPlanejamento;
+import com.unihub.backend.model.TarefaPlanejamento;
+import com.unihub.backend.model.enums.EstadoPlanejamento;
 import com.unihub.backend.model.enums.QuadroStatus;
 import com.unihub.backend.service.QuadroPlanejamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List;
 
@@ -29,6 +40,50 @@ public class QuadroPlanejamentoController {
         return service.buscarPorId(id, usuarioId);
     }
 
+@GetMapping("/{id}/detalhes")
+    public QuadroPlanejamentoDetalhesResponse detalhes(@PathVariable Long id,
+                                                        @AuthenticationPrincipal Long usuarioId) {
+        return service.detalhes(id, usuarioId);
+    }
+
+    @GetMapping("/{id}/colunas")
+    public List<ColunaPlanejamento> listarColunas(@PathVariable Long id,
+                                                  @RequestParam(value = "estado", required = false) EstadoPlanejamento estado,
+                                                  @AuthenticationPrincipal Long usuarioId) {
+        return service.listarColunas(id, estado, usuarioId);
+    }
+
+    @PostMapping("/{id}/colunas")
+    public ColunaPlanejamento criarColuna(@PathVariable Long id,
+                                          @RequestBody ColunaPlanejamentoRequest request,
+                                          @AuthenticationPrincipal Long usuarioId) {
+        return service.criarColuna(id, request, usuarioId);
+    }
+
+    @GetMapping("/{id}/colunas/{colunaId}/tarefas")
+    public List<TarefaPlanejamento> listarTarefas(@PathVariable Long id,
+                                                  @PathVariable Long colunaId,
+                                                  @AuthenticationPrincipal Long usuarioId) {
+        return service.listarTarefas(id, colunaId, usuarioId);
+    }
+
+    @PostMapping("/{id}/colunas/{colunaId}/tarefas")
+    public TarefaPlanejamento criarTarefa(@PathVariable Long id,
+                                          @PathVariable Long colunaId,
+                                          @RequestBody TarefaPlanejamentoRequest request,
+                                          @AuthenticationPrincipal Long usuarioId) {
+        return service.criarTarefa(id, colunaId, request, usuarioId);
+    }
+
+    @PatchMapping("/{id}/tarefas/{tarefaId}/status")
+    public TarefaPlanejamento atualizarStatusTarefa(@PathVariable Long id,
+                                                    @PathVariable Long tarefaId,
+                                                    @RequestBody AtualizarStatusTarefaRequest request,
+                                                    @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarStatusTarefa(id, tarefaId, request, usuarioId);
+    }
+
+
     @PostMapping
     public QuadroPlanejamento criar(@RequestBody QuadroPlanejamento quadro,
                                     @AuthenticationPrincipal Long usuarioId) {
@@ -40,5 +95,24 @@ public class QuadroPlanejamentoController {
                                         @RequestBody QuadroPlanejamento quadro,
                                         @AuthenticationPrincipal Long usuarioId) {
         return service.atualizar(id, quadro, usuarioId);
+    }
+@DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluir(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        service.excluir(id, usuarioId);
+    }
+
+    @PostMapping("/{id}/membros")
+    public QuadroPlanejamento adicionarMembros(@PathVariable Long id,
+                                               @RequestBody AdicionarMembrosRequest request,
+                                               @AuthenticationPrincipal Long usuarioId) {
+        return service.adicionarMembros(id, request, usuarioId);
+    }
+
+    @PostMapping("/{id}/grupos")
+    public QuadroPlanejamento adicionarGrupos(@PathVariable Long id,
+                                              @RequestBody AdicionarGruposRequest request,
+                                              @AuthenticationPrincipal Long usuarioId) {
+        return service.adicionarGrupos(id, request, usuarioId);
     }
 }
