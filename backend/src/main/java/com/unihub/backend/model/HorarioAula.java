@@ -16,9 +16,9 @@ public class HorarioAula {
     private int horarioInicio;
     private int horarioFim;
 
-    @ManyToOne
-    @JoinColumn(name = "disciplina_id")
-    @JsonBackReference
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "disciplina_id", nullable = false)
+    @JsonBackReference("disciplina-aulas")
     private Disciplina disciplina;
 
     public Long getId() { return id; }

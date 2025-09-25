@@ -154,7 +154,7 @@ fun VisualizarDisciplinaScreen(
         Scaffold(
             topBar = {
                 CabecalhoAlternativo(
-                    titulo = disciplina.nome,
+                    titulo = disciplina.nome.orEmpty(),
                     onVoltar = onVoltar
                 )
 

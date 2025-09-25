@@ -88,7 +88,7 @@ fun TelaInicial(
                 "projetos" -> navController.navigate("lista_quadros")
                 //"calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
-                //"avaliações" -> navController.navigate("avaliacoes")
+                "avaliações" -> navController.navigate("lista_avaliacao")
                 "perfil" -> navController.navigate("manter_conta")
                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 "contatos" -> navController.navigate("lista_contato")

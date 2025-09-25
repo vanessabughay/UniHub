@@ -33,6 +33,8 @@ import com.example.unihub.data.repository.ApiCategoriaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
 import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
+import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoScreen
+import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
@@ -369,6 +371,34 @@ class MainActivity : ComponentActivity() {
                         ListarQuadrosScreen(
                             navController = navController,
                             viewModelFactory = viewModelFactory
+                    // ROTA 11: Tela de Listar Avaliacao
+                    composable(Screen.ListarAvaliacao.route) {
+                        ListarAvaliacaoScreen(
+                            onAddAvaliacaoGeral = {
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = null
+                                    )
+                                )
+                            },
+                            onAddAvaliacaoParaDisciplina = { disciplinaId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = disciplinaId
+                                    )
+                                )
+                            },
+                            onNavigateToManterAvaliacao = { avaliacaoId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = null
+                                    )
+                                )
+                            },
+                            onVoltar = { navController.popBackStack() }
                         )
                     }
 
@@ -395,6 +425,28 @@ class MainActivity : ComponentActivity() {
                             viewModelFactory = viewModelFactory
                         )
                     }
+                    // ROTA 12: manter Avaliacao
+
+                    composable(
+                        route = Screen.ManterAvaliacao.fullRoute,
+                        arguments = listOf(
+                            navArgument(Screen.ManterAvaliacao.ARG_ID)   { type = NavType.StringType; nullable = true; defaultValue = null },
+                            navArgument(Screen.ManterAvaliacao.ARG_DISC) { type = NavType.StringType; nullable = true; defaultValue = null }
+                        )
+                    ) { backStackEntry ->
+                        val avaliacaoId = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_ID)
+                        val disciplinaId = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_DISC)
+
+                        ManterAvaliacaoScreen(
+                            avaliacaoId = avaliacaoId,
+                            disciplinaId = disciplinaId,
+                            onVoltar = { navController.popBackStack() },
+                            onExcluirSucessoNavegarParaLista = { navController.popBackStack() }
+                        )
+                    }
+
+
+
 
 
                     //TELA INICIAL
