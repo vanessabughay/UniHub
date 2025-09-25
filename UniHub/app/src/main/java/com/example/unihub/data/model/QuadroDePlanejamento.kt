@@ -3,16 +3,19 @@ package com.example.unihub.data.model
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Status
 import java.util.concurrent.TimeUnit
+import com.google.gson.annotations.SerializedName
 
 
 // Enum para o estado do quadro
 enum class Estado {
+    @SerializedName("ATIVO")
     ATIVO,
+    @SerializedName("ENCERRADO")
     INATIVO
 }
 
 data class QuadroDePlanejamento(
-    val id: String = "",
+    val id: String? = null,
     val nome: String = "",
     val disciplina: String? = null,
     val integrantes: List<String>? = null,

@@ -51,6 +51,18 @@ fun ListarQuadrosScreen(
         viewModel.carregarQuadros()
     }
 
+    val refreshQuadrosState = navController.currentBackStackEntry
+        ?.savedStateHandle
+        ?.getStateFlow("refreshQuadros", false)
+        ?.collectAsState()
+
+    LaunchedEffect(refreshQuadrosState?.value) {
+        if (refreshQuadrosState?.value == true) {
+            viewModel.carregarQuadros()
+            navController.currentBackStackEntry?.savedStateHandle?.set("refreshQuadros", false)
+        }
+    }
+
     Scaffold(
         bottomBar = {
             Box(
@@ -107,9 +119,11 @@ fun ListarQuadrosScreen(
                                 onClick = { secaoAtivaExpandida = !secaoAtivaExpandida }
                             )
                         }
-                        items(quadrosAtivos, key = { it.id }) { quadro ->
+                        items(quadrosAtivos, key = { it.id ?: it.nome }) { quadro ->
                             AnimatedVisibility(visible = secaoAtivaExpandida) {
-                                QuadroCard(quadro = quadro, onClick = { navController.navigate("visualizarQuadro/${quadro.id}") })
+                                QuadroCard(quadro = quadro) {
+                                    quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                }
                             }
                         }
                     }
@@ -123,9 +137,11 @@ fun ListarQuadrosScreen(
                                 onClick = { secaoInativaExpandida = !secaoInativaExpandida }
                             )
                         }
-                        items(quadrosInativos, key = { it.id }) { quadro ->
+                        items(quadrosInativos, key = { it.id ?: it.nome }) { quadro ->
                             AnimatedVisibility(visible = secaoInativaExpandida) {
-                                QuadroCard(quadro = quadro, onClick = { navController.navigate("visualizarQuadro/${quadro.id}") })
+                                QuadroCard(quadro = quadro) {
+                                    quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                }
                             }
                         }
                     }

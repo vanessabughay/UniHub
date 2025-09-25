@@ -36,8 +36,9 @@ open class QuadroRepository(private val apiService: QuadroApi) {
     }
 
     suspend fun updateQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento? {
+        val quadroId = quadro.id ?: throw IllegalArgumentException("ID do quadro é obrigatório para atualização.")
         return try {
-            apiService.updateQuadro(quadro.id, quadro)
+            apiService.updateQuadro(quadroId, quadro)
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao atualizar quadro: ${e.message}", e)
             null

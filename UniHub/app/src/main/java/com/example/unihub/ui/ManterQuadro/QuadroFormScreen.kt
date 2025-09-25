@@ -73,6 +73,7 @@ fun QuadroFormScreen(
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
+                navController.previousBackStackEntry?.savedStateHandle?.set("refreshQuadros", true)
                 navController.popBackStack()
                 viewModel.resetFormResult()
             }
@@ -126,10 +127,11 @@ fun QuadroFormScreen(
                     if (nome.isNotBlank()) {
                         val integrantesList = integrantes.split(",").map { it.trim() }.filter { it.isNotBlank() }
                         val quadroParaSalvar = QuadroDePlanejamento(
-                            id = if (isEditing) quadroId!! else "",
+                            id = if (isEditing) quadroId else null,
                             nome = nome,
                             disciplina = disciplina.ifBlank { null },
-                            integrantes = if (integrantesList.isEmpty()) null else integrantesList,                            estado = estado,
+                            integrantes = if (integrantesList.isEmpty()) null else integrantesList,
+                            estado = estado,
                             dataInicio = dataInicio,
                             dataFim = prazo,
                             donoId = donoId

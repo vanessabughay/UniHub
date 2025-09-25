@@ -37,11 +37,8 @@ class QuadroFormViewModel(
         viewModelScope.launch {
             try {
                 var quadroToSave = quadro
-                val existingQuadro = if (quadro.id.isNotBlank()) {
-                    repository.getQuadroById(quadro.id)
-                } else {
-                    null
-                }
+                val existingQuadro = quadro.id?.takeIf { it.isNotBlank() }?.let { repository.getQuadroById(it) }
+
 
                 if (existingQuadro != null) {
                     quadroToSave = quadroToSave.copy(
@@ -57,11 +54,11 @@ class QuadroFormViewModel(
                     quadroToSave = quadroToSave.copy(dataFim = null)
                 }
 
-                if (quadroToSave.id.isNotBlank()) {
+                if (!quadroToSave.id.isNullOrBlank()) {
                     repository.updateQuadro(quadroToSave)
                 } else {
-                    val newQuadroWithId = quadroToSave.copy(id = UUID.randomUUID().toString())
-                    repository.addQuadro(newQuadroWithId)
+                    repository.addQuadro(quadroToSave)
+
                 }
                 _formResult.value = FormResult.Success
             } catch (e: Exception) {
