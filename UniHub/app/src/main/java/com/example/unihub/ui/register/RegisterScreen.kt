@@ -35,7 +35,6 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
             val repository = InstituicaoRepositoryProvider.getRepository(context)
-            repository.limparInstituicao()
             Toast.makeText(context, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
             navController.navigate("login") {

@@ -132,7 +132,11 @@ fun ManterInstituicaoScreen(
                     ) {
                         sugestoes.forEach { inst ->
                             DropdownMenuItem(
-                                text = { Text(inst.nome) },
+                                text = {
+                                    Text(
+                                        "${inst.nome} (média:${inst.mediaAprovacao} freq:${inst.frequenciaMinima})"
+                                    )
+                                },
                                 onClick = {
                                     viewModel.onInstituicaoSelecionada(inst)
                                     expanded = false

@@ -44,6 +44,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.api.TokenManager
 
 
+
+
+
 /* ====== Paleta de cores (View) ====== */
 private object CoresApp {
     val Fundo = Color(0xFFF6F7F8)
@@ -82,7 +85,7 @@ fun TelaInicial(
 
         viewModel.eventoNavegacao.collect { destino ->
             when (destino.lowercase()) {
-                //"projetos" -> navController.navigate("projetos")
+                "projetos" -> navController.navigate("lista_quadros")
                 //"calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
                 //"avaliações" -> navController.navigate("avaliacoes")

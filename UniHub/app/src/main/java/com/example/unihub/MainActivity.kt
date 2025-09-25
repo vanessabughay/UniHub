@@ -37,6 +37,13 @@ import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
 import com.example.unihub.data.api.TokenManager
+import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
+import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
+import com.example.unihub.data.repository.ApiQuadroBackend
+import com.example.unihub.data.repository.QuadroRepository
+import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
+import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
+
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -44,6 +51,12 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object TelaInicial : Screen("tela_inicial")
     object ListarDisciplinas : Screen("lista_disciplinas")
+    object ListarQuadros : Screen("lista_quadros")
+    object ManterQuadro : Screen("quadroForm/{quadroId}") {
+        fun createRoute(quadroId: String = "new"): String {
+            return "quadroForm/$quadroId"
+        }
+    }
 
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
         // Função para criar a rota de "manter", com ou sem ID
@@ -348,6 +361,40 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    // ROTA 11: Tela de Listar Quadros
+                    composable(Screen.ListarQuadros.route) {
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend.apiService)
+                        val viewModelFactory = ListarQuadrosViewModelFactory(quadroRepository)
+
+                        ListarQuadrosScreen(
+                            navController = navController,
+                            viewModelFactory = viewModelFactory
+                        )
+                    }
+
+
+                    // ROTA 12: Tela de Manter Quadros
+                    composable(
+                        route = Screen.ManterQuadro.route,
+                        arguments = listOf(
+                            navArgument("quadroId") {
+                                type = NavType.StringType
+                                defaultValue = "new"
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val quadroIdArg = backStackEntry.arguments?.getString("quadroId")
+                        val quadroId = quadroIdArg?.takeUnless { it == "new" }
+
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend.apiService)
+                        val viewModelFactory = QuadroFormViewModelFactory(quadroRepository)
+
+                        QuadroFormScreen(
+                            navController = navController,
+                            quadroId = quadroId,
+                            viewModelFactory = viewModelFactory
+                        )
+                    }
 
 
                     //TELA INICIAL
