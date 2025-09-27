@@ -9,6 +9,7 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.unihub.data.apiBackend.ApiAusenciaBackend
+import android.content.Intent
 
 
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
@@ -119,17 +121,26 @@ sealed class Screen(val route: String) {
 
 class MainActivity : ComponentActivity() {
 
+    private lateinit var navController: androidx.navigation.NavHostController
+
+
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         TokenManager.loadToken(applicationContext)
 
+        val startIntent = intent
+
         setContent {
-            val navController = rememberNavController()
+            navController = rememberNavController()
             val startDest = if (TokenManager.token.isNullOrBlank())
                 Screen.Login.route
             else
                 Screen.TelaInicial.route
+
+            LaunchedEffect(Unit) {
+                navController.handleDeepLink(startIntent)
+            }
 
             Surface(
                 modifier = Modifier.fillMaxSize(),
@@ -156,7 +167,11 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(null))
                             },
                             onDisciplinaDoubleClick = { disciplinaId ->
-                                navController.navigate(Screen.VisualizarDisciplina.createRoute(disciplinaId))
+                                navController.navigate(
+                                    Screen.VisualizarDisciplina.createRoute(
+                                        disciplinaId
+                                    )
+                                )
                             },
                             onVoltar = { navController.popBackStack() }
                         )
@@ -174,7 +189,10 @@ class MainActivity : ComponentActivity() {
                         val repository = com.example.unihub.data.repository.DisciplinaRepository(
                             ApiDisciplinaBackend()
                         )
-                        val factory = com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory(repository)
+                        val factory =
+                            com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory(
+                                repository
+                            )
                         val viewModel: com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
 
@@ -182,7 +200,10 @@ class MainActivity : ComponentActivity() {
                             disciplinaId = disciplinaId,
                             onVoltar = { navController.popBackStack() },
                             onExcluirSucesso = {
-                                navController.popBackStack(Screen.ListarDisciplinas.route, inclusive = false)
+                                navController.popBackStack(
+                                    Screen.ListarDisciplinas.route,
+                                    inclusive = false
+                                )
                             },
                             viewModel = viewModel
                         )
@@ -195,16 +216,19 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
 
-                        val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
-                            ApiDisciplinaBackend(),
-                        )
-                        val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
-                            ApiAusenciaBackend(),
-                        )
-                        val factory = com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(
-                            disciplinaRepository,
-                            ausenciaRepository
-                        )
+                        val disciplinaRepository =
+                            com.example.unihub.data.repository.DisciplinaRepository(
+                                ApiDisciplinaBackend(),
+                            )
+                        val ausenciaRepository =
+                            com.example.unihub.data.repository.AusenciaRepository(
+                                ApiAusenciaBackend(),
+                            )
+                        val factory =
+                            com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(
+                                disciplinaRepository,
+                                ausenciaRepository
+                            )
 
                         val viewModel: com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
@@ -213,10 +237,19 @@ class MainActivity : ComponentActivity() {
                             disciplinaId = disciplinaId,
                             onVoltar = { navController.popBackStack() },
                             onNavigateToEdit = { idParaEditar ->
-                                navController.navigate(Screen.ManterDisciplina.createRoute(idParaEditar))
+                                navController.navigate(
+                                    Screen.ManterDisciplina.createRoute(
+                                        idParaEditar
+                                    )
+                                )
                             },
                             onNavigateToAusencias = { discId, ausId ->
-                                navController.navigate(Screen.ManterAusencia.createRoute(discId, ausId))
+                                navController.navigate(
+                                    Screen.ManterAusencia.createRoute(
+                                        discId,
+                                        ausId
+                                    )
+                                )
                             },
                             onNavigateToAnotacoes = { idDaDisciplina ->
                                 navController.navigate(Screen.Anotacoes.createRoute(idDaDisciplina.toLong()))
@@ -233,23 +266,28 @@ class MainActivity : ComponentActivity() {
                             navArgument("id") { type = NavType.StringType; nullable = true }
                         )
                     ) { backStackEntry ->
-                        val disciplinaIdArg = backStackEntry.arguments?.getString("disciplinaId") ?: ""
+                        val disciplinaIdArg =
+                            backStackEntry.arguments?.getString("disciplinaId") ?: ""
                         val ausenciaIdArg = backStackEntry.arguments?.getString("id")
 
-                        val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
-                            ApiAusenciaBackend(),
-                        )
-                        val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
-                            ApiDisciplinaBackend(),
-                        )
-                        val categoriaRepository = com.example.unihub.data.repository.CategoriaRepository(
-                            ApiCategoriaBackend(),
-                        )
-                        val factory = com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
-                            ausenciaRepository,
-                            disciplinaRepository,
-                            categoriaRepository
-                        )
+                        val ausenciaRepository =
+                            com.example.unihub.data.repository.AusenciaRepository(
+                                ApiAusenciaBackend(),
+                            )
+                        val disciplinaRepository =
+                            com.example.unihub.data.repository.DisciplinaRepository(
+                                ApiDisciplinaBackend(),
+                            )
+                        val categoriaRepository =
+                            com.example.unihub.data.repository.CategoriaRepository(
+                                ApiCategoriaBackend(),
+                            )
+                        val factory =
+                            com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
+                                ausenciaRepository,
+                                disciplinaRepository,
+                                categoriaRepository
+                            )
                         val viewModel: com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel =
                             androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
 
@@ -279,7 +317,9 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(
                             navArgument("nome") { type = NavType.StringType; defaultValue = "" },
                             navArgument("media") { type = NavType.StringType; defaultValue = "" },
-                            navArgument("frequencia") { type = NavType.StringType; defaultValue = "" }
+                            navArgument("frequencia") {
+                                type = NavType.StringType; defaultValue = ""
+                            }
                         )
                     ) { backStackEntry ->
                         val nomeArg = backStackEntry.arguments?.getString("nome") ?: ""
@@ -368,17 +408,26 @@ class MainActivity : ComponentActivity() {
                         ListarAvaliacaoScreen(
                             onAddAvaliacaoGeral = {
                                 navController.navigate(
-                                    Screen.ManterAvaliacao.createRoute(id = null, disciplinaId = null)
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = null
+                                    )
                                 )
                             },
                             onAddAvaliacaoParaDisciplina = { disciplinaId ->
                                 navController.navigate(
-                                    Screen.ManterAvaliacao.createRoute(id = null, disciplinaId = disciplinaId)
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = disciplinaId
+                                    )
                                 )
                             },
                             onNavigateToManterAvaliacao = { avaliacaoId ->
                                 navController.navigate(
-                                    Screen.ManterAvaliacao.createRoute(id = avaliacaoId, disciplinaId = null)
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = null
+                                    )
                                 )
                             },
                             onVoltar = { navController.popBackStack() }
@@ -412,7 +461,7 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = Screen.ManterAvaliacao.route,   // <- antes era .fullRoute
                         arguments = listOf(
-                            navArgument(Screen.ManterAvaliacao.ARG_ID)   {
+                            navArgument(Screen.ManterAvaliacao.ARG_ID) {
                                 type = NavType.StringType; nullable = true; defaultValue = ""
                             },
                             navArgument(Screen.ManterAvaliacao.ARG_DISC) {
@@ -420,8 +469,12 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     ) { backStackEntry ->
-                        val avaliacaoId  = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_ID)?.ifBlank { null }
-                        val disciplinaId = backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_DISC)?.ifBlank { null }
+                        val avaliacaoId =
+                            backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_ID)
+                                ?.ifBlank { null }
+                        val disciplinaId =
+                            backStackEntry.arguments?.getString(Screen.ManterAvaliacao.ARG_DISC)
+                                ?.ifBlank { null }
 
                         ManterAvaliacaoScreen(
                             avaliacaoId = avaliacaoId,
@@ -476,4 +529,15 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (::navController.isInitialized) {
+            navController.handleDeepLink(intent)
+        }
+    }
 }
+
+
+
