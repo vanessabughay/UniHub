@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.ColunaRepository
 
-class ColunaFormViewModelFactory(
+class ManterColunaFormViewModelFactory(
     private val repository: ColunaRepository
 ) : ViewModelProvider.Factory {
 

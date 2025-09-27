@@ -1,4 +1,4 @@
-package com.example.unihub.ui.register
+package com.example.unihub.ui.Registro
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel
@@ -7,7 +7,7 @@ import com.example.unihub.data.repository.AuthRepository
 import android.util.Patterns
 import kotlinx.coroutines.launch
 
-open class RegisterViewModel(
+open class RegistroViewModel(
     private val repository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 

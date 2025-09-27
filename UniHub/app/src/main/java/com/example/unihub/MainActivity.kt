@@ -34,8 +34,8 @@ import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoScreen
 import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
-import com.example.unihub.ui.login.LoginScreen
-import com.example.unihub.ui.register.RegisterScreen
+import com.example.unihub.ui.Login.LoginScreen
+import com.example.unihub.ui.Registro.RegisterScreen
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
@@ -43,6 +43,8 @@ import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
+import com.example.unihub.ui.TelaEsqueciSenha.TelaEsqueciSenha
+import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -451,7 +453,7 @@ class MainActivity : ComponentActivity() {
 
                     // ESQUECI SENHA
                     composable(Screen.EsqueciSenha.route) {
-                        com.example.unihub.ui.login.TelaEsqueciSenha(navController = navController)
+                        TelaEsqueciSenha(navController = navController)
                     }
 
                     // REDEFINIR SENHA (DEEP LINK)
@@ -465,7 +467,7 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val token = backStackEntry.arguments?.getString("token").orEmpty()
-                        com.example.unihub.ui.login.TelaRedefinirSenha(
+                        TelaRedefinirSenha(
                             token = token,
                             navController = navController
                         )

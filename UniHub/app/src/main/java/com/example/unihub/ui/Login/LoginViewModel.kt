@@ -1,4 +1,4 @@
-package com.example.unihub.ui.login
+package com.example.unihub.ui.Login
 
 import androidx.compose.runtime.*
 import androidx.lifecycle.ViewModel

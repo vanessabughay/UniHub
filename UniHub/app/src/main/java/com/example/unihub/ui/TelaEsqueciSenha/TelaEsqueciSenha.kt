@@ -1,4 +1,4 @@
-package com.example.unihub.ui.login
+package com.example.unihub.ui.TelaEsqueciSenha
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*

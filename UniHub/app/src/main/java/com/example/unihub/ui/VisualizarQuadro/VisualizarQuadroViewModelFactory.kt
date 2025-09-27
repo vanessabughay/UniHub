@@ -1,4 +1,4 @@
-package com.example.unihub.ui.ManterQuadro
+package com.example.unihub.ui.VisualizarQuadro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

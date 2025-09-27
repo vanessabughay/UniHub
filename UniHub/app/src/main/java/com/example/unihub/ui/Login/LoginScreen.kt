@@ -1,6 +1,5 @@
-package com.example.unihub.ui.register // Pacote adaptado para o registro
+package com.example.unihub.ui.Login // Pacote adaptado para o UniHub
 
-import com.example.unihub.components.CustomLabeledInput
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,13 +16,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import androidx.navigation.NavController
-import com.example.unihub.ui.register.RegisterViewModel // Importação do ViewModel específico de registro
+import com.example.unihub.components.CustomLabeledInput // Importação adaptada
+import androidx.compose.runtime.Composable
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import com.example.unihub.Screen
+import android.content.Context
 
 @Composable
-fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = viewModel()) {
-
+fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel = viewModel()
+) {
     val context = LocalContext.current
 
     LaunchedEffect(viewModel.errorMessage) {
@@ -34,11 +41,10 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
 
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
-            val repository = InstituicaoRepositoryProvider.getRepository(context)
-            Toast.makeText(context, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
-            navController.navigate("login") {
-                popUpTo("register") { inclusive = true }
+            navController.navigate(Screen.TelaInicial.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
             }
         }
     }
@@ -50,6 +56,7 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
             Box(
                 modifier = Modifier
                     .width(360.dp)
@@ -67,7 +74,7 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Cadastre-se",
+                        text = "Login",
                         fontSize = 32.sp,
                         color = Color(0xFF234A6A), // Cor de texto do UniHub
                         fontWeight = FontWeight.SemiBold
@@ -75,19 +82,15 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
 
                     Spacer(modifier = Modifier.height(32.dp))
 
-                    CustomLabeledInput("Nome", viewModel.name) { viewModel.name = it }
-                    Spacer(modifier = Modifier.height(16.dp))
                     CustomLabeledInput("E-mail", viewModel.email) { viewModel.email = it }
                     Spacer(modifier = Modifier.height(16.dp))
                     CustomLabeledInput("Senha", viewModel.password, isPassword = true) { viewModel.password = it }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    CustomLabeledInput("Confirme a Senha", viewModel.confirmPassword, isPassword = true) { viewModel.confirmPassword = it }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
                         onClick = {
-                            viewModel.registerUser()
+                            viewModel.loginUser(context)
                         },
                         enabled = !viewModel.isLoading,
                         modifier = Modifier
@@ -106,7 +109,7 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
                             )
                         } else {
                             Text(
-                                text = "Cadastrar",
+                                text = "Entrar",
                                 color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
@@ -123,41 +126,53 @@ fun RegisterScreen(navController: NavController, viewModel: RegisterViewModel = 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Já possui conta?",
+                    text = "Não possui conta?",
                     color = Color(0xFF6B7280),
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Entrar",
+                    text = "Registre-se.",
                     color = Color(0xFF234A6A), // Cor de link do UniHub
                     fontSize = 13.sp,
                     modifier = Modifier.clickable {
-                        navController.navigate("login")
+                        navController.navigate(Screen.Register.route)
                     }
                 )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "Esqueceu a senha?",
+                color = Color(0xFF234A6A),
+                fontSize = 13.sp,
+                modifier = Modifier.clickable {
+                    navController.navigate(Screen.EsqueciSenha.route)
+                }
+            )
         }
     }
 }
 
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 720)
+@Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
-private fun Preview_RegisterScreen() {
+private fun Preview_LoginScreen() {
     MaterialTheme {
-        RegisterScreen(
+        LoginScreen(
             navController = NavController(LocalContext.current),
-            viewModel = object : RegisterViewModel() {
-                override var name by remember { mutableStateOf("Nome de Exemplo") }
+            viewModel = object : AuthViewModel() {
+                // CORRETO: use 'remember' para cada estado mutável
                 override var email by remember { mutableStateOf("exemplo@email.com") }
                 override var password by remember { mutableStateOf("senha123") }
-                override var confirmPassword by remember { mutableStateOf("senha123") }
                 override var isLoading by remember { mutableStateOf(false) }
                 override var errorMessage by remember { mutableStateOf<String?>(null) }
                 override var success by remember { mutableStateOf(false) }
 
-                override fun registerUser() {}
+                // Sobrescreva as funções para que elas não façam nada no preview
+                override fun loginUser(context: Context) {
+                    this.isLoading = true
+                }
             }
         )
     }

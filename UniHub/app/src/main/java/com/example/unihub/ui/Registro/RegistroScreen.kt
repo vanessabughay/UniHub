@@ -1,5 +1,6 @@
-package com.example.unihub.ui.login // Pacote adaptado para o UniHub
+package com.example.unihub.ui.Registro // Pacote adaptado para o registro
 
+import com.example.unihub.components.CustomLabeledInput
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,22 +17,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import androidx.navigation.NavController
-import com.example.unihub.components.CustomLabeledInput // Importação adaptada
-import com.example.unihub.ui.login.AuthViewModel // ViewModel adaptado
-import androidx.compose.runtime.Composable
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.unihub.Screen
-import android.content.Context
 
 @Composable
-fun LoginScreen(
-    navController: NavController,
-    viewModel: AuthViewModel = viewModel()
-) {
+fun RegisterScreen(navController: NavController, viewModel: RegistroViewModel = viewModel()) {
+
     val context = LocalContext.current
 
     LaunchedEffect(viewModel.errorMessage) {
@@ -42,10 +33,11 @@ fun LoginScreen(
 
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
-            Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
+            val repository = InstituicaoRepositoryProvider.getRepository(context)
+            Toast.makeText(context, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
-            navController.navigate(Screen.TelaInicial.route) {
-                popUpTo(Screen.Login.route) { inclusive = true }
+            navController.navigate("login") {
+                popUpTo("register") { inclusive = true }
             }
         }
     }
@@ -57,7 +49,6 @@ fun LoginScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
             Box(
                 modifier = Modifier
                     .width(360.dp)
@@ -75,7 +66,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Login",
+                        text = "Cadastre-se",
                         fontSize = 32.sp,
                         color = Color(0xFF234A6A), // Cor de texto do UniHub
                         fontWeight = FontWeight.SemiBold
@@ -83,15 +74,19 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(32.dp))
 
+                    CustomLabeledInput("Nome", viewModel.name) { viewModel.name = it }
+                    Spacer(modifier = Modifier.height(16.dp))
                     CustomLabeledInput("E-mail", viewModel.email) { viewModel.email = it }
                     Spacer(modifier = Modifier.height(16.dp))
                     CustomLabeledInput("Senha", viewModel.password, isPassword = true) { viewModel.password = it }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CustomLabeledInput("Confirme a Senha", viewModel.confirmPassword, isPassword = true) { viewModel.confirmPassword = it }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
                         onClick = {
-                            viewModel.loginUser(context)
+                            viewModel.registerUser()
                         },
                         enabled = !viewModel.isLoading,
                         modifier = Modifier
@@ -110,7 +105,7 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Entrar",
+                                text = "Cadastrar",
                                 color = Color.White,
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Medium
@@ -127,53 +122,41 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Não possui conta?",
+                    text = "Já possui conta?",
                     color = Color(0xFF6B7280),
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Registre-se.",
+                    text = "Entrar",
                     color = Color(0xFF234A6A), // Cor de link do UniHub
                     fontSize = 13.sp,
                     modifier = Modifier.clickable {
-                        navController.navigate(Screen.Register.route)
+                        navController.navigate("login")
                     }
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = "Esqueceu a senha?",
-                color = Color(0xFF234A6A),
-                fontSize = 13.sp,
-                modifier = Modifier.clickable {
-                    navController.navigate(Screen.EsqueciSenha.route)
-                }
-            )
         }
     }
 }
 
 
-@Preview(showBackground = true, widthDp = 360, heightDp = 640)
+@Preview(showBackground = true, widthDp = 360, heightDp = 720)
 @Composable
-private fun Preview_LoginScreen() {
+private fun Preview_RegisterScreen() {
     MaterialTheme {
-        LoginScreen(
+        RegisterScreen(
             navController = NavController(LocalContext.current),
-            viewModel = object : AuthViewModel() {
-                // CORRETO: use 'remember' para cada estado mutável
+            viewModel = object : RegistroViewModel() {
+                override var name by remember { mutableStateOf("Nome de Exemplo") }
                 override var email by remember { mutableStateOf("exemplo@email.com") }
                 override var password by remember { mutableStateOf("senha123") }
+                override var confirmPassword by remember { mutableStateOf("senha123") }
                 override var isLoading by remember { mutableStateOf(false) }
                 override var errorMessage by remember { mutableStateOf<String?>(null) }
                 override var success by remember { mutableStateOf(false) }
 
-                // Sobrescreva as funções para que elas não façam nada no preview
-                override fun loginUser(context: Context) {
-                    this.isLoading = true
-                }
+                override fun registerUser() {}
             }
         )
     }
