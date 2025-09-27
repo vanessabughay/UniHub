@@ -1,13 +1,10 @@
-package com.example.unihub.data.repository // Mesmo pacote ou importe Contatobackend
+package com.example.unihub.data.apiBackend // Mesmo pacote ou importe Contatobackend
 
-import com.example.unihub.data.api.RetrofitClient
+import com.example.unihub.data.api.ContatoApi
+import com.example.unihub.data.config.RetrofitClient
 import com.example.unihub.data.model.Contato
-import com.example.unihub.data.util.LocalDateAdapter
-import com.google.gson.GsonBuilder
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.time.LocalDate
-
+import com.example.unihub.data.repository.ContatoResumo
+import com.example.unihub.data.repository.Contatobackend
 
 
 class ApiContatoBackend : Contatobackend {

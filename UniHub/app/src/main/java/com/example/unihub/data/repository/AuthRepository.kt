@@ -1,7 +1,7 @@
 package com.example.unihub.data.repository
 
-import com.example.unihub.data.api.RetrofitClient
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.RetrofitClient
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.api.UniHubApi // Assume que esta é a sua interface de API
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest

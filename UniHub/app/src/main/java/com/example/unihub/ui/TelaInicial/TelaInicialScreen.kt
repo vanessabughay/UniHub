@@ -41,7 +41,7 @@ import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
 
 
 

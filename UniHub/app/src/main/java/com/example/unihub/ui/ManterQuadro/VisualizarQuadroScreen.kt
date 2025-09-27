@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -17,24 +16,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.unihub.components.Header
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.*
 import androidx.navigation.compose.rememberNavController
-import com.example.unihub.data.repository.QuadroApi
+import com.example.unihub.data.api.QuadroApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
-import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.model.QuadroDePlanejamento
@@ -43,7 +38,6 @@ import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
-import java.util.*
 import androidx.compose.material.icons.filled.Info
 
 private fun formatarPrazo(prazo: Long): String {

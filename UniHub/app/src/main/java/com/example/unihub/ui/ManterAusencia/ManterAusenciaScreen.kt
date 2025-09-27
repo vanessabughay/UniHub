@@ -13,8 +13,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.MaterialTheme
-import com.example.unihub.data.model.Categoria
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,9 +30,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.CategoriaRepository
-import com.example.unihub.data.repository.ApiAusenciaBackend
-import com.example.unihub.data.repository.ApiDisciplinaBackend
-import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.data.apiBackend.ApiAusenciaBackend
+import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
+import com.example.unihub.data.apiBackend.ApiCategoriaBackend
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar

@@ -1,4 +1,4 @@
-package com.example.unihub.data.repository
+package com.example.unihub.data.api
 
 import com.example.unihub.data.model.Disciplina
 import retrofit2.Response

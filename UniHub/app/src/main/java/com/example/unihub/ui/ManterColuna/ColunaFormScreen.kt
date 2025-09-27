@@ -23,14 +23,10 @@ import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
-import com.example.unihub.data.repository.TarefaApi
-import com.example.unihub.data.repository.TarefaRepository
-import com.example.unihub.data.model.Tarefa
-import com.example.unihub.data.model.QuadroDePlanejamento
 import com.example.unihub.data.repository.ColunaRepository
 import java.text.SimpleDateFormat
 import java.util.*
-import com.example.unihub.data.repository.ColunaApi
+import com.example.unihub.data.api.ColunaApi
 
 @Composable
 fun ColunaFormScreen(

@@ -2,11 +2,8 @@ package com.example.unihub.ui.ListarAvaliacao
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.ApiAvaliacaoBackend
+import com.example.unihub.data.apiBackend.ApiAvaliacaoBackend
 import com.example.unihub.data.repository.AvaliacaoRepository
-import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoViewModel
-
-
 
 
 object ListarAvaliacaoViewModelFactory : ViewModelProvider.Factory {

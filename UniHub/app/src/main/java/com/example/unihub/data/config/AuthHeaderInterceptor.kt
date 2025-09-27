@@ -1,4 +1,4 @@
-package com.example.unihub.data.api
+package com.example.unihub.data.config
 
 import okhttp3.Interceptor
 import okhttp3.Response

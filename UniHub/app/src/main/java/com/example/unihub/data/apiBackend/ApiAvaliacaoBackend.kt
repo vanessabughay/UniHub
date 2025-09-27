@@ -1,11 +1,14 @@
-package com.example.unihub.data.repository
+package com.example.unihub.data.apiBackend
 
 import android.util.Log
+import com.example.unihub.data.api.AvaliacaoApi
+import com.example.unihub.data.config.RetrofitClient
 import com.example.unihub.data.model.Avaliacao
-import com.example.unihub.data.api.RetrofitClient
-import com.example.unihub.data.dto.AvaliacaoRequest
-import com.example.unihub.data.dto.ContatoRef
-import com.example.unihub.data.dto.DisciplinaRef
+import com.example.unihub.data.dto.AvaliacaoRequestDto
+import com.example.unihub.data.dto.ContatoIdDto
+import com.example.unihub.data.dto.DisciplinaIdDto
+import com.example.unihub.data.model.Modalidade
+import com.example.unihub.data.repository.Avaliacaobackend
 import retrofit2.HttpException // Para tratar erros HTTP específicos do Retrofit
 import java.io.IOException // Para exceções de I/O genéricas
 
@@ -19,19 +22,19 @@ class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avali
         RetrofitClient.retrofit.create(AvaliacaoApi::class.java) // <<< usa o client com interceptor
     }
 
-    private fun Avaliacao.toRequest(): AvaliacaoRequest {
-        return AvaliacaoRequest(
+    private fun Avaliacao.toRequest(): AvaliacaoRequestDto {
+        return AvaliacaoRequestDto(
             id = this.id,
             descricao = this.descricao,
-            disciplina = this.disciplina?.id?.let { DisciplinaRef(it) },   // ← só id
+            disciplina = this.disciplina?.id?.let { DisciplinaIdDto(it) },   // ← só id
             tipoAvaliacao = this.tipoAvaliacao,
-            modalidade = this.modalidade ?: com.example.unihub.data.model.Modalidade.INDIVIDUAL,
+            modalidade = this.modalidade ?: Modalidade.INDIVIDUAL,
             dataEntrega = this.dataEntrega,                                 // "yyyy-MM-dd"
             nota = this.nota,
             peso = this.peso,
             integrantes = (this.integrantes ?: emptyList())
                 .mapNotNull { it.id }                                       // pega só ids
-                .map { ContatoRef(it) },
+                .map { ContatoIdDto(it) },
             prioridade = this.prioridade,
             estado = this.estado,
             dificuldade = this.dificuldade,
@@ -89,12 +92,12 @@ class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avali
         }
     }
 
-    override suspend fun addAvaliacaoApi(request: AvaliacaoRequest) {
+    override suspend fun addAvaliacaoApi(request: AvaliacaoRequestDto) {
         val resp = api.add(request)
         if (!resp.isSuccessful) throw IOException("Erro: ${resp.code()} ${resp.errorBody()?.string()}")
     }
 
-    override suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequest): Boolean {
+    override suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequestDto): Boolean {
         return api.update(id, request).isSuccessful
     }
 

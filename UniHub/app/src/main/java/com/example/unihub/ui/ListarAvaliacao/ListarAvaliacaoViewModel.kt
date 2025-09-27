@@ -5,9 +5,9 @@ import android.util.Log
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.dto.AvaliacaoRequest
-import com.example.unihub.data.dto.ContatoRef
-import com.example.unihub.data.dto.DisciplinaRef
+import com.example.unihub.data.dto.AvaliacaoRequestDto
+import com.example.unihub.data.dto.ContatoIdDto
+import com.example.unihub.data.dto.DisciplinaIdDto
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.data.model.Modalidade
@@ -131,10 +131,10 @@ class ListarAvaliacaoViewModel(
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val req = AvaliacaoRequest(
+                val req = AvaliacaoRequestDto(
                     id = id,
                     descricao = av.descricao,
-                    disciplina = av.disciplina?.id?.let { DisciplinaRef(it) },
+                    disciplina = av.disciplina?.id?.let { DisciplinaIdDto(it) },
                     tipoAvaliacao = av.tipoAvaliacao,
                     modalidade = av.modalidade ?: Modalidade.INDIVIDUAL,
                     dataEntrega = av.dataEntrega,
@@ -142,7 +142,7 @@ class ListarAvaliacaoViewModel(
                     peso = av.peso,
                     integrantes = av.integrantes
                         .mapNotNull { it.id }
-                        .map { ContatoRef(it) },
+                        .map { ContatoIdDto(it) },
                     prioridade = av.prioridade ?: Prioridade.MEDIA,
                     estado = if (concluida) EstadoAvaliacao.CONCLUIDA else EstadoAvaliacao.A_REALIZAR,
                     dificuldade = av.dificuldade,

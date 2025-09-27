@@ -1,10 +1,12 @@
-package com.example.unihub.data.repository
+package com.example.unihub.data.apiBackend
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.BuildConfig
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.api.InstituicaoApi
+import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.repository._instituicaobackend
 import okhttp3.OkHttpClient
 
 class ApiInstituicaoBackend : _instituicaobackend {

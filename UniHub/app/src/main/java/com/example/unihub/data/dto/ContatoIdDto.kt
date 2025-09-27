@@ -1,5 +1,5 @@
 package com.example.unihub.data.dto
 
-data class ContatoRef(
+data class ContatoIdDto(
     val id: Long
 )

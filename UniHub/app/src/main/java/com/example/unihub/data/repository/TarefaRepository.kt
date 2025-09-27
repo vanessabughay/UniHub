@@ -1,5 +1,6 @@
 package com.example.unihub.data.repository
 
+import com.example.unihub.data.api.TarefaApi
 import com.example.unihub.data.model.Tarefa
 
 open class TarefaRepository(private val apiService: TarefaApi) {

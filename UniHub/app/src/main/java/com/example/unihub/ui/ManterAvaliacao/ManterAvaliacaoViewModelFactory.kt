@@ -2,9 +2,9 @@ package com.example.unihub.ui.ManterAvaliacao
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.ApiAvaliacaoBackend
-import com.example.unihub.data.repository.ApiContatoBackend
-import com.example.unihub.data.repository.ApiDisciplinaBackend
+import com.example.unihub.data.apiBackend.ApiAvaliacaoBackend
+import com.example.unihub.data.apiBackend.ApiContatoBackend
+import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.repository.AvaliacaoRepository
