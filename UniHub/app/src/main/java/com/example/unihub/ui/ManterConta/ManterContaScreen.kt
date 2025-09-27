@@ -5,6 +5,8 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -21,12 +23,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
+import android.widget.Toast
+import com.example.unihub.data.repository.AuthRepository
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.unihub.data.repository.ApiInstituicaoBackend
+import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.R
 import com.example.unihub.data.repository.InstituicaoRepository
 import androidx.compose.ui.platform.LocalContext
@@ -40,6 +44,7 @@ fun ManterContaScreen(
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory(LocalContext.current))) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -54,6 +59,21 @@ fun ManterContaScreen(
         viewModel.carregarInstituicaoUsuario()
     }
 
+    LaunchedEffect(viewModel.errorMessage) {
+        viewModel.errorMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.errorMessage = null
+        }
+    }
+
+    LaunchedEffect(viewModel.success) {
+        if (viewModel.success) {
+            Toast.makeText(context, "alteração salva com sucesso!", Toast.LENGTH_SHORT).show()
+            viewModel.success = false
+            onVoltar()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -63,6 +83,7 @@ fun ManterContaScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 },
+
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))
             )
         }
@@ -94,7 +115,6 @@ fun ManterContaScreen(
                 )
 
             }
-
             Text(
                 text = "Informações gerais",
                 style = MaterialTheme.typography.titleMedium,
@@ -137,23 +157,57 @@ fun ManterContaScreen(
                     .fillMaxWidth()
                     .padding(top = 8.dp)
             )
-            OutlinedTextField(
-                value = viewModel.senha,
-                onValueChange = { viewModel.senha = it },
-                label = { Text("Senha") },
-                visualTransformation = PasswordVisualTransformation(),
-                trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xA8C1D5E4),
-                    unfocusedContainerColor = Color(0xA8C1D5E4),
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent
-                ),
+            var expandirSenha by remember { mutableStateOf(false) }
+
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-            )
+                    .animateContentSize(),
+                colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+            ) {
+                Column(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(0.dp)
+                ) {
+                    OutlinedTextField(
+                        value = viewModel.senha,
+                        onValueChange = { viewModel.senha = it },
+                        label = { Text("Senha") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xA8C1D5E4),
+                            unfocusedContainerColor = Color(0xA8C1D5E4),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (it.isFocused) expandirSenha = true }
+                    )
+                    if (expandirSenha) {
+                        OutlinedTextField(
+                            value = viewModel.confirmarSenha,
+                            onValueChange = { viewModel.confirmarSenha = it },
+                            label = { Text("Confirmar senha") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            trailingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color(0xA8C1D5E4),
+                                unfocusedContainerColor = Color(0xA8C1D5E4),
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
 
             Text(
                 text = "Instituição",
@@ -201,6 +255,7 @@ fun ManterContaScreen(
                                     viewModel.media,
                                     viewModel.frequencia
                                 )
+
                             },
                             modifier = Modifier.align(Alignment.TopEnd)
                         ) {
@@ -221,7 +276,10 @@ fun ManterContaScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.salvar() },
+                    onClick = {
+                        viewModel.salvar()
+
+                              },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -243,6 +301,9 @@ fun ManterContaScreenPreview() {
         onVoltar = {},
         onNavigateToManterInstituicao = { _, _, _ -> },
         viewModel = ManterContaViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend(), context)        )
+            InstituicaoRepository(ApiInstituicaoBackend(), context),
+            AuthRepository(),
+            context
+        )
     )
 }

@@ -5,9 +5,12 @@ import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.unihub.backend.dto.LoginResponse;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 @Service
 public class AutenticacaoService {
@@ -15,8 +18,10 @@ public class AutenticacaoService {
     @Autowired
     private UsuarioRepository repository;
 
-     @Autowired
+    @Autowired
     private PasswordEncoder passwordEncoder;
+
+    private Map<String, Long> tokens = new ConcurrentHashMap<>();
 
     public Usuario registrar(Usuario usuario) {
         Optional<Usuario> existente = repository.findByEmail(usuario.getEmail());
@@ -27,11 +32,17 @@ public class AutenticacaoService {
         return repository.save(usuario);
     }
 
-    public String login(String email, String senha) {
+    public LoginResponse login(String email, String senha) {
         Optional<Usuario> usuarioOpt = repository.findByEmail(email);
-         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
-            return UUID.randomUUID().toString();
+        if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
+            String token = UUID.randomUUID().toString();
+            tokens.put(token, usuarioOpt.get().getId());
+            return new LoginResponse(token, usuarioOpt.get().getNomeUsuario());
         }
         return null;
+    }
+    
+    public Long getUsuarioIdPorToken(String token) {
+        return tokens.get(token);
     }
 }

@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Redefinir senha - UniHub</title>
+  <script>
+  (function(){
+    var p = new URLSearchParams(location.search);
+    var token = p.get('token');
+    if (!token) { document.body.textContent = 'Token inválido.'; return; }
+
+    var deep = 'unihub://reset?token=' + encodeURIComponent(token);
+    // coloque o link da Play Store quando publicar seu app
+    var fallback = 'https://play.google.com/store/apps/details?id=com.example.unihub';
+
+    window.location = deep;                 // tenta abrir o app
+    setTimeout(function(){ window.location = fallback; }, 1500); // fallback
+  })();
+  </script>
+</head>
+<body>Redirecionando…</body>
+</html>

@@ -20,8 +20,13 @@ public class Ausencia {
 
     @ManyToOne
     @JoinColumn(name = "disciplina_id")
-    @JsonBackReference
+    @JsonBackReference("disciplina-ausencias")
     private Disciplina disciplina;
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    @JsonBackReference("usuario-ausencias")
+    private Usuario usuario;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -40,4 +45,8 @@ public class Ausencia {
 
     public Disciplina getDisciplina() { return disciplina; }
     public void setDisciplina(Disciplina disciplina) { this.disciplina = disciplina; }
+
+    
+    public Usuario getUsuario() { return usuario; }
+    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 }

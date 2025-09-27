@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.InstituicaoRepository
 import com.example.unihub.data.repository.InstituicaoRepositoryProvider
+import com.example.unihub.data.repository.AuthRepository
 
 
 class ManterContaViewModelFactory(
@@ -13,8 +14,9 @@ class ManterContaViewModelFactory(
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ManterContaViewModel::class.java)) {
             val repository = InstituicaoRepositoryProvider.getRepository(context)
+            val authRepository = AuthRepository()
             @Suppress("UNCHECKED_CAST")
-            return ManterContaViewModel(repository) as T
+            return ManterContaViewModel(repository, authRepository, context) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

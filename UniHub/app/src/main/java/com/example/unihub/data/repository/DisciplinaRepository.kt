@@ -12,9 +12,9 @@ import com.example.unihub.data.model.HorarioAula
 
 data class DisciplinaResumo( // conteudo resumo
     val id: Long,
-    val codigo: String,
+    val codigo: String? = null,
     val nome: String,
-    val aulas: List<HorarioAula>
+    val aulas: List<HorarioAula> = emptyList()
 )
 
 //SUBTSTITUIR BACKEND

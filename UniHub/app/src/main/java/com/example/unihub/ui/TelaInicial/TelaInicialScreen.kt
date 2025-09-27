@@ -19,9 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +36,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import com.example.unihub.data.config.TokenManager
+
+
+
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -59,21 +65,34 @@ fun TelaInicial(
     navController: NavHostController,
     viewModel: TelaInicialViewModel = viewModel()) {
     val estado by viewModel.estado.collectAsStateWithLifecycleCompat()
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.atualizarNomeUsuario()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
 
     LaunchedEffect(Unit) {
+        viewModel.atualizarNomeUsuario()
         // Chama a função para filtrar avaliações e tarefas logo após o carregamento da tela
         viewModel.filtrarAvaliacoesEValidarTarefas()
 
         viewModel.eventoNavegacao.collect { destino ->
             when (destino.lowercase()) {
-                //"projetos" -> navController.navigate("projetos")
+                "projetos" -> navController.navigate("lista_quadros")
                 //"calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
-                //"avaliações" -> navController.navigate("avaliacoes")
+                "avaliações" -> navController.navigate("lista_avaliacao")
                 "perfil" -> navController.navigate("manter_conta")
                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
-                //"contatos" -> navController.navigate("contatos")
-                //"grupos" -> navController.navigate("grupos")
+                "contatos" -> navController.navigate("lista_contato")
+                "grupos" -> navController.navigate("lista_grupo")
                 //"configurar notificações" -> navController.navigate("configurar_notificacoes")
                 //"atividades" -> navController.navigate("atividades")
                 else -> {} // fallback
@@ -90,7 +109,14 @@ fun TelaInicial(
         onClicarAtalho = { viewModel.aoClicarAtalho(it) },
         onClicarOpcaoMenu = { viewModel.aoClicarOpcaoMenu(it) },
         onAlternarSecaoAvaliacoes = { viewModel.alternarSecaoAvaliacoes() },
-        onAlternarSecaoTarefas = { viewModel.alternarSecaoTarefas() }
+        onAlternarSecaoTarefas = { viewModel.alternarSecaoTarefas() },
+        onLogout = { TokenManager.clearToken(context)
+            viewModel.fecharMenu()
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
     )
 }
 
@@ -104,7 +130,8 @@ fun TelaInicialView(
     onClicarAtalho: (String) -> Unit,
     onClicarOpcaoMenu: (String) -> Unit,
     onAlternarSecaoAvaliacoes: () -> Unit,
-    onAlternarSecaoTarefas: () -> Unit
+    onAlternarSecaoTarefas: () -> Unit,
+    onLogout: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -157,6 +184,7 @@ fun TelaInicialView(
                 opcoes = estado.opcoesMenu,
                 onFechar = onFecharMenu,
                 onClicarOpcao = onClicarOpcaoMenu,
+                onLogout = onLogout,
                 modifier = Modifier
                     .fillMaxSize()
             )
@@ -391,6 +419,7 @@ private fun MenuLateral(
     opcoes: List<String>,
     onFechar: () -> Unit,
     onClicarOpcao: (String) -> Unit,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -411,7 +440,7 @@ private fun MenuLateral(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            TextButton(onClick = onFechar) {
+            TextButton(onClick = onLogout) {
                 Text(text = "Sair", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             }
 
@@ -471,7 +500,7 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
 @Composable
 private fun Preview_TelaInicialView() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = false,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
@@ -493,7 +522,8 @@ private fun Preview_TelaInicialView() {
             onClicarAtalho = {},
             onClicarOpcaoMenu = {},
             onAlternarSecaoAvaliacoes = {},
-            onAlternarSecaoTarefas = { }
+            onAlternarSecaoTarefas = {},
+            onLogout = {}
         )
     }
 }
@@ -503,7 +533,7 @@ private fun Preview_TelaInicialView() {
 @Composable
 private fun Preview_MenuAberto() {
     val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Paulo Cueto"),
+        usuario = Usuario("Aluno Exemplo"),
         menuAberto = true,
         avaliacoes = listOf(
             Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
@@ -525,7 +555,8 @@ private fun Preview_MenuAberto() {
             onClicarAtalho = {},
             onClicarOpcaoMenu = {},
             onAlternarSecaoAvaliacoes = { },
-            onAlternarSecaoTarefas = {  }
+            onAlternarSecaoTarefas = {},
+            onLogout = {}
         )
     }
 }

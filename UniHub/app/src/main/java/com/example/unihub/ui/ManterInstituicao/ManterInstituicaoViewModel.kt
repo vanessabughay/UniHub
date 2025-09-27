@@ -23,6 +23,17 @@ class ManterInstituicaoViewModel(
     var mostrarCadastrar by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
 
+    var instituicaoId: Long? = null
+
+    init {
+        viewModelScope.launch {
+            repository.instituicaoUsuario()?.let { instit ->
+                instituicaoId = instit.id
+            }
+        }
+    }
+
+
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
@@ -32,7 +43,7 @@ class ManterInstituicaoViewModel(
         } else {
             viewModelScope.launch {
                 val lista = runCatching { repository.buscarInstituicoes(text) }.getOrDefault(emptyList())
-                sugestoes = lista
+                sugestoes = lista.distinctBy { Triple(it.nome, it.mediaAprovacao, it.frequenciaMinima) }
                 mostrarCadastrar = lista.isEmpty()
             }
         }
@@ -50,16 +61,14 @@ class ManterInstituicaoViewModel(
     fun salvar(onSaved: () -> Unit) {
         viewModelScope.launch {
             try {
-                val instExistente = repository.getInstituicaoPorNome(nomeInstituicao).getOrThrow()
-                val inst = instExistente?.copy(
-                    mediaAprovacao = media.toDoubleOrNull() ?: instExistente.mediaAprovacao,
-                    frequenciaMinima = frequencia.toIntOrNull() ?: instExistente.frequenciaMinima
-                ) ?: Instituicao(
+                val inst = Instituicao(
+                    id = instituicaoId,
                     nome = nomeInstituicao,
                     mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
                     frequenciaMinima = frequencia.toIntOrNull() ?: 0
                 )
                 repository.salvarInstituicao(inst)
+                instituicaoId = repository.instituicaoUsuario()?.id
                 errorMessage = null
                 onSaved()
             } catch (e: Exception) {
