@@ -266,29 +266,44 @@ fun ManterDisciplinaScreen(
 
     LaunchedEffect(disciplina.value) {
         disciplina.value?.let { d ->
-            codigo = d.codigo
-            nomeDisciplina = d.nome
-            nomeProfessor = d.professor
-            periodo = d.periodo
-            cargaHoraria = d.cargaHoraria.toString()
-            qtdAulasSemana = d.aulas.size.toString()
-            aulas = d.aulas.map {
+            codigo          = d.codigo.orEmpty()
+            nomeDisciplina  = d.nome.orEmpty()          // <- era o ponto do erro
+            nomeProfessor   = d.professor.orEmpty()
+            periodo         = d.periodo.orEmpty()
+            cargaHoraria    = (d.cargaHoraria ?: 0).toString()
+
+            val aulasList   = d.aulas.orEmpty()         // evita NPE se vier null
+            qtdAulasSemana  = aulasList.size.toString()
+            aulas = aulasList.map {
                 AulaInfo(
                     dia = it.diaDaSemana,
                     ensalamento = it.sala,
                     horarioInicio = it.horarioInicio,
                     horarioFim = it.horarioFim
-                    )
+                )
             }
-            dataInicioSemestre = d.dataInicioSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            dataFimSemestre = d.dataFimSemestre.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-            emailProfessor = d.emailProfessor
-            plataformas = d.plataforma
-            telefoneProfessor = d.telefoneProfessor
-            salaProfessor = d.salaProfessor
-            isAtiva = d.isAtiva
+
+            dataInicioSemestre = d.dataInicioSemestre
+                ?.atStartOfDay(ZoneId.systemDefault())
+                ?.toInstant()
+                ?.toEpochMilli()
+                ?: 0L
+
+            dataFimSemestre = d.dataFimSemestre
+                ?.atStartOfDay(ZoneId.systemDefault())
+                ?.toInstant()
+                ?.toEpochMilli()
+                ?: 0L
+
+            emailProfessor   = d.emailProfessor.orEmpty()
+            plataformas      = d.plataforma.orEmpty()
+            telefoneProfessor= d.telefoneProfessor.orEmpty()
+            salaProfessor    = d.salaProfessor.orEmpty()
+
+            isAtiva = d.isAtiva  // se for Boolean?, use: (d.isAtiva ?: true)
         }
     }
+
 
 
     LaunchedEffect(sucesso.value) {
@@ -343,6 +358,7 @@ fun ManterDisciplinaScreen(
                             salaProfessor = salaProfessor,
                             isAtiva = isAtiva,
                             receberNotificacoes = true,
+                            avaliacoes = emptyList(),
                             aulas = aulas.map {
                                 com.example.unihub.data.model.HorarioAula(
                                     diaDaSemana = it.dia,

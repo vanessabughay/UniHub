@@ -172,8 +172,7 @@ fun ListarGrupoScreen(
                 onClick = onAddGrupo,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-                //containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                //contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Grupo")
             }

@@ -41,7 +41,10 @@ import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
+
+
+
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -82,10 +85,10 @@ fun TelaInicial(
 
         viewModel.eventoNavegacao.collect { destino ->
             when (destino.lowercase()) {
-                //"projetos" -> navController.navigate("projetos")
+                "projetos" -> navController.navigate("lista_quadros")
                 //"calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
-                //"avaliações" -> navController.navigate("avaliacoes")
+                "avaliações" -> navController.navigate("lista_avaliacao")
                 "perfil" -> navController.navigate("manter_conta")
                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 "contatos" -> navController.navigate("lista_contato")

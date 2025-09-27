@@ -37,14 +37,13 @@ class ManterInstituicaoViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
-        instituicaoId = null
         if (text.isBlank()) {
             sugestoes = emptyList()
             mostrarCadastrar = false
         } else {
             viewModelScope.launch {
                 val lista = runCatching { repository.buscarInstituicoes(text) }.getOrDefault(emptyList())
-                sugestoes = lista.distinctBy { it.nome }
+                sugestoes = lista.distinctBy { Triple(it.nome, it.mediaAprovacao, it.frequenciaMinima) }
                 mostrarCadastrar = lista.isEmpty()
             }
         }
@@ -56,7 +55,6 @@ class ManterInstituicaoViewModel(
         frequencia = inst.frequenciaMinima.toString()
         sugestoes = emptyList()
         mostrarCadastrar = false
-        instituicaoId = null
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)

@@ -30,8 +30,6 @@ interface UniHubApi {
         @Body body: SolicitarRedefinicaoSenhaRequest
     ): Response<Void>
 
-    @POST("api/auth/reset-password")
-    suspend fun redefinirSenha(
-        @Body body: RedefinirSenhaRequest
-    ): Response<Void>
+    @POST("/api/auth/reset-password")
+    suspend fun redefinirSenha(@Body body: RedefinirSenhaRequest): Response<Void>
 }

@@ -2,7 +2,7 @@ package com.example.unihub.ui.ListarDisciplinas
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.ApiDisciplinaBackend
+import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.data.repository.DisciplinaRepository
 
 /**

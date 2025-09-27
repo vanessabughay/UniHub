@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
 
 
 /*  Modelos exemplo  */

@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+
+
 @Entity
 @Table(name = "usuarios")
 public class Usuario {
@@ -34,6 +36,9 @@ public class Usuario {
     @JsonManagedReference("usuario-categorias")
     private List<Categoria> categorias;
 
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-quadros")
+    private List<QuadroPlanejamento> quadrosPlanejamento;
 
     public Long getId() {
         return id;
@@ -78,4 +83,8 @@ public class Usuario {
 
     public List<Categoria> getCategorias() { return categorias; }
     public void setCategorias(List<Categoria> categorias) { this.categorias = categorias; }
+
+    public List<QuadroPlanejamento> getQuadrosPlanejamento() { return quadrosPlanejamento; }
+    public void setQuadrosPlanejamento(List<QuadroPlanejamento> quadrosPlanejamento) { this.quadrosPlanejamento = quadrosPlanejamento; }
+    
 }

@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
 import com.example.unihub.data.repository.AuthRepository
@@ -65,7 +65,6 @@ class ManterContaViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
-        instituicaoId = null
         if (text.isBlank()) {
             sugestoes = emptyList()
             mostrarCadastrar = false
@@ -90,8 +89,7 @@ class ManterContaViewModel(
         frequencia = inst.frequenciaMinima.toString()
         sugestoes = emptyList()
         mostrarCadastrar = false
-        instituicaoId = null
-    }
+        }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {

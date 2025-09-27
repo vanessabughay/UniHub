@@ -45,7 +45,7 @@ class ListarDisciplinasViewModel(
                     val uiDisciplinas = disciplinasRaw.map { disciplina ->
                         DisciplinaResumoUi(
                             id = disciplina.id,
-                            codigo = disciplina.codigo,
+                            codigo = disciplina.codigo ?: "",
                             nome = disciplina.nome,
                             horariosAulas = disciplina.aulas
                         )

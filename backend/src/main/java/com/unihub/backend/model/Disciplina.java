@@ -1,11 +1,21 @@
+
 package com.unihub.backend.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects; // Para equals e hashCode
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+
+
+// evita expandir essas relações quando Disciplina vier como filha
+@JsonIgnoreProperties({
+        "hibernateLazyInitializer", "handler",
+        "avaliacoes", "aulas", "usuario"
+})
 
 @Entity
 public class Disciplina {
@@ -18,24 +28,55 @@ public class Disciplina {
     private String nome;
     private String professor;
     private String periodo;
-    private int cargaHoraria;
+    private int cargaHoraria; // Mantido como int primitivo
     private LocalDate dataInicioSemestre;
     private LocalDate dataFimSemestre;
     private String emailProfessor;
     private String plataforma;
     private String telefoneProfessor;
     private String salaProfessor;
-    private boolean isAtiva;
-    private boolean receberNotificacoes;
+    private boolean isAtiva; // Mantido como boolean primitivo
+    private boolean receberNotificacoes; // Mantido como boolean primitivo
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY) // LAZY é geralmente uma boa prática
     @JoinColumn(name = "usuario_id")
-    @JsonBackReference("usuario-disciplinas")
+    @JsonBackReference("usuario-disciplinas") // Referência para evitar loop com Usuario
     private Usuario usuario;
-    
-    @OneToMany(mappedBy = "disciplina", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
-    private List<HorarioAula> aulas;
+
+    @OneToMany(
+            mappedBy = "disciplina", // Mapeado pelo campo 'disciplina' na entidade Avaliacao
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+
+
+
+    // ALTERADO TESTE PARA COMBINAR COM AVALIAçÕES
+
+    private List<Avaliacao> avaliacoes = new ArrayList<>();
+
+    /*
+    @JsonBackReference("disciplina-avaliacoes")
+    private List<Avaliacao> avaliacoes = new ArrayList<>();
+    */
+    @OneToMany(
+            mappedBy = "disciplina", // Mapeado pelo campo 'disciplina' na entidade HorarioAula
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+
+    //Alteração para combinar com Avaliacoes
+    //@JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+
+    @JsonBackReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+
+    private List<HorarioAula> aulas = new ArrayList<>();
+
+    // --- Construtor Padrão (Requerido pelo JPA) ---
+    public Disciplina() {
+    }
+
+    // --- Getters e Setters ---
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -73,8 +114,8 @@ public class Disciplina {
     public String getSalaProfessor() { return salaProfessor; }
     public void setSalaProfessor(String salaProfessor) { this.salaProfessor = salaProfessor; }
 
-    public boolean isAtiva() { return isAtiva; }
-    public void setAtiva(boolean ativa) { isAtiva = ativa; }
+    public boolean isAtiva() { return isAtiva; } // Getter para boolean is...
+    public void setAtiva(boolean ativa) { isAtiva = ativa; } // Setter para boolean set...
 
     public boolean isReceberNotificacoes() { return receberNotificacoes; }
     public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }
@@ -82,13 +123,91 @@ public class Disciplina {
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
 
-    public List<HorarioAula> getAulas() { return aulas; }
-    public void setAulas(List<HorarioAula> aulas) {
-        this.aulas = aulas;
-        if (aulas != null) {
-            for (HorarioAula aula : aulas) {
-                aula.setDisciplina(this);
+    public List<Avaliacao> getAvaliacoes() { return avaliacoes; }
+    public void setAvaliacoes(List<Avaliacao> avaliacoes) {
+        // Limpar a coleção antiga e adicionar todos da nova, mantendo a consistência bidirecional
+        if (this.avaliacoes != null) {
+            for (Avaliacao aval : new ArrayList<>(this.avaliacoes)) { // Itera sobre uma cópia para evitar ConcurrentModificationException
+                removeAvaliacao(aval); // Usa o método helper que cuida da bidirecionalidade
             }
         }
+        if (avaliacoes != null) {
+            for (Avaliacao aval : avaliacoes) {
+                addAvaliacao(aval); // Usa o método helper que cuida da bidirecionalidade
+            }
+        }
+    }
+
+    // Métodos utilitários para gerenciar a coleção 'avaliacoes' (bidirecional)
+    public void addAvaliacao(Avaliacao avaliacao) {
+        if (avaliacao != null && !this.avaliacoes.contains(avaliacao)) {
+            this.avaliacoes.add(avaliacao);
+            avaliacao.setDisciplina(this); // Mantém a consistência bidirecional
+        }
+    }
+
+    public void removeAvaliacao(Avaliacao avaliacao) {
+        if (avaliacao != null && this.avaliacoes.contains(avaliacao)) {
+            this.avaliacoes.remove(avaliacao);
+            avaliacao.setDisciplina(null); // Mantém a consistência bidirecional
+        }
+    }
+
+    public List<HorarioAula> getAulas() { return aulas; }
+    public void setAulas(List<HorarioAula> aulas) {
+        // Similar ao setAvaliacoes, para manter consistência se HorarioAula tiver back-reference
+        if (this.aulas != null) {
+            for (HorarioAula aula : new ArrayList<>(this.aulas)) {
+                removeAula(aula);
+            }
+        }
+        if (aulas != null) {
+            for (HorarioAula aula : aulas) {
+                addAula(aula);
+            }
+        }
+    }
+
+    // Métodos utilitários para gerenciar a coleção 'aulas' (bidirecional)
+    public void addAula(HorarioAula aula) {
+        if (aula != null && !this.aulas.contains(aula)) {
+            this.aulas.add(aula);
+            aula.setDisciplina(this); // Assume que HorarioAula tem setDisciplina(this)
+        }
+    }
+
+    public void removeAula(HorarioAula aula) {
+        if (aula != null && this.aulas.contains(aula)) {
+            this.aulas.remove(aula);
+            aula.setDisciplina(null); // Assume que HorarioAula tem setDisciplina(null)
+        }
+    }
+
+    // --- equals, hashCode, toString ---
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Disciplina that = (Disciplina) o;
+        return Objects.equals(id, that.id); // Compara apenas pelo ID se não for nulo
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id); // Usa ID para hashCode; se ID for nulo, será o hash de null
+    }
+
+    @Override
+    public String toString() {
+        return "Disciplina{" +
+                "id=" + id +
+                ", nome='" + nome + '\'' +
+                ", codigo='" + codigo + '\'' +
+                ", professor='" + professor + '\'' +
+                ", usuarioId=" + (usuario != null ? usuario.getId() : "null") +
+                ", numeroDeAvaliacoes=" + (avaliacoes != null ? avaliacoes.size() : 0) +
+                ", numeroDeAulas=" + (aulas != null ? aulas.size() : 0) +
+                '}';
     }
 }

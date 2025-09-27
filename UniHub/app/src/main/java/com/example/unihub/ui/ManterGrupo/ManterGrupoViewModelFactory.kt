@@ -2,8 +2,8 @@ package com.example.unihub.ui.ManterGrupo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.ApiGrupoBackend
-import com.example.unihub.data.repository.ApiContatoBackend
+import com.example.unihub.data.apiBackend.ApiGrupoBackend
+import com.example.unihub.data.apiBackend.ApiContatoBackend
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.repository.GrupoRepository

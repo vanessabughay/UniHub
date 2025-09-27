@@ -5,7 +5,6 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,22 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.data.model.Instituicao
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.coil3.CoilImage
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.unihub.data.repository.ApiInstituicaoBackend
+import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.data.repository.InstituicaoRepository
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -132,7 +127,11 @@ fun ManterInstituicaoScreen(
                     ) {
                         sugestoes.forEach { inst ->
                             DropdownMenuItem(
-                                text = { Text(inst.nome) },
+                                text = {
+                                    Text(
+                                        "${inst.nome} (média:${inst.mediaAprovacao} freq:${inst.frequenciaMinima})"
+                                    )
+                                },
                                 onClick = {
                                     viewModel.onInstituicaoSelecionada(inst)
                                     expanded = false

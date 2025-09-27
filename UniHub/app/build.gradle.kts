@@ -68,6 +68,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
+
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -100,10 +102,6 @@ dependencies {
     implementation("com.github.skydoves:landscapist-coil3:2.4.8")
 
 
-    // Para usar Firebase
-    // implementation(platform("com.google.firebase:firebase-bom:33.1.1"))
-    // implementation("com.google.firebase:firebase-auth")
-    // implementation("com.google.firebase:firebase-firestore")
 
     //Testes
     testImplementation(libs.junit)
