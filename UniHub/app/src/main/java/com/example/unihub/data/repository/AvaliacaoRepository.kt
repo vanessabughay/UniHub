@@ -2,7 +2,7 @@ package com.example.unihub.data.repository
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
-import com.example.unihub.data.dto.AvaliacaoRequest
+import com.example.unihub.data.dto.AvaliacaoRequestDto
 import com.example.unihub.data.model.Avaliacao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -15,8 +15,8 @@ import java.io.IOException
 interface Avaliacaobackend { // Removi o "_" inicial, é uma convenção melhor
     suspend fun getAvaliacaoApi(): List<Avaliacao>
     suspend fun getAvaliacaoByIdApi(id: String): Avaliacao?
-    suspend fun addAvaliacaoApi(request: AvaliacaoRequest)
-    suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequest): Boolean
+    suspend fun addAvaliacaoApi(request: AvaliacaoRequestDto)
+    suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequestDto): Boolean
     suspend fun deleteAvaliacaoApi(id: Long): Boolean
 
 }
@@ -50,13 +50,13 @@ class AvaliacaoRepository(private val backend: Avaliacaobackend) {
 
     //ADD Avaliacao
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun addAvaliacao(request: AvaliacaoRequest) {
+    suspend fun addAvaliacao(request: AvaliacaoRequestDto) {
         backend.addAvaliacaoApi(request)
     }
 
     //PATCH DE ATUALIZAÇÃO DO Avaliacao
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun updateAvaliacao(id: Long, request: AvaliacaoRequest): Boolean {
+    suspend fun updateAvaliacao(id: Long, request: AvaliacaoRequestDto): Boolean {
         return backend.updateAvaliacaoApi(id, request)
     }
 

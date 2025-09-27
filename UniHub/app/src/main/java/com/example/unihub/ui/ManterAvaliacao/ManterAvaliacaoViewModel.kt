@@ -5,12 +5,9 @@ import androidx.annotation.RequiresExtension
 // Removido: import androidx.core.graphics.values // Não parece estar sendo usado
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.dto.AvaliacaoRequest
-import com.example.unihub.data.dto.ContatoRef
-import com.example.unihub.data.dto.DisciplinaRef
-import com.example.unihub.data.model.Avaliacao
-import com.example.unihub.data.model.Contato
-import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.dto.AvaliacaoRequestDto
+import com.example.unihub.data.dto.ContatoIdDto
+import com.example.unihub.data.dto.DisciplinaIdDto
 import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.data.model.Modalidade // Certifique-se que este enum tem INDIVIDUAL e EM_GRUPO
 import com.example.unihub.data.model.Prioridade // Certifique-se que este enum tem os 5 níveis e um displayName
@@ -413,19 +410,19 @@ class ManterAvaliacaoViewModel(
         _uiState.update { it.copy(sucesso = false, erro = null, isExclusao = false, errorLoadingAllContatos = null, errorLoadingDisciplinas = null) }
     }
 
-    private fun buildAvaliacaoRequest(idParaAtualizar: Long? = null): AvaliacaoRequest {
+    private fun buildAvaliacaoRequest(idParaAtualizar: Long? = null): AvaliacaoRequestDto {
         val s = _uiState.value
         val integrantesIds = _idIntegrantesSelecionados.value
-        return AvaliacaoRequest(
+        return AvaliacaoRequestDto(
             id = idParaAtualizar,
             descricao = s.descricao.takeIf { it.isNotBlank() },
-            disciplina = s.disciplinaIdSelecionada?.let { DisciplinaRef(it) }, // <- aqui é DisciplinaRef
+            disciplina = s.disciplinaIdSelecionada?.let { DisciplinaIdDto(it) }, // <- aqui é DisciplinaRef
             tipoAvaliacao = s.tipoAvaliacao.takeIf { it.isNotBlank() },
             modalidade = s.modalidade,
             dataEntrega = s.dataEntrega.takeIf { it.isNotBlank() },
             nota = s.nota.toDoubleOrNull(),
             peso = s.peso.toDoubleOrNull(),
-            integrantes = integrantesIds.map { ContatoRef(it) },
+            integrantes = integrantesIds.map { ContatoIdDto(it) },
             prioridade = s.prioridade,
             estado = s.estado,
             dificuldade = s.dificuldade.toIntOrNull(),
