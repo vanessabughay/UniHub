@@ -1,23 +1,88 @@
 <!doctype html>
-<html>
+<html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
   <title>Redefinir senha - UniHub</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; line-height: 1.45; }
+    .card { max-width: 720px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 12px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0 4px; }
+    button, a.btn { padding: 10px 14px; border-radius: 8px; border: 1px solid #bbb; background: transparent; cursor: pointer; text-decoration: none; }
+    .muted { color: #666; font-size: .95rem; }
+    code { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
+    .ok { color: #0a7; }
+    .warn { color: #b55; }
+  </style>
   <script>
-  (function(){
-    var p = new URLSearchParams(location.search);
-    var token = p.get('token');
-    if (!token) { document.body.textContent = 'Token inválido.'; return; }
+  (function () {
+    const qs = new URLSearchParams(location.search);
+    const token = qs.get('token') || '';
+    const debug = qs.get('debug') === '1';
+    const deep = token ? `unihub://reset?token=${encodeURIComponent(token)}` : null;
 
-    var deep = 'unihub://reset?token=' + encodeURIComponent(token);
-    // coloque o link da Play Store quando publicar seu app
-    var fallback = 'https://play.google.com/store/apps/details?id=com.example.unihub';
+    function tryOpen() {
+      if (!deep) return;
+      // Tenta abrir o app. Se o app não existir, nada acontece (ficamos na página).
+      window.location.href = deep;
+      // NÃO há fallback para loja. Após a tentativa, apenas mostramos a UI.
+      setTimeout(() => showUI(), 800);
+    }
 
-    window.location = deep;                 // tenta abrir o app
-    setTimeout(function(){ window.location = fallback; }, 1500); // fallback
+    function showUI() {
+      document.getElementById('noToken').style.display = token ? 'none' : 'block';
+      document.getElementById('hasToken').style.display = token ? 'block' : 'none';
+      if (token) {
+        document.getElementById('token').textContent = token;
+        document.getElementById('deeplink').textContent = deep;
+        document.getElementById('deeplink').setAttribute('href', deep);
+      }
+    }
+
+    function copyToken() {
+      const t = document.getElementById('token').textContent;
+      if (!t) return;
+      (navigator.clipboard?.writeText(t) || Promise.reject()).then(
+        () => alert('Token copiado. Abra o app UniHub e cole-o na tela de redefinição.'),
+        () => alert('Não foi possível copiar automaticamente. Selecione e copie manualmente.')
+      );
+    }
+
+    window.addEventListener('DOMContentLoaded', function(){
+      if (!token) { showUI(); return; }
+      if (!debug) {
+        tryOpen(); // tentativa automática
+      } else {
+        showUI();  // modo debug: só mostra UI, sem tentar abrir
+      }
+      // expõe ações aos botões
+      window.__openDeepLink = () => { window.location.href = deep; };
+      window.__copyToken = copyToken;
+    });
   })();
   </script>
 </head>
-<body>Redirecionando…</body>
+<body>
+  <div class="card">
+    <h1>Redefinir senha</h1>
+
+    <div id="noToken" style="display:none">
+      <p class="warn"><strong>Token ausente ou inválido.</strong></p>
+      <p class="muted">Abra o link completo enviado por e-mail. Ele deve conter <code>?token=...</code>.</p>
+    </div>
+
+    <div id="hasToken" style="display:none">
+      <p class="ok">Se o app UniHub estiver instalado, ele deve abrir automaticamente.</p>
+      <div class="actions">
+        <a id="deeplink" class="btn" href="#">Abrir no app</a>
+        <button onclick="__copyToken()">Copiar token</button>
+      </div>
+      <p class="muted">Caso não abra, você pode abrir o app UniHub manualmente e inserir este token:</p>
+      <p><code id="token"></code></p>
+      <p class="muted">Dica: acrescente <code>&debug=1</code> à URL para desativar a tentativa automática.</p>
+    </div>
+  </div>
+</body>
 </html>
