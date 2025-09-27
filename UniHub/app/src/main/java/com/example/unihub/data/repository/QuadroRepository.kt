@@ -1,7 +1,7 @@
 package com.example.unihub.data.repository
 
 import android.util.Log
-import com.example.unihub.data.repository.QuadroApi
+import com.example.unihub.data.api.QuadroApi
 import com.example.unihub.data.model.QuadroDePlanejamento
 
 open class QuadroRepository(private val apiService: QuadroApi) {

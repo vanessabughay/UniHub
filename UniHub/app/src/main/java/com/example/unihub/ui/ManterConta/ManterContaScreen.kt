@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.example.unihub.data.repository.ApiInstituicaoBackend
+import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.R
 import com.example.unihub.data.repository.InstituicaoRepository
 import androidx.compose.ui.platform.LocalContext

@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 
 
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
@@ -25,7 +26,8 @@ import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaScreen
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaScreen
 import com.example.unihub.ui.ManterInstituicao.ManterInstituicaoScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaScreen
-import com.example.unihub.data.repository.ApiCategoriaBackend
+import com.example.unihub.data.apiBackend.ApiCategoriaBackend
+import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
 import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
@@ -34,10 +36,10 @@ import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
 import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.login.LoginScreen
 import com.example.unihub.ui.register.RegisterScreen
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
-import com.example.unihub.data.repository.ApiQuadroBackend
+import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
@@ -168,7 +170,7 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
                         val repository = com.example.unihub.data.repository.DisciplinaRepository(
-                            com.example.unihub.data.repository.ApiDisciplinaBackend()
+                            ApiDisciplinaBackend()
                         )
                         val factory = com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory(repository)
                         val viewModel: com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel =
@@ -192,10 +194,10 @@ class MainActivity : ComponentActivity() {
                         val disciplinaId = backStackEntry.arguments?.getString("id")
 
                         val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
-                            com.example.unihub.data.repository.ApiDisciplinaBackend(),
+                            ApiDisciplinaBackend(),
                         )
                         val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
-                            com.example.unihub.data.repository.ApiAusenciaBackend(),
+                            ApiAusenciaBackend(),
                         )
                         val factory = com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(
                             disciplinaRepository,
@@ -233,10 +235,10 @@ class MainActivity : ComponentActivity() {
                         val ausenciaIdArg = backStackEntry.arguments?.getString("id")
 
                         val ausenciaRepository = com.example.unihub.data.repository.AusenciaRepository(
-                            com.example.unihub.data.repository.ApiAusenciaBackend(),
+                            ApiAusenciaBackend(),
                         )
                         val disciplinaRepository = com.example.unihub.data.repository.DisciplinaRepository(
-                            com.example.unihub.data.repository.ApiDisciplinaBackend(),
+                            ApiDisciplinaBackend(),
                         )
                         val categoriaRepository = com.example.unihub.data.repository.CategoriaRepository(
                             ApiCategoriaBackend(),

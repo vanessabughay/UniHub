@@ -2,7 +2,7 @@ package com.example.unihub.ui.ListarContato
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.ApiContatoBackend
+import com.example.unihub.data.apiBackend.ApiContatoBackend
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.Contatobackend
 

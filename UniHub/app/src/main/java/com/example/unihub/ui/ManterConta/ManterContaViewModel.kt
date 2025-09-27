@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
 import com.example.unihub.data.repository.AuthRepository

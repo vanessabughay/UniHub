@@ -1,10 +1,13 @@
-package com.example.unihub.data.repository
+package com.example.unihub.data.apiBackend
 
+import com.example.unihub.data.api.DisciplinaApi
+import com.example.unihub.data.config.TokenManager
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.util.LocalDateAdapter
-import com.example.unihub.data.api.TokenManager
+import com.example.unihub.data.repository.DisciplinaResumo
+import com.example.unihub.data.repository._disciplinabackend
 import com.google.gson.GsonBuilder
 import java.time.LocalDate
 import okhttp3.OkHttpClient

@@ -17,8 +17,6 @@ import com.example.unihub.components.CampoCombobox
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
-import com.example.unihub.data.model.Status
-import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.model.QuadroDePlanejamento
 import com.example.unihub.data.repository.QuadroRepository
@@ -26,7 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.example.unihub.data.repository.QuadroApi
+import com.example.unihub.data.api.QuadroApi
 
 @Composable
 fun QuadroFormScreen(

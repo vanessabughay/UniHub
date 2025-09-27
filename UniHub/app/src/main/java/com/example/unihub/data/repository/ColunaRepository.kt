@@ -1,7 +1,7 @@
 package com.example.unihub.data.repository
 
 import android.util.Log
-import com.example.unihub.data.repository.ColunaApi
+import com.example.unihub.data.api.ColunaApi
 import com.example.unihub.data.model.Coluna
 
 open class ColunaRepository(private val apiService: ColunaApi) {

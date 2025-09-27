@@ -1,11 +1,11 @@
-package com.example.unihub.data.repository
+package com.example.unihub.data.apiBackend
 
 import android.util.Log
+import com.example.unihub.data.api.GrupoApi
+import com.example.unihub.data.config.RetrofitClient
 import com.example.unihub.data.model.Grupo
-import com.example.unihub.data.api.RetrofitClient
+import com.example.unihub.data.repository.Grupobackend
 import retrofit2.HttpException // Para tratar erros HTTP específicos do Retrofit
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException // Para exceções de I/O genéricas
 
 

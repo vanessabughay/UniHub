@@ -24,7 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.TarefaRepository
-import com.example.unihub.data.repository.TarefaApi
+import com.example.unihub.data.api.TarefaApi
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
