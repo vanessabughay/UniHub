@@ -1,6 +1,5 @@
 package com.unihub.backend.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.unihub.backend.model.enums.EstadoAvaliacao;
 import com.unihub.backend.model.enums.Prioridade;
 import com.unihub.backend.model.enums.Modalidade;
@@ -10,7 +9,6 @@ import java.time.LocalDate; // Import necessário
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Table(name = "avaliacoes") // É uma boa prática nomear tabelas no plural e com snake_case

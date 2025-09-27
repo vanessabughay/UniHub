@@ -1,7 +1,6 @@
 package com.unihub.backend.controller;
 
 import com.unihub.backend.dto.UpdateUsuarioRequest;
-import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

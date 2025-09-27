@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import com.unihub.backend.model.QuadroPlanejamento;
-
 
 
 @Entity

@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.unihub.backend.model.enums.QuadroStatus;
 import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;

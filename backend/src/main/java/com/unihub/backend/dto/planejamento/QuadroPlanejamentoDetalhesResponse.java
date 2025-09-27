@@ -2,11 +2,8 @@ package com.unihub.backend.dto.planejamento;
 
 import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.Contato;
-import com.unihub.backend.model.Disciplina;
 import com.unihub.backend.model.enums.QuadroStatus;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;

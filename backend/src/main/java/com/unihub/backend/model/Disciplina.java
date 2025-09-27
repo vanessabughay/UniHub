@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Objects; // Para equals e hashCode
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 

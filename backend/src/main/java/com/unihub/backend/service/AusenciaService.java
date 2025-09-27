@@ -5,7 +5,6 @@ import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.AusenciaRepository;
 import com.unihub.backend.model.Disciplina;
 import com.unihub.backend.repository.DisciplinaRepository;
-import com.unihub.backend.service.CategoriaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
