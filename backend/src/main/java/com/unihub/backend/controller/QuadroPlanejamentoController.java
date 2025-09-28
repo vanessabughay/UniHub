@@ -5,6 +5,7 @@ import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
 import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.QuadroPlanejamento;
@@ -29,9 +30,9 @@ public class QuadroPlanejamentoController {
     private QuadroPlanejamentoService service;
 
     @GetMapping
-    public List<QuadroPlanejamento> listar(@AuthenticationPrincipal Long usuarioId,
-                                           @RequestParam(value = "status", required = false) QuadroStatus status,
-                                           @RequestParam(value = "titulo", required = false) String titulo) {
+    public List<QuadroPlanejamentoListaResponse> listar(@AuthenticationPrincipal Long usuarioId,
+                                                        @RequestParam(value = "status", required = false) QuadroStatus status,
+                                                        @RequestParam(value = "titulo", required = false) String titulo) {
         return service.listar(usuarioId, status, titulo);
     }
 

@@ -5,6 +5,7 @@ import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
 import com.unihub.backend.exceptions.ResourceNotFoundException;
 import com.unihub.backend.model.ColunaPlanejamento;
@@ -53,23 +54,24 @@ public class QuadroPlanejamentoService {
 
     
 
-    public List<QuadroPlanejamento> listar(Long usuarioId, QuadroStatus status, String titulo) {
-        boolean possuiTitulo = titulo != null && !titulo.trim().isEmpty();
+    public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
+                boolean possuiTitulo = titulo != null && !titulo.trim().isEmpty();
+                List<QuadroPlanejamento> quadros;
 
         if (status != null && possuiTitulo) {
-            return repository.findByUsuarioIdAndStatusAndTituloContainingIgnoreCase(usuarioId, status, titulo);
+            quadros = repository.findByUsuarioIdAndStatusAndTituloContainingIgnoreCase(usuarioId, status, titulo);
+        } else if (status != null) {
+            quadros = repository.findByUsuarioIdAndStatus(usuarioId, status);
+        } else if (possuiTitulo) {
+            quadros = repository.findByUsuarioIdAndTituloContainingIgnoreCase(usuarioId, titulo);
+        } else {
+            quadros = repository.findByUsuarioId(usuarioId);
         }
 
-        if (status != null) {
-            return repository.findByUsuarioIdAndStatus(usuarioId, status);
-        }
-
-        if (possuiTitulo) {
-            return repository.findByUsuarioIdAndTituloContainingIgnoreCase(usuarioId, titulo);
-        }
-
-        return repository.findByUsuarioId(usuarioId);
-    }
+return quadros.stream()
+                .map(QuadroPlanejamentoListaResponse::fromEntity)
+                .collect(Collectors.toList());
+                }
 
     public QuadroPlanejamento buscarPorId(Long id, Long usuarioId) {
         return repository.findByIdAndUsuarioId(id, usuarioId)
