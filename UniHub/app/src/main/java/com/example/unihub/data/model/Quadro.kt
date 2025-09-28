@@ -1,7 +1,10 @@
 package com.example.unihub.data.model
 
 import java.util.concurrent.TimeUnit
+import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
+import com.example.unihub.data.util.FlexibleLongAdapter
+import com.example.unihub.data.util.FlexibleNullableLongAdapter
 
 
 // Enum para o estado do quadro
@@ -19,7 +22,9 @@ data class Quadro(
     val integrantes: List<String>? = null,
     val estado: Estado = Estado.ATIVO,
     val colunas: List<Coluna> = emptyList(),
+    @JsonAdapter(FlexibleLongAdapter::class)
     val dataInicio: Long = System.currentTimeMillis(),
+    @JsonAdapter(FlexibleNullableLongAdapter::class)
     val dataFim: Long? = null,
     val donoId: Long? = null
 ) {

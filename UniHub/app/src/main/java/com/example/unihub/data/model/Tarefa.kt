@@ -2,6 +2,9 @@ package com.example.unihub.data.model
 
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
+import com.example.unihub.data.util.FlexibleLongAdapter
+import com.example.unihub.data.util.FlexibleNullableLongAdapter
+import com.google.gson.annotations.JsonAdapter
 
 // Função auxiliar para obter o timestamp de hoje (início do dia) como padrão
 private fun getDefaultPrazo(): Long {
@@ -18,8 +21,11 @@ data class Tarefa(
     val titulo: String = "",
     val descricao: String? = null,
     val status: Status = Status.INICIADA,
+    @JsonAdapter(FlexibleLongAdapter::class)
     val prazo: Long = getDefaultPrazo(), // PRAZO AGORA É NÃO-NULLABLE e tem um padrão
+    @JsonAdapter(FlexibleLongAdapter::class)
     val dataInicio: Long = System.currentTimeMillis(),
+    @JsonAdapter(FlexibleNullableLongAdapter::class)
     val dataFim: Long? = null
 ) {
     val duracao: String
