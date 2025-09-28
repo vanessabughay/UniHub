@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.model.QuadroDePlanejamento
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.unihub.data.config.TokenManager
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,10 +32,16 @@ class ListarQuadrosViewModel(
         viewModelScope.launch {
             try {
                 val quadrosCarregados = repository.getQuadros()
-                allQuadros = quadrosCarregados // Salva a lista completa
+                val usuarioId = TokenManager.usuarioId
+                val quadrosDoUsuario = if (usuarioId != null) {
+                    quadrosCarregados.filter { it.donoId == usuarioId }
+                } else {
+                    quadrosCarregados
+                }
+                allQuadros = quadrosDoUsuario // Salva a lista completa
                 _uiState.update {
                     it.copy(
-                        quadros = quadrosCarregados,
+                        quadros = quadrosDoUsuario,
                         isLoading = false
                     )
                 }

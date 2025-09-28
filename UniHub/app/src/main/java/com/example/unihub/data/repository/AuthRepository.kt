@@ -65,10 +65,11 @@ class AuthRepository(
                     val authResponse = response.body()
                     if (authResponse != null) {
                         TokenManager.saveToken(
-                            context,
-                            authResponse.token,
-                            authResponse.nomeUsuario,
-                            email
+                            context = context,
+                            value = authResponse.token,
+                            nome = authResponse.nomeUsuario,
+                            email = email,
+                            usuarioId = authResponse.usuarioId
                         )
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
@@ -113,7 +114,13 @@ class AuthRepository(
                 }
                 val response = api.updateUser("Bearer $token", request)
                 if (response.isSuccessful) {
-                    TokenManager.saveToken(context, token, name, email)
+                    TokenManager.saveToken(
+                        context = context,
+                        value = token,
+                        nome = name,
+                        email = email,
+                        usuarioId = TokenManager.usuarioId
+                    )
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {
                     val errorBody = response.errorBody()?.string()

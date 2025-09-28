@@ -136,7 +136,13 @@ class ManterContaViewModel(
                         email,
                         if (senhaAlterada) senha.trim() else null,
                         onSuccess = {
-                            TokenManager.saveToken(context, TokenManager.token ?: "", nome, email)
+                            TokenManager.saveToken(
+                                context = context,
+                                value = TokenManager.token ?: "",
+                                nome = nome,
+                                email = email,
+                                usuarioId = TokenManager.usuarioId
+                            )
                             nomeOriginal = nome
                             emailOriginal = email
                             if (senhaAlterada) {

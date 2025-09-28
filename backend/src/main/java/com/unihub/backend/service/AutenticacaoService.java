@@ -36,8 +36,9 @@ public class AutenticacaoService {
         Optional<Usuario> usuarioOpt = repository.findByEmail(email);
         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
             String token = UUID.randomUUID().toString();
-            tokens.put(token, usuarioOpt.get().getId());
-            return new LoginResponse(token, usuarioOpt.get().getNomeUsuario());
+            Usuario usuario = usuarioOpt.get();
+            tokens.put(token, usuario.getId());
+            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getId());
         }
         return null;
     }
