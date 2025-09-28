@@ -81,8 +81,10 @@ return quadros.stream()
     @Transactional
     public QuadroPlanejamento criar(QuadroPlanejamento quadro, Long usuarioId) {
         quadro.setId(null);
-        quadro.setDataCriacao(Instant.now());
-        quadro.setUsuario(referenciaUsuario(usuarioId));
+if (quadro.getDataCriacao() == null) {
+            quadro.setDataCriacao(Instant.now());
+        }
+                quadro.setUsuario(referenciaUsuario(usuarioId));
         
         ajustarStatus(quadro, null);
         return repository.save(quadro);
