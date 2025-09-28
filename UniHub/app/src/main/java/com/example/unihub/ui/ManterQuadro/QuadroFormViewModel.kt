@@ -3,7 +3,7 @@ package com.example.unihub.ui.ManterQuadro
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,8 +21,8 @@ class QuadroFormViewModel(
     private val repository: QuadroRepository
 ) : ViewModel() {
 
-    private val _quadroState = MutableStateFlow<QuadroDePlanejamento?>(null)
-    val quadro: StateFlow<QuadroDePlanejamento?> = _quadroState.asStateFlow()
+    private val _quadroState = MutableStateFlow<Quadro?>(null)
+    val quadro: StateFlow<Quadro?> = _quadroState.asStateFlow()
 
     private val _formResult = MutableStateFlow<FormResult>(FormResult.Idle)
     val formResult: StateFlow<FormResult> = _formResult.asStateFlow()
@@ -33,7 +33,7 @@ class QuadroFormViewModel(
         }
     }
 
-    fun salvarOuAtualizarQuadro(quadro: QuadroDePlanejamento) {
+    fun salvarOuAtualizarQuadro(quadro: Quadro) {
         viewModelScope.launch {
             try {
                 var quadroToSave = quadro

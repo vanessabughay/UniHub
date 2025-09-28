@@ -31,7 +31,7 @@ import com.example.unihub.components.Header
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.api.QuadroApi
+import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -299,20 +299,20 @@ private fun QuadroCard(
 // --- Classes de Mock e Previews ---
 
 // Repositório falso para simular as chamadas de API do Quadro.
-class FakeQuadroRepository3 : QuadroRepository(object : QuadroApi {
-    override suspend fun getQuadros(): List<QuadroDePlanejamento> {
+class FakeQuadroRepository3 : QuadroRepository(object : _quadrobackend {
+    override suspend fun getQuadrosApi(): List<Quadro> {
         return listOf(
-            QuadroDePlanejamento(
+            Quadro(
                 id = "quadro-1",
                 nome = "Projeto DAC",
                 estado = Estado.ATIVO
             ),
-            QuadroDePlanejamento(
+            Quadro(
                 id = "quadro-2",
                 nome = "Projeto Front-end",
                 estado = Estado.ATIVO
             ),
-            QuadroDePlanejamento(
+            Quadro(
                 id = "quadro-3",
                 nome = "Projeto TCC 1",
                 estado = Estado.INATIVO
@@ -320,21 +320,15 @@ class FakeQuadroRepository3 : QuadroRepository(object : QuadroApi {
         )
     }
 
-    override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento {
-        return QuadroDePlanejamento(id = quadroId, nome = "Quadro $quadroId")
+    override suspend fun getQuadroByIdApi(id: String): Quadro? {
+        return Quadro(id = id, nome = "Quadro $id")
     }
 
-    override suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun addQuadroApi(quadro: Quadro) {}
 
-    override suspend fun updateQuadro(quadroId: String, quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean =
 
-    override suspend fun deleteQuadro(quadroId: String) {
-        // Nada a ser feito aqui.
-    }
+        override suspend fun deleteQuadroApi(id: Long): Boolean = true
 })
 
 

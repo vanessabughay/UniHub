@@ -3,7 +3,7 @@ package com.example.unihub.ui.ListarQuadros
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.model.Quadro
 import kotlinx.coroutines.flow.MutableStateFlow
 import com.example.unihub.data.config.TokenManager
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 data class ListarQuadrosUiState(
     val isLoading: Boolean = false,
-    val quadros: List<QuadroDePlanejamento> = emptyList(),
+    val quadros: List<Quadro> = emptyList(),
     val searchQuery: String = "", // MUDANÇA: Adicionado o termo de busca
     val error: String? = null
 )
@@ -25,7 +25,7 @@ class ListarQuadrosViewModel(
     private val _uiState = MutableStateFlow(ListarQuadrosUiState())
     val uiState: StateFlow<ListarQuadrosUiState> = _uiState.asStateFlow()
 
-    private var allQuadros: List<QuadroDePlanejamento> = emptyList()
+    private var allQuadros: List<Quadro> = emptyList()
 
     fun carregarQuadros() {
         _uiState.update { it.copy(isLoading = true, error = null) }

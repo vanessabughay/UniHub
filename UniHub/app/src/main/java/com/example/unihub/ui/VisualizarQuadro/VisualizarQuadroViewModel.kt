@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.model.Coluna
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.model.Quadro
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 
 data class VisualizarQuadroUiState(
     val isLoading: Boolean = false,
-    val quadro: QuadroDePlanejamento? = null,
+    val quadro: Quadro? = null,
     val colunas: List<Coluna> = emptyList(),
     val error: String? = null
 )

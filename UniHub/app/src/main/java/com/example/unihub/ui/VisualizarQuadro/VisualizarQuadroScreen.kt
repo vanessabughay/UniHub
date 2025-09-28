@@ -26,13 +26,13 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.navigation.compose.rememberNavController
-import com.example.unihub.data.api.QuadroApi
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.repository._quadrobackend
+import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Tarefa
@@ -356,12 +356,12 @@ private fun HeaderSection(titulo: String, onVoltar: () -> Unit, onClickIconeDire
 
 
 // Repositório falso para simular as chamadas de API do Quadro.
-class FakeQuadroRepository2 : QuadroRepository(object : QuadroApi {
-    override suspend fun getQuadros(): List<QuadroDePlanejamento> {
+class FakeQuadroRepository2 : QuadroRepository(object : _quadrobackend {
+    override suspend fun getQuadrosApi(): List<Quadro> {
         return emptyList()
     }
 
-    override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento {
+    override suspend fun getQuadroByIdApi(id: String): Quadro? {
         val tarefasDeCasa = listOf(
             Tarefa(
                 id = "tarefa-1",
@@ -425,8 +425,8 @@ class FakeQuadroRepository2 : QuadroRepository(object : QuadroApi {
             )
         )
 
-        return QuadroDePlanejamento(
-            id = quadroId,
+        return Quadro(
+            id = id,
             nome = "Meu Plano de Vida",
             disciplina = "Organização Pessoal",
             integrantes = listOf("Você"),
@@ -436,17 +436,11 @@ class FakeQuadroRepository2 : QuadroRepository(object : QuadroApi {
         )
     }
 
-    override suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun addQuadroApi(quadro: Quadro) {}
 
-    override suspend fun updateQuadro(quadroId: String, quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
 
-    override suspend fun deleteQuadro(quadroId: String) {
-        // Nada a ser feito aqui.
-    }
+    override suspend fun deleteQuadroApi(id: Long): Boolean = true
 })
 
 // Fábrica de ViewModel falsa para injetar o repositório falso no ViewModel.

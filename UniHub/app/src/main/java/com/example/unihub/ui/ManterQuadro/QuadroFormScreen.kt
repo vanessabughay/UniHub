@@ -18,13 +18,13 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Estado
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.repository.QuadroRepository
+import com.example.unihub.data.repository._quadrobackend
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.rememberNavController
-import com.example.unihub.data.api.QuadroApi
 
 @Composable
 fun QuadroFormScreen(
@@ -124,7 +124,7 @@ fun QuadroFormScreen(
                 onConfirm = {
                     if (nome.isNotBlank()) {
                         val integrantesList = integrantes.split(",").map { it.trim() }.filter { it.isNotBlank() }
-                        val quadroParaSalvar = QuadroDePlanejamento(
+                        val quadroParaSalvar = Quadro(
                             id = if (isEditing) quadroId else null,
                             nome = nome,
                             disciplina = disciplina.ifBlank { null },
@@ -154,15 +154,14 @@ fun QuadroFormScreen(
 
 
 // Repositório falso para simular chamadas de API.
-class FakeQuadroRepository : QuadroRepository(object : QuadroApi {
-    override suspend fun getQuadros(): List<QuadroDePlanejamento> {
+class FakeQuadroRepository : QuadroRepository(object : _quadrobackend {
+    override suspend fun getQuadrosApi(): List<Quadro> {
         return emptyList()
     }
 
-    override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento {
-        // Retorna um objeto de quadro de exemplo para a prévia.
-        return QuadroDePlanejamento(
-            id = quadroId,
+    override suspend fun getQuadroByIdApi(id: String): Quadro? {
+        return Quadro(
+            id = id,
             nome = "Quadro de Exemplo",
             disciplina = "Programação Móvel",
             integrantes = listOf("João", "Maria"),
@@ -174,17 +173,11 @@ class FakeQuadroRepository : QuadroRepository(object : QuadroApi {
         )
     }
 
-    override suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun addQuadroApi(quadro: Quadro) {}
 
-    override suspend fun updateQuadro(quadroId: String, quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        return quadro
-    }
+    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
 
-    override suspend fun deleteQuadro(quadroId: String) {
-        // Nada a ser feito aqui.
-    }
+    override suspend fun deleteQuadroApi(id: Long): Boolean = true
 })
 
 // Fábrica de ViewModel falsa para injetar o repositório falso.

@@ -395,7 +395,7 @@ class MainActivity : ComponentActivity() {
 
                     // LISTAR QUADROS (FECHO CORRIGIDO)
                     composable(Screen.ListarQuadros.route) {
-                        val quadroRepository = QuadroRepository(ApiQuadroBackend.apiService)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
                         val viewModelFactory = ListarQuadrosViewModelFactory(quadroRepository)
 
                         ListarQuadrosScreen(
@@ -448,7 +448,7 @@ class MainActivity : ComponentActivity() {
                         val quadroIdArg = backStackEntry.arguments?.getString("quadroId")
                         val quadroId = quadroIdArg?.takeUnless { it == "new" }
 
-                        val quadroRepository = QuadroRepository(ApiQuadroBackend.apiService)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
                         val viewModelFactory = QuadroFormViewModelFactory(quadroRepository)
 
                         QuadroFormScreen(
