@@ -1,64 +1,94 @@
 package com.example.unihub.data.repository
 
-import android.util.Log
-import com.example.unihub.data.api.QuadroApi
-import com.example.unihub.data.model.QuadroDePlanejamento
+import android.os.Build
+import androidx.annotation.RequiresExtension
+import com.example.unihub.data.model.Quadro
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import java.io.IOException
 import retrofit2.HttpException
 
-open class QuadroRepository(private val apiService: QuadroApi) {
+data class QuadroResumo( // conteudo resumo
+    val id: Long,
+    val titulo: String? = null,
+    val status: Estado,
+    val data_criacao: Instant,
+    val data_prazo: Instant,
+    val disciplina_nome: String,
+    val integrantes: String,
+)
 
-    private val TAG = "QuadroRepository"
+interface _quadrobackend {
+    suspend fun getQuadrosResumoApi(): List<QuadroResumo>
+    suspend fun getQuadroByIdApi(id: String): Quadro?
+    suspend fun addQuadroApi(quadro: Quadro)
+    suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean
+    suspend fun deleteQuadroApi(id: Long): Boolean
+}
 
-    suspend fun getQuadros(): List<QuadroDePlanejamento> {
-        return try {
-            apiService.getQuadros()
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao buscar quadros", e)
-            throw e
-        }
-    }
+class QuadroRepository(private val backend: _quadrobackend) {
 
-    suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento? {
-        return try {
-            apiService.getQuadroById(quadroId)
-        } catch (e: HttpException) {
-            if (e.code() == 404) {
-                null
-            } else {
-                Log.e(TAG, "Erro ao buscar quadro por ID", e)
-                throw e
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao buscar quadro por ID", e)
-            throw e
-        }
-    }
-
-    suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento? {
-        return try {
-            apiService.addQuadro(quadro)
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao adicionar quadro: ${e.message}", e)
-            null
-        }
-    }
-
-    suspend fun updateQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento {
-        val quadroId = quadro.id ?: throw IllegalArgumentException("ID do quadro é obrigatório para atualização.")
-        return try {
-            apiService.updateQuadro(quadroId, quadro)
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao atualizar quadro", e)
-            throw e
-        }
-    }
-
-    suspend fun deleteQuadro(quadroId: String) {
+    //LISTA RESUMO
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun getQuadrosResumo(): Flow<List<QuadroResumo>> = flow {
         try {
-            apiService.deleteQuadro(quadroId)
-        } catch (e: Exception) {
-            Log.e(TAG, "Erro ao excluir quadro", e)
-            throw e
+            emit(backend.getQuadrosResumoApi())
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}}")
+        }
+    }
+
+    //BUSCA POR ID
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun getQuadroById(id: Long): Flow<Quadro?> = flow {
+        try {
+            emit(backend.getQuadroByIdApi(id.toString()))
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+    //ADD QUADRO
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun addQuadro(quadro: Quadro) {
+        try {
+            backend.addQuadroApi(quadro)
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+    //PATCH DE ATUALIZAÇÃO DA QUADRO
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun updateQuadro(quadro: Quadro): Boolean {
+        val id = quadro.id ?: throw Exception("ID do quadro não pode ser nulo para atualização.")
+        return try {
+            backend.updateQuadroApi(id, quadro)
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+
+
+    //EXCLUSÃO QUADRO
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun deleteQuadro(id: String): Boolean {
+        val longId = id.toLongOrNull() ?: throw Exception("ID inválido")
+        return try {
+            backend.deleteQuadroApi(longId)
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
         }
     }
 }

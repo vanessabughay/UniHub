@@ -1,7 +1,10 @@
 package com.example.unihub.ui.ListarQuadros
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
@@ -24,7 +28,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.unihub.components.Header
-import com.example.unihub.data.model.QuadroDePlanejamento
+import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.api.QuadroApi
@@ -38,12 +42,32 @@ fun ListarQuadrosScreen(
 ) {
     val viewModel: ListarQuadrosViewModel = viewModel(factory = viewModelFactory)
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
     var secaoInativaExpandida by remember { mutableStateOf(false) }
 
-    val quadrosAtivos = uiState.quadros.filter { it.estado == Estado.ATIVO }
-    val quadrosInativos = uiState.quadros.filter { it.estado == Estado.INATIVO }
+    var searchQuery by remember { mutableStateOf("") }
+    var quadroSelecionado by remember { mutableStateOf<String?>(null) }
+
+    val quadrosFiltrados = remember(searchQuery, uiState.quadros) {
+        if (searchQuery.isBlank()) {
+            uiState.quadros
+        } else {
+            uiState.quadros.filter {
+                it.nome.contains(searchQuery, ignoreCase = true) ||
+                        (it.id?.contains(searchQuery, ignoreCase = true) == true)
+            }
+        }
+    }
+
+    val quadrosAtivos = remember(quadrosFiltrados) {
+        quadrosFiltrados.filter { it.estado == Estado.ATIVO }
+    }
+    val quadrosInativos = remember(quadrosFiltrados) {
+        quadrosFiltrados.filter { it.estado == Estado.INATIVO }
+    }
+
 
     LaunchedEffect(Unit) {
         viewModel.carregarQuadros()
@@ -58,6 +82,12 @@ fun ListarQuadrosScreen(
         if (refreshQuadrosState?.value == true) {
             viewModel.carregarQuadros()
             navController.currentBackStackEntry?.savedStateHandle?.set("refreshQuadros", false)
+        }
+    }
+
+    uiState.error?.let { message ->
+        LaunchedEffect(message) {
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -95,8 +125,8 @@ fun ListarQuadrosScreen(
             )
 
             SearchSection(
-                searchQuery = viewModel.uiState.collectAsState().value.searchQuery,
-                onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) }
+                searchQuery = searchQuery,
+                onSearchQueryChanged = { searchQuery = it }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -119,9 +149,18 @@ fun ListarQuadrosScreen(
                         }
                         items(quadrosAtivos, key = { it.id ?: it.nome }) { quadro ->
                             AnimatedVisibility(visible = secaoAtivaExpandida) {
-                                QuadroCard(quadro = quadro) {
-                                    quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
-                                }
+                                val cardKey = quadro.id ?: quadro.nome
+                                QuadroCard(
+                                    quadro = quadro,
+                                    isSelected = quadroSelecionado == cardKey,
+                                    onSingleClick = {
+                                        quadroSelecionado = if (quadroSelecionado == cardKey) null else cardKey
+                                    },
+                                    onDoubleClick = {
+                                        quadroSelecionado = cardKey
+                                        quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                    }
+                                )
                             }
                         }
                     }
@@ -137,9 +176,18 @@ fun ListarQuadrosScreen(
                         }
                         items(quadrosInativos, key = { it.id ?: it.nome }) { quadro ->
                             AnimatedVisibility(visible = secaoInativaExpandida) {
-                                QuadroCard(quadro = quadro) {
-                                    quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
-                                }
+                                val cardKey = quadro.id ?: quadro.nome
+                                QuadroCard(
+                                    quadro = quadro,
+                                    isSelected = quadroSelecionado == cardKey,
+                                    onSingleClick = {
+                                        quadroSelecionado = if (quadroSelecionado == cardKey) null else cardKey
+                                    },
+                                    onDoubleClick = {
+                                        quadroSelecionado = cardKey
+                                        quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                    }
+                                )
                             }
                         }
                     }
@@ -196,14 +244,28 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
     }
 }
 
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun QuadroCard(quadro: QuadroDePlanejamento, onClick: () -> Unit) {
+private fun QuadroCard(
+    quadro: Quadro,
+    isSelected: Boolean,
+    onSingleClick: () -> Unit,
+    onDoubleClick: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
+            .combinedClickable(
+                onClick = onSingleClick,
+                onDoubleClick = onDoubleClick
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
+            } else {
+                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
+            }
+        )
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

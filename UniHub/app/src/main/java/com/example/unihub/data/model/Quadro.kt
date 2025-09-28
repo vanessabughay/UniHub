@@ -1,7 +1,5 @@
 package com.example.unihub.data.model
 
-import com.example.unihub.data.model.Coluna
-import com.example.unihub.data.model.Status
 import java.util.concurrent.TimeUnit
 import com.google.gson.annotations.SerializedName
 
@@ -14,7 +12,7 @@ enum class Estado {
     INATIVO
 }
 
-data class QuadroDePlanejamento(
+data class Quadro(
     val id: String? = null,
     val nome: String = "",
     val disciplina: String? = null,
