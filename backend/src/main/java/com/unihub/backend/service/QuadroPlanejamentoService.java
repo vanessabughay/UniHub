@@ -92,7 +92,6 @@ public class QuadroPlanejamentoService {
         QuadroStatus statusAnterior = existente.getStatus();
 
         existente.setTitulo(quadroAtualizado.getTitulo());
-        existente.setDescricao(quadroAtualizado.getDescricao());
         existente.setDataPrazo(quadroAtualizado.getDataPrazo());
         existente.setDisciplina(quadroAtualizado.getDisciplina());
         existente.setIntegrantes(quadroAtualizado.getIntegrantes());
@@ -128,7 +127,6 @@ public class QuadroPlanejamentoService {
         QuadroPlanejamentoDetalhesResponse response = new QuadroPlanejamentoDetalhesResponse();
         response.setId(quadro.getId());
         response.setNome(quadro.getTitulo());
-        response.setDescricao(quadro.getDescricao());
         response.setEstado(quadro.getStatus());
         response.setDataInicio(quadro.getDataCriacao());
         response.setDataFim(quadro.getDataPrazo());

@@ -24,9 +24,7 @@ public class QuadroPlanejamento {
     @Column(nullable = false)
     private String titulo;
 
-    @Column(length = 2000)
-    private String descricao;
-
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuadroStatus status = QuadroStatus.ATIVO;
@@ -79,15 +77,7 @@ public class QuadroPlanejamento {
         this.titulo = titulo;
     }
 
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
-
-    
+        
     @JsonProperty("estado")
     public QuadroStatus getStatus() {
         return status;

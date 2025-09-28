@@ -12,7 +12,6 @@ public class QuadroPlanejamentoDetalhesResponse {
 
     private Long id;
     private String nome;
-    private String descricao;
     private QuadroStatus estado;
     private Instant dataInicio;
     private Instant dataFim;
@@ -37,14 +36,6 @@ public class QuadroPlanejamentoDetalhesResponse {
 
     public void setNome(String nome) {
         this.nome = nome;
-    }
-
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
     }
 
     public QuadroStatus getEstado() {
