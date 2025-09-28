@@ -45,6 +45,16 @@ import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
+import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
+import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModelFactory
+import com.example.unihub.data.apiBackend.ApiColunaBackend
+import com.example.unihub.data.apiBackend.ApiTarefaBackend
+import com.example.unihub.data.repository.ColunaRepository
+import com.example.unihub.data.repository.TarefaRepository
+import com.example.unihub.ui.ManterColuna.ColunaFormScreen
+import com.example.unihub.ui.ManterColuna.ManterColunaFormViewModelFactory
+import com.example.unihub.ui.ManterTarefa.ManterTarefaViewModelFactory
+import com.example.unihub.ui.ManterTarefa.TarefaFormScreen
 import com.example.unihub.ui.TelaEsqueciSenha.TelaEsqueciSenha
 import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
 
@@ -59,6 +69,20 @@ sealed class Screen(val route: String) {
     object ListarQuadros : Screen("lista_quadros")
     object ManterQuadro : Screen("quadroForm/{quadroId}") {
         fun createRoute(quadroId: String = "new") = "quadroForm/$quadroId"
+    }
+
+    object VisualizarQuadro : Screen("visualizarQuadro/{quadroId}") {
+        fun createRoute(quadroId: String) = "visualizarQuadro/$quadroId"
+    }
+
+    object ManterColuna : Screen("colunaForm/{quadroId}/{colunaId}") {
+        fun createRoute(quadroId: String, colunaId: String = "new") =
+            "colunaForm/$quadroId/$colunaId"
+    }
+
+    object ManterTarefa : Screen("tarefaForm/{colunaId}/{tarefaId}") {
+        fun createRoute(colunaId: String, tarefaId: String = "new") =
+            "tarefaForm/$colunaId/$tarefaId"
     }
 
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
@@ -404,6 +428,28 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    // VISUALIZAR QUADRO
+                    composable(
+                        route = Screen.VisualizarQuadro.route,
+                        arguments = listOf(navArgument("quadroId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val quadroId = backStackEntry.arguments?.getString("quadroId")
+                        if (quadroId.isNullOrBlank()) {
+                            navController.popBackStack()
+                            return@composable
+                        }
+
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
+                        val viewModelFactory = VisualizarQuadroViewModelFactory(quadroRepository)
+
+                        VisualizarQuadroScreen(
+                            navController = navController,
+                            quadroId = quadroId,
+                            viewModelFactory = viewModelFactory
+                        )
+                    }
+
+
                     // LISTAR AVALIAÇÃO (agora existe na sealed class)
                     composable(Screen.ListarAvaliacao.route) {
                         ListarAvaliacaoScreen(
@@ -454,6 +500,65 @@ class MainActivity : ComponentActivity() {
                         QuadroFormScreen(
                             navController = navController,
                             quadroId = quadroId,
+                            viewModelFactory = viewModelFactory
+                        )
+                    }
+
+                    // MANTER COLUNA
+                    composable(
+                        route = Screen.ManterColuna.route,
+                        arguments = listOf(
+                            navArgument("quadroId") { type = NavType.StringType },
+                            navArgument("colunaId") {
+                                type = NavType.StringType
+                                defaultValue = "new"
+                            }
+                        )
+                    ) { backStackEntry ->
+                        val quadroId = backStackEntry.arguments?.getString("quadroId")
+                        if (quadroId.isNullOrBlank()) {
+                            navController.popBackStack()
+                            return@composable
+                        }
+
+                        val colunaIdArg = backStackEntry.arguments?.getString("colunaId")
+                        val colunaId = colunaIdArg?.takeUnless { it == "new" }
+
+                        val colunaRepository = ColunaRepository(ApiColunaBackend.apiService)
+                        val viewModelFactory = ManterColunaFormViewModelFactory(colunaRepository)
+
+                        ColunaFormScreen(
+                            navController = navController,
+                            quadroId = quadroId,
+                            colunaId = colunaId,
+                            viewModelFactory = viewModelFactory
+                        )
+                    }
+
+                    // MANTER TAREFA
+                    composable(
+                        route = Screen.ManterTarefa.route,
+                        arguments = listOf(
+                            navArgument("colunaId") { type = NavType.StringType },
+                            navArgument("tarefaId") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val colunaId = backStackEntry.arguments?.getString("colunaId")
+                        if (colunaId.isNullOrBlank()) {
+                            navController.popBackStack()
+                            return@composable
+                        }
+
+                        val tarefaIdArg = backStackEntry.arguments?.getString("tarefaId")
+                        val tarefaId = tarefaIdArg?.takeUnless { it == "new" }
+
+                        val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
+                        val viewModelFactory = ManterTarefaViewModelFactory(tarefaRepository)
+
+                        TarefaFormScreen(
+                            navController = navController,
+                            colunaId = colunaId,
+                            tarefaId = tarefaId,
                             viewModelFactory = viewModelFactory
                         )
                     }
