@@ -299,7 +299,7 @@ private fun QuadroCard(
 // --- Classes de Mock e Previews ---
 
 // Repositório falso para simular as chamadas de API do Quadro.
-class FakeQuadroRepository3 : QuadroRepository(object : _quadrobackend {
+private fun previewQuadroRepositoryListar() = QuadroRepository(object : _quadrobackend {
     override suspend fun getQuadrosApi(): List<Quadro> {
         return listOf(
             Quadro(
@@ -326,9 +326,9 @@ class FakeQuadroRepository3 : QuadroRepository(object : _quadrobackend {
 
     override suspend fun addQuadroApi(quadro: Quadro) {}
 
-    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean =
+    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
 
-        override suspend fun deleteQuadroApi(id: Long): Boolean = true
+    override suspend fun deleteQuadroApi(id: Long): Boolean = true
 })
 
 
@@ -337,7 +337,7 @@ class FakeListarQuadrosViewModelFactory : ViewModelProvider.Factory {
         if (modelClass.isAssignableFrom(ListarQuadrosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             // Instancia o ViewModel com o repositório falso
-            return ListarQuadrosViewModel(FakeQuadroRepository3()) as T
+            return ListarQuadrosViewModel(previewQuadroRepositoryListar()) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }

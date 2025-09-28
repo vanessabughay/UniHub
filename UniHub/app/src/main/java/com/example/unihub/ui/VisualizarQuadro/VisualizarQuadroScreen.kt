@@ -356,7 +356,7 @@ private fun HeaderSection(titulo: String, onVoltar: () -> Unit, onClickIconeDire
 
 
 // Repositório falso para simular as chamadas de API do Quadro.
-class FakeQuadroRepository2 : QuadroRepository(object : _quadrobackend {
+private fun previewQuadroRepositoryVisualizar() = QuadroRepository(object : _quadrobackend {
     override suspend fun getQuadrosApi(): List<Quadro> {
         return emptyList()
     }
@@ -448,7 +448,7 @@ class FakeVisualizarQuadroViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(VisualizarQuadroViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return VisualizarQuadroViewModel(FakeQuadroRepository2()) as T
+            return VisualizarQuadroViewModel(previewQuadroRepositoryVisualizar()) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }

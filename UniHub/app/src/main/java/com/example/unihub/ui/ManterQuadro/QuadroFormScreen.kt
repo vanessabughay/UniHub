@@ -154,7 +154,7 @@ fun QuadroFormScreen(
 
 
 // Repositório falso para simular chamadas de API.
-class FakeQuadroRepository : QuadroRepository(object : _quadrobackend {
+private fun previewQuadroRepositoryForm() = QuadroRepository(object : _quadrobackend {
     override suspend fun getQuadrosApi(): List<Quadro> {
         return emptyList()
     }
@@ -185,7 +185,7 @@ class FakeQuadroFormViewModelFactory : ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(QuadroFormViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return QuadroFormViewModel(FakeQuadroRepository()) as T
+            return QuadroFormViewModel(previewQuadroRepositoryForm()) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }
