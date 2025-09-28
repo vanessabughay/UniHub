@@ -33,9 +33,12 @@ class ListarQuadrosViewModel(
             try {
                 val quadrosCarregados = repository.getQuadros()
                 val usuarioId = TokenManager.usuarioId
-                val quadrosDoUsuario = if (usuarioId != null) {
+                val quadrosDoUsuario = if (usuarioId != null &&
+                    quadrosCarregados.any { it.donoId != null }) {
                     quadrosCarregados.filter { it.donoId == usuarioId }
                 } else {
+                    // Quando o backend já filtra por autenticação (ou não envia o campo donoId),
+                    // mantemos a lista retornada para garantir que os quadros do usuário sejam exibidos.
                     quadrosCarregados
                 }
                 allQuadros = quadrosDoUsuario // Salva a lista completa
