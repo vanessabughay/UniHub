@@ -258,16 +258,15 @@ class FakeQuadroRepository3 : QuadroRepository(object : QuadroApi {
         )
     }
 
-    override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento? {
-        // Não é usado nesta tela, mas precisa de uma implementação
-        return null
+    override suspend fun getQuadroById(quadroId: String): QuadroDePlanejamento {
+        return QuadroDePlanejamento(id = quadroId, nome = "Quadro $quadroId")
     }
 
-    override suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento? {
+    override suspend fun addQuadro(quadro: QuadroDePlanejamento): QuadroDePlanejamento {
         return quadro
     }
 
-    override suspend fun updateQuadro(quadroId: String, quadro: QuadroDePlanejamento): QuadroDePlanejamento? {
+    override suspend fun updateQuadro(quadroId: String, quadro: QuadroDePlanejamento): QuadroDePlanejamento {
         return quadro
     }
 

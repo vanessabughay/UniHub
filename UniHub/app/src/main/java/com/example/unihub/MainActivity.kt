@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity() {
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        TokenManager.clearToken(applicationContext)
         TokenManager.loadToken(applicationContext)
 
         val startIntent = intent

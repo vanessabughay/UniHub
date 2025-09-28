@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.UUID
+import retrofit2.HttpException
 
 sealed class FormResult {
     object Idle : FormResult()
@@ -61,6 +61,12 @@ class QuadroFormViewModel(
 
                 }
                 _formResult.value = FormResult.Success
+            } catch (e: HttpException) {
+                val message = when (e.code()) {
+                    401, 403 -> "Sua sessão expirou. Faça login novamente para continuar."
+                    else -> e.message()
+                } ?: "Erro do servidor ao salvar/atualizar quadro."
+                _formResult.value = FormResult.Error(message)
             } catch (e: Exception) {
                 _formResult.value = FormResult.Error(e.message ?: "Erro desconhecido ao salvar/atualizar quadro.")
             }
@@ -72,6 +78,12 @@ class QuadroFormViewModel(
             try {
                 repository.deleteQuadro(quadroId)
                 _formResult.value = FormResult.Success
+            } catch (e: HttpException) {
+                val message = when (e.code()) {
+                    401, 403 -> "Sua sessão expirou. Faça login novamente para continuar."
+                    else -> e.message()
+                } ?: "Erro do servidor ao excluir quadro."
+                _formResult.value = FormResult.Error(message)
             } catch (e: Exception) {
                 _formResult.value = FormResult.Error(e.message ?: "Erro ao excluir")
             }
