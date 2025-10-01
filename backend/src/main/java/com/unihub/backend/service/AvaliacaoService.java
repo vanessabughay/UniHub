@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -70,7 +71,17 @@ public class AvaliacaoService {
         if (req.dataEntrega() == null || req.dataEntrega().isBlank()) {
             a.setDataEntrega(null);
         } else {
-            a.setDataEntrega(LocalDate.parse(req.dataEntrega())); // "AAAA-MM-DD"
+            String raw = req.dataEntrega().trim();
+            if (raw.contains("T")) {
+                // aceita "yyyy-MM-dd'T'HH:mm" e "yyyy-MM-dd'T'HH:mm:ss"
+                if (raw.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
+                    raw = raw + ":00"; // garante segundos
+                }
+                a.setDataEntrega(LocalDateTime.parse(raw)); // ISO
+            } else {
+                // veio só a data -> meia-noite
+                a.setDataEntrega(LocalDate.parse(raw).atStartOfDay());
+            }
         }
 
         // Disciplina (apenas id no request)

@@ -13,7 +13,6 @@ import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.data.model.Modalidade
 import com.example.unihub.data.model.Prioridade
 import com.example.unihub.data.repository.AvaliacaoRepository
-
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +28,7 @@ class ListarAvaliacaoViewModel(
     private val _avaliacoes = MutableStateFlow<List<Avaliacao>>(emptyList())
     val avaliacoes: StateFlow<List<Avaliacao>> = _avaliacoes.asStateFlow()
 
-    private val _isLoading = MutableStateFlow<Boolean>(false)
+    private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private val _errorMessage = MutableStateFlow<String?>(null)
@@ -46,38 +45,19 @@ class ListarAvaliacaoViewModel(
             _errorMessage.value = null
 
             repository.getAvaliacao()
-                .map { avaliacoesDoRepositorio ->
-                    avaliacoesDoRepositorio.map { avaliacao ->
-                        Avaliacao(
-                            id = avaliacao.id,
-
-                         descricao= avaliacao.descricao,
-                         disciplina = avaliacao.disciplina,
-                         tipoAvaliacao = avaliacao.tipoAvaliacao,
-                         dataEntrega = avaliacao.dataEntrega,
-                             nota = avaliacao.nota,
-                         peso = avaliacao.peso,
-                         integrantes = avaliacao.integrantes,
-                         prioridade = avaliacao.prioridade,
-                             estado= avaliacao.estado,
-                             dificuldade= avaliacao.dificuldade,
-                        )
-                    }.sortedBy { it.descricao?.lowercase() }
+                .map { lista ->
+                    // Aqui apenas garantimos ordenação. Preservamos todos os campos do model vindo do repo.
+                    lista.sortedBy { it.descricao?.lowercase() }
                 }
                 .catch { exception ->
-                    val detalheErro = if (exception.message.isNullOrBlank()) {
-                        "Causa desconhecida. Verifique os logs." // Ou uma mensagem mais genérica
-                    } else {
-                        exception.message
-                    }
+                    val detalheErro = exception.message ?: "Causa desconhecida. Verifique os logs."
                     _errorMessage.value = "Falha ao carregar Avaliações: $detalheErro"
-                    // Adicionar log para depuração
                     Log.e("ListarAvaliacaoViewModel", "Erro em loadAvaliacao: ", exception)
                     _avaliacoes.value = emptyList()
                     _isLoading.value = false
                 }
-                .collect { avalioacoesOrdenadosParaUi ->
-                    _avaliacoes.value = avalioacoesOrdenadosParaUi
+                .collect { ordenadas ->
+                    _avaliacoes.value = ordenadas
                     _isLoading.value = false
                 }
         }
@@ -85,15 +65,12 @@ class ListarAvaliacaoViewModel(
 
     /**
      * Exclui Avaliacao pelo ID.
-     * @param AvaliacaoId O ID do Avaliacao a ser excluído.
-     * @param onResult Callback que informa o resultado da operação (true para sucesso, false para falha).
      */
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun deleteAvaliacao(avaliacaoId: String, onResult: (sucesso: Boolean) -> Unit) {
         viewModelScope.launch {
-            _isLoading.value = true // Mostrar indicador de carregamento durante a exclusão
-            _errorMessage.value = null // Limpar mensagens de erro antigas
-
+            _isLoading.value = true
+            _errorMessage.value = null
             try {
                 val id = avaliacaoId.toLongOrNull()
                 if (id == null) {
@@ -102,64 +79,118 @@ class ListarAvaliacaoViewModel(
                     onResult(false)
                     return@launch
                 }
-
                 val deleteSuccess = repository.deleteAvaliacao(id.toString())
-
                 if (deleteSuccess) {
-                    // Após a exclusão bem-sucedida, recarregue a lista de avaliacoes.
-
                     loadAvaliacao()
                     onResult(true)
                 } else {
-                    _errorMessage.value = "Falha ao excluir o Avaliação no servidor/banco de dados."
+                    _errorMessage.value = "Falha ao excluir a avaliação no servidor."
                     _isLoading.value = false
                     onResult(false)
                 }
             } catch (e: Exception) {
-                // Tratar exceções de rede, banco de dados, etc.
-                _errorMessage.value = "Erro ao excluir Avalição: ${e.message}"
+                _errorMessage.value = "Erro ao excluir avaliação: ${e.message}"
                 _isLoading.value = false
                 onResult(false)
             }
-
         }
     }
 
-    fun toggleConcluida(av: Avaliacao, concluida: Boolean) {
-        val id = av.id ?: return
-        viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
-            try {
-                val req = AvaliacaoRequestDto(
-                    id = id,
-                    descricao = av.descricao,
-                    disciplina = av.disciplina?.id?.let { DisciplinaIdDto(it) },
-                    tipoAvaliacao = av.tipoAvaliacao,
-                    modalidade = av.modalidade ?: Modalidade.INDIVIDUAL,
-                    dataEntrega = av.dataEntrega,
-                    nota = av.nota,
-                    peso = av.peso,
-                    integrantes = av.integrantes
-                        .mapNotNull { it.id }
-                        .map { ContatoIdDto(it) },
-                    prioridade = av.prioridade ?: Prioridade.MEDIA,
-                    estado = if (concluida) EstadoAvaliacao.CONCLUIDA else EstadoAvaliacao.A_REALIZAR,
-                    dificuldade = av.dificuldade,
-                    receberNotificacoes = av.receberNotificacoes
-                )
+    /**
+     * Concluir/Reativar avaliação (altera estado) com confirmação na UI.
+     */
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun toggleConcluida(av: Avaliacao, marcada: Boolean, onResult: (Boolean) -> Unit) {
+        val id = av.id ?: return onResult(false)
 
-                val ok = repository.updateAvaliacao(id, req) // mesma assinatura usada no seu ManterAvaliacaoVM
-                if (!ok) _errorMessage.value = "Falha ao atualizar estado."
-                // Recarrega a lista para refletir o novo estado
-                loadAvaliacao()
+        // Fallbacks seguros (caso algum campo venha nulo do backend)
+        val modalidade = av.modalidade ?: Modalidade.INDIVIDUAL
+        val prioridade = av.prioridade ?: Prioridade.MEDIA
+        val receberNotificacoes = av.receberNotificacoes ?: false
+
+        val disciplinaDto = av.disciplina?.id?.let { DisciplinaIdDto(it) }
+        val integrantesDto = av.integrantes.orEmpty()
+            .mapNotNull { it.id }
+            .map { ContatoIdDto(it) }
+
+        val novoEstado = if (marcada) EstadoAvaliacao.CONCLUIDA else EstadoAvaliacao.A_REALIZAR
+
+        val req = AvaliacaoRequestDto(
+            id = id,
+            descricao = av.descricao,
+            disciplina = disciplinaDto,
+            tipoAvaliacao = av.tipoAvaliacao,
+            modalidade = modalidade,
+            dataEntrega = av.dataEntrega, // backend aceita dd-mm ou datetime ISO que você já usa
+            nota = av.nota,
+            peso = av.peso,
+            integrantes = integrantesDto,
+            prioridade = prioridade,
+            estado = novoEstado,
+            dificuldade = av.dificuldade,
+            receberNotificacoes = receberNotificacoes
+        )
+
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                val ok = repository.updateAvaliacao(id, req)
+                if (ok) {
+                    loadAvaliacao()
+                    onResult(true)
+                } else {
+                    _errorMessage.value = "Não foi possível atualizar o estado."
+                    _isLoading.value = false
+                    onResult(false)
+                }
             } catch (e: Exception) {
-                _errorMessage.value = "Erro ao atualizar estado: ${e.message}"
+                _errorMessage.value = "Erro ao atualizar: ${e.message}"
                 _isLoading.value = false
+                onResult(false)
             }
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun updateNota(av: Avaliacao, novaNota: Double?, onResult: (Boolean) -> Unit) {
+        val id = av.id ?: return onResult(false)
+
+        // Monta o mesmo DTO do toggleConcluida, só trocando a 'nota'
+        val req = AvaliacaoRequestDto(
+            id = id,
+            descricao = av.descricao,
+            disciplina = av.disciplina?.id?.let { DisciplinaIdDto(it) },
+            tipoAvaliacao = av.tipoAvaliacao,
+            modalidade = av.modalidade ?: Modalidade.INDIVIDUAL,
+            dataEntrega = av.dataEntrega, // backend usa LocalDate.parse -> "yyyy-MM-dd"
+            nota = novaNota,
+            peso = av.peso,
+            integrantes = av.integrantes.orEmpty().mapNotNull { it.id }.map { ContatoIdDto(it) },
+            prioridade = av.prioridade ?: Prioridade.MEDIA,
+            estado = av.estado ?: EstadoAvaliacao.A_REALIZAR,
+            dificuldade = av.dificuldade,
+            receberNotificacoes = av.receberNotificacoes ?: false
+        )
+
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                val ok = repository.updateAvaliacao(id, req)
+                if (ok) {
+                    loadAvaliacao()
+                    onResult(true)
+                } else {
+                    _errorMessage.value = "Não foi possível salvar a nota."
+                    _isLoading.value = false
+                    onResult(false)
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Erro ao salvar nota: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            }
+        }
+    }
 
 
     fun clearErrorMessage() {

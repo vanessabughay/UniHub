@@ -9,6 +9,8 @@ import java.time.LocalDate; // Import necessário
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "avaliacoes") // É uma boa prática nomear tabelas no plural e com snake_case
@@ -35,8 +37,11 @@ public class Avaliacao {
     @Column(name = "tipo_avaliacao", length = 100)
     private String tipoAvaliacao;
 
-    @Column(name = "data_entrega", nullable = true) // Data de entrega pode ser nula
-    private LocalDate dataEntrega;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    @Column(name = "data_entrega", nullable = true)
+    private LocalDateTime dataEntrega;
+
+
 
     private Double nota; // Pode ser nulo
 
@@ -81,7 +86,7 @@ public class Avaliacao {
     public Avaliacao(
             String descricao, Disciplina disciplina, String tipoAvaliacao,
             Double nota, Double peso, List<Contato> integrantes,
-            LocalDate dataEntrega, Prioridade prioridade, EstadoAvaliacao estado,
+            LocalDateTime dataEntrega, Prioridade prioridade, EstadoAvaliacao estado,
             Modalidade modalidade, Integer dificuldade, boolean receberNotificacoes) {
         this.dataEntrega = dataEntrega;
         this.prioridade = prioridade;
@@ -132,11 +137,10 @@ public class Avaliacao {
         this.tipoAvaliacao = tipoAvaliacao;
     }
 
-    public LocalDate getDataEntrega() {
+    public LocalDateTime getDataEntrega() {
         return dataEntrega;
     }
-
-    public void setDataEntrega(LocalDate dataEntrega) {
+    public void setDataEntrega(LocalDateTime dataEntrega) {
         this.dataEntrega = dataEntrega;
     }
 

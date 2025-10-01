@@ -1,3 +1,5 @@
+// MANTERAVALIACAOSCREEN
+
 package com.example.unihub.ui.ManterAvaliacao
 
 import android.app.DatePickerDialog // Para DatePicker (se for ativar)
@@ -43,10 +45,13 @@ import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
 // import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 import com.example.unihub.ui.ManterContato.DeleteButtonErrorColor
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 
 // Essas constantes já devem existir no seu arquivo
 // val CardDefaultBackgroundColor = Color(0xFFE0E1F8)
@@ -71,31 +76,7 @@ fun ManterAvaliacaoScreen(
 
     val focusManager = LocalFocusManager.current
 
-    // --- Lógica para DatePickerDialog e TimePickerDialog (Manter desativada por enquanto na interação direta) ---
-    val calendar = Calendar.getInstance()
-    val datePickerDialog = DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val selectedDate = LocalDate.of(year, month + 1, dayOfMonth)
-            viewModel.setDataEntrega(selectedDate.format(DateTimeFormatter.ISO_LOCAL_DATE))
-            focusManager.clearFocus()
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    )
-    val timePickerDialog = TimePickerDialog(
-        context,
-        { _, hourOfDay, minute ->
-            val selectedTime = LocalTime.of(hourOfDay, minute)
-            viewModel.setHoraEntrega(selectedTime.format(DateTimeFormatter.ofPattern("HH:mm")))
-            focusManager.clearFocus()
-        },
-        calendar.get(Calendar.HOUR_OF_DAY),
-        calendar.get(Calendar.MINUTE),
-        true // Formato 24h
-    )
-    // --- Fim da lógica dos Pickers ---
+
 
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
         if (uiState.sucesso) {
@@ -312,38 +293,37 @@ fun ManterAvaliacaoScreen(
                         }
                     }
 
-                    // DATA DA ENTREGA (Desativado para interação complexa por enquanto)
-                    OutlinedTextField(
-                        value = uiState.dataEntrega,
-                        onValueChange = { viewModel.setDataEntrega(it) },
-                        label = { Text("Data de Entrega (AAAA-MM-DD)") },
+                    // DATA DA ENTREGA (somente seleção, sem digitar)
+                    CampoData(
+                        label = "Data de Entrega",
+                        value = stringDateToMillis(uiState.dataEntrega),
+                        onDateSelected = { millis ->
+                            val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
+                            viewModel.setDataEntrega(iso)
+                        },
                         modifier = Modifier.fillMaxWidth()
-                        // Para ativar o DatePicker ao focar/clicar:
-                        // .onFocusChanged { if (it.isFocused) { datePickerDialog.show(); focusManager.clearFocus() } }
-                        // .clickable(onClick = { datePickerDialog.show(); focusManager.clearFocus() }),
-                        ,
-                        placeholder = { Text("Ex: 2024-12-31") },
-                        // readOnly = true, // Se for usar apenas o picker
-                        // trailingIcon = { IconButton(onClick = { datePickerDialog.show() }) { Icon(Icons.Filled.DateRange, "Data") } },
-                        enabled = true, // Mude para false para desativar completamente a digitação
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-                    OutlinedTextField(
-                        value = uiState.horaEntrega,
-                        onValueChange = { viewModel.setHoraEntrega(it) },
-                        label = { Text("Hora de Entrega (HH:MM)") },
-                        modifier = Modifier.fillMaxWidth()
-                        // Para ativar o TimePicker ao focar/clicar:
-                        // .onFocusChanged { if (it.isFocused) { timePickerDialog.show(); focusManager.clearFocus() } }
-                        // .clickable(onClick = { timePickerDialog.show(); focusManager.clearFocus() }),
-                        ,
-                        placeholder = { Text("Ex: 14:30") },
-                        // readOnly = true, // Se for usar apenas o picker
-                        // trailingIcon = { IconButton(onClick = { timePickerDialog.show() }) { Icon(Icons.Outlined.AccessTime, "Hora") } },
-                        enabled = true, // Mude para false para desativar completamente a digitação
-                        colors = OutlinedTextFieldDefaults.colors()
                     )
 
+                    // HORA DA ENTREGA (somente seleção, sem digitar)
+                    CampoHorario(
+                        label = "Hora de Entrega",
+                        value = stringTimeToMinutes(uiState.horaEntrega),
+                        onTimeSelected = { totalMinutes ->
+                            viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // NOTA
+                    OutlinedTextField(
+                        value = uiState.nota,
+                        onValueChange = { viewModel.setNota(it) },
+                        label = { Text("Nota") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        colors = OutlinedTextFieldDefaults.colors()
+                    )
 
                     // PESO (Desativado para interação complexa por enquanto)
                     OutlinedTextField(
@@ -530,7 +510,6 @@ fun ManterAvaliacaoScreen(
 }
 
 sealed class Screen(val route: String) {
-    // ...
 
     object ManterAvaliacao : Screen("manter_avaliacao") {
         fun createRoute(
@@ -545,6 +524,48 @@ sealed class Screen(val route: String) {
         }
     }
 }
+
+
+private fun stringDateToMillis(isoDate: String?): Long {
+    if (isoDate.isNullOrBlank()) return 0L
+    return try {
+        val parts = isoDate.split("-").map { it.toInt() } // AAAA-MM-DD
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.YEAR, parts[0])
+            set(Calendar.MONTH, parts[1] - 1)
+            set(Calendar.DAY_OF_MONTH, parts[2])
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        cal.timeInMillis
+    } catch (_: Exception) { 0L }
+}
+
+private fun millisToIsoDate(millis: Long): String {
+    if (millis <= 0L) return ""
+    val cal = Calendar.getInstance().apply { timeInMillis = millis }
+    val y = cal.get(Calendar.YEAR)
+    val m = cal.get(Calendar.MONTH) + 1
+    val d = cal.get(Calendar.DAY_OF_MONTH)
+    return String.format("%04d-%02d-%02d", y, m, d) // AAAA-MM-DD
+}
+
+private fun stringTimeToMinutes(hhmm: String?): Int {
+    if (hhmm.isNullOrBlank()) return 0
+    return try {
+        val (h, m) = hhmm.split(":").map { it.toInt() }
+        (h.coerceIn(0, 23) * 60) + m.coerceIn(0, 59)
+    } catch (_: Exception) { 0 }
+}
+
+private fun minutesToHHmm(total: Int): String {
+    val h = (total / 60).coerceIn(0, 23)
+    val m = (total % 60).coerceIn(0, 59)
+    return "%02d:%02d".format(h, m)
+}
+
 
 
 @Composable
@@ -636,5 +657,102 @@ fun SelecaoContatosDialog(
             }
         }
     )
+}
+
+@Composable
+fun CampoData(
+    label: String,
+    value: Long,
+    onDateSelected: (Long) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+    val showDatePicker = {
+        val calendar = Calendar.getInstance().apply {
+            if (value != 0L) timeInMillis = value
+        }
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                calendar.set(year, month, day)
+                onDateSelected(calendar.timeInMillis)
+            },
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.MONTH),
+            calendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
+    }
+
+    Column(modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Box(modifier = Modifier.clickable { showDatePicker() }) {
+            TextField(
+                value = if (value != 0L) dateFormat.format(Date(value)) else "",
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                )
+            )
+        }
+    }
+}
+
+@Composable
+fun CampoHorario(
+    label: String,
+    value: Int,
+    onTimeSelected: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val hour = value / 60
+    val minute = value % 60
+
+    val showTimePicker = {
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minuteOfHour ->
+                onTimeSelected(hourOfDay * 60 + minuteOfHour)
+            },
+            if (value > 0) hour else 12,
+            if (value > 0) minute else 0,
+            true
+        ).show()
+    }
+
+    val displayText = if (value <= 0) "" else String.format("%02d:%02d", hour, minute)
+
+    Column(modifier) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Box(modifier = Modifier.clickable { showTimePicker() }) {
+            TextField(
+                value = displayText,
+                onValueChange = {},
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false,
+                singleLine = true
+            )
+        }
+    }
 }
 
