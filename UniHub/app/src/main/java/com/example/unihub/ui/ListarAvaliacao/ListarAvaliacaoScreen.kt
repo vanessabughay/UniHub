@@ -74,9 +74,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
-val LilasCard = Color(0xFFEDE7FF)        // fundo do card (lilás claro)
-val LilasButton = Color(0xFFD0C6FF)      // botões dentro do card
+val CardDefaultBackgroundColor = Color(0xFFD4D4E8)
+val LilasCard = Color(0xFFE0E1F8)        // fundo do card (lilás claro)
+val LilasButton = Color(0xFF9799FF)      // botões dentro do card
 
 private fun formatarDataHora(iso: String?): String {
     if (iso.isNullOrBlank()) return ""

@@ -39,23 +39,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.data.model.Modalidade // Importe seu enum Modalidadeimport com.example.unihub.data.model.Prioridade // Importe seu enum Prioridade
+import com.example.unihub.data.model.Modalidade
 import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
-// Importe EstadoAvaliacao se você decidiu manter esse campo na UI
-// import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 import com.example.unihub.ui.ManterContato.DeleteButtonErrorColor
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-// Essas constantes já devem existir no seu arquivo
-// val CardDefaultBackgroundColor = Color(0xFFE0E1F8)
-// val DeleteButtonErrorColor = Color(0xFFB00020)
 
 @OptIn(ExperimentalMaterial3Api::class) // Para ExposedDropdownMenuBox
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -63,7 +55,7 @@ import java.util.Locale
 fun ManterAvaliacaoScreen(
     avaliacaoId: String?,
     disciplinaId: String?,
-    viewModel: ManterAvaliacaoViewModel = viewModel(factory = ManterAvaliacaoViewModelFactory()), // Certifique-se que a factory está correta
+    viewModel: ManterAvaliacaoViewModel = viewModel(factory = ManterAvaliacaoViewModelFactory()),
     onVoltar: () -> Unit,
     onExcluirSucessoNavegarParaLista: () -> Unit
 ) {
@@ -482,7 +474,7 @@ fun ManterAvaliacaoScreen(
                     )
                 ) {
                     Text(
-                        if (avaliacaoId == null) "Confirmar Criação" else "Confirmar Atualização",
+                        if (avaliacaoId == null) "Confirmar" else "Salvar Alterações",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )

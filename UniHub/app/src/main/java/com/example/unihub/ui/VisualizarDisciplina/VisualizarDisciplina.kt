@@ -115,6 +115,7 @@ fun VisualizarDisciplinaScreen(
     onNavigateToAnotacoes: (String) -> Unit,
     onNavigateToAusencias: (String, String?) -> Unit,
 
+
     viewModel: VisualizarDisciplinaViewModel
 ) {
     val context = LocalContext.current
@@ -137,6 +138,10 @@ fun VisualizarDisciplinaScreen(
                 onNavigateToEdit(disciplina.id.toString())
 
             },
+            OpcaoDisciplina("Avaliações", Icons.Outlined.AddTask, Color(0xFFE0E1F8)) {
+
+                Toast.makeText(context, "Abrir Avaliações", Toast.LENGTH_SHORT).show()
+            },
 
             OpcaoDisciplina("Notas", Icons.Outlined.StarOutline, Color(0xFFE0E1F8)) {
                 Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()
@@ -145,10 +150,8 @@ fun VisualizarDisciplinaScreen(
                 disciplina.id?.let {
                     onNavigateToAnotacoes(it.toString())
                 }
-            },
-            OpcaoDisciplina("Arquivos", Icons.Outlined.Download, Color(0xFFE6F7EC)) {
-                Toast.makeText(context, "Abrir Arquivos", Toast.LENGTH_SHORT).show()
             }
+
         )
 
         Scaffold(
