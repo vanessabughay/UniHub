@@ -254,6 +254,22 @@ class MainActivity : ComponentActivity() {
                             onNavigateToAnotacoes = { idDaDisciplina ->
                                 navController.navigate(Screen.Anotacoes.createRoute(idDaDisciplina.toLong()))
                             },
+                            onNavigateToAddAvaliacaoParaDisciplina = { discId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = discId
+                                    )
+                                )
+                            },
+                            onNavigateToManterAvaliacao = { avaliacaoId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = null
+                                    )
+                                )
+                            },
                             viewModel = viewModel
                         )
                     }
@@ -403,7 +419,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // LISTAR AVALIAÇÃO (agora existe na sealed class)
+                    // LISTAR AVALIAÇÃO
                     composable(Screen.ListarAvaliacao.route) {
                         ListarAvaliacaoScreen(
                             onAddAvaliacaoGeral = {
