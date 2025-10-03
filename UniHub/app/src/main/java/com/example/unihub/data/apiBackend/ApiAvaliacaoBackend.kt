@@ -114,5 +114,15 @@ class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avali
             return false
         }
     }
+
+    override suspend fun getAvaliacaoPorDisciplinaApi(disciplinaId: Long): List<Avaliacao> {
+        try {
+            val resp = api.listPorDisciplina(disciplinaId)
+            if (resp.isSuccessful) return resp.body() ?: emptyList()
+            throw IOException("Erro listar por disciplina: ${resp.code()} ${resp.errorBody()?.string()}")
+        } catch (e: Exception) {
+            throw IOException("Falha rede/listar por disciplina: ${e.message}", e)
+        }
+    }
 }
 

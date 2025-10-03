@@ -221,9 +221,9 @@ fun VisualizarDisciplinaScreen(
     onNavigateToAnotacoes: (String) -> Unit,
     onNavigateToAusencias: (String, String?) -> Unit,
 
-    // >>> NOVOS CALLBACKS DE NAVEGAÇÃO <<<
     onNavigateToAddAvaliacaoParaDisciplina: (String) -> Unit,
     onNavigateToManterAvaliacao: (String) -> Unit,
+    onNavigateToPesoNotas: (String) -> Unit,
 
     viewModel: VisualizarDisciplinaViewModel
 ) {
@@ -277,8 +277,9 @@ fun VisualizarDisciplinaScreen(
             },
 
             OpcaoDisciplina("Peso das Notas", Icons.Outlined.StarOutline, PesoNotasColor) {
-                Toast.makeText(context, "Abrir Notas", Toast.LENGTH_SHORT).show()
+                disc.id?.let { onNavigateToPesoNotas(it.toString()) }
             },
+
             OpcaoDisciplina("Minhas anotações", Icons.AutoMirrored.Outlined.Notes, Color(0xFFF8F1E1)) {
                 disc.id?.let { onNavigateToAnotacoes(it.toString()) }
             }

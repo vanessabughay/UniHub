@@ -14,6 +14,7 @@ import java.io.IOException
 
 interface Avaliacaobackend { // Removi o "_" inicial, é uma convenção melhor
     suspend fun getAvaliacaoApi(): List<Avaliacao>
+    suspend fun getAvaliacaoPorDisciplinaApi(disciplinaId: Long): List<Avaliacao> // ParaPesoNOtas
     suspend fun getAvaliacaoByIdApi(id: String): Avaliacao?
     suspend fun addAvaliacaoApi(request: AvaliacaoRequestDto)
     suspend fun updateAvaliacaoApi(id: Long, request: AvaliacaoRequestDto): Boolean
@@ -46,6 +47,12 @@ class AvaliacaoRepository(private val backend: Avaliacaobackend) {
         } catch (e: HttpException) {
             throw Exception("Erro do servidor: ${e.code()}")
         }
+    }
+
+    //BUSCA da Aval POR Disciplina - Para pesoNotas
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun getAvaliacaoPorDisciplina(disciplinaId: Long): Flow<List<Avaliacao>> = flow {
+        emit(backend.getAvaliacaoPorDisciplinaApi(disciplinaId))
     }
 
     //ADD Avaliacao

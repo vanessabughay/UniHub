@@ -9,10 +9,15 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface AvaliacaoApi {
     @GET("api/avaliacoes")
     suspend fun list(): Response<List<Avaliacao>>
+
+    @GET("api/avaliacoes")
+    suspend fun listPorDisciplina(@Query("disciplinaId") disciplinaId: Long): Response<List<Avaliacao>>
+
 
     @GET("api/avaliacoes/{id}")
     suspend fun get(@Path("id") id: Long): Response<Avaliacao>
