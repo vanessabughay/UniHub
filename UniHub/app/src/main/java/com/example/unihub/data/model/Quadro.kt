@@ -18,8 +18,12 @@ enum class Estado {
 data class Quadro(
     val id: String? = null,
     val nome: String = "",
-    val disciplina: String? = null,
-    val integrantes: List<String>? = null,
+
+    //--- campos incluidos
+    val disciplinaId: Long? = null,
+    val contatoId: Long? = null,
+    val grupoId: Long? = null,
+
     val estado: Estado = Estado.ATIVO,
     val colunas: List<Coluna> = emptyList(),
     @JsonAdapter(FlexibleLongAdapter::class)

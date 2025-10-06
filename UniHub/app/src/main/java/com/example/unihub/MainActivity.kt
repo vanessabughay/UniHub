@@ -19,6 +19,8 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import android.content.Intent
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 
 
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
@@ -48,15 +50,29 @@ import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModelFactory
 import com.example.unihub.data.apiBackend.ApiColunaBackend
+import com.example.unihub.data.apiBackend.ApiContatoBackend
+import com.example.unihub.data.apiBackend.ApiGrupoBackend
 import com.example.unihub.data.apiBackend.ApiTarefaBackend
+import com.example.unihub.data.repository.AusenciaRepository
+import com.example.unihub.data.repository.CategoriaRepository
 import com.example.unihub.data.repository.ColunaRepository
+import com.example.unihub.data.repository.DisciplinaRepository
+import com.example.unihub.data.repository.GrupoRepository
+import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.TarefaRepository
+import com.example.unihub.ui.Anotacoes.AnotacoesView
+import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel
+import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory
 import com.example.unihub.ui.ManterColuna.ColunaFormScreen
 import com.example.unihub.ui.ManterColuna.ManterColunaFormViewModelFactory
+import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel
+import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory
 import com.example.unihub.ui.ManterTarefa.ManterTarefaViewModelFactory
 import com.example.unihub.ui.ManterTarefa.TarefaFormScreen
 import com.example.unihub.ui.TelaEsqueciSenha.TelaEsqueciSenha
 import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
+import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel
+import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -145,7 +161,7 @@ sealed class Screen(val route: String) {
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var navController: androidx.navigation.NavHostController
+    private lateinit var navController: NavHostController
 
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -211,15 +227,15 @@ class MainActivity : ComponentActivity() {
                         })
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
-                        val repository = com.example.unihub.data.repository.DisciplinaRepository(
+                        val repository = DisciplinaRepository(
                             ApiDisciplinaBackend()
                         )
                         val factory =
-                            com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory(
+                            ManterDisciplinaViewModelFactory(
                                 repository
                             )
-                        val viewModel: com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel =
-                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                        val viewModel: ManterDisciplinaViewModel =
+                            viewModel(factory = factory)
 
                         ManterDisciplinaScreen(
                             disciplinaId = disciplinaId,
@@ -242,21 +258,21 @@ class MainActivity : ComponentActivity() {
                         val disciplinaId = backStackEntry.arguments?.getString("id")
 
                         val disciplinaRepository =
-                            com.example.unihub.data.repository.DisciplinaRepository(
+                            DisciplinaRepository(
                                 ApiDisciplinaBackend(),
                             )
                         val ausenciaRepository =
-                            com.example.unihub.data.repository.AusenciaRepository(
+                            AusenciaRepository(
                                 ApiAusenciaBackend(),
                             )
                         val factory =
-                            com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory(
+                            VisualizarDisciplinaViewModelFactory(
                                 disciplinaRepository,
                                 ausenciaRepository
                             )
 
-                        val viewModel: com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel =
-                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                        val viewModel: VisualizarDisciplinaViewModel =
+                            viewModel(factory = factory)
 
                         VisualizarDisciplinaScreen(
                             disciplinaId = disciplinaId,
@@ -296,25 +312,25 @@ class MainActivity : ComponentActivity() {
                         val ausenciaIdArg = backStackEntry.arguments?.getString("id")
 
                         val ausenciaRepository =
-                            com.example.unihub.data.repository.AusenciaRepository(
+                            AusenciaRepository(
                                 ApiAusenciaBackend(),
                             )
                         val disciplinaRepository =
-                            com.example.unihub.data.repository.DisciplinaRepository(
+                            DisciplinaRepository(
                                 ApiDisciplinaBackend(),
                             )
                         val categoriaRepository =
-                            com.example.unihub.data.repository.CategoriaRepository(
+                            CategoriaRepository(
                                 ApiCategoriaBackend(),
                             )
                         val factory =
-                            com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory(
+                            ManterAusenciaViewModelFactory(
                                 ausenciaRepository,
                                 disciplinaRepository,
                                 categoriaRepository
                             )
-                        val viewModel: com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel =
-                            androidx.lifecycle.viewmodel.compose.viewModel(factory = factory)
+                        val viewModel: ManterAusenciaViewModel =
+                            viewModel(factory = factory)
 
                         ManterAusenciaScreen(
                             disciplinaId = disciplinaIdArg,
@@ -494,8 +510,21 @@ class MainActivity : ComponentActivity() {
                         val quadroIdArg = backStackEntry.arguments?.getString("quadroId")
                         val quadroId = quadroIdArg?.takeUnless { it == "new" }
 
+                        // --- CORREÇÃO APLICADA AQUI ---
+                        // 1. Criamos uma instância para CADA repositório que o ViewModel precisa
                         val quadroRepository = QuadroRepository(ApiQuadroBackend())
-                        val viewModelFactory = QuadroFormViewModelFactory(quadroRepository)
+                        val disciplinaRepository = DisciplinaRepository(ApiDisciplinaBackend())
+                        // Assumindo que você tenha classes ApiContatoBackend e ApiGrupoBackend
+                        val contatoRepository = ContatoRepository(ApiContatoBackend())
+                        val grupoRepository = GrupoRepository(ApiGrupoBackend())
+
+                        // 2. Agora, passamos todas as instâncias para a fábrica
+                        val viewModelFactory = QuadroFormViewModelFactory(
+                            quadroRepository,
+                            disciplinaRepository,
+                            contatoRepository,
+                            grupoRepository
+                        )
 
                         QuadroFormScreen(
                             navController = navController,
@@ -603,7 +632,7 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getLong("id")
                         if (disciplinaId != null) {
-                            com.example.unihub.ui.Anotacoes.AnotacoesView(
+                            AnotacoesView(
                                 disciplinaId = disciplinaId,
                                 onBack = { navController.popBackStack() }
                             )
