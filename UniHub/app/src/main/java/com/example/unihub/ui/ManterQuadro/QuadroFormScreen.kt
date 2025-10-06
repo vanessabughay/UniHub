@@ -18,14 +18,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.unihub.components.* // Seus componentes
+import com.example.unihub.components.*
 import com.example.unihub.data.model.Estado
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import androidx.navigation.compose.rememberNavController
-// Imports que podem ser necessários para a nova UI
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.GrupoRepository
@@ -33,9 +32,6 @@ import com.example.unihub.data.repository.QuadroRepository
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-
-// Substitua todo o seu código de preview por este bloco
-
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.model.Grupo

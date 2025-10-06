@@ -17,7 +17,6 @@ class QuadroFormViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(QuadroFormViewModel::class.java)) {
-            // 2. E aqui, ela passa os 4 repositórios ao construir o ViewModel
             return QuadroFormViewModel(
                 quadroRepository = quadroRepository,
                 disciplinaRepository = disciplinaRepository,
