@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.Icons.Outlined
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -239,7 +242,10 @@ private fun CabecalhoPerfil(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 18.dp)) {
 
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Box(
                     modifier = Modifier
                         .size(56.dp)
@@ -247,7 +253,12 @@ private fun CabecalhoPerfil(
                         .background(Color.White.copy(alpha = 0.8f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Outlined.School, contentDescription = "Avatar", tint = CoresApp.AzulIcone, modifier = Modifier.size(30.dp))
+                    Icon(
+                        Outlined.School,
+                        contentDescription = "Avatar",
+                        tint = CoresApp.AzulIcone,
+                        modifier = Modifier.size(30.dp)
+                    )
                 }
                 Spacer(Modifier.width(14.dp))
                 Text(
@@ -260,24 +271,46 @@ private fun CabecalhoPerfil(
                     overflow = TextOverflow.Ellipsis
                 )
                 IconButton(onClick = { /* notificações */ }) {
-                    Icon(Icons.Outlined.Notifications, contentDescription = "Notificações", tint = CoresApp.AzulIcone)
+                    Icon(
+                        Outlined.Notifications,
+                        contentDescription = "Notificações",
+                        tint = CoresApp.AzulIcone
+                    )
                 }
-                Box(modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White.copy(alpha = 0.65f))) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White.copy(alpha = 0.65f))
+                ) {
                     IconButton(onClick = onAbrirMenu) {
-                        Icon(Icons.Outlined.Menu, contentDescription = "Abrir menu", tint = Color(0xFF274B6F))
+                        Icon(
+                            Outlined.Menu,
+                            contentDescription = "Abrir menu",
+                            tint = Color(0xFF274B6F)
+                        )
                     }
                 }
             }
 
             Spacer(Modifier.height(16.dp))
 
-            Text(text = "Menus rápidos", color = CoresApp.TextoPrincipal, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-            Divider(modifier = Modifier.padding(top = 8.dp), thickness = 1.dp, color = CoresApp.Divisor.copy(alpha = 0.7f))
+            Text(
+                text = "Menus rápidos",
+                color = CoresApp.TextoPrincipal,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp
+            )
+            HorizontalDivider(
+                modifier = Modifier.padding(top = 8.dp),
+                thickness = 1.dp,
+                color = CoresApp.Divisor.copy(alpha = 0.7f)
+            )
             Spacer(Modifier.height(12.dp))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
                 atalhos.forEach { rotulo ->
                     AtalhoRapido(
                         icone = iconeParaRotulo(rotulo),
@@ -357,14 +390,29 @@ private fun ConteudoAbaixoDoTopo(
 
 @Composable
 private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Unit) {
-    Row(modifier = Modifier
-        .fillMaxWidth()
-        .clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically) {
-        Icon(if (setaAbaixo) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight, contentDescription = null, tint = CoresApp.TextoPrincipal)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick), verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            if (setaAbaixo) Outlined.ExpandMore else Outlined.ChevronRight,
+            contentDescription = null,
+            tint = CoresApp.TextoPrincipal
+        )
         Spacer(Modifier.width(6.dp))
-        Text(text = titulo, color = CoresApp.TextoPrincipal, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = titulo,
+            color = CoresApp.TextoPrincipal,
+            fontSize = 22.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
-    Divider(modifier = Modifier.padding(top = 10.dp), color = CoresApp.Divisor)
+    HorizontalDivider(
+        modifier = Modifier.padding(top = 10.dp),
+        thickness = DividerDefaults.Thickness,
+        color = CoresApp.Divisor
+    )
 }
 
 @Composable
@@ -381,17 +429,33 @@ private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.widthIn(min = 110.dp), horizontalAlignment = Alignment.Start) {
-                Text(text = diaSemana, color = CoresApp.TextoPrincipal, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+            Column(
+                modifier = Modifier.widthIn(min = 110.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = diaSemana,
+                    color = CoresApp.TextoPrincipal,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp
+                )
                 Spacer(Modifier.height(8.dp))
                 Text(text = dataCurta, color = CoresApp.TextoSecundario, fontSize = 16.sp)
             }
-            Divider(modifier = Modifier
-                .height(56.dp)
-                .width(1.dp), color = Color(0xFFCBD5E1))
+            HorizontalDivider(
+                modifier = Modifier
+                    .height(56.dp)
+                    .width(1.dp), thickness = DividerDefaults.Thickness, color = Color(0xFFCBD5E1)
+            )
             Spacer(Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = titulo, color = CoresApp.TextoPrincipal, fontWeight = FontWeight.Bold, fontSize = 22.sp, maxLines = 2)
+                Text(
+                    text = titulo,
+                    color = CoresApp.TextoPrincipal,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    maxLines = 2
+                )
                 Spacer(Modifier.height(6.dp))
                 Text(text = descricao, color = CoresApp.TextoSecundario, fontSize = 16.sp)
             }
@@ -402,15 +466,25 @@ private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String
 @Composable
 private fun LinhaListaSimples(titulo: String, onClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier
+        Row(
+            modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = CoresApp.TextoPrincipal)
+            Icon(
+                Outlined.ChevronRight,
+                contentDescription = null,
+                tint = CoresApp.TextoPrincipal
+            )
             Spacer(Modifier.width(8.dp))
-            Text(text = titulo, color = CoresApp.TextoPrincipal, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = titulo,
+                color = CoresApp.TextoPrincipal,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
-        Divider(color = CoresApp.Divisor)
+        HorizontalDivider(Modifier, DividerDefaults.Thickness, color = CoresApp.Divisor)
     }
 }
 
@@ -481,18 +555,18 @@ private fun ItemMenu(texto: String, icone: ImageVector, onClick: () -> Unit) {
 
 /* ====== Mapeamentos de ícones ====== */
 private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercase()) {
-    "projetos" -> Icons.Outlined.Groups
-    "calendário" -> Icons.Outlined.CalendarMonth
-    "disciplinas" -> Icons.Outlined.MenuBook
-    "avaliações" -> Icons.Outlined.RateReview
-    "perfil" -> Icons.Outlined.Person
-    "serviço de nuvem" -> Icons.Outlined.CloudQueue
-    "contatos" -> Icons.Outlined.Contacts
-    "grupos" -> Icons.Outlined.Groups
-    "configurar" -> Icons.Outlined.Settings
-    "notificações" -> Icons.Outlined.Notifications
-    "atividades" -> Icons.Outlined.Assignment
-    else -> Icons.Outlined.Circle
+    "projetos" -> Outlined.Groups
+    "calendário" -> Outlined.CalendarMonth
+    "disciplinas" -> Icons.AutoMirrored.Outlined.MenuBook
+    "avaliações" -> Outlined.RateReview
+    "perfil" -> Outlined.Person
+    "serviço de nuvem" -> Outlined.CloudQueue
+    "contatos" -> Outlined.Contacts
+    "grupos" -> Outlined.Groups
+    "configurar" -> Outlined.Settings
+    "notificações" -> Outlined.Notifications
+    "atividades" -> Outlined.Assignment
+    else -> Outlined.Circle
 }
 
 /* ====== Preview sem ViewModel (estado fake) ====== */

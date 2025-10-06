@@ -33,6 +33,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,7 +67,8 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
@@ -82,7 +84,7 @@ fun ListarAvaliacaoScreen(
     onVoltar: () -> Unit,
     onNavigateToManterAvaliacao: (avaliacaoId: String) -> Unit
 ) {
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val context = LocalContext.current
     val avaliacoesState by viewModel.avaliacoes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -365,7 +367,11 @@ fun SecaoExpansivel(
         AnimatedVisibility(visible = expanded) {
             Column { content() }
         }
-        Divider(modifier = Modifier.padding(top = 8.dp))
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 8.dp),
+            thickness = DividerDefaults.Thickness,
+            color = DividerDefaults.color
+        )
     }
 }
 

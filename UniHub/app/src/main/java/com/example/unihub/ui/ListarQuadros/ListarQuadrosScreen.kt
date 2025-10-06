@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -237,8 +238,9 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
                 fontWeight = FontWeight.SemiBold
             )
         }
-        Divider(
+        HorizontalDivider(
             modifier = Modifier.padding(top = 10.dp),
+            thickness = DividerDefaults.Thickness,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
         )
     }

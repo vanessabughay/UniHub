@@ -9,9 +9,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
@@ -57,7 +59,7 @@ fun AnotacoesView(
                 title = { Text("Minhas anotações") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
                     }
                 }
             )
@@ -198,7 +200,11 @@ private fun AnotacaoCard(
                         shape = RoundedCornerShape(12.dp)
                     )
 
-                    Divider(Modifier.padding(vertical = 12.dp), color = Beige)
+                    HorizontalDivider(
+                        Modifier.padding(vertical = 12.dp),
+                        DividerDefaults.Thickness,
+                        color = Beige
+                    )
 
                     Row(
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -210,7 +216,11 @@ private fun AnotacaoCard(
                                 onCancel()
                             },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E2A25))
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(
+                                    0xFF2E2A25
+                                )
+                            )
                         ) {
                             Text("Cancelar")
                         }
@@ -221,7 +231,11 @@ private fun AnotacaoCard(
                                 onSave()
                             },
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF2E2A25))
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(
+                                    0xFF2E2A25
+                                )
+                            )
                         ) {
                             Text("Salvar")
                         }

@@ -39,6 +39,7 @@ import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.HorizontalDivider
 
 private fun formatarPrazo(prazo: Long): String {
     return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(prazo))
@@ -186,8 +187,9 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
                 fontWeight = FontWeight.SemiBold
             )
         }
-        Divider(
+        HorizontalDivider(
             modifier = Modifier.padding(top = 10.dp),
+            thickness = DividerDefaults.Thickness,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
         )
     }
