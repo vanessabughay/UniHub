@@ -23,6 +23,10 @@ public class SecurityConfig {
                 //.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
+
+                //quadro 
+                .requestMatchers("/api/quadros-planejamento/**").authenticated()
+                
                 .anyRequest().authenticated()
             )
             .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);

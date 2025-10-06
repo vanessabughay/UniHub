@@ -2,7 +2,6 @@ package com.unihub.backend.dto.planejamento;
 
 import com.unihub.backend.model.QuadroPlanejamento;
 import com.unihub.backend.model.enums.QuadroStatus;
-
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +13,11 @@ public class QuadroPlanejamentoListaResponse {
     private QuadroStatus estado;
     private Instant dataInicio;
     private Instant dataFim;
-    private String disciplina;
-    private List<String> integrantes;
     private Long donoId;
+
+    private Long disciplinaId;
+    private Long contatoId;
+    private Long grupoId;
 
     public static QuadroPlanejamentoListaResponse fromEntity(QuadroPlanejamento quadro) {
         QuadroPlanejamentoListaResponse response = new QuadroPlanejamentoListaResponse();
@@ -25,11 +26,23 @@ public class QuadroPlanejamentoListaResponse {
         response.setEstado(quadro.getStatus());
         response.setDataInicio(quadro.getDataCriacao());
         response.setDataFim(quadro.getDataPrazo());
-        response.setDisciplina(quadro.getDisciplina());
-        response.setIntegrantes(quadro.getIntegrantes());
         response.setDonoId(quadro.getDonoId());
+
+        // Lógica atualizada para extrair os IDs das relações
+        if (quadro.getDisciplina() != null) {
+            response.setDisciplinaId(quadro.getDisciplina().getId());
+        }
+        if (quadro.getContato() != null) {
+            response.setContatoId(quadro.getContato().getId());
+        }
+        if (quadro.getGrupo() != null) {
+            response.setGrupoId(quadro.getGrupo().getId());
+        }
+
         return response;
     }
+
+    // --- GETTERS E SETTERS COMPLETOS ---
 
     public Long getId() {
         return id;
@@ -71,27 +84,35 @@ public class QuadroPlanejamentoListaResponse {
         this.dataFim = dataFim;
     }
 
-    public String getDisciplina() {
-        return disciplina;
-    }
-
-    public void setDisciplina(String disciplina) {
-        this.disciplina = disciplina;
-    }
-
-    public List<String> getIntegrantes() {
-        return integrantes;
-    }
-
-    public void setIntegrantes(List<String> integrantes) {
-        this.integrantes = integrantes != null ? new ArrayList<>(integrantes) : new ArrayList<>();
-    }
-
     public Long getDonoId() {
         return donoId;
     }
 
     public void setDonoId(Long donoId) {
         this.donoId = donoId;
+    }
+
+    public Long getDisciplinaId() {
+        return disciplinaId;
+    }
+
+    public void setDisciplinaId(Long disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
+    public Long getContatoId() {
+        return contatoId;
+    }
+
+    public void setContatoId(Long contatoId) {
+        this.contatoId = contatoId;
+    }
+
+    public Long getGrupoId() {
+        return grupoId;
+    }
+
+    public void setGrupoId(Long grupoId) {
+        this.grupoId = grupoId;
     }
 }

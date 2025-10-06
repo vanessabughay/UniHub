@@ -9,9 +9,7 @@ import jakarta.persistence.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Entity
 @Table(name = "quadros_planejamento")
@@ -23,7 +21,6 @@ public class QuadroPlanejamento {
 
     @Column(nullable = false)
     private String titulo;
-
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -35,29 +32,31 @@ public class QuadroPlanejamento {
     @Column(name = "data_prazo")
     private Instant dataPrazo;
 
-    @Column(name = "disciplina_nome")
-    private String disciplina;
-
-    @ElementCollection
-    @CollectionTable(name = "quadros_planejamento_integrantes", joinColumns = @JoinColumn(name = "quadro_id"))
-    @Column(name = "integrante")
-    private List<String> integrantes = new ArrayList<>();
-
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
     @JsonBackReference("usuario-quadros")
     private Usuario usuario;
 
-    @ManyToMany
-    @JoinTable(name = "quadros_planejamento_membros",
-            joinColumns = @JoinColumn(name = "quadro_id"),
-            inverseJoinColumns = @JoinColumn(name = "contato_id"))
-    private Set<Contato> membros = new HashSet<>();
-
     @OneToMany(mappedBy = "quadro", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("quadro-colunas")
     private List<ColunaPlanejamento> colunas = new ArrayList<>();
+
+  
+    // pra add disciplina contato e grupo
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "disciplina_id")
+    private Disciplina disciplina;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contato_id")
+    private Contato contato;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "grupo_id")
+    private Grupo grupo;
+
+    
+    // --- GETTERS E SETTERS
 
     public Long getId() {
         return id;
@@ -76,7 +75,6 @@ public class QuadroPlanejamento {
     public void setTitulo(String titulo) {
         this.titulo = titulo;
     }
-
         
     @JsonProperty("estado")
     public QuadroStatus getStatus() {
@@ -112,27 +110,7 @@ public class QuadroPlanejamento {
         this.dataPrazo = dataPrazo;
     }
 
-    @JsonProperty("disciplina")
-    public String getDisciplina() {
-        return disciplina;
-    }
-
-    @JsonProperty("disciplina")
-    public void setDisciplina(String disciplina) {
-        this.disciplina = disciplina;
-    }
-
-@JsonProperty("integrantes")
-    public List<String> getIntegrantes() {
-        return integrantes;
-    }
-
-    @JsonProperty("integrantes")
-    public void setIntegrantes(List<String> integrantes) {
-        this.integrantes = integrantes != null ? new ArrayList<>(integrantes) : new ArrayList<>();
-    }
-
-    @JsonIgnore
+    @JsonIgnore 
     public Usuario getUsuario() {
         return usuario;
     }
@@ -146,14 +124,6 @@ public class QuadroPlanejamento {
         return usuario != null ? usuario.getId() : null;
     }
     
-    public Set<Contato> getMembros() {
-        return membros;
-    }
-
-    public void setMembros(Set<Contato> membros) {
-        this.membros = membros;
-    }
-
     public List<ColunaPlanejamento> getColunas() {
         return colunas;
     }
@@ -161,5 +131,49 @@ public class QuadroPlanejamento {
     public void setColunas(List<ColunaPlanejamento> colunas) {
         this.colunas = colunas;
     }
-}
 
+
+    @JsonIgnore 
+    public Disciplina getDisciplina() {
+        return disciplina;
+    }
+
+    public void setDisciplina(Disciplina disciplina) {
+        this.disciplina = disciplina;
+    }
+
+    @JsonIgnore 
+    public Contato getContato() {
+        return contato;
+    }
+
+    public void setContato(Contato contato) {
+        this.contato = contato;
+    }
+
+    @JsonIgnore 
+    public Grupo getGrupo() {
+        return grupo;
+    }
+
+    public void setGrupo(Grupo grupo) {
+        this.grupo = grupo;
+    }
+
+    // O app Android espera receber os campos 'disciplinaId', 'contatoId', 'grupoId'
+
+    @JsonProperty("disciplinaId")
+    public Long getDisciplinaId() {
+        return (disciplina != null) ? disciplina.getId() : null;
+    }
+
+    @JsonProperty("contatoId")
+    public Long getContatoId() {
+        return (contato != null) ? contato.getId() : null;
+    }
+
+    @JsonProperty("grupoId")
+    public Long getGrupoId() {
+        return (grupo != null) ? grupo.getId() : null;
+    }
+}

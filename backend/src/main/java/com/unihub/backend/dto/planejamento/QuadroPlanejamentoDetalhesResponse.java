@@ -1,12 +1,9 @@
 package com.unihub.backend.dto.planejamento;
 
 import com.unihub.backend.model.ColunaPlanejamento;
-import com.unihub.backend.model.Contato;
 import com.unihub.backend.model.enums.QuadroStatus;
-
 import java.time.Instant;
 import java.util.List;
-import java.util.Set;
 
 public class QuadroPlanejamentoDetalhesResponse {
 
@@ -15,12 +12,21 @@ public class QuadroPlanejamentoDetalhesResponse {
     private QuadroStatus estado;
     private Instant dataInicio;
     private Instant dataFim;
-    private String disciplina;
-    private List<String> integrantes;
     private Long donoId;
-    private Set<Contato> membros;
+
+    // os campos antigos pelos novos IDs
+    private Long disciplinaId;
+    private Long contatoId;
+    private Long grupoId;
+
+    // Campos para detalhes
     private List<ColunaPlanejamento> colunasEmAndamento;
     private List<ColunaPlanejamento> colunasConcluidas;
+
+    public QuadroPlanejamentoDetalhesResponse() {
+    }
+
+    // --- GETTERS E SETTERS COMPLETOS ---
 
     public Long getId() {
         return id;
@@ -62,38 +68,36 @@ public class QuadroPlanejamentoDetalhesResponse {
         this.dataFim = dataFim;
     }
 
-    public String getDisciplina() {
-        return disciplina;
-    }
-
-    public void setDisciplina(String disciplina) {
-        this.disciplina = disciplina;
-    }
-
-    public List<String> getIntegrantes() {
-        return integrantes;
-    }
-
-     public void setIntegrantes(List<String> integrantes) {
-        this.integrantes = integrantes;
-    }
-
     public Long getDonoId() {
         return donoId;
     }
 
     public void setDonoId(Long donoId) {
-     
-   this.donoId = donoId;
-
+        this.donoId = donoId;
     }
 
-    public Set<Contato> getMembros() {
-        return membros;
+    public Long getDisciplinaId() {
+        return disciplinaId;
     }
 
-    public void setMembros(Set<Contato> membros) {
-        this.membros = membros;
+    public void setDisciplinaId(Long disciplinaId) {
+        this.disciplinaId = disciplinaId;
+    }
+
+    public Long getContatoId() {
+        return contatoId;
+    }
+
+    public void setContatoId(Long contatoId) {
+        this.contatoId = contatoId;
+    }
+
+    public Long getGrupoId() {
+        return grupoId;
+    }
+
+    public void setGrupoId(Long grupoId) {
+        this.grupoId = grupoId;
     }
 
     public List<ColunaPlanejamento> getColunasEmAndamento() {

@@ -1,5 +1,8 @@
 package com.unihub.backend.controller;
 
+//  novo DTO
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
+
 import com.unihub.backend.dto.planejamento.AdicionarGruposRequest;
 import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
@@ -17,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
 
 import java.util.List;
 
@@ -41,23 +43,23 @@ public class QuadroPlanejamentoController {
         return service.buscarPorId(id, usuarioId);
     }
 
-@GetMapping("/{id}/detalhes")
+    @GetMapping("/{id}/detalhes")
     public QuadroPlanejamentoDetalhesResponse detalhes(@PathVariable Long id,
-                                                        @AuthenticationPrincipal Long usuarioId) {
+                                                       @AuthenticationPrincipal Long usuarioId) {
         return service.detalhes(id, usuarioId);
     }
 
     @GetMapping("/{id}/colunas")
     public List<ColunaPlanejamento> listarColunas(@PathVariable Long id,
-                                                  @RequestParam(value = "estado", required = false) EstadoPlanejamento estado,
-                                                  @AuthenticationPrincipal Long usuarioId) {
+                                                   @RequestParam(value = "estado", required = false) EstadoPlanejamento estado,
+                                                   @AuthenticationPrincipal Long usuarioId) {
         return service.listarColunas(id, estado, usuarioId);
     }
 
     @PostMapping("/{id}/colunas")
     public ColunaPlanejamento criarColuna(@PathVariable Long id,
-                                          @RequestBody ColunaPlanejamentoRequest request,
-                                          @AuthenticationPrincipal Long usuarioId) {
+                                           @RequestBody ColunaPlanejamentoRequest request,
+                                           @AuthenticationPrincipal Long usuarioId) {
         return service.criarColuna(id, request, usuarioId);
     }
 
@@ -84,36 +86,26 @@ public class QuadroPlanejamentoController {
         return service.atualizarStatusTarefa(id, tarefaId, request, usuarioId);
     }
 
-
+    // atualizando metodos com o dto
     @PostMapping
-    public QuadroPlanejamento criar(@RequestBody QuadroPlanejamento quadro,
-                                    @AuthenticationPrincipal Long usuarioId) {
-        return service.criar(quadro, usuarioId);
+    public QuadroPlanejamento criar(
+            @RequestBody QuadroPlanejamentoRequest request, // Mudou de QuadroPlanejamento para o DTO
+            @AuthenticationPrincipal Long usuarioId) {
+        return service.criar(request, usuarioId);
     }
 
     @PutMapping("/{id}")
-    public QuadroPlanejamento atualizar(@PathVariable Long id,
-                                        @RequestBody QuadroPlanejamento quadro,
-                                        @AuthenticationPrincipal Long usuarioId) {
-        return service.atualizar(id, quadro, usuarioId);
+    public QuadroPlanejamento atualizar(
+            @PathVariable Long id,
+            @RequestBody QuadroPlanejamentoRequest request, // Mudou de QuadroPlanejamento para o DTO
+            @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizar(id, request, usuarioId);
     }
-@DeleteMapping("/{id}")
+
+    @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void excluir(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
         service.excluir(id, usuarioId);
     }
 
-    @PostMapping("/{id}/membros")
-    public QuadroPlanejamento adicionarMembros(@PathVariable Long id,
-                                               @RequestBody AdicionarMembrosRequest request,
-                                               @AuthenticationPrincipal Long usuarioId) {
-        return service.adicionarMembros(id, request, usuarioId);
-    }
-
-    @PostMapping("/{id}/grupos")
-    public QuadroPlanejamento adicionarGrupos(@PathVariable Long id,
-                                              @RequestBody AdicionarGruposRequest request,
-                                              @AuthenticationPrincipal Long usuarioId) {
-        return service.adicionarGrupos(id, request, usuarioId);
-    }
 }
