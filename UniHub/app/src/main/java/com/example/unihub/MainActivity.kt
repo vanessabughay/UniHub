@@ -207,7 +207,7 @@ class MainActivity : ComponentActivity() {
                             onAddDisciplina = {
                                 navController.navigate(Screen.ManterDisciplina.createRoute(null))
                             },
-                            onDisciplinaDoubleClick = { disciplinaId ->
+                            onDisciplinaClick = { disciplinaId ->
                                 navController.navigate(
                                     Screen.VisualizarDisciplina.createRoute(
                                         disciplinaId
