@@ -470,6 +470,14 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(
                                     Screen.ManterAvaliacao.createRoute(id = null, disciplinaId = id)
                                 )
+                            },
+                            onEditarAvaliacao = { avaliacaoId, disciplinaId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = disciplinaId
+                                    )
+                                )
                             }
                         )
                     }

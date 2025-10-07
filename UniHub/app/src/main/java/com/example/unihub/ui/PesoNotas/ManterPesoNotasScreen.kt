@@ -12,7 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Description
+
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -54,7 +55,8 @@ private val COL_PESO_WIDTH = 60.dp
 fun ManterPesoNotasScreen(
     disciplinaId: String,
     onVoltar: () -> Unit,
-    onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit
+    onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit,
+    onEditarAvaliacao: (avaliacaoId: String, disciplinaId: String) -> Unit
 ) {
     val viewModel: ManterPesoNotasViewModel = viewModel(
         factory = ManterPesoNotasViewModelFactory(LocalContext.current)
@@ -233,6 +235,9 @@ fun ManterPesoNotasScreen(
                 items(ui.itens, key = { it.id ?: it.hashCode().toLong() }) { av ->
                     AvaliacaoLinha(
                         av = av,
+                        onEditarAvaliacao = {
+                            av.id?.let { onEditarAvaliacao(it.toString(), disciplinaId) }
+                        },
                         onEditNota = {
                             campoTemp = av.nota?.let { n -> formatNumero(n) } ?: ""
                             editarNotaDe = av
@@ -354,6 +359,7 @@ fun ManterPesoNotasScreen(
 @Composable
 private fun AvaliacaoLinha(
     av: Avaliacao,
+    onEditarAvaliacao: () -> Unit,
     onEditNota: () -> Unit,
     onEditPeso: () -> Unit
 ) {
@@ -369,7 +375,13 @@ private fun AvaliacaoLinha(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Description, contentDescription = null)
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = "Editar avaliação",
+                modifier = Modifier
+                    .size(ICON_SIZE)
+                    .clickable(onClick = onEditarAvaliacao)
+            )
             Spacer(Modifier.width(10.dp))
             Text(
                 av.descricao ?: "[sem descrição]",
