@@ -12,6 +12,7 @@ import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.data.model.Modalidade
 import com.example.unihub.data.model.Prioridade
 import com.example.unihub.data.repository.AvaliacaoRepository
+import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,12 +38,25 @@ data class PesoNotasUiState(
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 class ManterPesoNotasViewModel(
-    private val repository: AvaliacaoRepository
+    private val repository: AvaliacaoRepository,
+    private val instituicaoRepository: InstituicaoRepository
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(PesoNotasUiState())
     val ui: StateFlow<PesoNotasUiState> = _ui.asStateFlow()
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            try {
+                instituicaoRepository.instituicaoUsuario()
+                    ?.mediaAprovacao
+                    ?.let { setMediaAprovacao(it) }
+            } catch (_: Exception) {
+                // Mantém valor padrão caso falhe buscar instituição
+            }
+        }
+    }
 
     fun setDisciplinaId(id: Long) {
         if (_ui.value.disciplinaId == id) return

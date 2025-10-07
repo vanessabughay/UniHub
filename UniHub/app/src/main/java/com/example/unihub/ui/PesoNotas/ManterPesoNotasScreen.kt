@@ -54,9 +54,11 @@ private val COL_PESO_WIDTH = 60.dp
 fun ManterPesoNotasScreen(
     disciplinaId: String,
     onVoltar: () -> Unit,
-    onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit,
-    viewModel: ManterPesoNotasViewModel = viewModel(factory = ManterPesoNotasViewModelFactory)
+    onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit
 ) {
+    val viewModel: ManterPesoNotasViewModel = viewModel(
+        factory = ManterPesoNotasViewModelFactory(LocalContext.current)
+    )
     val ctx = LocalContext.current
     val ui by viewModel.ui.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
