@@ -3,6 +3,8 @@ package com.example.unihub.ui.PesoNotas
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,8 +12,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,10 +31,23 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Avaliacao
 
 import java.util.Locale
+import kotlin.math.roundToInt
 
 //Cores
 private val PesoNotasColor      = Color(0xFFD8ECDF)       // fundo do card de peso das notas
 private val PesoNotasBtnColor = Color(0xFFBED0C4)       // fundo do card de peso das notas
+
+// Larguras/espacamentos para alinhar cabeçalho e linhas
+private val ICON_SIZE = 24.dp
+private val ICON_GAP = 10.dp
+private val CARD_SIDE_PAD = 12.dp
+private val GAP_NOTA_PESO = 24.dp
+
+// Larguras fixas das colunas numéricas (ajuste se quiser)
+private val COL_NOTA_WIDTH = 48.dp
+private val COL_PESO_WIDTH = 60.dp
+
+
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
@@ -108,7 +121,7 @@ fun ManterPesoNotasScreen(
             text = {
                 OutlinedTextField(
                     value = campoTemp,
-                    onValueChange = { campoTemp = it },
+                    onValueChange = { novo -> campoTemp = novo.filter { it.isDigit() } }, // <-- só dígitos
                     singleLine = true,
                     label = { Text("Peso (%)") },
                     placeholder = { Text("Ex.: 20") },
@@ -117,9 +130,9 @@ fun ManterPesoNotasScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val valor = campoTemp.replace(',', '.').toDoubleOrNull()
+                    val valorInt = campoTemp.toIntOrNull()               // <-- inteiro
                     val alvo = editarPesoDe!!
-                    viewModel.salvarPeso(alvo, valor) { ok, err ->
+                    viewModel.salvarPeso(alvo, valorInt?.toDouble()) { ok, err -> // envia Double se precisar
                         if (ok) Toast.makeText(ctx, "Peso salvo!", Toast.LENGTH_SHORT).show()
                         else Toast.makeText(ctx, err ?: "Erro ao salvar peso.", Toast.LENGTH_LONG).show()
                     }
@@ -130,6 +143,7 @@ fun ManterPesoNotasScreen(
         )
     }
 
+
     Scaffold(
         topBar = {
             // tenta extrair o nome da disciplina da lista atual
@@ -139,7 +153,7 @@ fun ManterPesoNotasScreen(
 
             CabecalhoAlternativo(
                 titulo = buildString {
-                    append("Notas da disciplina")
+                    append("Notas - ")
                     if (nomeDisciplina.isNotBlank()) {
 
                         append(nomeDisciplina)
@@ -158,18 +172,43 @@ fun ManterPesoNotasScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            // Cabeçalho de colunas
+            // Cabeçalho de colunas (alinhado às linhas)
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = CARD_SIDE_PAD, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Título", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row {
-                    Text("Nota", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.width(24.dp))
-                    Text("Peso", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                // Reserva o espaço do ícone + gap, para alinhar com as linhas
+                Spacer(Modifier.width(ICON_SIZE))
+                Spacer(Modifier.width(ICON_GAP))
+
+                Text(
+                    "Avaliação",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Text(
+                    "Nota",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.width(COL_NOTA_WIDTH)
+                )
+
+                Spacer(Modifier.width(GAP_NOTA_PESO))
+
+                Text(
+                    "Peso",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.width(COL_PESO_WIDTH)
+                )
             }
+
 
             if (ui.isLoading) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -194,7 +233,7 @@ fun ManterPesoNotasScreen(
                             editarNotaDe = av
                         },
                         onEditPeso = {
-                            campoTemp = av.peso?.let { p -> formatNumero(p) } ?: ""
+                            campoTemp = av.peso?.let { p -> formatInteiro(p) } ?: ""
                             editarPesoDe = av
                         }
                     )
@@ -203,35 +242,75 @@ fun ManterPesoNotasScreen(
                 // Cart do “Nota geral”
                 item {
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(
+                                BorderStroke(1.dp, MaterialTheme.colorScheme.outline), // borda sutil
+                                shape = RoundedCornerShape(14.dp)
+                            ),
                         colors = CardDefaults.cardColors(containerColor = PesoNotasColor),
-                        shape = RoundedCornerShape(12.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Column(Modifier.padding(14.dp)) {
+                        // sem padding horizontal aqui — o Row abaixo usa o mesmo padding das linhas/cabeçalho
+                        Column(Modifier.padding(vertical = 10.dp)) {
+
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = CARD_SIDE_PAD, vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("Nota geral", fontWeight = FontWeight.SemiBold)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(formatNumero(ui.notaGeral), fontWeight = FontWeight.SemiBold)
-                                    Spacer(Modifier.width(24.dp))
-                                    Text("${formatNumero(ui.somaPesosComNota)}%")
-                                }
+                                // Reserva espaço do ícone (24dp) + gap (10dp) para alinhar com as linhas
+                                Spacer(Modifier.width(ICON_SIZE))
+                                Spacer(Modifier.width(ICON_GAP))
+
+                                // "Título" da linha
+                                Text(
+                                    "Nota geral",
+                                    modifier = Modifier.weight(1f),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+
+                                // Valor de NOTA (alinhado à coluna "Nota")
+                                Text(
+                                    text = formatNumero(ui.notaGeral),
+                                    modifier = Modifier.width(COL_NOTA_WIDTH),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
+
+                                Spacer(Modifier.width(GAP_NOTA_PESO))
+
+                                // Valor de PESO (alinhado à coluna "Peso")
+                                Text(
+                                    text = "${formatInteiro(ui.somaPesosComNota)}%",
+                                    modifier = Modifier.width(COL_PESO_WIDTH),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp
+                                )
                             }
+
+                            // Mensagem auxiliar (mantive central e em destaque)
                             if (ui.faltandoParaAprovacao > 0.0) {
                                 Spacer(Modifier.height(6.dp))
                                 Text(
                                     "FALTA ${formatNumero(ui.faltandoParaAprovacao)} PARA APROVAÇÃO!",
                                     color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = CARD_SIDE_PAD),
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
                             }
                         }
                     }
                 }
+
 
                 // Botão “Adicionar avaliação”
                 item {
@@ -291,33 +370,39 @@ private fun AvaliacaoLinha(
                 av.descricao ?: "[sem descrição]",
                 modifier = Modifier.weight(1f),
                 fontSize = 15.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Normal
             )
 
             // NOTA (clicável)
             Text(
                 text = av.nota?.let { formatNumero(it) } ?: "-",
                 modifier = Modifier
-                    .widthIn(min = 40.dp)
+                    .width(COL_NOTA_WIDTH)       // <-- fixo
                     .clickable { onEditNota() },
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Normal,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End // <-- alinhar à direita
             )
-            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(GAP_NOTA_PESO))
 
             // PESO (clicável)
             Text(
-                text = (av.peso?.let { "${formatNumero(it)}%" } ?: "-"),
+                text = (av.peso?.let { "${formatInteiro(it)}%" } ?: "-"),
                 modifier = Modifier
-                    .widthIn(min = 42.dp)
+                    .width(COL_PESO_WIDTH)
                     .clickable { onEditPeso() },
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Normal,
+                textAlign = androidx.compose.ui.text.style.TextAlign.End
             )
 
+
+
             Spacer(Modifier.width(6.dp))
-            //Icon(Icons.Filled.Edit, contentDescription = "Editar", tint = Color.Black.copy(alpha = 0.55f))
+
         }
     }
 }
+
+private fun formatInteiro(v: Double): String = v.roundToInt().toString()
 
 private fun formatNumero(v: Double): String {
     // 1 casa para nota/peso; usa vírgula no PT-BR
