@@ -14,6 +14,7 @@ import com.example.unihub.data.repository.AvaliacaoRepository
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
+import java.math.BigDecimal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -126,9 +127,9 @@ class ManterAvaliacaoViewModel(
                                     dataEntrega = dataUi,
                                     horaEntrega = horaUi,
 
-                                    peso = avaliacao.peso?.toString() ?: "",
+                                    peso = formatDecimalForDisplay(avaliacao.peso),
                                     estado = avaliacao.estado,
-                                    nota = avaliacao.nota?.toString() ?: "",
+                                    nota = formatDecimalForDisplay(avaliacao.nota),
                                     // dificuldade = avaliacao.dificuldade?.toString() ?: "",
                                     isLoading = false
                                 )
@@ -205,7 +206,7 @@ class ManterAvaliacaoViewModel(
                 return false
             }
         }
-        if (st.peso.isNotBlank() && st.peso.toDoubleOrNull() == null) {
+        if (st.peso.isNotBlank() && st.peso.replace(',', '.').toDoubleOrNull() == null) {
             _uiState.update { it.copy(erro = "Peso inválido. Deve ser um número.") }
             return false
         }
@@ -263,11 +264,17 @@ class ManterAvaliacaoViewModel(
     fun setModalidade(modalidade: Modalidade) { _uiState.update { it.copy(modalidade = modalidade, erro = null) } }
     fun setDataEntrega(data: String) { _uiState.update { it.copy(dataEntrega = data, erro = null) } }
     fun setHoraEntrega(hora: String) { _uiState.update { it.copy(horaEntrega = hora, erro = null) } }
-    fun setPeso(peso: String) { _uiState.update { it.copy(peso = peso, erro = null) } }
+    fun setPeso(peso: String) {
+        val sanitized = sanitizeDecimalInput(peso)
+        _uiState.update { it.copy(peso = sanitized, erro = null) }
+    }
     fun setPrioridade(prioridade: Prioridade) { _uiState.update { it.copy(prioridade = prioridade, erro = null) } }
     fun setReceberNotificacoes(receber: Boolean) { _uiState.update { it.copy(receberNotificacoes = receber, erro = null) } }
     fun setEstado(estado: EstadoAvaliacao) { _uiState.update { it.copy(estado = estado, erro = null) } }
-    fun setNota(nota: String) { _uiState.update { it.copy(nota = nota, erro = null) } }
+    fun setNota(nota: String) {
+        val sanitized = sanitizeDecimalInput(nota)
+        _uiState.update { it.copy(nota = sanitized, erro = null) }
+    }
 
     fun deleteAvaliacao(id: String) {
         _uiState.update { it.copy(isLoading = true, erro = null, isExclusao = true) }
@@ -396,6 +403,7 @@ class ManterAvaliacaoViewModel(
         }
 
         val notaDouble = s.nota.replace(',', '.').toDoubleOrNull()
+        val pesoDouble = s.peso.replace(',', '.').toDoubleOrNull()
 
         return AvaliacaoRequestDto(
             id = idParaAtualizar,
@@ -421,5 +429,29 @@ class ManterAvaliacaoViewModel(
         if (lista.isNotEmpty() && _uiState.value.disciplinaIdSelecionada == null) {
             lista.firstOrNull { it.id == discId }?.let { onDisciplinaSelecionada(it) }
         }
+    }
+
+    private fun sanitizeDecimalInput(input: String): String {
+        if (input.isBlank()) return ""
+        val sanitized = StringBuilder()
+        var hasSeparator = false
+        input.forEach { char ->
+            when {
+                char.isDigit() -> sanitized.append(char)
+                char == ',' || char == '.' -> if (!hasSeparator) {
+                    sanitized.append(',')
+                    hasSeparator = true
+                }
+            }
+        }
+        return sanitized.toString()
+    }
+
+    private fun formatDecimalForDisplay(value: Double?): String {
+        if (value == null) return ""
+        return BigDecimal.valueOf(value)
+            .stripTrailingZeros()
+            .toPlainString()
+            .replace('.', ',')
     }
 }

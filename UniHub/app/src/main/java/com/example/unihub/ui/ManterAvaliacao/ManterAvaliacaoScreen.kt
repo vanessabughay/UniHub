@@ -324,7 +324,7 @@ fun ManterAvaliacaoScreen(
                         label = { Text("Peso") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                         enabled = true, // Mude para false para desativar completamente a digitação
                         colors = OutlinedTextFieldDefaults.colors()
                     )

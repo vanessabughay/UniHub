@@ -95,17 +95,24 @@ fun ManterPesoNotasScreen(
             title = { Text("Editar nota") },
             text = {
                 OutlinedTextField(
-                    value = campoTemp,
-                    onValueChange = { campoTemp = it },
+                    value = formatNotaCampo(campoTemp),
+                    onValueChange = { novo ->
+                        val digitsOnly = novo.filter { it.isDigit() }
+                        campoTemp = when {
+                            digitsOnly.isEmpty() -> ""
+                            digitsOnly.length == 1 -> digitsOnly
+                            else -> digitsOnly.trimStart('0').ifEmpty { "0" }
+                        }
+                    },
                     singleLine = true,
                     label = { Text("Nota") },
                     placeholder = { Text("Ex.: 8,5") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val valor = campoTemp.replace(',', '.').toDoubleOrNull()
+                    val valor = notaDigitsParaDouble(campoTemp)
                     val alvo = editarNotaDe!!
                     viewModel.salvarNota(alvo, valor) { ok, err ->
                         if (ok) Toast.makeText(ctx, "Nota salva!", Toast.LENGTH_SHORT).show()
@@ -239,7 +246,7 @@ fun ManterPesoNotasScreen(
                             av.id?.let { onEditarAvaliacao(it.toString(), disciplinaId) }
                         },
                         onEditNota = {
-                            campoTemp = av.nota?.let { n -> formatNumero(n) } ?: ""
+                            campoTemp = av.nota?.let { n -> formatNotaParaDigits(n) } ?: ""
                             editarNotaDe = av
                         },
                         onEditPeso = {
@@ -417,6 +424,25 @@ private fun AvaliacaoLinha(
 
         }
     }
+}
+
+private fun formatNotaCampo(digits: String): String {
+    if (digits.isEmpty()) return ""
+    val integerPartRaw = if (digits.length == 1) "" else digits.dropLast(1)
+    val integerPart = integerPartRaw.trimStart('0').ifEmpty { "0" }
+    val decimalPart = digits.last().toString()
+    return "$integerPart,$decimalPart"
+}
+
+private fun formatNotaParaDigits(nota: Double): String {
+    val valorEscalado = (nota * 10).roundToInt()
+    return valorEscalado.toString()
+}
+
+private fun notaDigitsParaDouble(digits: String): Double? {
+    if (digits.isEmpty()) return null
+    val inteiro = digits.toLongOrNull() ?: return null
+    return inteiro / 10.0
 }
 
 private fun formatInteiro(v: Double): String = v.roundToInt().toString()
