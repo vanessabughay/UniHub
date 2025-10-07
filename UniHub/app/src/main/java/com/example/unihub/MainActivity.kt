@@ -157,6 +157,10 @@ sealed class Screen(val route: String) {
             return "manter_avaliacao?$ARG_ID=$idPart&$ARG_DISC=$discPart"
         }
     }
+    // Peso das Notas
+    object PesoNotas : Screen("peso_notas?disciplinaId={disciplinaId}") {
+        fun createRoute(disciplinaId: String) = "peso_notas?disciplinaId=$disciplinaId"
+    }
 }
 
 class MainActivity : ComponentActivity() {
@@ -294,6 +298,25 @@ class MainActivity : ComponentActivity() {
                             },
                             onNavigateToAnotacoes = { idDaDisciplina ->
                                 navController.navigate(Screen.Anotacoes.createRoute(idDaDisciplina.toLong()))
+                            },
+                            onNavigateToAddAvaliacaoParaDisciplina = { discId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = null,
+                                        disciplinaId = discId
+                                    )
+                                )
+                            },
+                            onNavigateToManterAvaliacao = { avaliacaoId ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(
+                                        id = avaliacaoId,
+                                        disciplinaId = null
+                                    )
+                                )
+                            },
+                            onNavigateToPesoNotas = { discId ->
+                                navController.navigate(Screen.PesoNotas.createRoute(discId))
                             },
                             viewModel = viewModel
                         )
@@ -466,7 +489,7 @@ class MainActivity : ComponentActivity() {
                     }
 
 
-                    // LISTAR AVALIAÇÃO (agora existe na sealed class)
+                    // LISTAR AVALIAÇÃO
                     composable(Screen.ListarAvaliacao.route) {
                         ListarAvaliacaoScreen(
                             onAddAvaliacaoGeral = {
@@ -496,6 +519,24 @@ class MainActivity : ComponentActivity() {
                             onVoltar = { navController.popBackStack() }
                         )
                     }
+
+                    // PESO NOTAS
+                    composable(
+                        route = Screen.PesoNotas.route,
+                        arguments = listOf(navArgument("disciplinaId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val discId = backStackEntry.arguments?.getString("disciplinaId")!!
+                        com.example.unihub.ui.PesoNotas.ManterPesoNotasScreen(
+                            disciplinaId = discId,
+                            onVoltar = { navController.popBackStack() },
+                            onAddAvaliacaoParaDisciplina = { id ->
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(id = null, disciplinaId = id)
+                                )
+                            }
+                        )
+                    }
+
 
                     // MANTER QUADRO
                     composable(
