@@ -185,14 +185,16 @@ fun ManterPesoNotasScreen(
 
                 Text(
                     "Avaliação",
-                    fontSize = 14.sp,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
 
                 Text(
                     "Nota",
-                    fontSize = 14.sp,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                     modifier = Modifier.width(COL_NOTA_WIDTH)
@@ -202,7 +204,8 @@ fun ManterPesoNotasScreen(
 
                 Text(
                     "Peso",
-                    fontSize = 14.sp,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                     modifier = Modifier.width(COL_PESO_WIDTH)
