@@ -545,11 +545,11 @@ private fun millisToIsoDate(millis: Long): String {
 }
 
 private fun stringTimeToMinutes(hhmm: String?): Int {
-    if (hhmm.isNullOrBlank()) return 0
+    if (hhmm.isNullOrBlank()) return -1
     return try {
         val (h, m) = hhmm.split(":").map { it.toInt() }
         (h.coerceIn(0, 23) * 60) + m.coerceIn(0, 59)
-    } catch (_: Exception) { 0 }
+    } catch (_: Exception) { -1 }
 }
 
 private fun minutesToHHmm(total: Int): String {
@@ -711,8 +711,10 @@ fun CampoHorario(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val hour = value / 60
-    val minute = value % 60
+    val hasValue = value >= 0
+    val safeValue = if (hasValue) value else 0
+    val hour = safeValue / 60
+    val minute = safeValue % 60
 
     val showTimePicker = {
         TimePickerDialog(
@@ -720,13 +722,13 @@ fun CampoHorario(
             { _, hourOfDay, minuteOfHour ->
                 onTimeSelected(hourOfDay * 60 + minuteOfHour)
             },
-            if (value > 0) hour else 12,
-            if (value > 0) minute else 0,
+            if (hasValue) hour else 12,
+            if (hasValue) minute else 0,
             true
         ).show()
     }
 
-    val displayText = if (value <= 0) "" else String.format("%02d:%02d", hour, minute)
+    val displayText = if (!hasValue) "" else String.format("%02d:%02d", hour, minute)
 
     Column(modifier) {
         Text(
