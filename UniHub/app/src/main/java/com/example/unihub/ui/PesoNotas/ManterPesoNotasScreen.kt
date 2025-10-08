@@ -132,7 +132,7 @@ fun ManterPesoNotasScreen(
             text = {
                 OutlinedTextField(
                     value = campoTemp,
-                    onValueChange = { novo -> campoTemp = novo.filter { it.isDigit() } }, // <-- só dígitos
+                    onValueChange = { novo -> campoTemp = sanitizePesoCampo(novo) }, // <-- só dígitos
                     singleLine = true,
                     label = { Text("Peso (%)") },
                     placeholder = { Text("Ex.: 20") },
@@ -250,7 +250,7 @@ fun ManterPesoNotasScreen(
                             editarNotaDe = av
                         },
                         onEditPeso = {
-                            campoTemp = av.peso?.let { p -> formatInteiro(p) } ?: ""
+                            campoTemp = av.peso?.let { p -> sanitizePesoCampo(formatInteiro(p)) } ?: ""
                             editarPesoDe = av
                         }
                     )
@@ -451,4 +451,23 @@ private fun formatNumero(v: Double): String {
     // 1 casa para nota/peso; usa vírgula no PT-BR
     val s = String.format(Locale.US, "%.1f", v)
     return s.replace('.', ',')
+}
+
+private fun sanitizePesoCampo(raw: String): String {
+    val digitsOnly = raw.filter { it.isDigit() }
+    if (digitsOnly.isEmpty()) return ""
+
+    val trimmed = digitsOnly.trimStart('0')
+    val normalized = when {
+        trimmed.isEmpty() -> "0"
+        else -> trimmed
+    }
+
+    val limited = normalized.take(3)
+    val valor = limited.toIntOrNull() ?: return ""
+
+    return when {
+        valor > 100 -> "100"
+        else -> valor.toString()
+    }
 }
