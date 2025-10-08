@@ -20,24 +20,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.repository._quadrobackend
-import com.example.unihub.data.model.Quadro
-import com.example.unihub.data.model.Estado
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
-import com.example.unihub.data.model.Priority
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
 
@@ -48,11 +37,42 @@ private fun formatarPrazo(prazo: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualizarQuadroScreen(
-    navController: NavHostController,
     quadroId: String,
-    viewModelFactory: ViewModelProvider.Factory
+    onVoltar: () -> Unit,
+    onNavigateToEditQuadro: (String) -> Unit,
+    onNavigateToNovaColuna: (String) -> Unit,
+    onNavigateToEditarColuna: (String, String) -> Unit,
+    onNavigateToNovaTarefa: (String) -> Unit,
+    onNavigateToEditarTarefa: (String, String) -> Unit,
+    viewModelFactory: VisualizarQuadroViewModelFactory
 ) {
     val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
+
+    VisualizarQuadroContent(
+        quadroId = quadroId,
+        onVoltar = onVoltar,
+        onNavigateToEditQuadro = onNavigateToEditQuadro,
+        onNavigateToNovaColuna = onNavigateToNovaColuna,
+        onNavigateToEditarColuna = onNavigateToEditarColuna,
+        onNavigateToNovaTarefa = onNavigateToNovaTarefa,
+        onNavigateToEditarTarefa = onNavigateToEditarTarefa,
+        viewModel = viewModel
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VisualizarQuadroContent(
+    quadroId: String,
+    onVoltar: () -> Unit,
+    onNavigateToEditQuadro: (String) -> Unit,
+    onNavigateToNovaColuna: (String) -> Unit,
+    onNavigateToEditarColuna: (String, String) -> Unit,
+    onNavigateToNovaTarefa: (String) -> Unit,
+    onNavigateToEditarTarefa: (String, String) -> Unit,
+    viewModel: VisualizarQuadroViewModel
+) {
+
     val uiState by viewModel.uiState.collectAsState()
 
     var colunaExpandidaId by remember { mutableStateOf<String?>(null) }
@@ -75,7 +95,7 @@ fun VisualizarQuadroScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { navController.navigate("colunaForm/$quadroId/new") },
+                    onClick = { onNavigateToNovaColuna(quadroId) },
                     modifier = Modifier.fillMaxWidth(0.8f),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
@@ -96,8 +116,8 @@ fun VisualizarQuadroScreen(
         ) {
             HeaderSection(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
-                onVoltar = { navController.popBackStack() },
-                onClickIconeDireita = { navController.navigate("quadroForm/$quadroId") }
+                onVoltar = onVoltar,
+                onClickIconeDireita = { onNavigateToEditQuadro(quadroId) }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -126,9 +146,9 @@ fun VisualizarQuadroScreen(
                                     onExpandToggle = {
                                         colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
                                     },
-                                    onEditColuna = { navController.navigate("colunaForm/$quadroId/${coluna.id}") },
-                                    onEditTarefa = { tarefaId -> navController.navigate("tarefaForm/${coluna.id}/$tarefaId") },
-                                    onNewTarefa = { navController.navigate("tarefaForm/${coluna.id}/new") }
+                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                    onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
+                                    onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
                                 )
                             }
                         }
@@ -151,9 +171,9 @@ fun VisualizarQuadroScreen(
                                     onExpandToggle = {
                                         colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
                                     },
-                                    onEditColuna = { navController.navigate("colunaForm/$quadroId/${coluna.id}") },
-                                    onEditTarefa = { tarefaId -> navController.navigate("tarefaForm/${coluna.id}/$tarefaId") },
-                                    onNewTarefa = { navController.navigate("tarefaForm/${coluna.id}/new") }
+                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                    onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
+                                    onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
                                 )
                             }
                         }

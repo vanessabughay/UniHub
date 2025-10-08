@@ -46,8 +46,11 @@ import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
 import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
+import com.example.unihub.ui.ManterQuadro.QuadroFormUiState
+import com.example.unihub.ui.ManterQuadro.QuadroFormViewModel
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
+import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModel
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModelFactory
 import com.example.unihub.data.apiBackend.ApiColunaBackend
 import com.example.unihub.data.apiBackend.ApiContatoBackend
@@ -83,9 +86,9 @@ sealed class Screen(val route: String) {
     object ListarDisciplinas : Screen("lista_disciplinas")
 
     object ListarQuadros : Screen("lista_quadros")
-    object ManterQuadro : Screen("quadroForm/{quadroId}") {
+  /*  object ManterQuadro : Screen("quadroForm/{quadroId}") {
         fun createRoute(quadroId: String = "new") = "quadroForm/$quadroId"
-    }
+    } */
 
     object VisualizarQuadro : Screen("visualizarQuadro/{quadroId}") {
         fun createRoute(quadroId: String) = "visualizarQuadro/$quadroId"
@@ -100,6 +103,11 @@ sealed class Screen(val route: String) {
         fun createRoute(colunaId: String, tarefaId: String = "new") =
             "tarefaForm/$colunaId/$tarefaId"
     }
+
+    object ManterQuadro : Screen("manter_quadro?id={quadroId}") {
+        fun createRoute(id: String?) = if (id != null) "manter_quadro?id=$id" else "manter_quadro"
+    }
+
 
     object ManterDisciplina : Screen("manter_disciplina?id={id}") {
         fun createRoute(id: String?) = if (id != null) "manter_disciplina?id=$id" else "manter_disciplina"
@@ -456,7 +464,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    // LISTAR QUADROS (FECHO CORRIGIDO)
+                    // LISTAR QUADROS
                     composable(Screen.ListarQuadros.route) {
                         val quadroRepository = QuadroRepository(ApiQuadroBackend())
                         val viewModelFactory = ListarQuadrosViewModelFactory(quadroRepository)
@@ -480,11 +488,27 @@ class MainActivity : ComponentActivity() {
 
                         val quadroRepository = QuadroRepository(ApiQuadroBackend())
                         val viewModelFactory = VisualizarQuadroViewModelFactory(quadroRepository)
+                        val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
 
                         VisualizarQuadroScreen(
-                            navController = navController,
                             quadroId = quadroId,
-                            viewModelFactory = viewModelFactory
+                            onVoltar = { navController.popBackStack() },
+                            onNavigateToEditQuadro = { id ->
+                                navController.navigate(Screen.ManterQuadro.createRoute(id))
+                            },
+                            onNavigateToNovaColuna = { id ->
+                                navController.navigate(Screen.ManterColuna.createRoute(id))
+                            },
+                            onNavigateToEditarColuna = { qId, colunaId ->
+                                navController.navigate(Screen.ManterColuna.createRoute(qId, colunaId))
+                            },
+                            onNavigateToNovaTarefa = { colunaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(colunaId))
+                            },
+                            onNavigateToEditarTarefa = { colunaId, tarefaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(colunaId, tarefaId))
+                            },
+                            viewModel = viewModel
                         )
                     }
 
@@ -544,7 +568,7 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(
                             navArgument("quadroId") {
                                 type = NavType.StringType
-                                defaultValue = "new"
+                                nullable = true
                             }
                         )
                     ) { backStackEntry ->
