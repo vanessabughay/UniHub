@@ -46,8 +46,6 @@ import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
 import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
-import com.example.unihub.ui.ManterQuadro.QuadroFormUiState
-import com.example.unihub.ui.ManterQuadro.QuadroFormViewModel
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModel
@@ -72,6 +70,7 @@ import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModelFactory
 import com.example.unihub.ui.ManterTarefa.ManterTarefaViewModelFactory
 import com.example.unihub.ui.ManterTarefa.TarefaFormScreen
+import com.example.unihub.ui.PesoNotas.ManterPesoNotasScreen
 import com.example.unihub.ui.TelaEsqueciSenha.TelaEsqueciSenha
 import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel
@@ -90,9 +89,7 @@ sealed class Screen(val route: String) {
         fun createRoute(quadroId: String = "new") = "quadroForm/$quadroId"
     } */
 
-    object VisualizarQuadro : Screen("visualizarQuadro/{quadroId}") {
-        fun createRoute(quadroId: String) = "visualizarQuadro/$quadroId"
-    }
+
 
     object ManterColuna : Screen("colunaForm/{quadroId}/{colunaId}") {
         fun createRoute(quadroId: String, colunaId: String = "new") =
@@ -104,9 +101,9 @@ sealed class Screen(val route: String) {
             "tarefaForm/$colunaId/$tarefaId"
     }
 
-    object ManterQuadro : Screen("manter_quadro?quadroId={quadroId}") {
+    object ManterQuadro : Screen("manter_quadro?id={id}") {
         fun createRoute(id: String?) =
-            id?.let { "manter_quadro?quadroId=$it" } ?: "manter_quadro"
+            if (id != null) "manter_quadro?id=$id" else "manter_quadro"
     }
 
 
@@ -116,6 +113,10 @@ sealed class Screen(val route: String) {
 
     object VisualizarDisciplina : Screen("visualizar_disciplina/{id}") {
         fun createRoute(id: String) = "visualizar_disciplina/$id"
+    }
+
+    object VisualizarQuadro : Screen("visualizar_quadro/{id}") {
+        fun createRoute(id: String) = "visualizar_quadro/$id"
     }
 
     object Anotacoes : Screen("anotacoes/{id}") {
@@ -479,9 +480,42 @@ class MainActivity : ComponentActivity() {
                     // VISUALIZAR QUADRO
                     composable(
                         route = Screen.VisualizarQuadro.route,
-                        arguments = listOf(navArgument("quadroId") { type = NavType.StringType })
+                        arguments = listOf(navArgument("id") { type = NavType.StringType })
                     ) { backStackEntry ->
-                        val quadroId = backStackEntry.arguments?.getString("quadroId")
+                        val quadroId = backStackEntry.arguments?.getString("id")
+
+                        val quadroRepository =
+                            QuadroRepository(ApiQuadroBackend(),
+                                )
+                        val factory =
+                            VisualizarQuadroViewModelFactory(
+                                quadroRepository,
+                            )
+                        val viewModel: VisualizarQuadroViewModel =
+                            viewModel(factory = factory)
+
+                        VisualizarQuadroScreen(
+
+                            quadroId = quadroId,
+                            onVoltar = { navController.popBackStack() },
+                            onNavigateToEditQuadro = TODO(),
+                            onNavigateToNovaColuna = TODO(),
+                            onNavigateToEditarColuna = TODO(),
+                            onNavigateToNovaTarefa = TODO(),
+                            onNavigateToEditarTarefa = TODO(),
+                            viewModelFactory = TODO(),
+                            onNavigateToEdit = { idParaEditar : String ->
+                                navController.navigate(
+                                    Screen.ManterQuadro.createRoute(
+                                        idParaEditar
+                                    )
+                                )
+                            },
+
+                            viewModel = TODO(),
+
+                            /*
+
                         if (quadroId.isNullOrBlank()) {
                             navController.popBackStack()
                             return@composable
@@ -509,8 +543,12 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ManterTarefa.createRoute(colunaId, tarefaId))
                             },
                             viewModelFactory = viewModelFactory
+
+                         */
                         )
                     }
+
+
 
 
                     // LISTAR AVALIAÇÃO
@@ -550,7 +588,7 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("disciplinaId") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val discId = backStackEntry.arguments?.getString("disciplinaId")!!
-                        com.example.unihub.ui.PesoNotas.ManterPesoNotasScreen(
+                        ManterPesoNotasScreen(
                             disciplinaId = discId,
                             onVoltar = { navController.popBackStack() },
                             onAddAvaliacaoParaDisciplina = { id ->
@@ -566,13 +604,12 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = Screen.ManterQuadro.route,
                         arguments = listOf(
-                            navArgument("quadroId") {
-                                type = NavType.StringType
-                                nullable = true
-                            }
+                            navArgument("quadroId") { type = NavType.StringType },
+                            navArgument("id") { type = NavType.StringType; nullable = true }
+
                         )
                     ) { backStackEntry ->
-                        val quadroIdArg = backStackEntry.arguments?.getString("quadroId")
+                        val quadroIdArg = backStackEntry.arguments?.getString("quadroId") ?: ""
                         val quadroId = quadroIdArg?.takeUnless { it == "new" }
 
                         // --- CORREÇÃO APLICADA AQUI ---

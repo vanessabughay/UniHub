@@ -26,7 +26,6 @@ import java.util.Locale
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.data.model.Coluna
-import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
@@ -38,27 +37,39 @@ private fun formatarPrazo(prazo: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualizarQuadroScreen(
-    quadroId: String,
+    quadroId: String?, // This remains nullable as it comes from navigation
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
     onNavigateToNovaColuna: (String) -> Unit,
     onNavigateToEditarColuna: (String, String) -> Unit,
     onNavigateToNovaTarefa: (String) -> Unit,
     onNavigateToEditarTarefa: (String, String) -> Unit,
-    viewModelFactory: VisualizarQuadroViewModelFactory
+    viewModelFactory: VisualizarQuadroViewModelFactory,
+    viewModel: VisualizarQuadroViewModel,
+    onNavigateToEdit: (String) -> Unit
 ) {
     val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
 
-    VisualizarQuadroContent(
-        quadroId = quadroId,
-        onVoltar = onVoltar,
-        onNavigateToEditQuadro = onNavigateToEditQuadro,
-        onNavigateToNovaColuna = onNavigateToNovaColuna,
-        onNavigateToEditarColuna = onNavigateToEditarColuna,
-        onNavigateToNovaTarefa = onNavigateToNovaTarefa,
-        onNavigateToEditarTarefa = onNavigateToEditarTarefa,
-        viewModel = viewModel
-    )
+    // Only proceed if quadroId is not null
+    if (quadroId != null) {
+        VisualizarQuadroContent(
+            quadroId = quadroId, // Now it's guaranteed to be a non-null String
+            onVoltar = onVoltar,
+            onNavigateToEditQuadro = onNavigateToEditQuadro,
+            onNavigateToNovaColuna = onNavigateToNovaColuna,
+            onNavigateToEditarColuna = onNavigateToEditarColuna,
+            onNavigateToNovaTarefa = onNavigateToNovaTarefa,
+            onNavigateToEditarTarefa = onNavigateToEditarTarefa,
+            viewModel = viewModel
+        )
+    } else {
+        // Optional: Show a loading state, an error message, or simply navigate back
+        // if the ID is unexpectedly null.
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Erro: ID do quadro não encontrado.")
+        }
+    }
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,7 +130,8 @@ private fun VisualizarQuadroContent(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
                 onVoltar = onVoltar,
                 onClickIconeDireita = {
-                    uiState.quadro?.id?.let(onNavigateToEditQuadro)
+                    val destinoId = uiState.quadro?.id ?: quadroId
+                    onNavigateToEditQuadro(destinoId)
                 }
             )
 
