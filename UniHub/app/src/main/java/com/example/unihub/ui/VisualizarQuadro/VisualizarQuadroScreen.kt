@@ -118,7 +118,9 @@ private fun VisualizarQuadroContent(
             HeaderSection(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
                 onVoltar = onVoltar,
-                onClickIconeDireita = { onNavigateToEditQuadro(quadroId) }
+                onClickIconeDireita = {
+                    uiState.quadro?.id?.let(onNavigateToEditQuadro)
+                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))

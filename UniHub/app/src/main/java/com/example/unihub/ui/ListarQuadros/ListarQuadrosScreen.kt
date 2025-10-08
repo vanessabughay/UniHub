@@ -32,6 +32,8 @@ import com.example.unihub.data.model.Estado
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.unihub.Screen
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -98,7 +100,7 @@ fun ListarQuadrosScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Button(
-                    onClick = { navController.navigate("quadroForm/new") },
+                    onClick = { navController.navigate(Screen.ManterQuadro.createRoute(id = null)) },
                     modifier = Modifier.fillMaxWidth(0.8f),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
@@ -150,7 +152,9 @@ fun ListarQuadrosScreen(
                                 QuadroCard(
                                     quadro = quadro,
                                     onSingleClick = {
-                                        quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                        quadro.id?.let { id ->
+                                            navController.navigate(Screen.VisualizarQuadro.createRoute(id))
+                                        }
                                     }
                                 )
                             }
@@ -171,7 +175,9 @@ fun ListarQuadrosScreen(
                                 QuadroCard(
                                     quadro = quadro,
                                     onSingleClick = {
-                                        quadro.id?.let { navController.navigate("visualizarQuadro/$it") }
+                                        quadro.id?.let { id ->
+                                            navController.navigate(Screen.VisualizarQuadro.createRoute(id))
+                                        }
                                     }
                                 )
                             }
