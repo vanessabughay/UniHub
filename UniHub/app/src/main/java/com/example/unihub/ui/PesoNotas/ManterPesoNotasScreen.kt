@@ -296,7 +296,7 @@ fun ManterPesoNotasScreen(
 
                                 // Valor de PESO (alinhado à coluna "Peso")
                                 Text(
-                                    text = PesoCampo.formatTotal(ui.somaPesosComNota),
+                                    text = PesoCampo.formatTotal(ui.somaPesosTotal),
                                     modifier = Modifier.width(COL_PESO_WIDTH),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                                     fontWeight = FontWeight.Bold,
