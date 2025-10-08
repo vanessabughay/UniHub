@@ -7,22 +7,22 @@ import org.springframework.data.jpa.repository.EntityGraph;
 
 
 import java.util.List;
+import java.util.Optional;
 
 public interface AvaliacaoRepository extends JpaRepository<Avaliacao, Long> {
     List<Avaliacao> findByDescricaoContainingIgnoreCase(String descricao);
 
-    // carrega a disciplina junto em listagens
+    
     @EntityGraph(attributePaths = {"disciplina"})
-    List<Avaliacao> findAllBy();
+    List<Avaliacao> findByUsuarioId(Long usuarioId);
 
-    @EntityGraph(attributePaths = {"disciplina"})   //usado pelo listarPorDisciplina
-    List<Avaliacao> findByDisciplinaId(Long disciplinaId);
-
-    //busca com descrição já carregando disciplina
     @EntityGraph(attributePaths = {"disciplina"})
-    List<Avaliacao> findByDescricaoContainingIgnoreCaseAndDisciplinaIsNotNull(String descricao);
+    List<Avaliacao> findByUsuarioIdAndDisciplinaId(Long usuarioId, Long disciplinaId);
 
+    Optional<Avaliacao> findByIdAndUsuarioId(Long id, Long usuarioId);
 
+    @EntityGraph(attributePaths = {"disciplina"})
+    List<Avaliacao> findByUsuarioIdAndDescricaoContainingIgnoreCaseAndDisciplinaIsNotNull(Long usuarioId, String descricao);
 
 }
 

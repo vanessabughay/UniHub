@@ -30,18 +30,21 @@ public class AvaliacaoService {
     }
 
     @Transactional(readOnly = true)
-    public List<Avaliacao> listarTodas() {
-        return avaliacaoRepository.findAllBy();
+    public List<Avaliacao> listarTodas(Long usuarioId) {
+        validarUsuario(usuarioId);
+        return avaliacaoRepository.findByUsuarioId(usuarioId);
     }
 
     @Transactional(readOnly = true)
-    public Avaliacao buscarPorId(Long id) {
-        return avaliacaoRepository.findById(id)
+    public Avaliacao buscarPorId(Long id, Long usuarioId) {
+        validarUsuario(usuarioId);
+        return avaliacaoRepository.findByIdAndUsuarioId(id, usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Avaliação não encontrada: " + id));
     }
 
     @Transactional
     public Long criar(AvaliacaoRequest req, Long usuarioId) {
+                validarUsuario(usuarioId);
         Avaliacao a = new Avaliacao();
         aplicar(req, a, usuarioId);
         return avaliacaoRepository.save(a).getId();
@@ -49,7 +52,8 @@ public class AvaliacaoService {
 
     @Transactional
     public boolean atualizar(Long id, AvaliacaoRequest req, Long usuarioId) {
-        var opt = avaliacaoRepository.findById(id);
+        validarUsuario(usuarioId);
+        var opt = avaliacaoRepository.findByIdAndUsuarioId(id, usuarioId);
         if (opt.isEmpty()) return false;
         Avaliacao a = opt.get();
         aplicar(req, a, usuarioId);
@@ -58,6 +62,7 @@ public class AvaliacaoService {
     }
 
     private void aplicar(AvaliacaoRequest req, Avaliacao a, Long usuarioId) {
+        validarUsuario(usuarioId);
         a.setDescricao(req.descricao());
         a.setTipoAvaliacao(req.tipoAvaliacao());
         a.setModalidade(req.modalidade());
@@ -67,6 +72,7 @@ public class AvaliacaoService {
         a.setDificuldade(req.dificuldade());
         a.setNota(req.nota());
         a.setPeso(req.peso());
+        a.setUsuario(referenciaUsuario(usuarioId));
 
         if (req.dataEntrega() == null || req.dataEntrega().isBlank()) {
             a.setDataEntrega(null);
@@ -87,8 +93,8 @@ public class AvaliacaoService {
         // Disciplina (apenas id no request)
         Long discId = (req.disciplina() != null ? req.disciplina().id() : null);
         if (discId == null) throw new IllegalArgumentException("Disciplina é obrigatória");
-        Disciplina disc = disciplinaRepository.findById(discId)
-                .orElseThrow(() -> new EntityNotFoundException("Disciplina não encontrada: " + discId));
+        Disciplina disc = disciplinaRepository.findByIdAndUsuarioId(discId, usuarioId)
+            .orElseThrow(() -> new EntityNotFoundException("Disciplina não encontrada: " + discId));
         a.setDisciplina(disc);
 
         // Integrantes (enviar/receber só ids)
@@ -103,18 +109,32 @@ public class AvaliacaoService {
     }
 
     @Transactional
-    public void excluir(Long id) {
-        Avaliacao a = buscarPorId(id);
+    public void excluir(Long id, Long usuarioId) {
+        Avaliacao a = buscarPorId(id, usuarioId);
         avaliacaoRepository.delete(a);
     }
 
     @Transactional(readOnly = true)
-    public List<Avaliacao> buscarPorNome(String descricao) {
-        return avaliacaoRepository.findByDescricaoContainingIgnoreCaseAndDisciplinaIsNotNull(descricao);
+    public List<Avaliacao> buscarPorNome(String descricao, Long usuarioId) {
+        validarUsuario(usuarioId);
+        return avaliacaoRepository.findByUsuarioIdAndDescricaoContainingIgnoreCaseAndDisciplinaIsNotNull(usuarioId, descricao);
     }
 
     @Transactional(readOnly = true)
-    public List<Avaliacao> listarPorDisciplina(Long disciplinaId) {
-        return avaliacaoRepository.findByDisciplinaId(disciplinaId);
+    public List<Avaliacao> listarPorDisciplina(Long disciplinaId, Long usuarioId) {
+        validarUsuario(usuarioId);
+        return avaliacaoRepository.findByUsuarioIdAndDisciplinaId(usuarioId, disciplinaId);
+    }
+
+    private void validarUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            throw new IllegalArgumentException("Usuário autenticado é obrigatório");
+        }
+    }
+
+    private Usuario referenciaUsuario(Long usuarioId) {
+        Usuario usuario = new Usuario();
+        usuario.setId(usuarioId);
+        return usuario;
     }
 }

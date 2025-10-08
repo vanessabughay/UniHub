@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import java.util.ArrayList;
+
 
 
 @Entity
@@ -39,6 +41,10 @@ public class Usuario {
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("usuario-quadros")
     private List<QuadroPlanejamento> quadrosPlanejamento;
+
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("usuario-avaliacoes")
+    private List<Avaliacao> avaliacoes = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -87,4 +93,6 @@ public class Usuario {
     public List<QuadroPlanejamento> getQuadrosPlanejamento() { return quadrosPlanejamento; }
     public void setQuadrosPlanejamento(List<QuadroPlanejamento> quadrosPlanejamento) { this.quadrosPlanejamento = quadrosPlanejamento; }
     
+    public List<Avaliacao> getAvaliacoes() { return avaliacoes; }
+    public void setAvaliacoes(List<Avaliacao> avaliacoes) { this.avaliacoes = avaliacoes; }
 }

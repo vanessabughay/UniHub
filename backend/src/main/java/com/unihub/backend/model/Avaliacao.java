@@ -3,6 +3,7 @@ package com.unihub.backend.model;
 import com.unihub.backend.model.enums.EstadoAvaliacao;
 import com.unihub.backend.model.enums.Prioridade;
 import com.unihub.backend.model.enums.Modalidade;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.*;
 import java.time.LocalDate; // Import necessário
@@ -33,6 +34,11 @@ public class Avaliacao {
     )
 
     private Disciplina disciplina;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonBackReference("usuario-avaliacoes")
+    private Usuario usuario;
 
     @Column(name = "tipo_avaliacao", length = 100)
     private String tipoAvaliacao;
@@ -127,6 +133,14 @@ public class Avaliacao {
 
     public void setDisciplina(Disciplina disciplina) {
         this.disciplina = disciplina;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public String getTipoAvaliacao() {
