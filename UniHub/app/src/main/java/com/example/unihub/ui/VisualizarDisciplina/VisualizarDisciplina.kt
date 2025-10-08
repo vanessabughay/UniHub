@@ -29,6 +29,8 @@ import com.example.unihub.ui.ListarAvaliacao.DisciplinaGrupoCard
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoViewModel
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoViewModelFactory
 import java.time.format.DateTimeFormatter
+import com.example.unihub.ui.Shared.NotaCampo
+
 
 // Cores dos cards e botões
 private val AvaliacoesCardColor = Color(0xFFE0E1F8)       // igual ao da lista de avaliações
@@ -353,20 +355,20 @@ fun VisualizarDisciplinaScreen(
                         Text("Avaliação: " + (av.descricao ?: ""))
                         Spacer(Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = notaTemp,
-                            onValueChange = { notaTemp = it },
+                            value = NotaCampo.formatFieldText(notaTemp),
+                            onValueChange = { notaTemp = NotaCampo.sanitize(it) },
                             singleLine = true,
                             keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                                keyboardType = KeyboardType.Decimal
+                                keyboardType = KeyboardType.Number
                             ),
                             label = { Text("Nota") },
-                            placeholder = { Text("Ex.: 8.5") }
+                            placeholder = { Text("Ex.: 8,5") }
                         )
                     }
                 },
                 confirmButton = {
                     TextButton(onClick = {
-                        val valor = notaTemp.trim().takeIf { it.isNotEmpty() }?.replace(',', '.')?.toDoubleOrNull()
+                        val valor = NotaCampo.toDouble(notaTemp)
                         avaliacoesVM.updateNota(av, valor) { ok ->
                             if (ok) {
                                 Toast.makeText(context, "Nota salva!", Toast.LENGTH_SHORT).show()
@@ -423,7 +425,7 @@ fun VisualizarDisciplinaScreen(
                             if (marcado) avaliacaoParaConcluir = av else avaliacaoParaReativar = av
                         },
                         onEditarNotaClick = { av ->
-                            notaTemp = av.nota?.toString() ?: ""
+                            notaTemp = NotaCampo.fromDouble(av.nota)
                             notaDialogAvaliacao = av
                         },
                         onEditarAvaliacao = { av ->

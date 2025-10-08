@@ -33,7 +33,7 @@ data class PesoNotasUiState(
     val somaPesosComNota: Double = 0.0,
     val notaGeral: Double = 0.0,
     val faltandoParaAprovacao: Double = 0.0,
-    val mediaAprovacao: Double = 7.0 // pode ligar depois à tela/rep de instituição
+    val mediaAprovacao: Double = 0.0
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -85,6 +85,7 @@ class ManterPesoNotasViewModel(
 
     private fun recalc(lista: List<Avaliacao>) {
         val somaTotal = lista.sumOf { it.peso ?: 0.0 }
+
         val somaComNota = lista.filter { it.nota != null }.sumOf { it.peso ?: 0.0 }
         val notaGeral = lista.sumOf { (it.nota ?: 0.0) * ((it.peso ?: 0.0) / 100.0) }
         val falta = max(0.0, _ui.value.mediaAprovacao - notaGeral)

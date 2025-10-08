@@ -28,6 +28,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import kotlin.text.lowercase
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
 data class DisciplinaUiItem(
     val id: Long,
@@ -127,9 +129,9 @@ class ManterAvaliacaoViewModel(
                                     dataEntrega = dataUi,
                                     horaEntrega = horaUi,
 
-                                    peso = formatDecimalForDisplay(avaliacao.peso),
+                                    peso = PesoCampo.fromDouble(avaliacao.peso),
                                     estado = avaliacao.estado,
-                                    nota = formatDecimalForDisplay(avaliacao.nota),
+                                    nota = NotaCampo.fromDouble(avaliacao.nota),
                                     // dificuldade = avaliacao.dificuldade?.toString() ?: "",
                                     isLoading = false
                                 )
@@ -206,12 +208,12 @@ class ManterAvaliacaoViewModel(
                 return false
             }
         }
-        if (st.peso.isNotBlank() && st.peso.replace(',', '.').toDoubleOrNull() == null) {
-            _uiState.update { it.copy(erro = "Peso inválido. Deve ser um número.") }
+        if (st.peso.isNotEmpty() && PesoCampo.toDouble(st.peso) == null) {
+            _uiState.update { it.copy(erro = "Peso inválido. Use números inteiros de 0 a 100.") }
             return false
         }
-        if (st.nota.isNotBlank() && st.nota.replace(',', '.').toDoubleOrNull() == null) {
-            _uiState.update { it.copy(erro = "Nota inválida. Use número (ex.: 8.5).") }
+        if (st.nota.isNotEmpty() && NotaCampo.toDouble(st.nota) == null) {
+            _uiState.update { it.copy(erro = "Nota inválida. Use formato como 8,5.") }
             return false
         }
         return true
@@ -265,14 +267,14 @@ class ManterAvaliacaoViewModel(
     fun setDataEntrega(data: String) { _uiState.update { it.copy(dataEntrega = data, erro = null) } }
     fun setHoraEntrega(hora: String) { _uiState.update { it.copy(horaEntrega = hora, erro = null) } }
     fun setPeso(peso: String) {
-        val sanitized = sanitizeDecimalInput(peso)
+        val sanitized = PesoCampo.sanitize(peso)
         _uiState.update { it.copy(peso = sanitized, erro = null) }
     }
     fun setPrioridade(prioridade: Prioridade) { _uiState.update { it.copy(prioridade = prioridade, erro = null) } }
     fun setReceberNotificacoes(receber: Boolean) { _uiState.update { it.copy(receberNotificacoes = receber, erro = null) } }
     fun setEstado(estado: EstadoAvaliacao) { _uiState.update { it.copy(estado = estado, erro = null) } }
     fun setNota(nota: String) {
-        val sanitized = sanitizeDecimalInput(nota)
+        val sanitized = NotaCampo.sanitize(nota)
         _uiState.update { it.copy(nota = sanitized, erro = null) }
     }
 
@@ -402,8 +404,8 @@ class ManterAvaliacaoViewModel(
             else -> s.dataEntrega
         }
 
-        val notaDouble = s.nota.replace(',', '.').toDoubleOrNull()
-        val pesoDouble = s.peso.replace(',', '.').toDoubleOrNull()
+        val notaDouble = NotaCampo.toDouble(s.nota)
+        val pesoDouble = PesoCampo.toDouble(s.peso)
 
         return AvaliacaoRequestDto(
             id = idParaAtualizar,
@@ -413,7 +415,7 @@ class ManterAvaliacaoViewModel(
             modalidade = s.modalidade,
             dataEntrega = dataFinal,
             nota = notaDouble,
-            peso = s.peso.toDoubleOrNull(),
+            peso = pesoDouble,
             integrantes = integrantesIds.map { ContatoIdDto(it) },
             prioridade = s.prioridade,
             estado = s.estado,
@@ -431,27 +433,4 @@ class ManterAvaliacaoViewModel(
         }
     }
 
-    private fun sanitizeDecimalInput(input: String): String {
-        if (input.isBlank()) return ""
-        val sanitized = StringBuilder()
-        var hasSeparator = false
-        input.forEach { char ->
-            when {
-                char.isDigit() -> sanitized.append(char)
-                char == ',' || char == '.' -> if (!hasSeparator) {
-                    sanitized.append(',')
-                    hasSeparator = true
-                }
-            }
-        }
-        return sanitized.toString()
-    }
-
-    private fun formatDecimalForDisplay(value: Double?): String {
-        if (value == null) return ""
-        return BigDecimal.valueOf(value)
-            .stripTrailingZeros()
-            .toPlainString()
-            .replace('.', ',')
-    }
 }

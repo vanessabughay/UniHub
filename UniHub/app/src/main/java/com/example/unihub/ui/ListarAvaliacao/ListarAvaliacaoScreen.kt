@@ -16,9 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -49,7 +47,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -73,6 +70,8 @@ import com.example.unihub.data.model.EstadoAvaliacao
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.example.unihub.ui.Shared.NotaCampo
+
 
 val CardDefaultBackgroundColor = Color(0xFFD4D4E8)
 val LilasCard = Color(0xFFE0E1F8)        // fundo do card (lilás claro)
@@ -252,22 +251,19 @@ fun ListarAvaliacaoScreen(
                     Text("Avaliação: " + (av.descricao ?: ""))
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
-                        value = notaTemp,
-                        onValueChange = { notaTemp = it },
+                        value = NotaCampo.formatFieldText(notaTemp),
+                        onValueChange = { notaTemp = NotaCampo.sanitize(it) },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         label = { Text("Nota") },
-                        placeholder = { Text("Ex.: 8.5") }
+                        placeholder = { Text("Ex.: 8,5") }
                     )
                 }
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val valor = notaTemp.trim()
-                            .takeIf { it.isNotEmpty() }
-                            ?.replace(',', '.')
-                            ?.toDoubleOrNull()
+                        val valor = NotaCampo.toDouble(notaTemp)
                         viewModel.updateNota(av, valor) { ok ->
                             if (ok) {
                                 Toast.makeText(context, "Nota salva!", Toast.LENGTH_SHORT).show()
@@ -414,7 +410,7 @@ fun ListarAvaliacaoScreen(
                                                 if (marcado) avaliacaoParaConcluir = av else avaliacaoParaReativar = av
                                             },
                                             onEditarNotaClick = { av ->
-                                                notaTemp = av.nota?.toString() ?: ""
+                                                notaTemp = NotaCampo.fromDouble(av.nota)
                                                 notaDialogAvaliacao = av
                                             }
                                         )
@@ -444,7 +440,7 @@ fun ListarAvaliacaoScreen(
                                                 if (marcado) avaliacaoParaConcluir = av else avaliacaoParaReativar = av
                                             },
                                             onEditarNotaClick = { av ->
-                                                notaTemp = av.nota?.toString() ?: ""
+                                                notaTemp = NotaCampo.fromDouble(av.nota)
                                                 notaDialogAvaliacao = av
                                             }
                                         )
@@ -587,12 +583,12 @@ fun DisciplinaGrupoCard(
                                 }
 
                                 // Botão de NOTA (abre dialog)
-                                TextButton(
-                                    onClick = { onEditarNotaClick(av) }
-                                ) {
-                                    Text(
-                                        if (av.nota != null) "Nota: ${av.nota}" else "Definir nota"
-                                    )
+                                Column(horizontalAlignment = Alignment.End) {
+                                    TextButton(onClick = { onEditarNotaClick(av) }) {
+                                        Text(
+                                            if (av.nota != null) "Nota: ${NotaCampo.formatListValue(av.nota)}" else "Definir nota"
+                                        )
+                                    }
                                 }
 
                                 // Ações
