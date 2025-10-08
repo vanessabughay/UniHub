@@ -104,8 +104,9 @@ sealed class Screen(val route: String) {
             "tarefaForm/$colunaId/$tarefaId"
     }
 
-    object ManterQuadro : Screen("manter_quadro?id={quadroId}") {
-        fun createRoute(id: String?) = if (id != null) "manter_quadro?id=$id" else "manter_quadro"
+    object ManterQuadro : Screen("manter_quadro?quadroId={quadroId}") {
+        fun createRoute(id: String?) =
+            id?.let { "manter_quadro?quadroId=$it" } ?: "manter_quadro"
     }
 
 
@@ -488,7 +489,6 @@ class MainActivity : ComponentActivity() {
 
                         val quadroRepository = QuadroRepository(ApiQuadroBackend())
                         val viewModelFactory = VisualizarQuadroViewModelFactory(quadroRepository)
-                        val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
 
                         VisualizarQuadroScreen(
                             quadroId = quadroId,
@@ -508,7 +508,7 @@ class MainActivity : ComponentActivity() {
                             onNavigateToEditarTarefa = { colunaId, tarefaId ->
                                 navController.navigate(Screen.ManterTarefa.createRoute(colunaId, tarefaId))
                             },
-                            viewModel = viewModel
+                            viewModelFactory = viewModelFactory
                         )
                     }
 

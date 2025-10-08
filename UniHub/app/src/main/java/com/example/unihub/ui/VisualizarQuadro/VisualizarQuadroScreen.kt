@@ -24,6 +24,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Status
