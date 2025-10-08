@@ -9,12 +9,13 @@ import java.util.Objects; // Para equals e hashCode
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 
 // evita expandir essas relações quando Disciplina vier como filha
 @JsonIgnoreProperties({
         "hibernateLazyInitializer", "handler",
-        "avaliacoes", "aulas", "usuario"
+        "avaliacoes", "usuario"
 })
 
 @Entity
@@ -65,10 +66,7 @@ public class Disciplina {
             orphanRemoval = true
     )
 
-    //Alteração para combinar com Avaliacoes
-    //@JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
-
-    @JsonBackReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
+    @JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
 
     private List<HorarioAula> aulas = new ArrayList<>();
 

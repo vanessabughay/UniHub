@@ -88,7 +88,7 @@ private fun formatarDataHora(iso: String?): String {
     for (fmt in padrõesLdt) {
         try {
             val ldt = LocalDateTime.parse(iso, fmt)
-            return ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+            return ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy (HH:mm)"))
         } catch (_: Exception) { }
     }
     return try {
@@ -392,29 +392,41 @@ fun ListarAvaliacaoScreen(
                             // Seção: Em andamento
                             item {
                                 SecaoExpansivel(titulo = "Em andamento") {
-                                    gruposAndamento.forEach { (discId, listaDaDisciplina) ->
-                                        val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
-                                        DisciplinaGrupoCard(
-                                            nome = nomeDisciplina,
-                                            podeAdicionar = discId != -1L,
-                                            avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
-                                            onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
-                                            onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
-                                            onExcluirClick = { av ->
-                                                av.id?.let {
-                                                    avaliacaoParaExcluir = av
-                                                    showConfirmDeleteDialog = true
+                                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        gruposAndamento.forEach { (discId, listaDaDisciplina) ->
+                                            val nomeDisciplina =
+                                                listaDaDisciplina.firstOrNull()?.disciplina?.nome
+                                                    ?: "[Sem disciplina]"
+                                            DisciplinaGrupoCard(
+                                                nome = nomeDisciplina,
+                                                podeAdicionar = discId != -1L,
+                                                avaliacoes = listaDaDisciplina.sortedBy {
+                                                    it.descricao ?: ""
+                                                },
+                                                onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
+                                                onAvaliacaoClick = { av ->
+                                                    av.id?.let {
+                                                        onNavigateToManterAvaliacao(
+                                                            it.toString()
+                                                        )
+                                                    }
+                                                },
+                                                onExcluirClick = { av ->
+                                                    av.id?.let {
+                                                        avaliacaoParaExcluir = av
+                                                        showConfirmDeleteDialog = true
+                                                    }
+                                                },
+                                                onToggleConcluida = { av, marcado ->
+                                                    if (marcado) avaliacaoParaConcluir =
+                                                        av else avaliacaoParaReativar = av
+                                                },
+                                                onEditarNotaClick = { av ->
+                                                    notaTemp = NotaCampo.fromDouble(av.nota)
+                                                    notaDialogAvaliacao = av
                                                 }
-                                            },
-                                            onToggleConcluida = { av, marcado ->
-                                                if (marcado) avaliacaoParaConcluir = av else avaliacaoParaReativar = av
-                                            },
-                                            onEditarNotaClick = { av ->
-                                                notaTemp = NotaCampo.fromDouble(av.nota)
-                                                notaDialogAvaliacao = av
-                                            }
-                                        )
-
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -422,29 +434,41 @@ fun ListarAvaliacaoScreen(
                             // Seção: Concluídas
                             item {
                                 SecaoExpansivel(titulo = "Concluídas", inicialExpandida = true) {
-                                    gruposConcluidas.forEach { (discId, listaDaDisciplina) ->
-                                        val nomeDisciplina = listaDaDisciplina.firstOrNull()?.disciplina?.nome ?: "[Sem disciplina]"
-                                        DisciplinaGrupoCard(
-                                            nome = nomeDisciplina,
-                                            podeAdicionar = discId != -1L,
-                                            avaliacoes = listaDaDisciplina.sortedBy { it.descricao ?: "" },
-                                            onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
-                                            onAvaliacaoClick = { av -> av.id?.let { onNavigateToManterAvaliacao(it.toString()) } },
-                                            onExcluirClick = { av ->
-                                                av.id?.let {
-                                                    avaliacaoParaExcluir = av
-                                                    showConfirmDeleteDialog = true
+                                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                                        gruposConcluidas.forEach { (discId, listaDaDisciplina) ->
+                                            val nomeDisciplina =
+                                                listaDaDisciplina.firstOrNull()?.disciplina?.nome
+                                                    ?: "[Sem disciplina]"
+                                            DisciplinaGrupoCard(
+                                                nome = nomeDisciplina,
+                                                podeAdicionar = discId != -1L,
+                                                avaliacoes = listaDaDisciplina.sortedBy {
+                                                    it.descricao ?: ""
+                                                },
+                                                onAddClick = { onAddAvaliacaoParaDisciplina(discId.toString()) },
+                                                onAvaliacaoClick = { av ->
+                                                    av.id?.let {
+                                                        onNavigateToManterAvaliacao(
+                                                            it.toString()
+                                                        )
+                                                    }
+                                                },
+                                                onExcluirClick = { av ->
+                                                    av.id?.let {
+                                                        avaliacaoParaExcluir = av
+                                                        showConfirmDeleteDialog = true
+                                                    }
+                                                },
+                                                onToggleConcluida = { av, marcado ->
+                                                    if (marcado) avaliacaoParaConcluir =
+                                                        av else avaliacaoParaReativar = av
+                                                },
+                                                onEditarNotaClick = { av ->
+                                                    notaTemp = NotaCampo.fromDouble(av.nota)
+                                                    notaDialogAvaliacao = av
                                                 }
-                                            },
-                                            onToggleConcluida = { av, marcado ->
-                                                if (marcado) avaliacaoParaConcluir = av else avaliacaoParaReativar = av
-                                            },
-                                            onEditarNotaClick = { av ->
-                                                notaTemp = NotaCampo.fromDouble(av.nota)
-                                                notaDialogAvaliacao = av
-                                            }
-                                        )
-
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -472,7 +496,7 @@ fun SecaoExpansivel(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(titulo, style = MaterialTheme.typography.titleMedium)
+            Text(titulo, style = MaterialTheme.typography.titleLarge)
             Icon(
                 imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = null
