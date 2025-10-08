@@ -44,9 +44,7 @@ fun VisualizarQuadroScreen(
     onNavigateToEditarColuna: (String, String) -> Unit,
     onNavigateToNovaTarefa: (String) -> Unit,
     onNavigateToEditarTarefa: (String, String) -> Unit,
-    viewModelFactory: VisualizarQuadroViewModelFactory,
-    viewModel: VisualizarQuadroViewModel,
-    onNavigateToEdit: (String) -> Unit
+    viewModelFactory: VisualizarQuadroViewModelFactory
 ) {
     val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
 

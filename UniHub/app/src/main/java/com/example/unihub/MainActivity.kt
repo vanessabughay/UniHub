@@ -48,7 +48,6 @@ import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
-import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModel
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModelFactory
 import com.example.unihub.data.apiBackend.ApiColunaBackend
 import com.example.unihub.data.apiBackend.ApiContatoBackend
@@ -484,45 +483,6 @@ class MainActivity : ComponentActivity() {
                     ) { backStackEntry ->
                         val quadroId = backStackEntry.arguments?.getString("id")
 
-                        val quadroRepository =
-                            QuadroRepository(ApiQuadroBackend(),
-                                )
-                        val factory =
-                            VisualizarQuadroViewModelFactory(
-                                quadroRepository,
-                            )
-                        val viewModel: VisualizarQuadroViewModel =
-                            viewModel(factory = factory)
-
-                        VisualizarQuadroScreen(
-
-                            quadroId = quadroId,
-                            onVoltar = { navController.popBackStack() },
-                            onNavigateToEditQuadro = TODO(),
-                            onNavigateToNovaColuna = TODO(),
-                            onNavigateToEditarColuna = TODO(),
-                            onNavigateToNovaTarefa = TODO(),
-                            onNavigateToEditarTarefa = TODO(),
-                            viewModelFactory = TODO(),
-                            onNavigateToEdit = { idParaEditar : String ->
-                                navController.navigate(
-                                    Screen.ManterQuadro.createRoute(
-                                        idParaEditar
-                                    )
-                                )
-                            },
-
-                            viewModel = TODO(),
-
-                            /*
-
-                        if (quadroId.isNullOrBlank()) {
-                            navController.popBackStack()
-                            return@composable
-                        }
-
-                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
-                        val viewModelFactory = VisualizarQuadroViewModelFactory(quadroRepository)
 
                         VisualizarQuadroScreen(
                             quadroId = quadroId,
@@ -542,9 +502,9 @@ class MainActivity : ComponentActivity() {
                             onNavigateToEditarTarefa = { colunaId, tarefaId ->
                                 navController.navigate(Screen.ManterTarefa.createRoute(colunaId, tarefaId))
                             },
-                            viewModelFactory = viewModelFactory
-
-                         */
+                            viewModelFactory = VisualizarQuadroViewModelFactory(
+                                QuadroRepository(ApiQuadroBackend())
+                            )
                         )
                     }
 
