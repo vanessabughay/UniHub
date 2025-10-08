@@ -51,15 +51,8 @@ public class Disciplina {
     )
 
 
-
-    // ALTERADO TESTE PARA COMBINAR COM AVALIAçÕES
-
     private List<Avaliacao> avaliacoes = new ArrayList<>();
 
-    /*
-    @JsonBackReference("disciplina-avaliacoes")
-    private List<Avaliacao> avaliacoes = new ArrayList<>();
-    */
     @OneToMany(
             mappedBy = "disciplina", // Mapeado pelo campo 'disciplina' na entidade HorarioAula
             cascade = CascadeType.ALL,
