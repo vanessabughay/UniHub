@@ -55,7 +55,7 @@ private fun OpcaoQuadroButton(item: OpcaoQuadro) {
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = item.background,
-            contentColor = colorScheme.onSecondaryContainer
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
         ),
         contentPadding = PaddingValues(vertical = 20.dp, horizontal = 16.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
@@ -68,11 +68,10 @@ private fun OpcaoQuadroButton(item: OpcaoQuadro) {
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
             contentDescription = null,
-            tint = colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+            tint = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
         )
     }
 }
-
 
 private fun formatarPrazo(prazo: Long): String {
     return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(prazo))
@@ -187,7 +186,7 @@ private fun VisualizarQuadroContent(
                     OpcaoQuadro(
                         title = "Informações do quadro",
                         icon = Icons.Outlined.Info,
-                        background = colorScheme.secondaryContainer,
+                        background = MaterialTheme.colorScheme.secondaryContainer,
                         onClick = { onNavigateToEditQuadro(destinoId) }
                     )
                 )
@@ -197,12 +196,13 @@ private fun VisualizarQuadroContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                opcoes.forEach { opcao ->
+                for (opcao in opcoes) {
                     OpcaoQuadroButton(opcao)
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
 
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 50.dp))
