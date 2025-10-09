@@ -564,12 +564,15 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = Screen.ManterQuadro.route,
                         arguments = listOf(
-                            navArgument("quadroId") { type = NavType.StringType },
-                            navArgument("id") { type = NavType.StringType; nullable = true }
-
+                            navArgument("id") {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
                         )
                     ) { backStackEntry ->
-                        val quadroIdArg = backStackEntry.arguments?.getString("quadroId") ?: ""
+                        val quadroIdArg = backStackEntry.arguments?.getString("id")
+
                         val quadroId = quadroIdArg?.takeUnless { it == "new" }
 
                         // --- CORREÇÃO APLICADA AQUI ---
