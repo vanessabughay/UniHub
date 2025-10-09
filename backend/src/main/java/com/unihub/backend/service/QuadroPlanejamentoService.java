@@ -160,7 +160,7 @@ public class QuadroPlanejamentoService {
     @Transactional(readOnly = true)
     public QuadroPlanejamentoDetalhesResponse detalhes(Long id, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(id, usuarioId);
-        List<ColunaPlanejamento> colunas = colunaRepository.findByQuadroIdOrderByOrdemAsc(quadro.getId());
+        List<ColunaPlanejamento> colunas = colunaRepository.findByQuadroIdOrderByDescricaoAsc(quadro.getId());
 
         List<ColunaPlanejamento> andamento = colunas.stream()
                 .filter(coluna -> coluna.getEstado() == EstadoPlanejamento.EM_ANDAMENTO)
@@ -198,7 +198,7 @@ public class QuadroPlanejamentoService {
         ColunaPlanejamento coluna = new ColunaPlanejamento();
         coluna.setTitulo(request.getTitulo());
         coluna.setEstado(request.getEstado() != null ? request.getEstado() : EstadoPlanejamento.EM_ANDAMENTO);
-        coluna.setOrdem(request.getOrdem());
+        coluna.setDescricao(request.getDescricao());
         coluna.setQuadro(quadro);
 
         return colunaRepository.save(coluna);
@@ -208,16 +208,22 @@ public class QuadroPlanejamentoService {
     public List<ColunaPlanejamento> listarColunas(Long quadroId, EstadoPlanejamento estado, Long usuarioId) {
         buscarPorId(quadroId, usuarioId);
         if (estado == null) {
-            return colunaRepository.findByQuadroIdOrderByOrdemAsc(quadroId);
+            return colunaRepository.findByQuadroIdOrderByDescricaoAsc(quadroId);
+                }
+        return colunaRepository.findByQuadroIdAndEstadoOrderByDescricaoAsc(quadroId, estado);
         }
-        return colunaRepository.findByQuadroIdAndEstadoOrderByOrdemAsc(quadroId, estado);
-    }
 
     @Transactional(readOnly = true)
     public List<TarefaPlanejamento> listarTarefas(Long quadroId, Long colunaId, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
         return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId());
     }
+
+     @Transactional(readOnly = true)
+    public ColunaPlanejamento buscarColunaPorId(Long quadroId, Long colunaId, Long usuarioId) {
+        return buscarColuna(quadroId, colunaId, usuarioId);
+    }
+
 
     @Transactional
     public TarefaPlanejamento criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {

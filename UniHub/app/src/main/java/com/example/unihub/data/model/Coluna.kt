@@ -1,13 +1,16 @@
 package com.example.unihub.data.model
 
+import android.os.Parcelable
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Priority
 import com.example.unihub.data.util.FlexibleLongAdapter
 import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
+import kotlinx.parcelize.Parcelize
 import java.util.concurrent.TimeUnit
 
+@Parcelize
 data class Coluna(
     val id: String = "",
     val titulo: String = "",
@@ -21,8 +24,7 @@ data class Coluna(
     @JsonAdapter(FlexibleLongAdapter::class)
     val prazoManual: Long = System.currentTimeMillis() + 86400000L,
     val tarefas: List<Tarefa> = emptyList()
-) {
-
+) : Parcelable {
     val todasTarefasConcluidas: Boolean
         get() = tarefas.isNotEmpty() && tarefas.all { it.status == Status.CONCLUIDA }
 

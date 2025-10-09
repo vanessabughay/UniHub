@@ -6,7 +6,7 @@ public class ColunaPlanejamentoRequest {
 
     private String titulo;
     private EstadoPlanejamento estado;
-    private Integer ordem;
+    private String descricao;
 
     public String getTitulo() {
         return titulo;
@@ -24,11 +24,11 @@ public class ColunaPlanejamentoRequest {
         this.estado = estado;
     }
 
-    public Integer getOrdem() {
-        return ordem;
+    public String getDescricao() {
+        return descricao;
     }
 
-    public void setOrdem(Integer ordem) {
-        this.ordem = ordem;
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 }

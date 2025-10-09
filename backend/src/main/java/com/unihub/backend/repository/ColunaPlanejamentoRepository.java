@@ -9,9 +9,9 @@ import java.util.Optional;
 
 public interface ColunaPlanejamentoRepository extends JpaRepository<ColunaPlanejamento, Long> {
 
-    List<ColunaPlanejamento> findByQuadroIdOrderByOrdemAsc(Long quadroId);
+    List<ColunaPlanejamento> findByQuadroIdOrderByDescricaoAsc(Long quadroId);
 
-    List<ColunaPlanejamento> findByQuadroIdAndEstadoOrderByOrdemAsc(Long quadroId, EstadoPlanejamento estado);
-
+    List<ColunaPlanejamento> findByQuadroIdAndEstadoOrderByDescricaoAsc(Long quadroId, EstadoPlanejamento estado);
+    
     Optional<ColunaPlanejamento> findByIdAndQuadroId(Long id, Long quadroId);
 }

@@ -1,10 +1,12 @@
 package com.example.unihub.data.model
 
+import android.os.Parcelable
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import com.example.unihub.data.util.FlexibleLongAdapter
 import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
+import kotlinx.parcelize.Parcelize
 
 // Função auxiliar para obter o timestamp de hoje (início do dia) como padrão
 private fun getDefaultPrazo(): Long {
@@ -16,6 +18,7 @@ private fun getDefaultPrazo(): Long {
     }.timeInMillis
 }
 
+@Parcelize
 data class Tarefa(
     val id: String = "",
     val titulo: String = "",
@@ -27,7 +30,7 @@ data class Tarefa(
     val dataInicio: Long = System.currentTimeMillis(),
     @JsonAdapter(FlexibleNullableLongAdapter::class)
     val dataFim: Long? = null
-) {
+) : Parcelable {
     val duracao: String
         get() {
             return if (dataFim != null) {

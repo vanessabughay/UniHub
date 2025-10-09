@@ -34,6 +34,7 @@ import com.example.unihub.data.apiBackend.ApiCategoriaBackend
 import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
+import com.example.unihub.data.model.Coluna
 import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoScreen
 import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
@@ -493,8 +494,9 @@ class MainActivity : ComponentActivity() {
                             onNavigateToNovaColuna = { id ->
                                 navController.navigate(Screen.ManterColuna.createRoute(id))
                             },
-                            onNavigateToEditarColuna = { qId, colunaId ->
-                                navController.navigate(Screen.ManterColuna.createRoute(qId, colunaId))
+                            onNavigateToEditarColuna = { qId, coluna ->
+                                navController.currentBackStackEntry?.savedStateHandle?.set("colunaEmEdicao", coluna)
+                                navController.navigate(Screen.ManterColuna.createRoute(qId, coluna.id))
                             },
                             onNavigateToNovaTarefa = { colunaId ->
                                 navController.navigate(Screen.ManterTarefa.createRoute(colunaId))

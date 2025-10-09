@@ -85,7 +85,7 @@ fun VisualizarQuadroScreen(
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
     onNavigateToNovaColuna: (String) -> Unit,
-    onNavigateToEditarColuna: (String, String) -> Unit,
+    onNavigateToEditarColuna: (String, Coluna) -> Unit,
     onNavigateToNovaTarefa: (String) -> Unit,
     onNavigateToEditarTarefa: (String, String) -> Unit,
     viewModelFactory: VisualizarQuadroViewModelFactory
@@ -122,7 +122,7 @@ private fun VisualizarQuadroContent(
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
     onNavigateToNovaColuna: (String) -> Unit,
-    onNavigateToEditarColuna: (String, String) -> Unit,
+    onNavigateToEditarColuna: (String, Coluna) -> Unit,
     onNavigateToNovaTarefa: (String) -> Unit,
     onNavigateToEditarTarefa: (String, String) -> Unit,
     viewModel: VisualizarQuadroViewModel
@@ -229,7 +229,7 @@ private fun VisualizarQuadroContent(
                                     onExpandToggle = {
                                         colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
                                     },
-                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna) },
                                     onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
                                     onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
                                 )
@@ -254,7 +254,7 @@ private fun VisualizarQuadroContent(
                                     onExpandToggle = {
                                         colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
                                     },
-                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna) },
                                     onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
                                     onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
                                 )

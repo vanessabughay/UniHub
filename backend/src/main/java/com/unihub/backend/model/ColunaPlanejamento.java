@@ -23,7 +23,7 @@ public class ColunaPlanejamento {
     @Column(nullable = false)
     private EstadoPlanejamento estado = EstadoPlanejamento.EM_ANDAMENTO;
 
-    private Integer ordem;
+    private String descricao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quadro_id", nullable = false)
@@ -58,12 +58,12 @@ public class ColunaPlanejamento {
         this.estado = estado;
     }
 
-    public Integer getOrdem() {
-        return ordem;
+    public String getDescricao() {
+        return descricao;
     }
 
-    public void setOrdem(Integer ordem) {
-        this.ordem = ordem;
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
     }
 
     public QuadroPlanejamento getQuadro() {

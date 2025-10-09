@@ -41,11 +41,22 @@ fun ColunaFormScreen(
     val isEditing = colunaId != null
     val colunaState by viewModel.coluna.collectAsState()
 
-    var titulo by remember { mutableStateOf("") }
-    var descricao by remember { mutableStateOf("") }
-    var prioridade by remember { mutableStateOf(Priority.MEDIA) }
-    var status by remember { mutableStateOf(Status.INICIADA) }
-    var prazo by remember { mutableStateOf(System.currentTimeMillis()) }
+    val colunaInicial = remember(isEditing) {
+        if (isEditing) {
+            val savedColuna = navController.previousBackStackEntry?.savedStateHandle?.get<Coluna>("colunaEmEdicao")
+            navController.previousBackStackEntry?.savedStateHandle?.remove<Coluna>("colunaEmEdicao")
+            savedColuna
+        } else {
+            null
+        }
+    }
+
+    var titulo by remember(colunaInicial) { mutableStateOf(colunaInicial?.titulo ?: "") }
+    var descricao by remember(colunaInicial) { mutableStateOf(colunaInicial?.descricao ?: "") }
+    var prioridade by remember(colunaInicial) { mutableStateOf(colunaInicial?.prioridade ?: Priority.MEDIA) }
+    var status by remember(colunaInicial) { mutableStateOf(colunaInicial?.status ?: Status.INICIADA) }
+    var prazo by remember(colunaInicial) { mutableStateOf(colunaInicial?.prazoManual ?: System.currentTimeMillis()) }
+
 
 
     LaunchedEffect(key1 = colunaId) {
@@ -65,6 +76,8 @@ fun ColunaFormScreen(
             }
         }
     }
+
+    val colunaParaStatus = colunaState ?: colunaInicial
 
     val formResult by viewModel.formResult.collectAsState()
     LaunchedEffect(formResult) {
@@ -107,8 +120,9 @@ fun ColunaFormScreen(
             CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
             CampoCombobox(label = "Prioridade", options = Priority.values().toList(), selectedOption = prioridade, onOptionSelected = { prioridade = it }, optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } })
 
-            val canMarkAsCompleted = colunaState?.todasTarefasConcluidas ?: true
-            val statusOptions = if (colunaState?.tarefas?.isNotEmpty() == true) {
+            val canMarkAsCompleted = colunaParaStatus?.todasTarefasConcluidas ?: true
+            val statusOptions = if (colunaParaStatus?.tarefas?.isNotEmpty() == true) {
+                
                 Status.values().toList().filter { it != Status.CONCLUIDA || canMarkAsCompleted || status == Status.CONCLUIDA }
             } else {
                 Status.values().toList()
@@ -119,7 +133,7 @@ fun ColunaFormScreen(
                 options = statusOptions,
                 selectedOption = status,
                 onOptionSelected = { newStatus ->
-                    if (newStatus == Status.CONCLUIDA && colunaState?.tarefas?.isNotEmpty() == true && !canMarkAsCompleted) {
+                    if (newStatus == Status.CONCLUIDA && colunaParaStatus?.tarefas?.isNotEmpty() == true && !canMarkAsCompleted) {
                         Toast.makeText(context, "Conclua todas as tarefas primeiro.", Toast.LENGTH_SHORT).show()
                     } else {
                         status = newStatus
@@ -142,7 +156,7 @@ fun ColunaFormScreen(
                             prioridade = prioridade,
                             status = status,
                             prazoManual = prazo,
-                            tarefas = if (isEditing) colunaState?.tarefas ?: emptyList() else emptyList()
+                            tarefas = if (isEditing) colunaState?.tarefas ?: colunaInicial?.tarefas ?: emptyList() else emptyList()
                         )
                         viewModel.salvarOuAtualizarColuna(quadroId, colunaParaSalvar)
                     } else {
