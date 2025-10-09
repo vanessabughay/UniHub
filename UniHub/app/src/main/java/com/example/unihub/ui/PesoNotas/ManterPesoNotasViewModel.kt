@@ -12,6 +12,7 @@ import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.data.model.Modalidade
 import com.example.unihub.data.model.Prioridade
 import com.example.unihub.data.repository.AvaliacaoRepository
+import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,17 +33,30 @@ data class PesoNotasUiState(
     val somaPesosComNota: Double = 0.0,
     val notaGeral: Double = 0.0,
     val faltandoParaAprovacao: Double = 0.0,
-    val mediaAprovacao: Double = 7.0 // pode ligar depois à tela/rep de instituição
+    val mediaAprovacao: Double = 0.0
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 class ManterPesoNotasViewModel(
-    private val repository: AvaliacaoRepository
+    private val repository: AvaliacaoRepository,
+    private val instituicaoRepository: InstituicaoRepository
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(PesoNotasUiState())
     val ui: StateFlow<PesoNotasUiState> = _ui.asStateFlow()
     private var loadJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            try {
+                instituicaoRepository.instituicaoUsuario()
+                    ?.mediaAprovacao
+                    ?.let { setMediaAprovacao(it) }
+            } catch (_: Exception) {
+                // Mantém valor padrão caso falhe buscar instituição
+            }
+        }
+    }
 
     fun setDisciplinaId(id: Long) {
         if (_ui.value.disciplinaId == id) return
@@ -71,14 +85,15 @@ class ManterPesoNotasViewModel(
 
     private fun recalc(lista: List<Avaliacao>) {
         val somaTotal = lista.sumOf { it.peso ?: 0.0 }
-        val somaComNota = lista.filter { it.nota != null }.sumOf { it.peso ?: 0.0 }
+
+        //val somaComNota = lista.filter { it.nota != null }.sumOf { it.peso ?: 0.0 }
         val notaGeral = lista.sumOf { (it.nota ?: 0.0) * ((it.peso ?: 0.0) / 100.0) }
         val falta = max(0.0, _ui.value.mediaAprovacao - notaGeral)
 
         _ui.value = _ui.value.copy(
             itens = lista,
             somaPesosTotal = somaTotal,
-            somaPesosComNota = somaComNota,
+            //somaPesosComNota = somaComNota,
             notaGeral = notaGeral,
             faltandoParaAprovacao = falta
         )

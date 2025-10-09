@@ -36,7 +36,6 @@ data class Disciplina(
     //serão implementados em dataclass separados, mas são arrays do objeto DISCIPLINA
     //val ausencias: List<Ausencia>,
     val avaliacoes: List<Avaliacao>,
-    //val notas: List<Nota>,
 
     //ativar/desativar notificações ou a disciplina
     val isAtiva: Boolean, //equivalente a situação

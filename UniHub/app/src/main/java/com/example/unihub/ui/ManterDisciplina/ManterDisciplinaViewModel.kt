@@ -5,7 +5,6 @@ import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Disciplina
-import com.example.unihub.data.model.HorarioAula
 import com.example.unihub.data.repository.DisciplinaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +44,7 @@ class ManterDisciplinaViewModel(
     }
 
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun createDisciplina(disciplina: Disciplina) {
         viewModelScope.launch {
             try {
@@ -56,6 +56,7 @@ class ManterDisciplinaViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun updateDisciplina(disciplina: Disciplina) {
         viewModelScope.launch {
             try {
@@ -67,6 +68,7 @@ class ManterDisciplinaViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun deleteDisciplina(id: String) {
         viewModelScope.launch {
             try {
