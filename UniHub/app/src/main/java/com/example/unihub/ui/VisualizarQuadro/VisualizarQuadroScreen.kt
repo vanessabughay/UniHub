@@ -181,12 +181,13 @@ private fun VisualizarQuadroContent(
             Spacer(modifier = Modifier.height(24.dp))
 
             val destinoId = uiState.quadro?.id ?: quadroId
-            val opcoes = remember(destinoId) {
+            val secondaryContainerColor = MaterialTheme.colorScheme.secondaryContainer
+            val opcoes = remember(destinoId, secondaryContainerColor) {
                 listOf(
                     OpcaoQuadro(
                         title = "Informações do quadro",
                         icon = Icons.Outlined.Info,
-                        background = MaterialTheme.colorScheme.secondaryContainer,
+                        background = secondaryContainerColor,
                         onClick = { onNavigateToEditQuadro(destinoId) }
                     )
                 )
