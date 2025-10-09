@@ -5,13 +5,14 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.QuadroRepository
 
 class VisualizarQuadroViewModelFactory(
-    private val repository: QuadroRepository
+    private val quadroRepository: QuadroRepository
 ) : ViewModelProvider.Factory {
 
-    @Suppress("UNCHECKED_CAST")
+
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(VisualizarQuadroViewModel::class.java)) {
-            return VisualizarQuadroViewModel(repository) as T
+            @Suppress("UNCHECKED_CAST")
+            return VisualizarQuadroViewModel(quadroRepository) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }

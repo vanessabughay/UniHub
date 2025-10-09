@@ -1,5 +1,8 @@
 package com.example.unihub.ui.VisualizarQuadro
 
+import android.os.Build
+import android.widget.Toast
+import androidx.annotation.RequiresExtension
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -9,9 +12,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.outlined.Notes
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,13 +36,49 @@ import androidx.compose.ui.Alignment
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Status
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.HorizontalDivider
+
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme.colorScheme
+
+data class OpcaoQuadro(
+    val title: String,
+    val icon: ImageVector,
+    val background: Color,
+    val onClick: () -> Unit
+)
+
+@Composable
+private fun OpcaoQuadroButton(item: OpcaoQuadro) {
+    Button(
+        onClick = item.onClick,
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = item.background,
+            contentColor = colorScheme.onSecondaryContainer
+        ),
+        contentPadding = PaddingValues(vertical = 20.dp, horizontal = 16.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Icon(imageVector = item.icon, contentDescription = null, modifier = Modifier.size(26.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(text = item.title, style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.weight(1f))
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+        )
+    }
+}
+
 
 private fun formatarPrazo(prazo: Long): String {
     return SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(prazo))
 }
 
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualizarQuadroScreen(
@@ -70,6 +115,7 @@ fun VisualizarQuadroScreen(
 
 }
 
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VisualizarQuadroContent(
@@ -109,8 +155,8 @@ private fun VisualizarQuadroContent(
                     modifier = Modifier.fillMaxWidth(0.8f),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiary,
-                        contentColor = MaterialTheme.colorScheme.onTertiary
+                        containerColor = colorScheme.tertiary,
+                        contentColor = colorScheme.onTertiary
                     )
                 ) {
                     Text("Nova Coluna", modifier = Modifier.padding(vertical = 8.dp))
@@ -132,6 +178,29 @@ private fun VisualizarQuadroContent(
                     onNavigateToEditQuadro(destinoId)
                 }
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            val destinoId = uiState.quadro?.id ?: quadroId
+            val opcoes = remember(destinoId) {
+                listOf(
+                    OpcaoQuadro(
+                        title = "Informações do quadro",
+                        icon = Icons.Outlined.Info,
+                        background = colorScheme.secondaryContainer,
+                        onClick = { onNavigateToEditQuadro(destinoId) }
+                    )
+                )
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                opcoes.forEach { opcao ->
+                    OpcaoQuadroButton(opcao)
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -210,12 +279,12 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
             Icon(
                 imageVector = if (setaAbaixo) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurface
+                tint = colorScheme.onSurface
             )
             Spacer(Modifier.width(6.dp))
             Text(
                 text = titulo,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = colorScheme.onSurface,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -223,7 +292,7 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
         HorizontalDivider(
             modifier = Modifier.padding(top = 10.dp),
             thickness = DividerDefaults.Thickness,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+            color = colorScheme.onSurface.copy(alpha = 0.1f)
         )
     }
 }
@@ -238,8 +307,8 @@ private fun ColunaCard(
     onEditTarefa: (tarefaId: String) -> Unit,
     onNewTarefa: () -> Unit
 ) {
-    val cardColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)
-    val contentColor = MaterialTheme.colorScheme.onSurface
+    val cardColor = colorScheme.tertiary.copy(alpha = 0.1f)
+    val contentColor = colorScheme.onSurface
 
     Box(
         modifier = Modifier
@@ -323,8 +392,8 @@ private fun ColunaCard(
                         onClick = onNewTarefa,
                         shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary,
-                            contentColor = MaterialTheme.colorScheme.onTertiary
+                            containerColor = colorScheme.tertiary,
+                            contentColor = colorScheme.onTertiary
                         )
                     ) {
                         Text("Nova Tarefa")

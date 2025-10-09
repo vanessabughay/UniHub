@@ -1,5 +1,7 @@
 package com.example.unihub.ui.VisualizarQuadro
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.QuadroRepository
@@ -19,17 +21,18 @@ data class VisualizarQuadroUiState(
 )
 
 class VisualizarQuadroViewModel(
-    private val repository: QuadroRepository
+    private val quadroRepository: QuadroRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VisualizarQuadroUiState())
     val uiState: StateFlow<VisualizarQuadroUiState> = _uiState.asStateFlow()
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun carregarQuadro(quadroId: String) {
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             try {
-                val quadroCarregado = repository.getQuadroById(quadroId)
+                val quadroCarregado = quadroRepository.getQuadroById(quadroId)
                 if (quadroCarregado != null) {
                     _uiState.update {
                         it.copy(
