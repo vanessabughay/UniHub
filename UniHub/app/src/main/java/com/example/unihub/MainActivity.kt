@@ -707,7 +707,7 @@ class MainActivity : ComponentActivity() {
                         if (disciplinaId != null) {
                             AnotacoesView(
                                 disciplinaId = disciplinaId,
-                                onBack = { navController.popBackStack() }
+                                onVoltar = { navController.popBackStack() }
                             )
                         }
                     }

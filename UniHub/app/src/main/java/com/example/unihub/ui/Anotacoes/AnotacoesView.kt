@@ -31,6 +31,7 @@ import com.example.unihub.data.model.Anotacao
 import com.example.unihub.data.repository.AnotacoesRepository
 import com.example.unihub.ui.Anotacoes.AnotacoesViewModel
 import androidx.compose.runtime.remember
+import com.example.unihub.components.CabecalhoAlternativo
 
 // Paleta semelhante ao mock
 private val Beige = Color(0xFFF5E9DB)
@@ -41,7 +42,7 @@ private val OnBeige = Color(0xFF2E2A25)
 @Composable
 fun AnotacoesView(
     disciplinaId: Long,
-    onBack: () -> Unit = {},
+    onVoltar: () -> Unit,
 ) {
 
     // Instancia o repositório e o ViewModel
@@ -55,14 +56,13 @@ fun AnotacoesView(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Minhas anotações") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            )
+
+                CabecalhoAlternativo(
+
+                    titulo = "Minhas anotações",
+                    onVoltar = onVoltar
+                )
+
         },
         bottomBar = {
             Box(

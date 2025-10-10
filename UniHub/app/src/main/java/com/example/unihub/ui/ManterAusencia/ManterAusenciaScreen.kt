@@ -3,7 +3,9 @@ package com.example.unihub.ui.ManterAusencia
 import android.app.DatePickerDialog
 import android.os.Build
 import androidx.annotation.RequiresExtension
-import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
@@ -37,6 +39,10 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import kotlinx.coroutines.delay
+
+//cores
+private val AusenciasCardColor = Color(0xFFF3E4F8)
+private val AusenciasBtnColor = Color(0xFFE1C2F0)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -122,83 +128,96 @@ fun ManterAusenciaScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF2F2F2))
                 .padding(paddingValues)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedTextField(
-                value = disciplina?.nome ?: "",
-                onValueChange = {},
-                label = { Text("Disciplina") },
+            Card(
                 modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false
-            )
-            OutlinedTextField(
-                value = data.format(formatter),
-                onValueChange = {},
-                label = { Text("Data da ausência") },
+                colors = CardDefaults.cardColors(containerColor = AusenciasCardColor),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { showDatePicker() },
-                readOnly = true
-            )
-
-            ExposedDropdownMenuBox(
-                expanded = expandCategoria,
-                onExpandedChange = { expandCategoria = !expandCategoria }
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 OutlinedTextField(
-                    value = categoria,
+                    value = disciplina?.nome ?: "",
                     onValueChange = {},
-                    label = { Text("Categoria") },
+                    label = { Text("Disciplina") },
+                    modifier = Modifier.fillMaxWidth(),
                     readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandCategoria) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth()
+                    enabled = false
                 )
-                ExposedDropdownMenu(expanded = expandCategoria, onDismissRequest = { expandCategoria = false }) {
-                    for (cat in categorias) {
-                        DropdownMenuItem(
-                            text = { Text(cat.nome) },
-                            onClick = {
-                                categoria = cat.nome
-                                expandCategoria = false
-                            }
-                        )
-                    }
+                OutlinedTextField(
+                    value = data.format(formatter),
+                    onValueChange = {},
+                    label = { Text("Data da ausência") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDatePicker() },
+                    readOnly = true
+                )
 
-                    HorizontalDivider()
-                    DropdownMenuItem(text = { Text("Adicionar categoria") }, onClick = {
-                        expandCategoria = false
-                        showAddCategoria = true
-                    })
-                }
-            }
-            OutlinedTextField(
-                value = justificativa,
-                onValueChange = { justificativa = it },
-                label = { Text("Justificativa") },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = {
-                    val aus = Ausencia(
-                        id = ausenciaId?.toLongOrNull(),
-                        disciplinaId = disciplinaId.toLong(),
-                        data = data,
-                        categoria = categoria.takeIf { it.isNotBlank() },
-                        justificativa = justificativa.takeIf { it.isNotBlank() }
+                ExposedDropdownMenuBox(
+                    expanded = expandCategoria,
+                    onExpandedChange = { expandCategoria = !expandCategoria }
+                ) {
+                    OutlinedTextField(
+                        value = categoria,
+                        onValueChange = {},
+                        label = { Text("Categoria") },
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expandCategoria) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
-                    if (ausenciaId == null) {
-                        viewModel.criarAusencia(aus)
-                    } else {
-                        viewModel.atualizarAusencia(aus)
+                    ExposedDropdownMenu(expanded = expandCategoria, onDismissRequest = { expandCategoria = false }) {
+                        for (cat in categorias) {
+                            DropdownMenuItem(
+                                text = { Text(cat.nome) },
+                                onClick = {
+                                    categoria = cat.nome
+                                    expandCategoria = false
+                                }
+                            )
+                        }
+
+                        HorizontalDivider()
+                        DropdownMenuItem(text = { Text("Adicionar categoria") }, onClick = {
+                            expandCategoria = false
+                            showAddCategoria = true
+                        })
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6))
-            ) { Text("Salvar", color = Color.Black) }
+                }
+                OutlinedTextField(
+                    value = justificativa,
+                    onValueChange = { justificativa = it },
+                    label = { Text("Justificativa") },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Button(
+                    onClick = {
+                        val aus = Ausencia(
+                            id = ausenciaId?.toLongOrNull(),
+                            disciplinaId = disciplinaId.toLong(),
+                            data = data,
+                            categoria = categoria.takeIf { it.isNotBlank() },
+                            justificativa = justificativa.takeIf { it.isNotBlank() }
+                        )
+                        if (ausenciaId == null) {
+                            viewModel.criarAusencia(aus)
+                        } else {
+                            viewModel.atualizarAusencia(aus)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = AusenciasBtnColor)
+                ) { Text("Salvar", color = Color.Black) }
+            }
+        }
             erro?.let { Text(text = it, color = Color.Red) }
 
             if (ausenciaId != null) {
