@@ -12,7 +12,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Description
+
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,9 +30,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Avaliacao
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
-import java.util.Locale
-import kotlin.math.roundToInt
 
 //Cores
 private val PesoNotasColor      = Color(0xFFD8ECDF)       // fundo do card de peso das notas
@@ -55,8 +56,11 @@ fun ManterPesoNotasScreen(
     disciplinaId: String,
     onVoltar: () -> Unit,
     onAddAvaliacaoParaDisciplina: (disciplinaId: String) -> Unit,
-    viewModel: ManterPesoNotasViewModel = viewModel(factory = ManterPesoNotasViewModelFactory)
+    onEditarAvaliacao: (avaliacaoId: String, disciplinaId: String) -> Unit
 ) {
+    val viewModel: ManterPesoNotasViewModel = viewModel(
+        factory = ManterPesoNotasViewModelFactory(LocalContext.current)
+    )
     val ctx = LocalContext.current
     val ui by viewModel.ui.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -91,17 +95,17 @@ fun ManterPesoNotasScreen(
             title = { Text("Editar nota") },
             text = {
                 OutlinedTextField(
-                    value = campoTemp,
-                    onValueChange = { campoTemp = it },
+                    value = NotaCampo.formatFieldText(campoTemp),
+                    onValueChange = { novo -> campoTemp = NotaCampo.sanitize(novo) },
                     singleLine = true,
                     label = { Text("Nota") },
                     placeholder = { Text("Ex.: 8,5") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val valor = campoTemp.replace(',', '.').toDoubleOrNull()
+                    val valor = NotaCampo.toDouble(campoTemp)
                     val alvo = editarNotaDe!!
                     viewModel.salvarNota(alvo, valor) { ok, err ->
                         if (ok) Toast.makeText(ctx, "Nota salva!", Toast.LENGTH_SHORT).show()
@@ -121,7 +125,7 @@ fun ManterPesoNotasScreen(
             text = {
                 OutlinedTextField(
                     value = campoTemp,
-                    onValueChange = { novo -> campoTemp = novo.filter { it.isDigit() } }, // <-- só dígitos
+                    onValueChange = { novo -> campoTemp = PesoCampo.sanitize(novo) },
                     singleLine = true,
                     label = { Text("Peso (%)") },
                     placeholder = { Text("Ex.: 20") },
@@ -130,9 +134,9 @@ fun ManterPesoNotasScreen(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val valorInt = campoTemp.toIntOrNull()               // <-- inteiro
+                    val valorPeso = PesoCampo.toDouble(campoTemp)
                     val alvo = editarPesoDe!!
-                    viewModel.salvarPeso(alvo, valorInt?.toDouble()) { ok, err -> // envia Double se precisar
+                    viewModel.salvarPeso(alvo, valorPeso) { ok, err ->
                         if (ok) Toast.makeText(ctx, "Peso salvo!", Toast.LENGTH_SHORT).show()
                         else Toast.makeText(ctx, err ?: "Erro ao salvar peso.", Toast.LENGTH_LONG).show()
                     }
@@ -231,12 +235,15 @@ fun ManterPesoNotasScreen(
                 items(ui.itens, key = { it.id ?: it.hashCode().toLong() }) { av ->
                     AvaliacaoLinha(
                         av = av,
+                        onEditarAvaliacao = {
+                            av.id?.let { onEditarAvaliacao(it.toString(), disciplinaId) }
+                        },
                         onEditNota = {
-                            campoTemp = av.nota?.let { n -> formatNumero(n) } ?: ""
+                            campoTemp = NotaCampo.fromDouble(av.nota)
                             editarNotaDe = av
                         },
                         onEditPeso = {
-                            campoTemp = av.peso?.let { p -> formatInteiro(p) } ?: ""
+                            campoTemp = PesoCampo.fromDouble(av.peso)
                             editarPesoDe = av
                         }
                     )
@@ -278,7 +285,7 @@ fun ManterPesoNotasScreen(
 
                                 // Valor de NOTA (alinhado à coluna "Nota")
                                 Text(
-                                    text = formatNumero(ui.notaGeral),
+                                    text = NotaCampo.formatListValue(ui.notaGeral),
                                     modifier = Modifier.width(COL_NOTA_WIDTH),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                                     fontWeight = FontWeight.Bold,
@@ -289,7 +296,7 @@ fun ManterPesoNotasScreen(
 
                                 // Valor de PESO (alinhado à coluna "Peso")
                                 Text(
-                                    text = "${formatInteiro(ui.somaPesosComNota)}%",
+                                    text = PesoCampo.formatTotal(ui.somaPesosTotal),
                                     modifier = Modifier.width(COL_PESO_WIDTH),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
                                     fontWeight = FontWeight.Bold,
@@ -301,7 +308,7 @@ fun ManterPesoNotasScreen(
                             if (ui.faltandoParaAprovacao > 0.0) {
                                 Spacer(Modifier.height(6.dp))
                                 Text(
-                                    "FALTA ${formatNumero(ui.faltandoParaAprovacao)} PARA APROVAÇÃO!",
+                                    "FALTA ${NotaCampo.formatListValue(ui.faltandoParaAprovacao)} PARA APROVAÇÃO!",
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.Bold,
                                     modifier = Modifier
@@ -352,6 +359,7 @@ fun ManterPesoNotasScreen(
 @Composable
 private fun AvaliacaoLinha(
     av: Avaliacao,
+    onEditarAvaliacao: () -> Unit,
     onEditNota: () -> Unit,
     onEditPeso: () -> Unit
 ) {
@@ -367,7 +375,13 @@ private fun AvaliacaoLinha(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Outlined.Description, contentDescription = null)
+            Icon(
+                Icons.Outlined.Edit,
+                contentDescription = "Editar avaliação",
+                modifier = Modifier
+                    .size(ICON_SIZE)
+                    .clickable(onClick = onEditarAvaliacao)
+            )
             Spacer(Modifier.width(10.dp))
             Text(
                 av.descricao ?: "[sem descrição]",
@@ -378,7 +392,7 @@ private fun AvaliacaoLinha(
 
             // NOTA (clicável)
             Text(
-                text = av.nota?.let { formatNumero(it) } ?: "-",
+                text = NotaCampo.formatListValue(av.nota),
                 modifier = Modifier
                     .width(COL_NOTA_WIDTH)       // <-- fixo
                     .clickable { onEditNota() },
@@ -389,7 +403,7 @@ private fun AvaliacaoLinha(
 
             // PESO (clicável)
             Text(
-                text = (av.peso?.let { "${formatInteiro(it)}%" } ?: "-"),
+                text = PesoCampo.formatListValue(av.peso),
                 modifier = Modifier
                     .width(COL_PESO_WIDTH)
                     .clickable { onEditPeso() },
@@ -397,18 +411,8 @@ private fun AvaliacaoLinha(
                 textAlign = androidx.compose.ui.text.style.TextAlign.End
             )
 
-
-
             Spacer(Modifier.width(6.dp))
 
         }
     }
-}
-
-private fun formatInteiro(v: Double): String = v.roundToInt().toString()
-
-private fun formatNumero(v: Double): String {
-    // 1 casa para nota/peso; usa vírgula no PT-BR
-    val s = String.format(Locale.US, "%.1f", v)
-    return s.replace('.', ',')
 }

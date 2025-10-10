@@ -24,7 +24,9 @@ class ApiDisciplinaBackend : _disciplinabackend {
 
             DisciplinaResumo(
                 id = id,
-                nome = d.nome.orEmpty()
+                codigo = d.codigo,
+                nome = d.nome.orEmpty(),
+                aulas = d.aulas
             )
         }
     }

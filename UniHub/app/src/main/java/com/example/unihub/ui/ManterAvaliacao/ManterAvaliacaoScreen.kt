@@ -7,9 +7,7 @@ import android.app.TimePickerDialog   // Para TimePicker (se for ativar)
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import androidx.compose.animation.core.copy
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.forEach
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -19,18 +17,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.DateRange // Icon for Date
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.AccessTime // Icon for Time
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +41,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import com.example.unihub.ui.Shared.NotaCampo
 
 
 @OptIn(ExperimentalMaterial3Api::class) // Para ExposedDropdownMenuBox
@@ -308,12 +303,13 @@ fun ManterAvaliacaoScreen(
 
                     // NOTA
                     OutlinedTextField(
-                        value = uiState.nota,
+                        value = NotaCampo.formatFieldText(uiState.nota),
                         onValueChange = { viewModel.setNota(it) },
                         label = { Text("Nota") },
+                        placeholder = { Text("Ex.: 8,5") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         colors = OutlinedTextFieldDefaults.colors()
                     )
 
@@ -321,7 +317,8 @@ fun ManterAvaliacaoScreen(
                     OutlinedTextField(
                         value = uiState.peso,
                         onValueChange = { viewModel.setPeso(it) },
-                        label = { Text("Peso") },
+                        label = { Text("Peso (%)") },
+                        placeholder = { Text("Ex.: 20") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),

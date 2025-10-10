@@ -14,6 +14,7 @@ import com.example.unihub.data.repository.AvaliacaoRepository
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
+import java.math.BigDecimal
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +28,8 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
 import kotlin.text.lowercase
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
 data class DisciplinaUiItem(
     val id: Long,
@@ -126,9 +129,9 @@ class ManterAvaliacaoViewModel(
                                     dataEntrega = dataUi,
                                     horaEntrega = horaUi,
 
-                                    peso = avaliacao.peso?.toString() ?: "",
+                                    peso = PesoCampo.fromDouble(avaliacao.peso),
                                     estado = avaliacao.estado,
-                                    nota = avaliacao.nota?.toString() ?: "",
+                                    nota = NotaCampo.fromDouble(avaliacao.nota),
                                     // dificuldade = avaliacao.dificuldade?.toString() ?: "",
                                     isLoading = false
                                 )
@@ -205,12 +208,12 @@ class ManterAvaliacaoViewModel(
                 return false
             }
         }
-        if (st.peso.isNotBlank() && st.peso.toDoubleOrNull() == null) {
-            _uiState.update { it.copy(erro = "Peso inválido. Deve ser um número.") }
+        if (st.peso.isNotEmpty() && PesoCampo.toDouble(st.peso) == null) {
+            _uiState.update { it.copy(erro = "Peso inválido. Use números inteiros de 0 a 100.") }
             return false
         }
-        if (st.nota.isNotBlank() && st.nota.replace(',', '.').toDoubleOrNull() == null) {
-            _uiState.update { it.copy(erro = "Nota inválida. Use número (ex.: 8.5).") }
+        if (st.nota.isNotEmpty() && NotaCampo.toDouble(st.nota) == null) {
+            _uiState.update { it.copy(erro = "Nota inválida. Use formato como 8,5.") }
             return false
         }
         return true
@@ -263,11 +266,17 @@ class ManterAvaliacaoViewModel(
     fun setModalidade(modalidade: Modalidade) { _uiState.update { it.copy(modalidade = modalidade, erro = null) } }
     fun setDataEntrega(data: String) { _uiState.update { it.copy(dataEntrega = data, erro = null) } }
     fun setHoraEntrega(hora: String) { _uiState.update { it.copy(horaEntrega = hora, erro = null) } }
-    fun setPeso(peso: String) { _uiState.update { it.copy(peso = peso, erro = null) } }
+    fun setPeso(peso: String) {
+        val sanitized = PesoCampo.sanitize(peso)
+        _uiState.update { it.copy(peso = sanitized, erro = null) }
+    }
     fun setPrioridade(prioridade: Prioridade) { _uiState.update { it.copy(prioridade = prioridade, erro = null) } }
     fun setReceberNotificacoes(receber: Boolean) { _uiState.update { it.copy(receberNotificacoes = receber, erro = null) } }
     fun setEstado(estado: EstadoAvaliacao) { _uiState.update { it.copy(estado = estado, erro = null) } }
-    fun setNota(nota: String) { _uiState.update { it.copy(nota = nota, erro = null) } }
+    fun setNota(nota: String) {
+        val sanitized = NotaCampo.sanitize(nota)
+        _uiState.update { it.copy(nota = sanitized, erro = null) }
+    }
 
     fun deleteAvaliacao(id: String) {
         _uiState.update { it.copy(isLoading = true, erro = null, isExclusao = true) }
@@ -395,7 +404,8 @@ class ManterAvaliacaoViewModel(
             else -> s.dataEntrega
         }
 
-        val notaDouble = s.nota.replace(',', '.').toDoubleOrNull()
+        val notaDouble = NotaCampo.toDouble(s.nota)
+        val pesoDouble = PesoCampo.toDouble(s.peso)
 
         return AvaliacaoRequestDto(
             id = idParaAtualizar,
@@ -405,7 +415,7 @@ class ManterAvaliacaoViewModel(
             modalidade = s.modalidade,
             dataEntrega = dataFinal,
             nota = notaDouble,
-            peso = s.peso.toDoubleOrNull(),
+            peso = pesoDouble,
             integrantes = integrantesIds.map { ContatoIdDto(it) },
             prioridade = s.prioridade,
             estado = s.estado,
@@ -422,4 +432,5 @@ class ManterAvaliacaoViewModel(
             lista.firstOrNull { it.id == discId }?.let { onDisciplinaSelecionada(it) }
         }
     }
+
 }
