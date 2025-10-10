@@ -13,6 +13,8 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
 import com.example.unihub.data.repository.AuthRepository
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
 
 class ManterContaViewModel(
@@ -54,8 +56,8 @@ class ManterContaViewModel(
         viewModelScope.launch {
             repository.instituicaoUsuario()?.let { inst ->
                 nomeInstituicao = inst.nome
-                media = inst.mediaAprovacao.toString()
-                frequencia = inst.frequenciaMinima.toString()
+                media = NotaCampo.fromDouble(inst.mediaAprovacao)
+                frequencia = PesoCampo.fromDouble(inst.frequenciaMinima.toDouble())
                 instituicaoId = inst.id
             }
         }
@@ -85,8 +87,8 @@ class ManterContaViewModel(
 
     fun onInstituicaoSelecionada(inst: Instituicao) {
         nomeInstituicao = inst.nome
-        media = inst.mediaAprovacao.toString()
-        frequencia = inst.frequenciaMinima.toString()
+        media = NotaCampo.fromDouble(inst.mediaAprovacao)
+        frequencia = PesoCampo.fromDouble(inst.frequenciaMinima.toDouble())
         sugestoes = emptyList()
         mostrarCadastrar = false
         }
@@ -98,8 +100,8 @@ class ManterContaViewModel(
                 val inst = Instituicao(
                     id = instituicaoId,
                     nome = nomeInstituicao,
-                    mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                    frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                    mediaAprovacao = NotaCampo.toDouble(media) ?: 0.0,
+                    frequenciaMinima = PesoCampo.toDouble(frequencia)?.toInt() ?: 0
                 )
                 repository.salvarInstituicao(inst)
                 instituicaoId = repository.instituicaoUsuario()?.id

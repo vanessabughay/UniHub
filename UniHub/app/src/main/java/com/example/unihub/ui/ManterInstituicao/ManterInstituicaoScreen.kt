@@ -31,6 +31,8 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.data.repository.InstituicaoRepository
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,8 +46,8 @@ fun ManterInstituicaoScreen(
     LaunchedEffect(nome, media, frequencia) {
         if (nome.isNotBlank()) {
             viewModel.nomeInstituicao = nome
-            viewModel.media = media
-            viewModel.frequencia = frequencia
+            viewModel.onMediaChange(media)
+            viewModel.onFrequenciaChange(frequencia)
         }
     }
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
@@ -84,7 +86,7 @@ fun ManterInstituicaoScreen(
                     .padding(bottom = 39.dp)
             ) {
                 Text(
-                    "Nome",
+                    "Nome da Instituição",
                     color = Color(0xFF000000),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -110,7 +112,7 @@ fun ManterInstituicaoScreen(
                             )
                             .clip(RoundedCornerShape(10.dp))
                             .width(266.dp)
-                            .height(44.dp)
+                            .height(56.dp)
                             .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
                         colors = TextFieldDefaults.outlinedTextFieldColors(
                             containerColor = Color.Transparent,
@@ -129,7 +131,8 @@ fun ManterInstituicaoScreen(
                             DropdownMenuItem(
                                 text = {
                                     Text(
-                                        "${inst.nome} (média:${inst.mediaAprovacao} freq:${inst.frequenciaMinima})"
+                                        "${inst.nome} (média:${NotaCampo.formatListValue(inst.mediaAprovacao)} " +
+                                                "freq:${PesoCampo.formatListValue(inst.frequenciaMinima.toDouble())})"
                                     )
                                 },
                                 onClick = {
@@ -147,7 +150,7 @@ fun ManterInstituicaoScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "Média aprovação",
+                    "Média de aprovação",
                     color = Color(0xFF000000),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -155,7 +158,7 @@ fun ManterInstituicaoScreen(
                         .padding(top = 2.dp, bottom = 2.dp, start = 0.dp, end = 26.dp)
                 )
                 Text(
-                    "Frequência mínima",
+                    "Frequência mínima (%)",
                     color = Color(0xFF000000),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
@@ -170,8 +173,8 @@ fun ManterInstituicaoScreen(
 
             ) {
                 OutlinedTextField(
-                    value = viewModel.media,
-                    onValueChange = { viewModel.media = it },
+                    value = NotaCampo.formatFieldText(viewModel.media),
+                    onValueChange = { viewModel.onMediaChange(it) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .padding(end = 10.dp)
@@ -182,7 +185,7 @@ fun ManterInstituicaoScreen(
                         )
                         .clip(RoundedCornerShape(10.dp))
                         .width(128.dp)
-                        .height(44.dp)
+                        .height(56.dp)
                         .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         containerColor = Color.Transparent,
@@ -193,7 +196,7 @@ fun ManterInstituicaoScreen(
                 )
                 OutlinedTextField(
                     value = viewModel.frequencia,
-                    onValueChange = { viewModel.frequencia = it },
+                    onValueChange = { viewModel.onFrequenciaChange(it) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier
                         .border(
@@ -203,14 +206,15 @@ fun ManterInstituicaoScreen(
                         )
                         .clip(RoundedCornerShape(10.dp))
                         .width(128.dp)
-                        .height(44.dp)
+                        .height(56.dp)
                         .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         containerColor = Color.Transparent,
                         focusedBorderColor = Color.Transparent,
                         unfocusedBorderColor = Color.Transparent
                     ),
-                    singleLine = true
+                    singleLine = true,
+                    suffix = { Text("%") }
                 )
             }
             OutlinedButton(
