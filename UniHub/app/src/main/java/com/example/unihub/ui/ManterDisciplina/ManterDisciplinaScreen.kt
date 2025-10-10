@@ -231,6 +231,7 @@ fun ManterDisciplinaScreen(
     var nomeDisciplina by remember { mutableStateOf("") }
     var nomeProfessor by remember { mutableStateOf("") }
     var cargaHoraria by remember { mutableStateOf("") }
+    var qtdSemanas by remember { mutableStateOf("") }
     var qtdAulasSemana by remember { mutableStateOf("1") }
     var dataInicioSemestre by remember { mutableStateOf(0L) }
     var dataFimSemestre by remember { mutableStateOf(0L) }
@@ -271,6 +272,7 @@ fun ManterDisciplinaScreen(
             nomeProfessor   = d.professor.orEmpty()
             periodo         = d.periodo.orEmpty()
             cargaHoraria    = (d.cargaHoraria ?: 0).toString()
+            qtdSemanas      = (d.qtdSemanas ?: 0).toString()
 
             val aulasList   = d.aulas.orEmpty()         // evita NPE se vier null
             qtdAulasSemana  = aulasList.size.toString()
@@ -350,6 +352,7 @@ fun ManterDisciplinaScreen(
                             professor = nomeProfessor,
                             periodo = periodo,
                             cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
+                            qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
                             dataInicioSemestre = inicio, // ✅ já no formato certo
                             dataFimSemestre = fim,
                             emailProfessor = emailProfessor,
@@ -429,6 +432,7 @@ fun ManterDisciplinaScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoDeTextoComTitulo("CH Total", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Aulas/Semana", qtdAulasSemana, { qtdAulasSemana = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        CampoDeTextoComTitulo("Semanas (Total)", qtdSemanas, { qtdSemanas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     aulas.forEachIndexed { index, aula ->

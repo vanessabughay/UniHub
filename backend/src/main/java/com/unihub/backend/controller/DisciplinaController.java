@@ -41,6 +41,7 @@ public class DisciplinaController {
         existente.setProfessor(novaDisciplina.getProfessor());
         existente.setPeriodo(novaDisciplina.getPeriodo());
         existente.setCargaHoraria(novaDisciplina.getCargaHoraria());
+        existente.setQtdSemanas(novaDisciplina.getQtdSemanas());
         existente.setDataInicioSemestre(novaDisciplina.getDataInicioSemestre());
         existente.setDataFimSemestre(novaDisciplina.getDataFimSemestre());
         existente.setEmailProfessor(novaDisciplina.getEmailProfessor());

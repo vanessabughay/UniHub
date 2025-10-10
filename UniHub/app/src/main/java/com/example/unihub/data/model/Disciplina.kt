@@ -19,7 +19,8 @@ data class Disciplina(
     val periodo: String,
 
     // --- Informações de Aula ---
-    val cargaHoraria: Int, // Tipo Int é melhor
+    val cargaHoraria: Int? = null, // Tipo Int é melhor
+    val qtdSemanas: Int? = null,
     val aulas: List<HorarioAula>, // lista com as aulas que a disciplina tem, precisa por no diagrama
     val dataInicioSemestre: LocalDate,
     val dataFimSemestre: LocalDate, //ALTERAR TIPO

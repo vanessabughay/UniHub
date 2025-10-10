@@ -30,6 +30,7 @@ public class Disciplina {
     private String professor;
     private String periodo;
     private int cargaHoraria; // Mantido como int primitivo
+    private Integer qtdSemanas;
     private LocalDate dataInicioSemestre;
     private LocalDate dataFimSemestre;
     private String emailProfessor;
@@ -86,6 +87,9 @@ public class Disciplina {
 
     public int getCargaHoraria() { return cargaHoraria; }
     public void setCargaHoraria(int cargaHoraria) { this.cargaHoraria = cargaHoraria; }
+
+    public Integer getQtdSemanas() { return qtdSemanas; }
+    public void setQtdSemanas(Integer qtdSemanas) { this.qtdSemanas = qtdSemanas; }
 
     public LocalDate getDataInicioSemestre() { return dataInicioSemestre; }
     public void setDataInicioSemestre(LocalDate dataInicioSemestre) { this.dataInicioSemestre = dataInicioSemestre; }
@@ -196,6 +200,7 @@ public class Disciplina {
                 ", nome='" + nome + '\'' +
                 ", codigo='" + codigo + '\'' +
                 ", professor='" + professor + '\'' +
+                ", qtdSemanas=" + qtdSemanas +
                 ", usuarioId=" + (usuario != null ? usuario.getId() : "null") +
                 ", numeroDeAvaliacoes=" + (avaliacoes != null ? avaliacoes.size() : 0) +
                 ", numeroDeAulas=" + (aulas != null ? aulas.size() : 0) +
