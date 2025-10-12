@@ -34,6 +34,7 @@ import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.R
 import com.example.unihub.data.repository.InstituicaoRepository
 import androidx.compose.ui.platform.LocalContext
+import com.example.unihub.ui.Shared.NotaCampo
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -244,8 +245,9 @@ fun ManterContaScreen(
                                 text = viewModel.nomeInstituicao,
                                 fontWeight = FontWeight.Bold
                             )
-                            Text("Média de aprovação: ${viewModel.media}")
-                            Text("Frequência mínima: ${viewModel.frequencia}")
+                            val mediaFormatada = viewModel.media.takeIf { it.isNotBlank() }?.let { NotaCampo.formatFieldText(it) } ?: "-"
+                            Text("Média de aprovação: $mediaFormatada")
+                            Text("Frequência mínima: ${viewModel.frequencia}%")
                         }
 
                         IconButton(

@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Instituicao
 import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.launch
+import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.PesoCampo
 
 class ManterInstituicaoViewModel(
     private val repository: InstituicaoRepository
@@ -17,8 +19,9 @@ class ManterInstituicaoViewModel(
 
     var nomeInstituicao by mutableStateOf("")
     var media by mutableStateOf("")
+        private set
     var frequencia by mutableStateOf("")
-
+        private set
     var sugestoes by mutableStateOf(listOf<Instituicao>())
     var mostrarCadastrar by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
@@ -51,10 +54,19 @@ class ManterInstituicaoViewModel(
 
     fun onInstituicaoSelecionada(inst: Instituicao) {
         nomeInstituicao = inst.nome
-        media = inst.mediaAprovacao.toString()
-        frequencia = inst.frequenciaMinima.toString()
+        media = NotaCampo.fromDouble(inst.mediaAprovacao)
+        frequencia = PesoCampo.fromDouble(inst.frequenciaMinima.toDouble())
         sugestoes = emptyList()
         mostrarCadastrar = false
+    }
+
+    fun onMediaChange(text: String) {
+        val normalizado = text.replace('.', ',')
+        media = NotaCampo.sanitize(normalizado)
+    }
+
+    fun onFrequenciaChange(text: String) {
+        frequencia = PesoCampo.sanitize(text)
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -64,8 +76,8 @@ class ManterInstituicaoViewModel(
                 val inst = Instituicao(
                     id = instituicaoId,
                     nome = nomeInstituicao,
-                    mediaAprovacao = media.toDoubleOrNull() ?: 0.0,
-                    frequenciaMinima = frequencia.toIntOrNull() ?: 0
+                    mediaAprovacao = NotaCampo.toDouble(media) ?: 0.0,
+                    frequenciaMinima = PesoCampo.toDouble(frequencia)?.toInt() ?: 0
                 )
                 repository.salvarInstituicao(inst)
                 instituicaoId = repository.instituicaoUsuario()?.id

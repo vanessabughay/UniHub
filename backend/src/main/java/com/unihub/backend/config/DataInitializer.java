@@ -68,25 +68,25 @@ public class DataInitializer {
 
         criarDisciplinaSeNaoExistir(usuario,
                 "DS340A", "Banco de Dados III", "João Marynowski",
-                "2025/2", 30, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "2025/2", 30, 16, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "jeugenio@ufpr.br", "TEAMS e UFPR Virtual", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("segunda-feira", "A13", 1140, 2240)});
 
         Disciplina saob22 = criarDisciplinaSeNaoExistir(usuario,
                 "SAOB22", "Modelagem de Novos Negócios", "Cleverson Renan da Cunha",
-                "2025/2", 60, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "2025/2", 60, 18, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "cleverson@ufpr.br", "TEAMS", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("terça-feira", "210", 1140, 1360)});
 
         criarDisciplinaSeNaoExistir(usuario,
                 "SA060", "Planejamento Tributário", "Clayton Gomes de Medeiros",
-                "2025/2", 60, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "2025/2", 60, 18, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "clayton@ufpr.br", "WhatsApp", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("quarta-feira", "229", 1140, 1360)});
 
         criarDisciplinaSeNaoExistir(usuario,
                 "ST015", "Matemática Financeira", "Eloisa Rasotti Navarro",
-                "2025/2", 30, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "2025/2", 30, 16, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "eloisa@ufpr.br", "UFPR Virtual", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("quinta-feira", "a09", 1260, 1360)});
 
@@ -137,7 +137,7 @@ public class DataInitializer {
     }
 
     private Disciplina criarDisciplinaSeNaoExistir(Usuario usuario, String codigo, String nome,
-                                                  String professor, String periodo, int cargaHoraria,
+                                                   String professor, String periodo, int cargaHoraria, Integer qtdSemanas,
                                                   LocalDate dataInicio, LocalDate dataFim,
                                                   String emailProfessor, String plataforma,
                                                   String telefoneProfessor, String salaProfessor,
@@ -157,6 +157,7 @@ public class DataInitializer {
         disciplina.setProfessor(professor);
         disciplina.setPeriodo(periodo);
         disciplina.setCargaHoraria(cargaHoraria);
+        disciplina.setQtdSemanas(qtdSemanas);
         disciplina.setDataInicioSemestre(dataInicio);
         disciplina.setDataFimSemestre(dataFim);
         disciplina.setEmailProfessor(emailProfessor);
