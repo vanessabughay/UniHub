@@ -3,7 +3,6 @@ package com.example.unihub.data.model
 import android.os.Parcelable
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
-import com.example.unihub.data.model.Priority
 import com.example.unihub.data.util.FlexibleLongAdapter
 import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
@@ -15,7 +14,6 @@ data class Coluna(
     val id: String = "",
     val titulo: String = "",
     val descricao: String? = null,
-    val prioridade: Priority = Priority.MEDIA,
     val status: Status = Status.INICIADA,
     @JsonAdapter(FlexibleLongAdapter::class)
     val dataInicio: Long = System.currentTimeMillis(),

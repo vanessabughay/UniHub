@@ -21,7 +21,6 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
-import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
 import java.text.SimpleDateFormat
@@ -53,7 +52,6 @@ fun ColunaFormScreen(
 
     var titulo by remember(colunaInicial) { mutableStateOf(colunaInicial?.titulo ?: "") }
     var descricao by remember(colunaInicial) { mutableStateOf(colunaInicial?.descricao ?: "") }
-    var prioridade by remember(colunaInicial) { mutableStateOf(colunaInicial?.prioridade ?: Priority.MEDIA) }
     var status by remember(colunaInicial) { mutableStateOf(colunaInicial?.status ?: Status.INICIADA) }
     var prazo by remember(colunaInicial) { mutableStateOf(colunaInicial?.prazoManual ?: System.currentTimeMillis()) }
 
@@ -70,7 +68,6 @@ fun ColunaFormScreen(
             colunaState?.let { loadedColuna ->
                 titulo = loadedColuna.titulo
                 descricao = loadedColuna.descricao ?: ""
-                prioridade = loadedColuna.prioridade
                 status = loadedColuna.status
                 prazo = loadedColuna.prazoManual
             }
@@ -118,7 +115,6 @@ fun ColunaFormScreen(
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
             CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
-            CampoCombobox(label = "Prioridade", options = Priority.values().toList(), selectedOption = prioridade, onOptionSelected = { prioridade = it }, optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } })
 
             val canMarkAsCompleted = colunaParaStatus?.todasTarefasConcluidas ?: true
             val statusOptions = if (colunaParaStatus?.tarefas?.isNotEmpty() == true) {
@@ -153,7 +149,6 @@ fun ColunaFormScreen(
                             id = if (isEditing) colunaId!! else "",
                             titulo = titulo,
                             descricao = descricao.ifBlank { null },
-                            prioridade = prioridade,
                             status = status,
                             prazoManual = prazo,
                             tarefas = if (isEditing) colunaState?.tarefas ?: colunaInicial?.tarefas ?: emptyList() else emptyList()
@@ -190,7 +185,6 @@ class FakeColunaRepository : ColunaRepository(object : ColunaApi {
             id = colunaId,
             titulo = "Coluna de Exemplo",
             descricao = "Esta é uma descrição de exemplo para o preview.",
-            prioridade = Priority.MEDIA,
             status = Status.INICIADA,
             prazoManual = System.currentTimeMillis() + 86400000L,
             dataInicio = System.currentTimeMillis(),
