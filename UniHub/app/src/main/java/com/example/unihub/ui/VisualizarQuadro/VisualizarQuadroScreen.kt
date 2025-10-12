@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -81,7 +82,7 @@ private fun formatarPrazo(prazo: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualizarQuadroScreen(
-    quadroId: String?, // This remains nullable as it comes from navigation
+    quadroId: String?,
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
     onNavigateToNovaColuna: (String) -> Unit,
@@ -92,10 +93,9 @@ fun VisualizarQuadroScreen(
 ) {
     val viewModel: VisualizarQuadroViewModel = viewModel(factory = viewModelFactory)
 
-    // Only proceed if quadroId is not null
     if (quadroId != null) {
         VisualizarQuadroContent(
-            quadroId = quadroId, // Now it's guaranteed to be a non-null String
+            quadroId = quadroId,
             onVoltar = onVoltar,
             onNavigateToEditQuadro = onNavigateToEditQuadro,
             onNavigateToNovaColuna = onNavigateToNovaColuna,
@@ -105,8 +105,6 @@ fun VisualizarQuadroScreen(
             viewModel = viewModel
         )
     } else {
-        // Optional: Show a loading state, an error message, or simply navigate back
-        // if the ID is unexpectedly null.
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Erro: ID do quadro não encontrado.")
         }
@@ -172,22 +170,18 @@ private fun VisualizarQuadroContent(
             HeaderSection(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
                 onVoltar = onVoltar,
-                onClickIconeDireita = {
-                    val destinoId = uiState.quadro?.id ?: quadroId
-                    onNavigateToEditQuadro(destinoId)
-                }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             val destinoId = uiState.quadro?.id ?: quadroId
-            val secondaryContainerColor = MaterialTheme.colorScheme.secondaryContainer
-            val opcoes = remember(destinoId, secondaryContainerColor) {
+            val tertiaryContainerColor = MaterialTheme.colorScheme.tertiary
+            val opcoes = remember(destinoId, tertiaryContainerColor) {
                 listOf(
                     OpcaoQuadro(
                         title = "Informações do quadro",
                         icon = Icons.Outlined.Info,
-                        background = secondaryContainerColor,
+                        background = tertiaryContainerColor.copy(alpha = 0.4f),
                         onClick = { onNavigateToEditQuadro(destinoId) }
                     )
                 )
@@ -208,56 +202,58 @@ private fun VisualizarQuadroContent(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 50.dp))
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 16.dp)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     if (colunasAtivas.isNotEmpty()) {
-                        item {
-                            TituloDeSecao(
-                                titulo = "Colunas em andamento",
-                                setaAbaixo = secaoAtivaExpandida,
-                                onClick = { secaoAtivaExpandida = !secaoAtivaExpandida }
-                            )
-                        }
-                        items(colunasAtivas, key = { it.id }) { coluna ->
-                            AnimatedVisibility(visible = secaoAtivaExpandida) {
-                                ColunaCard(
-                                    coluna = coluna,
-                                    isExpanded = colunaExpandidaId == coluna.id,
-                                    onExpandToggle = {
-                                        colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
-                                    },
-                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
-                                    onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
-                                    onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
-                                )
+                        TituloDeSecao(
+                            titulo = "Colunas em andamento",
+                            setaAbaixo = secaoAtivaExpandida,
+                            onClick = { secaoAtivaExpandida = !secaoAtivaExpandida }
+                        )
+                        AnimatedVisibility(visible = secaoAtivaExpandida) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(vertical = 12.dp)
+                            ) {
+                                items(colunasAtivas, key = { it.id }) { coluna ->
+                                    ColunaCard(
+                                        coluna = coluna,
+                                        isExpanded = colunaExpandidaId == coluna.id,
+                                        onExpandToggle = {
+                                            colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
+                                        },
+                                        onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                        onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
+                                        onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
+                                    )
+                                }
                             }
                         }
                     }
 
                     if (colunasConcluidas.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            TituloDeSecao(
-                                titulo = "Colunas concluídas",
-                                setaAbaixo = secaoConcluidaExpandida,
-                                onClick = { secaoConcluidaExpandida = !secaoConcluidaExpandida }
-                            )
-                        }
-                        items(colunasConcluidas, key = { it.id }) { coluna ->
-                            AnimatedVisibility(visible = secaoConcluidaExpandida) {
-                                ColunaCard(
-                                    coluna = coluna,
-                                    isExpanded = colunaExpandidaId == coluna.id,
-                                    onExpandToggle = {
-                                        colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
-                                    },
-                                    onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
-                                    onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
-                                    onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
-                                )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TituloDeSecao(
+                            titulo = "Colunas concluídas",
+                            setaAbaixo = secaoConcluidaExpandida,
+                            onClick = { secaoConcluidaExpandida = !secaoConcluidaExpandida }
+                        )
+                        AnimatedVisibility(visible = secaoConcluidaExpandida) {
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                contentPadding = PaddingValues(vertical = 12.dp)
+                            ) {
+                                items(colunasConcluidas, key = { it.id }) { coluna ->
+                                    ColunaCard(
+                                        coluna = coluna,
+                                        isExpanded = colunaExpandidaId == coluna.id,
+                                        onExpandToggle = {
+                                            colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
+                                        },
+                                        onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
+                                        onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(coluna.id, tarefaId) },
+                                        onNewTarefa = { onNavigateToNovaTarefa(coluna.id) }
+                                    )
+                                }
                             }
                         }
                     }
@@ -267,7 +263,7 @@ private fun VisualizarQuadroContent(
     }
 }
 
-// Composable para o título de seção, adaptado do seu modelo
+
 @Composable
 private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -298,7 +294,7 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
     }
 }
 
-// ColunaCard é agora expansível e mostra Tarefas
+
 @Composable
 private fun ColunaCard(
     coluna: Coluna,
@@ -313,7 +309,7 @@ private fun ColunaCard(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth()
+            .width(320.dp)
             .clip(MaterialTheme.shapes.large)
             .background(cardColor)
             .clickable(onClick = onExpandToggle)
@@ -406,7 +402,7 @@ private fun ColunaCard(
 }
 
 @Composable
-private fun HeaderSection(titulo: String, onVoltar: () -> Unit, onClickIconeDireita: () -> Unit) {
+private fun HeaderSection(titulo: String, onVoltar: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -431,31 +427,5 @@ private fun HeaderSection(titulo: String, onVoltar: () -> Unit, onClickIconeDire
             ),
             modifier = Modifier.align(Alignment.Center)
         )
-
-        IconButton(
-            onClick = onClickIconeDireita,
-            modifier = Modifier.align(Alignment.CenterEnd)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Info,
-                contentDescription = "Informações do Quadro",
-                modifier = Modifier.size(28.dp)
-            )
-        }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

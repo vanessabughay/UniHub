@@ -32,30 +32,6 @@ data class Quadro(
     val dataFim: Long? = null,
     val donoId: Long? = null
 ) {
-    val prazoCalculado: Long
-        get() = if (colunas.isNotEmpty()) {
-            colunas.maxOfOrNull { it.prazoCalculado } ?: 0L
-        } else {
-            0L
-        }
-
-    val duracao: String
-        get() {
-            if (colunas.isEmpty()) {
-                return "N/A"
-            }
-
-            val ultimaDataFimColuna = colunas
-                .filter { it.status == Status.CONCLUIDA && it.dataFim != null }
-                .maxOfOrNull { it.dataFim!! }
-
-            return if (ultimaDataFimColuna != null) {
-                // A lógica de dataInicio agora funcionará corretamente
-                formatarDuracao(ultimaDataFimColuna - dataInicio)
-            } else {
-                "N/A"
-            }
-        }
 
     private fun formatarDuracao(millis: Long): String {
         if (millis < 0) return "Inválida"

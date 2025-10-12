@@ -48,11 +48,6 @@ class ColunaFormViewModel(
 
                 var colunaToSave = coluna
 
-                if (colunaToSave.status == Status.CONCLUIDA && existingColuna?.status != Status.CONCLUIDA) {
-                    colunaToSave = colunaToSave.copy(dataFim = System.currentTimeMillis())
-                } else if (colunaToSave.status != Status.CONCLUIDA && existingColuna?.status == Status.CONCLUIDA) {
-                    colunaToSave = colunaToSave.copy(dataFim = null)
-                }
 
                 if (colunaToSave.id.isNotBlank()) {
                     // MUDANÇA: Passa o quadroId para o repositório
