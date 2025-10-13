@@ -382,7 +382,8 @@ private fun ColunaCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onEditColuna) {
-                        Text("Editar Coluna")
+                        Text("Editar Coluna",
+                            color = MaterialTheme.colorScheme.tertiary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
