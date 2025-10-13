@@ -44,6 +44,7 @@ import com.example.unihub.data.repository._disciplinabackend
 import com.example.unihub.data.repository._quadrobackend
 import java.time.LocalDate
 import com.example.unihub.data.model.Quadro
+import com.example.unihub.Screen
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -63,13 +64,14 @@ fun QuadroFormScreen(
         viewModel.carregarDados(quadroId)
     }
 
+    //novo
     LaunchedEffect(formResult) {
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
                 navController.previousBackStackEntry?.savedStateHandle?.set("refreshQuadros", true)
-                navController.popBackStack()
-                viewModel.resetFormResult()
+                // pra voltar duas telas
+                navController.popBackStack(Screen.ListarQuadros.route, false)
             }
             is FormResult.Error -> {
                 Toast.makeText(context, "Erro: ${result.message}", Toast.LENGTH_LONG).show()
@@ -241,122 +243,3 @@ private fun SelecaoIntegranteDialog(
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// --- 1. DADOS FALSOS (MOCK DATA) ---
-private val MOCK_DISCIPLINAS = listOf(
-    DisciplinaResumo(id = 1, codigo = "CI068", nome = "Programação Orientada a Objetos"),
-    DisciplinaResumo(id = 2, codigo = "CI062", nome = "Técnicas de Programação"),
-    DisciplinaResumo(id = 3, codigo = "CE003", nome = "Estatística II")
-)
-private val MOCK_CONTATOS = listOf(
-    ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com"),
-    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com")
-)
-// CÓDIGO CORRIGIDO
-private val MOCK_GRUPOS = listOf(
-    Grupo(id = 201, nome = "Grupo de Estudo de IA", membros = emptyList()),
-    Grupo(id = 202, nome = "Projeto TCC", membros = emptyList())
-)
-
-private val MOCK_QUADRO_PARA_EDICAO = Quadro(
-    id = "quadro-id-123",
-    nome = "Trabalho de Compiladores",
-    estado = Estado.ATIVO,
-    disciplinaId = 2,
-    contatoId = 102,
-    grupoId = null,
-    colunas = emptyList(),
-    dataInicio = System.currentTimeMillis() - 86400000L * 5,
-    dataFim = System.currentTimeMillis() + 86400000L * 10,
-    donoId = 1L
-)
-
-// --- 2. IMPLEMENTAÇÕES FALSAS DOS REPOSITÓRIOS (COM CORREÇÃO) ---
-
-private fun createFakeDisciplinaRepository() = DisciplinaRepository(object : _disciplinabackend {
-    override suspend fun getDisciplinasResumoApi(): List<DisciplinaResumo> = MOCK_DISCIPLINAS
-    override suspend fun getDisciplinaByIdApi(id: String): Disciplina? = null
-    // --- FUNÇÕES QUE FALTAVAM ---
-    override suspend fun addDisciplinaApi(disciplina: Disciplina) {} // Implementação vazia
-    override suspend fun updateDisciplinaApi(id: Long, disciplina: Disciplina): Boolean = true
-    override suspend fun deleteDisciplinaApi(id: Long): Boolean = true
-})
-
-private fun createFakeContatoRepository() = ContatoRepository(object : Contatobackend {
-    override suspend fun getContatoResumoApi(): List<ContatoResumo> = MOCK_CONTATOS
-    override suspend fun getContatoByIdApi(id: String): Contato? = null
-    // --- FUNÇÕES QUE FALTAVAM ---
-    override suspend fun addContatoApi(contato: Contato) {} // Implementação vazia
-    override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
-    override suspend fun deleteContatoApi(id: Long): Boolean = true
-})
-
-private fun createFakeGrupoRepository() = GrupoRepository(object : Grupobackend {
-    override suspend fun getGrupoApi(): List<Grupo> = MOCK_GRUPOS
-    override suspend fun getGrupoByIdApi(id: String): Grupo? = null
-    // --- FUNÇÕES QUE FALTAVAM ---
-    override suspend fun addGrupoApi(grupo: Grupo) {} // Implementação vazia
-    override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
-    override suspend fun deleteGrupoApi(id: Long): Boolean = true
-})
-
-private fun createFakeQuadroRepository() = QuadroRepository(object : _quadrobackend {
-    override suspend fun getQuadrosApi(): List<Quadro> = emptyList()
-    override suspend fun getQuadroByIdApi(id: String): Quadro? = if (id == "quadro-id-123") MOCK_QUADRO_PARA_EDICAO else null
-    // --- FUNÇÕES QUE FALTAVAM ---
-    override suspend fun addQuadroApi(quadro: Quadro) {} // Implementação vazia
-    override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
-    override suspend fun deleteQuadroApi(id: Long): Boolean = true
-})
-
-// --- 3. FÁBRICA DE VIEWMODEL PARA A PREVIEW ---
-private class PreviewViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(QuadroFormViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return QuadroFormViewModel(
-                quadroRepository = createFakeQuadroRepository(),
-                disciplinaRepository = createFakeDisciplinaRepository(),
-                contatoRepository = createFakeContatoRepository(),
-                grupoRepository = createFakeGrupoRepository()
-            ) as T
-        }
-        throw IllegalArgumentException("Classe de ViewModel desconhecida para a preview")
-    }
-}
-
-// --- 4. AS PREVIEWS ---
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true, name = "Modo de Criação")
-@Composable
-fun QuadroFormScreen_CreateMode_Preview() {
-    QuadroFormScreen(
-        navController = rememberNavController(),
-        quadroId = null,
-        viewModelFactory = PreviewViewModelFactory()
-    )
-}
-
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true, name = "Modo de Edição")
-@Composable
-fun QuadroFormScreen_EditMode_Preview() {
-    QuadroFormScreen(
-        navController = rememberNavController(),
-        quadroId = "quadro-id-123",
-        viewModelFactory = PreviewViewModelFactory()
-    )
-}
