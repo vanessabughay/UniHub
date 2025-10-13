@@ -485,6 +485,7 @@ class MainActivity : ComponentActivity() {
 
 
                         VisualizarQuadroScreen(
+                            navController = navController,
                             quadroId = quadroId,
                             onVoltar = { navController.popBackStack() },
                             onNavigateToEditQuadro = { id ->

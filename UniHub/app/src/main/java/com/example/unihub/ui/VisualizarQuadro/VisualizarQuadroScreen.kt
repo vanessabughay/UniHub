@@ -38,9 +38,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Status
 import androidx.compose.material3.HorizontalDivider
-
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.navigation.NavHostController
 
 data class OpcaoQuadro(
     val title: String,
@@ -82,6 +82,7 @@ private fun formatarPrazo(prazo: Long): String {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VisualizarQuadroScreen(
+    navController: NavHostController,
     quadroId: String?,
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
@@ -95,6 +96,7 @@ fun VisualizarQuadroScreen(
 
     if (quadroId != null) {
         VisualizarQuadroContent(
+            navController = navController,
             quadroId = quadroId,
             onVoltar = onVoltar,
             onNavigateToEditQuadro = onNavigateToEditQuadro,
@@ -116,6 +118,7 @@ fun VisualizarQuadroScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun VisualizarQuadroContent(
+    navController: NavHostController,
     quadroId: String,
     onVoltar: () -> Unit,
     onNavigateToEditQuadro: (String) -> Unit,
@@ -127,6 +130,12 @@ private fun VisualizarQuadroContent(
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
+
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    val colunaAtualizada by savedStateHandle
+        ?.getStateFlow("colunaAtualizada", false)
+        ?.collectAsState(initial = false)
+        ?: remember { mutableStateOf(false) }
 
     var colunaExpandidaId by remember { mutableStateOf<String?>(null) }
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
@@ -141,6 +150,13 @@ private fun VisualizarQuadroContent(
 
     LaunchedEffect(quadroId) {
         viewModel.carregarQuadro(quadroId)
+    }
+
+    LaunchedEffect(colunaAtualizada) {
+        if (colunaAtualizada) {
+            viewModel.carregarQuadro(quadroId)
+            savedStateHandle?.set("colunaAtualizada", false)
+        }
     }
 
     Scaffold(

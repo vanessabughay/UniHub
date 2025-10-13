@@ -65,6 +65,7 @@ fun ColunaFormScreen(
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
+                navController.previousBackStackEntry?.savedStateHandle?.set("colunaAtualizada", true)
                 navController.popBackStack()
                 viewModel.resetFormResult()
             }

@@ -207,6 +207,37 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional(readOnly = true)
+    public ColunaPlanejamento buscarColunaPorId(Long quadroId, Long colunaId, Long usuarioId) {
+        return buscarColuna(quadroId, colunaId, usuarioId);
+    }
+
+    @Transactional
+    public ColunaPlanejamento atualizarColuna(Long quadroId, Long colunaId, ColunaPlanejamentoRequest request, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+
+        if (request.getTitulo() != null) {
+            validarTitulo(request.getTitulo());
+            coluna.setTitulo(request.getTitulo());
+        }
+
+        if (request.getEstado() != null) {
+            coluna.setEstado(request.getEstado());
+        }
+
+        if (request.getOrdem() != null) {
+            coluna.setOrdem(request.getOrdem());
+        }
+
+        return colunaRepository.save(coluna);
+    }
+
+    @Transactional
+    public void excluirColuna(Long quadroId, Long colunaId, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+        colunaRepository.delete(coluna);
+    }
+
+    @Transactional(readOnly = true)
     public List<ColunaPlanejamento> listarColunas(Long quadroId, EstadoPlanejamento estado, Long usuarioId) {
         buscarPorId(quadroId, usuarioId);
         if (estado == null) {

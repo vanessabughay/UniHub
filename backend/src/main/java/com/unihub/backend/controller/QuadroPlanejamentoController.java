@@ -56,11 +56,35 @@ public class QuadroPlanejamentoController {
         return service.listarColunas(id, estado, usuarioId);
     }
 
+    @GetMapping("/{id}/colunas/{colunaId}")
+    public ColunaPlanejamento buscarColuna(@PathVariable Long id,
+                                           @PathVariable Long colunaId,
+                                           @AuthenticationPrincipal Long usuarioId) {
+        return service.buscarColunaPorId(id, colunaId, usuarioId);
+    }
+
+
     @PostMapping("/{id}/colunas")
     public ColunaPlanejamento criarColuna(@PathVariable Long id,
                                            @RequestBody ColunaPlanejamentoRequest request,
                                            @AuthenticationPrincipal Long usuarioId) {
         return service.criarColuna(id, request, usuarioId);
+    }
+
+    @PutMapping("/{id}/colunas/{colunaId}")
+    public ColunaPlanejamento atualizarColuna(@PathVariable Long id,
+                                              @PathVariable Long colunaId,
+                                              @RequestBody ColunaPlanejamentoRequest request,
+                                              @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarColuna(id, colunaId, request, usuarioId);
+    }
+
+    @DeleteMapping("/{id}/colunas/{colunaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirColuna(@PathVariable Long id,
+                              @PathVariable Long colunaId,
+                              @AuthenticationPrincipal Long usuarioId) {
+        service.excluirColuna(id, colunaId, usuarioId);
     }
 
     @GetMapping("/{id}/colunas/{colunaId}/tarefas")
