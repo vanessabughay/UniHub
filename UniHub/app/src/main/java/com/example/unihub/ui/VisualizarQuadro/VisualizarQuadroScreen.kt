@@ -41,6 +41,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.navigation.NavHostController
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 
 data class OpcaoQuadro(
     val title: String,
@@ -129,13 +134,31 @@ private fun VisualizarQuadroContent(
     viewModel: VisualizarQuadroViewModel
 ) {
 
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-    val colunaAtualizada by savedStateHandle
-        ?.getStateFlow("colunaAtualizada", false)
-        ?.collectAsState(initial = false)
-        ?: remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var isFirstResume by remember(quadroId) { mutableStateOf(true) }
+
+    LaunchedEffect(quadroId) {
+        viewModel.carregarQuadro(quadroId)
+    }
+
+    DisposableEffect(lifecycleOwner, quadroId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (isFirstResume) {
+                    isFirstResume = false
+                } else {
+                    viewModel.carregarQuadro(quadroId)
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     var colunaExpandidaId by remember { mutableStateOf<String?>(null) }
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
@@ -148,16 +171,7 @@ private fun VisualizarQuadroContent(
         .filter { it.status == Status.CONCLUIDA }
         .sortedBy { it.ordem }
 
-    LaunchedEffect(quadroId) {
-        viewModel.carregarQuadro(quadroId)
-    }
 
-    LaunchedEffect(colunaAtualizada) {
-        if (colunaAtualizada) {
-            viewModel.carregarQuadro(quadroId)
-            savedStateHandle?.set("colunaAtualizada", false)
-        }
-    }
 
     Scaffold(
         bottomBar = {
