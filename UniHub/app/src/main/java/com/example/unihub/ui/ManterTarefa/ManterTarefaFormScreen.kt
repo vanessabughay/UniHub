@@ -39,6 +39,7 @@ private fun getDefaultPrazoForUI(): Long {
 @Composable
 fun TarefaFormScreen(
     navController: NavHostController,
+    quadroId: String,
     colunaId: String,
     tarefaId: String?, // Renomeado de subtarefaId para tarefaId
     viewModelFactory: ViewModelProvider.Factory
@@ -147,7 +148,7 @@ fun TarefaFormScreen(
                             prazo = prazo,
                             dataInicio = System.currentTimeMillis()
                         )
-                        TarefaViewModel.cadastrarTarefa(colunaId, novaTarefa)
+                        TarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
                     } else {
                         tarefaState?.let { tarefaCarregada ->
                             val tarefaAtualizada = tarefaCarregada.copy(
@@ -194,8 +195,12 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         )
     }
 
-    override suspend fun createTarefa(colunaId: String, tarefa: Tarefa): Tarefa {
-        return tarefa
+    override suspend fun createTarefa(
+        quadroId: String,
+        colunaId: String,
+        tarefa: com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
+    ) {
+        // Nada a ser feito aqui para o mock
     }
 
     override suspend fun updateTarefa(colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
@@ -226,6 +231,7 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
 fun TarefaFormScreenPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
+        quadroId = "id-do-quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = null,
         viewModelFactory = FakeTarefaFormViewModelFactory()
@@ -237,6 +243,7 @@ fun TarefaFormScreenPreview() {
 fun TarefaFormScreenEditingPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
+        quadroId = "id-do-quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = "id-da-tarefa-exemplo",
         viewModelFactory = FakeTarefaFormViewModelFactory()

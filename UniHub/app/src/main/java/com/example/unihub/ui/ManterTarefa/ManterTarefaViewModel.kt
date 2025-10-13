@@ -26,10 +26,10 @@ class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel(
         }
     }
 
-    fun cadastrarTarefa(colunaId: String, novaTarefa: Tarefa) {
+    fun cadastrarTarefa(quadroId: String, colunaId: String, novaTarefa: Tarefa) {
         viewModelScope.launch {
             try {
-                repository.createTarefa(colunaId, novaTarefa)
+                repository.createTarefa(quadroId, colunaId, novaTarefa)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

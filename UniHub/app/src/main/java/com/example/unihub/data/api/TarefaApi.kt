@@ -1,5 +1,6 @@
 package com.example.unihub.data.api
 
+import com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
 import com.example.unihub.data.model.Tarefa
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -16,11 +17,13 @@ interface TarefaApi {
         @Path("tarefaId") tarefaId: String
     ): Tarefa
 
-    @POST("colunas/{colunaId}/tarefas")
+    @POST("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas")
     suspend fun createTarefa(
+        @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
-        @Body tarefa: Tarefa
-    ): Tarefa
+        @Body tarefa: TarefaPlanejamentoRequestDto
+    )
+
 
     @PUT("colunas/{colunaId}/tarefas/{tarefaId}")
     suspend fun updateTarefa(
