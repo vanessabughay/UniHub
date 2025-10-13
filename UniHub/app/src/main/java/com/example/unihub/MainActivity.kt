@@ -655,7 +655,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         val tarefaIdArg = backStackEntry.arguments?.getString("tarefaId")
-                        val tarefaId = tarefaIdArg?.takeUnless { it == "new" }
+                        val tarefaId = tarefaIdArg?.takeUnless { it == "new" || it.isBlank() }
 
                         val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
                         val viewModelFactory = ManterTarefaViewModelFactory(tarefaRepository)

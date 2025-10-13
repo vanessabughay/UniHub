@@ -45,7 +45,7 @@ fun TarefaFormScreen(
     viewModelFactory: ViewModelProvider.Factory
 ) {
 
-    val TarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
+    val tarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
 
     val context = LocalContext.current
     val isEditing = tarefaId != null // Atualizada a verificação
@@ -54,14 +54,15 @@ fun TarefaFormScreen(
     var descricao by remember { mutableStateOf("") }
     var statusSelecionado by remember { mutableStateOf(Status.INICIADA) }
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
+    var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
 
-    val tarefaState by TarefaViewModel.tarefa.collectAsState()
+    val uiState by tarefaViewModel.uiState.collectAsState()
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     LaunchedEffect(key1 = tarefaId) {
-        if (isEditing) {
-            // AQUI: a função no ViewModel também precisa ser renomeada para 'carregarTarefa'
-            TarefaViewModel.carregarTarefa(colunaId, tarefaId!!)
+        if (isEditing && !tarefaId.isNullOrBlank()) {
+            tarefaViewModel.carregarTarefa(colunaId, tarefaId)
+
         } else {
             titulo = ""
             descricao = ""
@@ -70,14 +71,36 @@ fun TarefaFormScreen(
         }
     }
 
-    LaunchedEffect(key1 = tarefaState) {
+    LaunchedEffect(key1 = uiState.tarefa) {
         if (isEditing) {
-            tarefaState?.let { loadedTarefa ->
+            uiState.tarefa?.let { loadedTarefa ->
                 titulo = loadedTarefa.titulo
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
                 prazo = loadedTarefa.prazo
             }
+        }
+    }
+
+    LaunchedEffect(uiState.operationCompleted) {
+        if (uiState.operationCompleted) {
+            val mensagem = when (ultimaAcao) {
+                TarefaFormAction.CREATE -> "Tarefa criada com sucesso!"
+                TarefaFormAction.UPDATE -> "Tarefa atualizada com sucesso!"
+                TarefaFormAction.DELETE -> "Tarefa excluída com sucesso!"
+                null -> null
+            }
+
+            mensagem?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+            tarefaViewModel.resetOperationResult()
+            navController.popBackStack()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { mensagemErro ->
+            Toast.makeText(context, mensagemErro, Toast.LENGTH_LONG).show()
+            tarefaViewModel.clearError()
         }
     }
 
@@ -133,6 +156,11 @@ fun TarefaFormScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+
             BotoesFormulario(
                 onConfirm = {
                     if (titulo.isBlank()) {
@@ -148,24 +176,25 @@ fun TarefaFormScreen(
                             prazo = prazo,
                             dataInicio = System.currentTimeMillis()
                         )
-                        TarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
+                        ultimaAcao = TarefaFormAction.CREATE
+                        tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
                     } else {
-                        tarefaState?.let { tarefaCarregada ->
+                        uiState.tarefa?.let { tarefaCarregada ->
                             val tarefaAtualizada = tarefaCarregada.copy(
                                 titulo = titulo,
                                 descricao = if (descricao.isBlank()) null else descricao,
                                 status = statusSelecionado,
                                 prazo = prazo
                             )
-                            TarefaViewModel.atualizarTarefa(colunaId, tarefaAtualizada)
+                            ultimaAcao = TarefaFormAction.UPDATE
+                            tarefaViewModel.atualizarTarefa(colunaId, tarefaAtualizada)
                         }
                     }
-                    navController.popBackStack()
                 },
                 onDelete = if (isEditing) {
                     {
-                        TarefaViewModel.excluirTarefa(colunaId, tarefaId!!)
-                        navController.popBackStack()
+                        ultimaAcao = TarefaFormAction.DELETE
+                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(colunaId, id) }
                     }
                 } else null
             )
@@ -173,7 +202,11 @@ fun TarefaFormScreen(
     }
 }
 
-
+private enum class TarefaFormAction {
+    CREATE,
+    UPDATE,
+    DELETE
+}
 
 
 
