@@ -198,7 +198,9 @@ public class QuadroPlanejamentoService {
         ColunaPlanejamento coluna = new ColunaPlanejamento();
         coluna.setTitulo(request.getTitulo());
         coluna.setEstado(request.getEstado() != null ? request.getEstado() : EstadoPlanejamento.EM_ANDAMENTO);
-        coluna.setOrdem(request.getOrdem());
+        Integer maiorOrdem = colunaRepository.findMaxOrdemByQuadroId(quadro.getId());
+        int proximaOrdem = (maiorOrdem != null ? maiorOrdem : 0) + 1;
+        coluna.setOrdem(proximaOrdem);
         coluna.setQuadro(quadro);
 
         return colunaRepository.save(coluna);

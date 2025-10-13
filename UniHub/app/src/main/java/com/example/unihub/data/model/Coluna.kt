@@ -13,6 +13,7 @@ data class Coluna(
     val titulo: String = "",
     val descricao: String? = null,
     val status: Status = Status.INICIADA,
+    val ordem: Int = 0,
     val tarefas: List<Tarefa> = emptyList()
 ) {
 

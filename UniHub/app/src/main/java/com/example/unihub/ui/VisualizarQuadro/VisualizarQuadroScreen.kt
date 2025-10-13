@@ -132,8 +132,12 @@ private fun VisualizarQuadroContent(
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
     var secaoConcluidaExpandida by remember { mutableStateOf(false) }
 
-    val colunasAtivas = uiState.colunas.filter { it.status != Status.CONCLUIDA }
-    val colunasConcluidas = uiState.colunas.filter { it.status == Status.CONCLUIDA }
+    val colunasAtivas = uiState.colunas
+        .filter { it.status != Status.CONCLUIDA }
+        .sortedBy { it.ordem }
+    val colunasConcluidas = uiState.colunas
+        .filter { it.status == Status.CONCLUIDA }
+        .sortedBy { it.ordem }
 
     LaunchedEffect(quadroId) {
         viewModel.carregarQuadro(quadroId)

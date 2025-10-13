@@ -122,6 +122,7 @@ fun ColunaFormScreen(
                             id = if (isEditing) colunaId!! else "",
                             titulo = titulo,
                             status = status,
+                            ordem = colunaState?.ordem ?: 0,
                             tarefas = if (isEditing) colunaState?.tarefas ?: emptyList() else emptyList()
                         )
                         viewModel.salvarOuAtualizarColuna(quadroId, colunaParaSalvar)

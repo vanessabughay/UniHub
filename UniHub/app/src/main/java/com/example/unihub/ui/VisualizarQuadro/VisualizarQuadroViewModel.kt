@@ -37,7 +37,7 @@ class VisualizarQuadroViewModel(
                     _uiState.update {
                         it.copy(
                             quadro = quadroCarregado,
-                            colunas = quadroCarregado.colunas,
+                            colunas = quadroCarregado.colunas.sortedBy { it.ordem },
                             isLoading = false
                         )
                     }
