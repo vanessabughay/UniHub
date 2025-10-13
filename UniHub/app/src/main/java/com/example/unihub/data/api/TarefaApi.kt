@@ -10,27 +10,31 @@ import retrofit2.http.Path
 
 interface TarefaApi {
 
-    @GET("colunas/{colunaId}/tarefas/{tarefaId}")
+    @GET("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}")
     suspend fun getTarefa(
+        @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
         @Path("tarefaId") tarefaId: String
     ): Tarefa
 
-    @POST("colunas/{colunaId}/tarefas")
+    @POST("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas")
     suspend fun createTarefa(
+        @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
         @Body tarefa: Tarefa
     ): Tarefa
 
-    @PUT("colunas/{colunaId}/tarefas/{tarefaId}")
+    @PUT("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}")
     suspend fun updateTarefa(
+        @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
         @Path("tarefaId") tarefaId: String,
         @Body tarefa: Tarefa
     ): Tarefa
 
-    @DELETE("colunas/{colunaId}/tarefas/{tarefaId}")
+    @DELETE("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}")
     suspend fun deleteTarefa(
+        @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
         @Path("tarefaId") tarefaId: String
     )

@@ -39,6 +39,7 @@ private fun getDefaultPrazoForUI(): Long {
 @Composable
 fun TarefaFormScreen(
     navController: NavHostController,
+    quadroId: String,
     colunaId: String,
     tarefaId: String?, // Renomeado de subtarefaId para tarefaId
     viewModelFactory: ViewModelProvider.Factory
@@ -60,7 +61,7 @@ fun TarefaFormScreen(
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
             // AQUI: a função no ViewModel também precisa ser renomeada para 'carregarTarefa'
-            TarefaViewModel.carregarTarefa(colunaId, tarefaId!!)
+            TarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
         } else {
             titulo = ""
             descricao = ""
@@ -147,7 +148,7 @@ fun TarefaFormScreen(
                             prazo = prazo,
                             dataInicio = System.currentTimeMillis()
                         )
-                        TarefaViewModel.cadastrarTarefa(colunaId, novaTarefa)
+                        TarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
                     } else {
                         tarefaState?.let { tarefaCarregada ->
                             val tarefaAtualizada = tarefaCarregada.copy(
@@ -156,14 +157,14 @@ fun TarefaFormScreen(
                                 status = statusSelecionado,
                                 prazo = prazo
                             )
-                            TarefaViewModel.atualizarTarefa(colunaId, tarefaAtualizada)
+                            TarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
                         }
                     }
                     navController.popBackStack()
                 },
                 onDelete = if (isEditing) {
                     {
-                        TarefaViewModel.excluirTarefa(colunaId, tarefaId!!)
+                        TarefaViewModel.excluirTarefa(quadroId, colunaId, tarefaId!!)
                         navController.popBackStack()
                     }
                 } else null
@@ -183,7 +184,7 @@ fun TarefaFormScreen(
 
 
 class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
-    override suspend fun getTarefa(colunaId: String, tarefaId: String): Tarefa {
+    override suspend fun getTarefa(quadroId: String, colunaId: String, tarefaId: String): Tarefa {
         // Retorna um objeto de tarefa mockado para a prévia
         return Tarefa(
             id = tarefaId,
@@ -194,16 +195,16 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         )
     }
 
-    override suspend fun createTarefa(colunaId: String, tarefa: Tarefa): Tarefa {
+    override suspend fun createTarefa(quadroId: String, colunaId: String, tarefa: Tarefa): Tarefa {
         return tarefa
     }
 
-    override suspend fun updateTarefa(colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
+    override suspend fun updateTarefa(quadroId: String, colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
         return tarefa
     }
 
-    override suspend fun deleteTarefa(colunaId: String, tarefaId: String) {
-        // Nada a ser feito aqui
+    override suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
+    // Nada a ser feito aqui
     }
 }) {
     // Essa classe pode ficar vazia, já que a lógica de mock está na interface.
@@ -226,6 +227,7 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
 fun TarefaFormScreenPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
+        quadroId = "quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = null,
         viewModelFactory = FakeTarefaFormViewModelFactory()
@@ -237,6 +239,7 @@ fun TarefaFormScreenPreview() {
 fun TarefaFormScreenEditingPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
+        quadroId = "quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = "id-da-tarefa-exemplo",
         viewModelFactory = FakeTarefaFormViewModelFactory()

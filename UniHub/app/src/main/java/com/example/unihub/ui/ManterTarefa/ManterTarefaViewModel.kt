@@ -14,10 +14,10 @@ class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel(
     private val _tarefaState = MutableStateFlow<Tarefa?>(null)
     val tarefa: StateFlow<Tarefa?> = _tarefaState
 
-    fun carregarTarefa(colunaId: String, tarefaId: String) {
+    fun carregarTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         viewModelScope.launch {
             try {
-                val tarefaCarregada = repository.getTarefa(colunaId, tarefaId)
+                val tarefaCarregada = repository.getTarefa(quadroId, colunaId, tarefaId)
                 _tarefaState.value = tarefaCarregada
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -26,17 +26,17 @@ class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel(
         }
     }
 
-    fun cadastrarTarefa(colunaId: String, novaTarefa: Tarefa) {
+    fun cadastrarTarefa(quadroId: String, colunaId: String, novaTarefa: Tarefa) {
         viewModelScope.launch {
             try {
-                repository.createTarefa(colunaId, novaTarefa)
+                repository.createTarefa(quadroId, colunaId, novaTarefa)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    fun atualizarTarefa(colunaId: String, tarefaAtualizada: Tarefa) {
+    fun atualizarTarefa(quadroId: String, colunaId: String, tarefaAtualizada: Tarefa) {
         viewModelScope.launch {
             try {
                 val tarefaAntiga = _tarefaState.value
@@ -49,17 +49,18 @@ class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel(
                     tarefaParaSalvar = tarefaAtualizada.copy(dataFim = null)
                 }
 
-                repository.updateTarefa(colunaId, tarefaParaSalvar)
+                fun atualizarTarefa(quadroId: String, colunaId: String, tarefaAtualizada: Tarefa) {
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    fun excluirTarefa(colunaId: String, tarefaId: String) {
+    fun excluirTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         viewModelScope.launch {
             try {
-                repository.deleteTarefa(colunaId, tarefaId)
+                repository.deleteTarefa(quadroId, colunaId, tarefaId)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

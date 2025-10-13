@@ -96,9 +96,9 @@ sealed class Screen(val route: String) {
             "colunaForm/$quadroId/$colunaId"
     }
 
-    object ManterTarefa : Screen("tarefaForm/{colunaId}/{tarefaId}") {
-        fun createRoute(colunaId: String, tarefaId: String = "new") =
-            "tarefaForm/$colunaId/$tarefaId"
+    object ManterTarefa : Screen("tarefaForm/{quadroId}/{colunaId}/{tarefaId}") {
+        fun createRoute(quadroId: String, colunaId: String, tarefaId: String = "new") =
+            "tarefaForm/$quadroId/$colunaId/$tarefaId"
     }
 
     object ManterQuadro : Screen("manter_quadro?id={id}") {
@@ -498,11 +498,11 @@ class MainActivity : ComponentActivity() {
                                 navController.currentBackStackEntry?.savedStateHandle?.set("colunaEmEdicao", coluna)
                                 navController.navigate(Screen.ManterColuna.createRoute(qId, coluna.id))
                             },
-                            onNavigateToNovaTarefa = { colunaId ->
-                                navController.navigate(Screen.ManterTarefa.createRoute(colunaId))
+                            onNavigateToNovaTarefa = { qId, colunaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(qId, colunaId))
                             },
-                            onNavigateToEditarTarefa = { colunaId, tarefaId ->
-                                navController.navigate(Screen.ManterTarefa.createRoute(colunaId, tarefaId))
+                            onNavigateToEditarTarefa = { qId, colunaId, tarefaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(qId, colunaId, tarefaId))
                             },
                             viewModelFactory = VisualizarQuadroViewModelFactory(
                                 QuadroRepository(ApiQuadroBackend())
@@ -643,10 +643,17 @@ class MainActivity : ComponentActivity() {
                     composable(
                         route = Screen.ManterTarefa.route,
                         arguments = listOf(
+                            navArgument("quadroId") { type = NavType.StringType },
                             navArgument("colunaId") { type = NavType.StringType },
                             navArgument("tarefaId") { type = NavType.StringType }
                         )
                     ) { backStackEntry ->
+                        val quadroId = backStackEntry.arguments?.getString("quadroId")
+                        if (quadroId.isNullOrBlank()) {
+                            navController.popBackStack()
+                            return@composable
+                        }
+
                         val colunaId = backStackEntry.arguments?.getString("colunaId")
                         if (colunaId.isNullOrBlank()) {
                             navController.popBackStack()
@@ -661,6 +668,7 @@ class MainActivity : ComponentActivity() {
 
                         TarefaFormScreen(
                             navController = navController,
+                            quadroId = quadroId,
                             colunaId = colunaId,
                             tarefaId = tarefaId,
                             viewModelFactory = viewModelFactory
