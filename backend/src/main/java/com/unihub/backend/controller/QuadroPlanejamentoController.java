@@ -10,6 +10,7 @@ import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.TarefaPlanejamentoResponse;
 import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.QuadroPlanejamento;
 import com.unihub.backend.model.TarefaPlanejamento;
@@ -71,14 +72,14 @@ public class QuadroPlanejamentoController {
     }
 
     @GetMapping("/{id}/colunas/{colunaId}/tarefas")
-    public List<TarefaPlanejamento> listarTarefas(@PathVariable Long id,
-                                                  @PathVariable Long colunaId,
+    public List<TarefaPlanejamentoResponse> listarTarefas(@PathVariable Long id,
+                                                      @PathVariable Long colunaId,
                                                   @AuthenticationPrincipal Long usuarioId) {
         return service.listarTarefas(id, colunaId, usuarioId);
     }
 
     @PostMapping("/{id}/colunas/{colunaId}/tarefas")
-    public TarefaPlanejamento criarTarefa(@PathVariable Long id,
+    public TarefaPlanejamentoResponse criarTarefa(@PathVariable Long id,
                                           @PathVariable Long colunaId,
                                           @RequestBody TarefaPlanejamentoRequest request,
                                           @AuthenticationPrincipal Long usuarioId) {
@@ -86,7 +87,7 @@ public class QuadroPlanejamentoController {
     }
 
     @PatchMapping("/{id}/tarefas/{tarefaId}/status")
-    public TarefaPlanejamento atualizarStatusTarefa(@PathVariable Long id,
+    public TarefaPlanejamentoResponse atualizarStatusTarefa(@PathVariable Long id,
                                                     @PathVariable Long tarefaId,
                                                     @RequestBody AtualizarStatusTarefaRequest request,
                                                     @AuthenticationPrincipal Long usuarioId) {

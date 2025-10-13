@@ -214,10 +214,12 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<TarefaPlanejamento> listarTarefas(Long quadroId, Long colunaId, Long usuarioId) {
+    public List<TarefaPlanejamentoResponse> listarTarefas(Long quadroId, Long colunaId, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
-        return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId());
-    }
+        return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId())
+                .stream()
+                .map(TarefaPlanejamentoResponse::fromEntity)
+                .collect(Collectors.toList());    }
 
      @Transactional(readOnly = true)
     public ColunaPlanejamento buscarColunaPorId(Long quadroId, Long colunaId, Long usuarioId) {
@@ -226,7 +228,7 @@ public class QuadroPlanejamentoService {
 
 
     @Transactional
-    public TarefaPlanejamento criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {
+    public TarefaPlanejamentoResponse criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
         validarTitulo(request.getTitulo());
 
@@ -241,11 +243,11 @@ public class QuadroPlanejamentoService {
             tarefa.setResponsavel(contato);
         }
 
-        return tarefaRepository.save(tarefa);
-    }
+        return TarefaPlanejamentoResponse.fromEntity(tarefaRepository.save(tarefa));
+        }
 
     @Transactional
-    public TarefaPlanejamento atualizarStatusTarefa(Long quadroId, Long tarefaId, AtualizarStatusTarefaRequest request, Long usuarioId) {
+    public TarefaPlanejamentoResponse atualizarStatusTarefa(Long quadroId, Long tarefaId, AtualizarStatusTarefaRequest request, Long usuarioId) {
         TarefaPlanejamento tarefa = tarefaRepository.findByIdAndColunaQuadroId(tarefaId, quadroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada"));
 
@@ -259,8 +261,8 @@ public class QuadroPlanejamentoService {
             tarefa.setDataConclusao(null);
         }
 
-        return tarefaRepository.save(tarefa);
-    }
+        return TarefaPlanejamentoResponse.fromEntity(tarefaRepository.save(tarefa));
+        }
 
     private Usuario referenciaUsuario(Long usuarioId) {
         Usuario usuario = new Usuario();
