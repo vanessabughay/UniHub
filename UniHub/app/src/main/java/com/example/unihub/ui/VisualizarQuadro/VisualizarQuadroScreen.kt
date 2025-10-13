@@ -180,30 +180,6 @@ private fun VisualizarQuadroContent(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val destinoId = uiState.quadro?.id ?: quadroId
-            val secondaryContainerColor = MaterialTheme.colorScheme.secondaryContainer
-            val opcoes = remember(destinoId, secondaryContainerColor) {
-                listOf(
-                    OpcaoQuadro(
-                        title = "Informações do quadro",
-                        icon = Icons.Outlined.Info,
-                        background = secondaryContainerColor,
-                        onClick = { onNavigateToEditQuadro(destinoId) }
-                    )
-                )
-            }
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                for (opcao in opcoes) {
-                    OpcaoQuadroButton(opcao)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
 
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 50.dp))

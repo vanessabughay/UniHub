@@ -6,8 +6,7 @@ public class ColunaPlanejamentoRequest {
 
     private String titulo;
     private EstadoPlanejamento estado;
-    private String descricao;
-
+    
     public String getTitulo() {
         return titulo;
     }
@@ -24,11 +23,4 @@ public class ColunaPlanejamentoRequest {
         this.estado = estado;
     }
 
-    public String getDescricao() {
-        return descricao;
-    }
-
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
 }

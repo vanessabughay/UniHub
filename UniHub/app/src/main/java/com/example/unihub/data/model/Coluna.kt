@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit
 data class Coluna(
     val id: String = "",
     val titulo: String = "",
-    val descricao: String? = null,
     val status: Status = Status.INICIADA,
     @JsonAdapter(FlexibleLongAdapter::class)
     val dataInicio: Long = System.currentTimeMillis(),

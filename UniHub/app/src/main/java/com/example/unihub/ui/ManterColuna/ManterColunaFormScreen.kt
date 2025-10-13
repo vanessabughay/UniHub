@@ -51,7 +51,6 @@ fun ColunaFormScreen(
     }
 
     var titulo by remember(colunaInicial) { mutableStateOf(colunaInicial?.titulo ?: "") }
-    var descricao by remember(colunaInicial) { mutableStateOf(colunaInicial?.descricao ?: "") }
     var status by remember(colunaInicial) { mutableStateOf(colunaInicial?.status ?: Status.INICIADA) }
     var prazo by remember(colunaInicial) { mutableStateOf(colunaInicial?.prazoManual ?: System.currentTimeMillis()) }
 
@@ -67,7 +66,6 @@ fun ColunaFormScreen(
         if (isEditing) {
             colunaState?.let { loadedColuna ->
                 titulo = loadedColuna.titulo
-                descricao = loadedColuna.descricao ?: ""
                 status = loadedColuna.status
                 prazo = loadedColuna.prazoManual
             }
@@ -114,7 +112,6 @@ fun ColunaFormScreen(
             )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
-            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
 
             val canMarkAsCompleted = colunaParaStatus?.todasTarefasConcluidas ?: true
             val statusOptions = if (colunaParaStatus?.tarefas?.isNotEmpty() == true) {
@@ -148,7 +145,6 @@ fun ColunaFormScreen(
                         val colunaParaSalvar = Coluna(
                             id = if (isEditing) colunaId!! else "",
                             titulo = titulo,
-                            descricao = descricao.ifBlank { null },
                             status = status,
                             prazoManual = prazo,
                             tarefas = if (isEditing) colunaState?.tarefas ?: colunaInicial?.tarefas ?: emptyList() else emptyList()
@@ -184,7 +180,6 @@ class FakeColunaRepository : ColunaRepository(object : ColunaApi {
         return Coluna(
             id = colunaId,
             titulo = "Coluna de Exemplo",
-            descricao = "Esta é uma descrição de exemplo para o preview.",
             status = Status.INICIADA,
             prazoManual = System.currentTimeMillis() + 86400000L,
             dataInicio = System.currentTimeMillis(),
