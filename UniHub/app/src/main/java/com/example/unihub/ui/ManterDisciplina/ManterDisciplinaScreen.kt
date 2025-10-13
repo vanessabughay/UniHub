@@ -243,6 +243,7 @@ fun ManterDisciplinaScreen(
     var isAtiva by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var isExclusao by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(qtdAulasSemana) {
         val quantidade = qtdAulasSemana.toIntOrNull() ?: 0
@@ -339,50 +340,67 @@ fun ManterDisciplinaScreen(
             ) {
                 Button(
                     onClick = {
-                        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        if (!isSaving) {
+                            isSaving = true // 🔒 Desabilita o botão e mostra "Salvando..."
 
-                        val inicio = Instant.ofEpochMilli(dataInicioSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
-                        val fim = Instant.ofEpochMilli(dataFimSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
+                            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
+                            val inicio = Instant.ofEpochMilli(dataInicioSemestre)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val fim = Instant.ofEpochMilli(dataFimSemestre)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
 
-                        val disciplina = com.example.unihub.data.model.Disciplina(
-                            id = disciplinaId?.toLongOrNull(),
-                            codigo = codigo,
-                            nome = nomeDisciplina,
-                            professor = nomeProfessor,
-                            periodo = periodo,
-                            cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
-                            qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
-                            dataInicioSemestre = inicio, // ✅ já no formato certo
-                            dataFimSemestre = fim,
-                            emailProfessor = emailProfessor,
-                            plataforma = plataformas,
-                            telefoneProfessor = telefoneProfessor,
-                            salaProfessor = salaProfessor,
-                            isAtiva = isAtiva,
-                            receberNotificacoes = true,
-                            avaliacoes = emptyList(),
-                            aulas = aulas.map {
-                                com.example.unihub.data.model.HorarioAula(
-                                    diaDaSemana = it.dia,
-                                    sala = it.ensalamento,
-                                    horarioInicio = it.horarioInicio,
-                                    horarioFim = it.horarioFim
-                                )
+                            val disciplina = com.example.unihub.data.model.Disciplina(
+                                id = disciplinaId?.toLongOrNull(),
+                                codigo = codigo,
+                                nome = nomeDisciplina,
+                                professor = nomeProfessor,
+                                periodo = periodo,
+                                cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
+                                qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
+                                dataInicioSemestre = inicio,
+                                dataFimSemestre = fim,
+                                emailProfessor = emailProfessor,
+                                plataforma = plataformas,
+                                telefoneProfessor = telefoneProfessor,
+                                salaProfessor = salaProfessor,
+                                isAtiva = isAtiva,
+                                receberNotificacoes = true,
+                                avaliacoes = emptyList(),
+                                aulas = aulas.map {
+                                    com.example.unihub.data.model.HorarioAula(
+                                        diaDaSemana = it.dia,
+                                        sala = it.ensalamento,
+                                        horarioInicio = it.horarioInicio,
+                                        horarioFim = it.horarioFim
+                                    )
+                                }
+                            )
+
+                            if (disciplinaId == null) {
+                                viewModel.createDisciplina(disciplina)
+                            } else {
+                                viewModel.updateDisciplina(disciplina)
                             }
-                        )
 
-                        if (disciplinaId == null) {
-                            viewModel.createDisciplina(disciplina)
-                        } else {
-                            viewModel.updateDisciplina(disciplina)
+                            // Ao recarregar a tela, o remember reinicia e reabilita automaticamente
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    enabled = !isSaving, // Evita múltiplos cliques
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
                 ) {
-                    Text("Confirmar")
+                    Text(
+                        text = if (isSaving) "Salvando..." else "Confirmar",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
+                    )
                 }
             }
         }
