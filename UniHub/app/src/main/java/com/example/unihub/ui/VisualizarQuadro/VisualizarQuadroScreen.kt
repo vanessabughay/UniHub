@@ -1,7 +1,6 @@
 package com.example.unihub.ui.VisualizarQuadro
 
 import android.os.Build
-import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -40,6 +39,9 @@ import androidx.compose.material3.HorizontalDivider
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme.colorScheme
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 data class OpcaoQuadro(
     val title: String,
@@ -137,9 +139,26 @@ private fun VisualizarQuadroContent(
     val colunasAtivas = uiState.colunas.filter { it.status != Status.CONCLUIDA }
     val colunasConcluidas = uiState.colunas.filter { it.status == Status.CONCLUIDA }
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     LaunchedEffect(quadroId) {
         viewModel.carregarQuadro(quadroId)
     }
+
+    DisposableEffect(lifecycleOwner, quadroId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.carregarQuadro(quadroId)
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
 
     Scaffold(
         bottomBar = {
