@@ -31,11 +31,8 @@ data class Disciplina(
     val telefoneProfessor: String,
     val salaProfessor: String,
 
-    //Campos não implementados, mas que devem ser corrigidos no diagrama
-    //val faltas: Int   ERRADO! É um array de ausências
-
-    //serão implementados em dataclass separados, mas são arrays do objeto DISCIPLINA
-    //val ausencias: List<Ausencia>,
+    val ausencias: List<Ausencia> = emptyList(),
+    val ausenciasPermitidas: Int? = null,
     val avaliacoes: List<Avaliacao>,
 
     //ativar/desativar notificações ou a disciplina

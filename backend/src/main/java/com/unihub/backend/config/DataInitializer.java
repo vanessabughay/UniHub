@@ -167,6 +167,7 @@ public class DataInitializer {
         disciplina.setAtiva(ativa);
         disciplina.setReceberNotificacoes(receberNotificacoes);
         disciplina.setUsuario(usuario);
+        disciplina.setAusenciasPermitidas(qtdSemanas);
         List<HorarioAula> aulasList = Arrays.asList(aulas);
         disciplina.setAulas(aulasList);
         return disciplinaRepository.save(disciplina);

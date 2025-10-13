@@ -240,6 +240,7 @@ fun ManterDisciplinaScreen(
     var plataformas by remember { mutableStateOf("") }
     var telefoneProfessor by remember { mutableStateOf("") }
     var salaProfessor by remember { mutableStateOf("") }
+    var ausenciasPermitidas by remember { mutableStateOf("") }
     var isAtiva by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var isExclusao by remember { mutableStateOf(false) }
@@ -302,6 +303,7 @@ fun ManterDisciplinaScreen(
             plataformas      = d.plataforma.orEmpty()
             telefoneProfessor= d.telefoneProfessor.orEmpty()
             salaProfessor    = d.salaProfessor.orEmpty()
+            ausenciasPermitidas = d.ausenciasPermitidas?.toString() ?: ""
 
             isAtiva = d.isAtiva  // se for Boolean?, use: (d.isAtiva ?: true)
         }
@@ -351,7 +353,7 @@ fun ManterDisciplinaScreen(
                             val fim = Instant.ofEpochMilli(dataFimSemestre)
                                 .atZone(ZoneId.systemDefault())
                                 .toLocalDate()
-
+                            val ausenciasExistentes = disciplina.value?.ausencias ?: emptyList()
                             val disciplina = com.example.unihub.data.model.Disciplina(
                                 id = disciplinaId?.toLongOrNull(),
                                 codigo = codigo,
@@ -366,6 +368,8 @@ fun ManterDisciplinaScreen(
                                 plataforma = plataformas,
                                 telefoneProfessor = telefoneProfessor,
                                 salaProfessor = salaProfessor,
+                                ausencias = ausenciasExistentes,
+                                ausenciasPermitidas = ausenciasPermitidas.toIntOrNull(),
                                 isAtiva = isAtiva,
                                 receberNotificacoes = true,
                                 avaliacoes = emptyList(),
@@ -470,6 +474,16 @@ fun ManterDisciplinaScreen(
                         CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
                         CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
                     }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CampoDeTextoComTitulo(
+                            "Limite de Ausências",
+                            ausenciasPermitidas,
+                            { ausenciasPermitidas = it.filter { c -> c.isDigit() } },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                    }
+
+
                 }
             }
 
