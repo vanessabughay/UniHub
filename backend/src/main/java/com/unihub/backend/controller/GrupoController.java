@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus; // Para códigos de status HTTP
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*; // Importação curinga para anotações do Spring Web
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.util.List;
 
@@ -19,15 +20,21 @@ public class GrupoController {
     private GrupoService grupoService; // Renomeado para clareza
 
     @GetMapping
-    public ResponseEntity<List<Grupo>> listarTodos() {
-        List<Grupo> grupos = grupoService.listarTodas();
+    public ResponseEntity<List<Grupo>> listarTodos(@AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<Grupo> grupos = grupoService.listarTodas(usuarioId);
         return ResponseEntity.ok(grupos);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Grupo> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<Grupo> buscarPorId(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         try {
-            Grupo grupo = grupoService.buscarPorId(id);
+            Grupo grupo = grupoService.buscarPorId(id, usuarioId);
             return ResponseEntity.ok(grupo);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -35,14 +42,17 @@ public class GrupoController {
     }
 
     @PostMapping
-    public ResponseEntity<Grupo> criar(@RequestBody Grupo grupo) {
+    public ResponseEntity<Grupo> criar(@RequestBody Grupo grupo, @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         // Validações básicas podem ser adicionadas aqui ou no service
         if (grupo.getNome() == null || grupo.getNome().trim().isEmpty()) {
             // Você pode lançar uma exceção customizada ou retornar BadRequest
             return ResponseEntity.badRequest().build(); // Exemplo simples
         }
         try {
-            Grupo novoGrupo = grupoService.criarGrupo(grupo);
+            Grupo novoGrupo = grupoService.criarGrupo(grupo, usuarioId);
             // Retorna 201 Created com o objeto criado e o Location header (idealmente)
             return ResponseEntity.status(HttpStatus.CREATED).body(novoGrupo);
         } catch (IllegalArgumentException | EntityNotFoundException e) {
@@ -52,13 +62,17 @@ public class GrupoController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Grupo> atualizar(@PathVariable Long id, @RequestBody Grupo grupoDetalhesRequest) {
+    public ResponseEntity<Grupo> atualizar(@PathVariable Long id, @RequestBody Grupo grupoDetalhesRequest,
+                                           @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         // Validações básicas
         if (grupoDetalhesRequest.getNome() != null && grupoDetalhesRequest.getNome().trim().isEmpty()) {
             return ResponseEntity.badRequest().body(null); // Nome não pode ser vazio se fornecido
         }
         try {
-            Grupo grupoAtualizado = grupoService.atualizarGrupo(id, grupoDetalhesRequest);
+            Grupo grupoAtualizado = grupoService.atualizarGrupo(id, grupoDetalhesRequest, usuarioId);
             return ResponseEntity.ok(grupoAtualizado);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -69,9 +83,12 @@ public class GrupoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+    public ResponseEntity<Void> excluir(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         try {
-            grupoService.excluir(id);
+            grupoService.excluir(id, usuarioId);
             return ResponseEntity.noContent().build(); // 204 No Content
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
@@ -79,8 +96,12 @@ public class GrupoController {
     }
 
     @GetMapping("/pesquisa")
-    public ResponseEntity<List<Grupo>> buscarPorNome(@RequestParam String nome) {
-        List<Grupo> grupos = grupoService.buscarPorNome(nome);
+    public ResponseEntity<List<Grupo>> buscarPorNome(@RequestParam String nome,
+                                                     @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        List<Grupo> grupos = grupoService.buscarPorNome(nome, usuarioId);
         if (grupos.isEmpty()) {
             return ResponseEntity.noContent().build(); // Ou ok com lista vazia, dependendo da preferência
         }

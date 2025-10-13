@@ -102,7 +102,14 @@ public class AvaliacaoService {
         if (a.getModalidade() == Modalidade.EM_GRUPO && req.integrantes() != null && !req.integrantes().isEmpty()) {
             List<Long> ids = req.integrantes().stream().map(ContatoRef::id).toList();
             if (!ids.isEmpty()) {
-                List<Contato> contatos = contatoRepository.findAllById(ids);
+                if (ids.stream().anyMatch(java.util.Objects::isNull)) {
+                    throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a uma avaliação.");
+                }
+                List<Contato> contatos = contatoRepository.findByOwnerIdAndIdIn(usuarioId, ids);
+                java.util.Set<Long> encontrados = new java.util.HashSet<>(contatos.stream().map(Contato::getId).toList());
+                if (encontrados.size() != new java.util.HashSet<>(ids).size()) {
+                    throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+                }
                 a.getIntegrantes().addAll(contatos);
             }
         }
