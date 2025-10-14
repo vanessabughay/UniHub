@@ -107,6 +107,7 @@ fun AusenciasCard(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 } else {
+                    val totalAusencias = ausencias.size
                     ausencias.forEach { aus ->
                         Text(
                             text = aus.data.format(formatter) + (aus.categoria?.let { " - $it" } ?: ""),
@@ -117,8 +118,10 @@ fun AusenciasCard(
                     }
 
                     Text(
-                        text = ausenciasPermitidas?.let { "Limite de Ausências: $it" }
-                            ?: "Limite de Ausências não definido, alterar em 'Informações da disciplina'",
+                        text = ausenciasPermitidas?.let {
+                            "Você tem $totalAusencias ausências. Seu limite para ausências é $it"
+                        } ?: "Você tem $totalAusencias ausências. Limite de ausências não definido, alterar em 'Informações da disciplina'",
+
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
                     )
                 }

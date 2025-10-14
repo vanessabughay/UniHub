@@ -461,9 +461,11 @@ fun ManterDisciplinaScreen(
             item {
                 CampoDisciplina(title = "Informações de Aula") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo("CH Total", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        CampoDeTextoComTitulo("Carga Horária", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Aulas/Semana", qtdAulasSemana, { qtdAulasSemana = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Semanas (Total)", qtdSemanas, { qtdSemanas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        CampoDeTextoComTitulo("Limite de Ausências", ausenciasPermitidas,{ ausenciasPermitidas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     aulas.forEachIndexed { index, aula ->
@@ -483,15 +485,6 @@ fun ManterDisciplinaScreen(
                         CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
                         CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo(
-                            "Limite de Ausências",
-                            ausenciasPermitidas,
-                            { ausenciasPermitidas = it.filter { c -> c.isDigit() } },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
-                    }
-
 
                 }
             }
