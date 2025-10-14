@@ -34,6 +34,7 @@ interface TarefaApi {
         @Body tarefa: Tarefa
     ): Tarefa
 
+    @DELETE("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}")
         suspend fun deleteTarefa(
         @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
