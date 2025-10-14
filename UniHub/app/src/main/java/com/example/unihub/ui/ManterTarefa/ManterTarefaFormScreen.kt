@@ -64,8 +64,7 @@ fun TarefaFormScreen(
 
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
-            tarefaViewModel.carregarTarefa(colunaId, tarefaId!!)
-
+            tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
         }
     }
 
