@@ -50,7 +50,9 @@ fun TarefaFormScreen(
 
     val context = LocalContext.current
     val isEditing = tarefaId != null
-    val tarefaState by viewModel.tarefa.collectAsState()
+    val tarefaState by tarefaViewModel.tarefa.collectAsState()
+    val isLoading by tarefaViewModel.isLoading.collectAsState()
+    val formResult by tarefaViewModel.formResult.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
@@ -58,7 +60,6 @@ fun TarefaFormScreen(
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
     var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
 
-    val uiState by tarefaViewModel.uiState.collectAsState()
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     LaunchedEffect(key1 = tarefaId) {
@@ -79,25 +80,26 @@ fun TarefaFormScreen(
         }
     }
 
-    LaunchedEffect(uiState.operationCompleted) {
-        if (uiState.operationCompleted) {
-            val mensagem = when (ultimaAcao) {
-                TarefaFormAction.CREATE -> "Tarefa criada com sucesso!"
-                TarefaFormAction.UPDATE -> "Tarefa atualizada com sucesso!"
-                TarefaFormAction.DELETE -> "Tarefa excluída com sucesso!"
-                null -> null
+    LaunchedEffect(formResult) {
+        when (val result = formResult) {
+            TarefaFormResult.Success -> {
+                val mensagem = when (ultimaAcao) {
+                    TarefaFormAction.CREATE -> "Tarefa criada com sucesso!"
+                    TarefaFormAction.UPDATE -> "Tarefa atualizada com sucesso!"
+                    TarefaFormAction.DELETE -> "Tarefa excluída com sucesso!"
+                    null -> "Operação realizada com sucesso!"
+                }
+
+                Toast.makeText(context, mensagem, Toast.LENGTH_SHORT).show()
+                tarefaViewModel.resetFormResult()
+                navController.popBackStack()
             }
 
-            mensagem?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
-            tarefaViewModel.resetOperationResult()
-            navController.popBackStack()
-        }
-    }
-
-    LaunchedEffect(uiState.errorMessage) {
-        uiState.errorMessage?.let { mensagemErro ->
-            Toast.makeText(context, mensagemErro, Toast.LENGTH_LONG).show()
-            tarefaViewModel.clearError()
+            is TarefaFormResult.Error -> {
+                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                tarefaViewModel.resetFormResult()
+            }
+            else -> {}
         }
     }
 
@@ -152,7 +154,7 @@ fun TarefaFormScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
-            if (uiState.isLoading) {
+            if (isLoading) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
 
@@ -175,7 +177,7 @@ fun TarefaFormScreen(
                         ultimaAcao = TarefaFormAction.CREATE
                         tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
                     } else {
-                        uiState.tarefa?.let { tarefaCarregada ->
+                        tarefaState?.let { tarefaCarregada ->
                             val tarefaAtualizada = tarefaCarregada.copy(
                                 titulo = titulo,
                                 descricao = if (descricao.isBlank()) null else descricao,
