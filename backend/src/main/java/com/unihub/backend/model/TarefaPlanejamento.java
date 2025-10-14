@@ -1,11 +1,18 @@
 package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unihub.backend.model.enums.TarefaStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "tarefas_planejamento")
@@ -37,9 +44,14 @@ public class TarefaPlanejamento {
     @JsonBackReference("coluna-tarefas")
     private ColunaPlanejamento coluna;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contato_id")
-    private Contato responsavel;
+    @ManyToMany
+    @JoinTable(
+            name = "tarefas_planejamento_responsaveis",
+            joinColumns = @JoinColumn(name = "tarefa_id"),
+            inverseJoinColumns = @JoinColumn(name = "contato_id")
+    )
+    @JsonIgnore
+    private Set<Contato> responsaveis = new LinkedHashSet<>();
 
     public Long getId() {
         return id;
@@ -105,11 +117,19 @@ public class TarefaPlanejamento {
         this.coluna = coluna;
     }
 
-    public Contato getResponsavel() {
-        return responsavel;
+    public Set<Contato> getResponsaveis() {
+        return responsaveis;
     }
 
-    public void setResponsavel(Contato responsavel) {
-        this.responsavel = responsavel;
+    public void setResponsaveis(Set<Contato> responsaveis) {
+        this.responsaveis = responsaveis;
+    }
+
+@JsonProperty("responsaveisIds")
+    public List<Long> getResponsaveisIds() {
+        return responsaveis.stream()
+                .map(Contato::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 }

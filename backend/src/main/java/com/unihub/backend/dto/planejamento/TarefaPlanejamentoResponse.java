@@ -1,5 +1,7 @@
 package com.unihub.backend.dto.planejamento;
 
+import java.util.List;
+
 public class TarefaPlanejamentoResponse {
 
     private Long id;
@@ -9,6 +11,7 @@ public class TarefaPlanejamentoResponse {
     private Long prazo;
     private Long dataInicio;
     private Long dataFim;
+    private List<Long> responsavelIds;
 
     public Long getId() {
         return id;
@@ -64,5 +67,13 @@ public class TarefaPlanejamentoResponse {
 
     public void setDataFim(Long dataFim) {
         this.dataFim = dataFim;
+    }
+
+    public List<Long> getResponsavelIds() {
+        return responsavelIds;
+    }
+
+    public void setResponsavelIds(List<Long> responsavelIds) {
+        this.responsavelIds = responsavelIds;
     }
 }

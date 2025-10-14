@@ -45,6 +45,16 @@ class GrupoRepository(private val backend: Grupobackend) {
         }
     }
 
+    suspend fun fetchGrupoById(id: Long): Grupo? {
+        return try {
+            backend.getGrupoByIdApi(id.toString())
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
     //ADD Grupo
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun addGrupo(grupo: Grupo) {

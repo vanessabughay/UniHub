@@ -658,7 +658,15 @@ class MainActivity : ComponentActivity() {
                         val tarefaId = tarefaIdArg?.takeUnless { it == "new" || it.isBlank() }
 
                         val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
-                        val viewModelFactory = ManterTarefaViewModelFactory(tarefaRepository)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
+                        val grupoRepository = GrupoRepository(ApiGrupoBackend())
+                        val contatoRepository = ContatoRepository(ApiContatoBackend())
+                        val viewModelFactory = ManterTarefaViewModelFactory(
+                            tarefaRepository,
+                            quadroRepository,
+                            grupoRepository,
+                            contatoRepository
+                        )
 
                         TarefaFormScreen(
                             navController = navController,

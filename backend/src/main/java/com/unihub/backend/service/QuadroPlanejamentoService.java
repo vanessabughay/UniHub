@@ -17,6 +17,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -271,10 +272,7 @@ public class QuadroPlanejamentoService {
         tarefa.setDataPrazo(request.getDataPrazo());
         tarefa.setColuna(coluna);
 
-        if (request.getResponsavelId() != null) {
-            Contato contato = buscarContato(quadroId, request.getResponsavelId(), usuarioId);
-            tarefa.setResponsavel(contato);
-        }
+        tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
 
         return tarefaRepository.save(tarefa);
     }
@@ -303,6 +301,10 @@ public class QuadroPlanejamentoService {
         } else {
             tarefa.setStatus(TarefaStatus.PENDENTE);
             tarefa.setDataConclusao(null);
+        }
+
+        if (request.getResponsavelIds() != null) {
+            tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
         }
 
         TarefaPlanejamento atualizado = tarefaRepository.save(tarefa);
@@ -376,6 +378,7 @@ public class QuadroPlanejamentoService {
         response.setPrazo(convertLocalDateToEpoch(tarefa.getDataPrazo()));
         response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
         response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
+                response.setResponsavelIds(tarefa.getResponsaveisIds());
         return response;
     }
 
@@ -408,8 +411,18 @@ public class QuadroPlanejamentoService {
         Contato contato = contatoRepository.findByIdAndOwnerId(contatoId, usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
 
-        QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
-      
+        buscarPorId(quadroId, usuarioId);
+
         return contato;
+    }
+
+    private LinkedHashSet<Contato> buscarResponsaveis(Long quadroId, List<Long> responsavelIds, Long usuarioId) {
+        if (responsavelIds == null || responsavelIds.isEmpty()) {
+            return new LinkedHashSet<>();
+        }
+
+        return responsavelIds.stream()
+                .map(id -> buscarContato(quadroId, id, usuarioId))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

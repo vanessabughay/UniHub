@@ -1,6 +1,7 @@
 package com.example.unihub.data.repository
 
 import com.example.unihub.data.api.TarefaApi
+import com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
 import com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
 import com.example.unihub.data.model.Tarefa
 import java.time.Instant
@@ -19,7 +20,8 @@ open class TarefaRepository(private val apiService: TarefaApi) {
 
     suspend fun updateTarefa(quadroId: String, colunaId: String, tarefa: Tarefa): Tarefa {
         // A API precisa do ID da tarefa na URL, então usamos 'tarefa.id'
-        return apiService.updateTarefa(quadroId, colunaId, tarefa.id, tarefa)
+        val request = tarefa.toAtualizarRequest()
+        return apiService.updateTarefa(quadroId, colunaId, tarefa.id, request)
     }
 
     suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
@@ -37,6 +39,18 @@ private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
         titulo = this.titulo,
         descricao = this.descricao,
         dataPrazo = prazoLocalDate,
-        responsavelId = null
+        responsavelIds = this.responsaveisIds
+    )
+}
+
+private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
+    return AtualizarTarefaPlanejamentoRequestDto(
+        titulo = this.titulo,
+        descricao = this.descricao,
+        status = this.status.name,
+        prazo = this.prazo,
+        dataInicio = this.dataInicio,
+        dataFim = this.dataFim,
+        responsavelIds = this.responsaveisIds
     )
 }

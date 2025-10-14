@@ -6,5 +6,5 @@ data class TarefaPlanejamentoRequestDto(
     val titulo: String,
     val descricao: String?,
     val dataPrazo: LocalDate,
-    val responsavelId: Long? = null
+    val responsavelIds: List<Long> = emptyList()
 )
