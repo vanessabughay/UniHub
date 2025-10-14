@@ -379,7 +379,7 @@ public class QuadroPlanejamentoService {
         response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
         response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
-        response.setResponsaveis(tarefa.getResponsaveisNomes());
+        response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
     }
 
