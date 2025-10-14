@@ -12,6 +12,7 @@ public class TarefaPlanejamentoResponse {
     private Long dataInicio;
     private Long dataFim;
     private List<Long> responsavelIds;
+    private String responsaveis;
 
     public Long getId() {
         return id;
@@ -75,5 +76,13 @@ public class TarefaPlanejamentoResponse {
 
     public void setResponsavelIds(List<Long> responsavelIds) {
         this.responsavelIds = responsavelIds;
+    }
+
+    public String getResponsaveis() {
+        return responsaveis;
+    }
+
+    public void setResponsaveis(String responsaveis) {
+        this.responsaveis = responsaveis;
     }
 }

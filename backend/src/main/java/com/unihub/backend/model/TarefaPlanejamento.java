@@ -53,6 +53,9 @@ public class TarefaPlanejamento {
     @JsonIgnore
     private Set<Contato> responsaveis = new LinkedHashSet<>();
 
+    @Column(name = "responsaveis_nomes", length = 1000)
+    private String responsaveisNomes;
+
     public Long getId() {
         return id;
     }
@@ -122,10 +125,39 @@ public class TarefaPlanejamento {
     }
 
     public void setResponsaveis(Set<Contato> responsaveis) {
-        this.responsaveis = responsaveis;
+        if (responsaveis == null) {
+            this.responsaveis = new LinkedHashSet<>();
+        } else {
+            this.responsaveis = responsaveis;
+        }
+        atualizarResponsaveisNomes();
     }
 
-@JsonProperty("responsaveisIds")
+    @JsonProperty("responsaveis")
+    public String getResponsaveisNomes() {
+        return responsaveisNomes;
+    }
+
+    public void setResponsaveisNomes(String responsaveisNomes) {
+        this.responsaveisNomes = responsaveisNomes;
+    }
+
+    private void atualizarResponsaveisNomes() {
+        String nomesConcatenados = responsaveis.stream()
+                .map(Contato::getNome)
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .filter(nome -> !nome.isEmpty())
+                .collect(Collectors.joining(", "));
+
+        if (nomesConcatenados.isBlank()) {
+            this.responsaveisNomes = null;
+        } else {
+            this.responsaveisNomes = nomesConcatenados;
+        }
+    }
+
+    @JsonProperty("responsaveisIds")
     public List<Long> getResponsaveisIds() {
         return responsaveis.stream()
                 .map(Contato::getId)
