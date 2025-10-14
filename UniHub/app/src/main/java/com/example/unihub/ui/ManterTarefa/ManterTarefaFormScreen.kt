@@ -184,14 +184,14 @@ fun TarefaFormScreen(
                                 prazo = prazo
                             )
                             ultimaAcao = TarefaFormAction.UPDATE
-                            tarefaViewModel.atualizarTarefa(colunaId, tarefaAtualizada)
+                            tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
                         }
                     }
                 },
                 onDelete = if (isEditing) {
                     {
                         ultimaAcao = TarefaFormAction.DELETE
-                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(colunaId, id) }
+                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
                     }
                 } else null
             )
@@ -214,7 +214,7 @@ private enum class TarefaFormAction {
 
 
 class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
-    override suspend fun getTarefa(colunaId: String, tarefaId: String): Tarefa {
+    override suspend fun getTarefa(quadroId: String, colunaId: String, tarefaId: String): Tarefa {
         // Retorna um objeto de tarefa mockado para a prévia
         return Tarefa(
             id = tarefaId,
@@ -233,12 +233,12 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         // Nada a ser feito aqui para o mock
     }
 
-    override suspend fun updateTarefa(colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
+    override suspend fun updateTarefa(quadroId: String, colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
         return tarefa
     }
 
-    override suspend fun deleteTarefa(colunaId: String, tarefaId: String) {
-        // Nada a ser feito aqui
+    override suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
+    // Nada a ser feito aqui
     }
 }) {
     // Essa classe pode ficar vazia, já que a lógica de mock está na interface.

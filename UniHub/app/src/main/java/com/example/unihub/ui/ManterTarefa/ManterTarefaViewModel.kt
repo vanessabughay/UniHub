@@ -30,12 +30,12 @@ class TarefaFormViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
 
-    fun carregarTarefa(colunaId: String, tarefaId: String) {
+    fun carregarTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         // _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val tarefaCarregada = repository.getTarefa(colunaId, tarefaId)
+                val tarefaCarregada = repository.getTarefa(quadroId, colunaId, tarefaId)
                 _tarefaState.value = tarefaCarregada
             } catch (e: Exception) {
                 _formResult.value = TarefaFormResult.Error(e.message ?: "Erro ao carregar tarefa.")
@@ -59,7 +59,7 @@ class TarefaFormViewModel(
         }
     }
 
-    fun atualizarTarefa(colunaId: String, tarefaAtualizada: Tarefa) {
+    fun atualizarTarefa(quadroId: String, colunaId: String, tarefaAtualizada: Tarefa) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -74,7 +74,7 @@ class TarefaFormViewModel(
                     tarefaAtualizada
                 }
 
-                val tarefaSalva = repository.updateTarefa(colunaId, tarefaParaSalvar)
+                val tarefaSalva = repository.updateTarefa(quadroId, colunaId, tarefaParaSalvar)
                 _tarefaState.value = tarefaSalva
                 _formResult.value = TarefaFormResult.Success
             } catch (e: Exception) {
@@ -85,11 +85,11 @@ class TarefaFormViewModel(
         }
     }
 
-    fun excluirTarefa(colunaId: String, tarefaId: String) {
+    fun excluirTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                repository.deleteTarefa(colunaId, tarefaId)
+                repository.deleteTarefa(quadroId, colunaId, tarefaId)
                 _tarefaState.value = null
                 _formResult.value = TarefaFormResult.Success
             } catch (e: Exception) {

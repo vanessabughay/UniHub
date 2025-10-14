@@ -14,7 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -252,6 +254,12 @@ public class QuadroPlanejamentoService {
         return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId());
     }
 
+    @Transactional(readOnly = true)
+    public TarefaPlanejamentoResponse buscarTarefa(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        return toResponse(tarefa);
+    }
+
     @Transactional
     public TarefaPlanejamento criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
@@ -272,6 +280,36 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional
+    public TarefaPlanejamentoResponse atualizarTarefa(Long quadroId, Long colunaId, Long tarefaId,
+                                                      AtualizarTarefaPlanejamentoRequest request, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+
+        if (request.getTitulo() != null) {
+            validarTitulo(request.getTitulo());
+            tarefa.setTitulo(request.getTitulo());
+        }
+
+        tarefa.setDescricao(request.getDescricao());
+
+        if (request.getPrazo() != null) {
+            tarefa.setDataPrazo(convertEpochToLocalDate(request.getPrazo()));
+        } else {
+            tarefa.setDataPrazo(null);
+        }
+
+        if ("CONCLUIDA".equalsIgnoreCase(request.getStatus())) {
+            tarefa.setStatus(TarefaStatus.CONCLUIDA);
+            tarefa.setDataConclusao(convertEpochToLocalDateTime(request.getDataFim(), LocalDateTime.now()));
+        } else {
+            tarefa.setStatus(TarefaStatus.PENDENTE);
+            tarefa.setDataConclusao(null);
+        }
+
+        TarefaPlanejamento atualizado = tarefaRepository.save(tarefa);
+        return toResponse(atualizado);
+    }
+
+    @Transactional
     public TarefaPlanejamento atualizarStatusTarefa(Long quadroId, Long tarefaId, AtualizarStatusTarefaRequest request, Long usuarioId) {
         TarefaPlanejamento tarefa = tarefaRepository.findByIdAndColunaQuadroId(tarefaId, quadroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada"));
@@ -287,6 +325,12 @@ public class QuadroPlanejamentoService {
         }
 
         return tarefaRepository.save(tarefa);
+    }
+
+    @Transactional
+    public void excluirTarefa(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        tarefaRepository.delete(tarefa);
     }
 
     private Usuario referenciaUsuario(Long usuarioId) {
@@ -315,6 +359,49 @@ public class QuadroPlanejamentoService {
         buscarPorId(quadroId, usuarioId);
         return colunaRepository.findByIdAndQuadroId(colunaId, quadroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada"));
+    }
+
+    private TarefaPlanejamento buscarTarefaEntity(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+        return tarefaRepository.findByIdAndColunaId(tarefaId, coluna.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada"));
+    }
+
+    private TarefaPlanejamentoResponse toResponse(TarefaPlanejamento tarefa) {
+        TarefaPlanejamentoResponse response = new TarefaPlanejamentoResponse();
+        response.setId(tarefa.getId());
+        response.setTitulo(tarefa.getTitulo());
+        response.setDescricao(tarefa.getDescricao());
+        response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
+        response.setPrazo(convertLocalDateToEpoch(tarefa.getDataPrazo()));
+        response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
+        response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
+        return response;
+    }
+
+    private Long convertLocalDateToEpoch(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    private Long convertLocalDateTimeToEpoch(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    private LocalDate convertEpochToLocalDate(Long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis, LocalDateTime defaultValue) {
+        if (epochMillis == null) {
+            return defaultValue;
+        }
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
     private Contato buscarContato(Long quadroId, Long contatoId, Long usuarioId) {
