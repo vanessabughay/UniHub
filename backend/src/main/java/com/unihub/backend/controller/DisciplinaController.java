@@ -60,14 +60,6 @@ public class DisciplinaController {
             }
         }
 
-        if (novaDisciplina.getAusencias() != null) {
-            existente.getAusencias().clear();
-            for (Ausencia ausencia : novaDisciplina.getAusencias()) {
-                ausencia.setDisciplina(existente);
-                existente.getAusencias().add(ausencia);
-            }
-        }
-
         return service.salvar(existente, usuarioId);
     }
 
