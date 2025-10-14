@@ -6,13 +6,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.repository.DisciplinaRepository
+import com.example.unihub.data.repository.InstituicaoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 class ManterDisciplinaViewModel(
-    private val repository: DisciplinaRepository
+    private val repository: DisciplinaRepository,
+    private val instituicaoRepository: InstituicaoRepository
 ) : ViewModel() {
 
     // Estados da disciplina
@@ -24,6 +26,9 @@ class ManterDisciplinaViewModel(
 
     private val _sucesso = MutableStateFlow<Boolean>(false)
     val sucesso: StateFlow<Boolean> = _sucesso
+
+    private val _frequenciaMinima = MutableStateFlow<Int?>(null)
+    val frequenciaMinima: StateFlow<Int?> = _frequenciaMinima
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun loadDisciplina(id: String) {
@@ -74,6 +79,18 @@ class ManterDisciplinaViewModel(
             try {
                 val result = repository.deleteDisciplina(id)
                 _sucesso.value = result
+            } catch (e: Exception) {
+                _erro.value = e.message
+            }
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun carregarFrequenciaMinima() {
+        viewModelScope.launch {
+            try {
+                val instituicao = instituicaoRepository.instituicaoUsuario()
+                _frequenciaMinima.value = instituicao?.frequenciaMinima
             } catch (e: Exception) {
                 _erro.value = e.message
             }

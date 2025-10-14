@@ -10,9 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.unihub.data.model.Disciplina
-import com.example.unihub.data.model.HorarioAula
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
@@ -35,12 +28,12 @@ import java.util.Locale
 import java.util.UUID
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import androidx.compose.foundation.border
-import androidx.compose.ui.viewinterop.AndroidView
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.time.Instant
 import androidx.compose.ui.unit.sp
+import kotlin.math.floor
+import kotlin.math.max
 
 
 
@@ -245,6 +238,22 @@ fun ManterDisciplinaScreen(
     var showDialog by remember { mutableStateOf(false) }
     var isExclusao by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+    val frequenciaMinima = viewModel.frequenciaMinima.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.carregarFrequenciaMinima()
+    }
+
+    LaunchedEffect(qtdSemanas, qtdAulasSemana, frequenciaMinima.value, disciplinaId) {
+        if (disciplinaId == null) {
+            val freq = frequenciaMinima.value
+            val semanas = qtdSemanas.toIntOrNull()
+            if (freq != null && semanas != null) {
+                val limiteCalculado = floor(((100 - freq).coerceAtLeast(0) / 100.0) * semanas).toInt()
+                ausenciasPermitidas = max(limiteCalculado, 0).toString()
+            }
+        }
+    }
 
     LaunchedEffect(qtdAulasSemana) {
         val quantidade = qtdAulasSemana.toIntOrNull() ?: 0

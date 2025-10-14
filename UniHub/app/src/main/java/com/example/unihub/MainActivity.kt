@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,8 +22,6 @@ import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import android.content.Intent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-
-
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ListarContato.ListarContatoScreen
 import com.example.unihub.ui.ManterConta.ManterContaScreen
@@ -63,6 +62,7 @@ import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.ui.Anotacoes.AnotacoesView
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import com.example.unihub.ui.ManterColuna.ColunaFormScreen
 import com.example.unihub.ui.ManterColuna.ManterColunaFormViewModelFactory
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel
@@ -240,12 +240,14 @@ class MainActivity : ComponentActivity() {
                         })
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
+                        val context = LocalContext.current
                         val repository = DisciplinaRepository(
                             ApiDisciplinaBackend()
                         )
                         val factory =
                             ManterDisciplinaViewModelFactory(
-                                repository
+                                repository,
+                                InstituicaoRepositoryProvider.getRepository(context)
                             )
                         val viewModel: ManterDisciplinaViewModel =
                             viewModel(factory = factory)
