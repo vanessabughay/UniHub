@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.TarefaRepository
 
-class ManterTarefaViewModelFactory(private val repository: TarefaRepository) : ViewModelProvider.Factory {
+class ManterTarefaViewModelFactory(
+    private val repository: TarefaRepository
+) : ViewModelProvider.Factory {
 
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TarefaFormViewModel::class.java)) {

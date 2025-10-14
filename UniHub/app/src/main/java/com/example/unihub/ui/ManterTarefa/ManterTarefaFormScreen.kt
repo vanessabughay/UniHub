@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -19,10 +21,10 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
+import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.api.TarefaApi
 
@@ -35,20 +37,20 @@ private fun getDefaultPrazoForUI(): Long {
     }.timeInMillis
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TarefaFormScreen(
     navController: NavHostController,
     quadroId: String,
     colunaId: String,
-    tarefaId: String?, // Renomeado de subtarefaId para tarefaId
+    tarefaId: String? = null,
     viewModelFactory: ViewModelProvider.Factory
 ) {
 
     val tarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
 
     val context = LocalContext.current
-    val isEditing = tarefaId != null // Atualizada a verificação
+    val isEditing = tarefaId != null
+    val tarefaState by viewModel.tarefa.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
@@ -60,20 +62,15 @@ fun TarefaFormScreen(
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     LaunchedEffect(key1 = tarefaId) {
-        if (isEditing && !tarefaId.isNullOrBlank()) {
-            tarefaViewModel.carregarTarefa(colunaId, tarefaId)
+        if (isEditing) {
+            tarefaViewModel.carregarTarefa(colunaId, tarefaId!!)
 
-        } else {
-            titulo = ""
-            descricao = ""
-            statusSelecionado = Status.INICIADA
-            prazo = getDefaultPrazoForUI()
         }
     }
 
-    LaunchedEffect(key1 = uiState.tarefa) {
+    LaunchedEffect(key1 = tarefaState) {
         if (isEditing) {
-            uiState.tarefa?.let { loadedTarefa ->
+            tarefaState?.let { loadedTarefa ->
                 titulo = loadedTarefa.titulo
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
@@ -128,9 +125,8 @@ fun TarefaFormScreen(
         ) {
             Header(
                 titulo = if (isEditing) "Editar tarefa" else "Cadastrar tarefa",
-                onVoltar = { navController.popBackStack() },
-                onClickIconeDireita = null
-            )
+                onVoltar = { navController.popBackStack() }
+                )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
             CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })

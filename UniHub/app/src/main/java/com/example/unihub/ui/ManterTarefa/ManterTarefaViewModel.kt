@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.repository.TarefaRepository
+import com.example.unihub.ui.ManterColuna.FormResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,16 +19,23 @@ data class TarefaFormUiState(
     val operationCompleted: Boolean = false
 )
 
-class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel() {
+class TarefaFormViewModel(
+    private val repository: TarefaRepository
+) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(TarefaFormUiState())
+    private val _tarefaState = MutableStateFlow<Tarefa?>(null)
+    val tarefa: StateFlow<Tarefa?> - _tarefaState.asStateFlow()
+
+    private val _uiState = MutableStateFlow(TarefaFormUiState.Idle)
     val uiState: StateFlow<TarefaFormUiState> = _uiState.asStateFlow()
 
 
-    fun carregarTarefa(colunaId: String, tarefaId: String) {
-        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+    fun carregarTarefa(quadroId: String, colunaId: String, tarefaId: String) {
+       // _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         viewModelScope.launch {
-            try {
+            _tarefaState.value = repository.getTarefaById( colunaId, tarefaId)
+
+            /* try {
                 val tarefaCarregada = repository.getTarefa(colunaId, tarefaId)
                 _uiState.update {
                     it.copy(
@@ -45,7 +53,7 @@ class TarefaFormViewModel(private val repository: TarefaRepository) : ViewModel(
                         errorMessage = e.message ?: "Erro ao carregar tarefa."
                     )
                 }
-            }
+            } */
         }
     }
 
