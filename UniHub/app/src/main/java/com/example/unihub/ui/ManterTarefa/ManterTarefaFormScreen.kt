@@ -586,7 +586,7 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         // Nada a ser feito aqui
     }
 
-    override suspend fun carregarComentarios(
+    override suspend fun getComentarios(
         quadroId: String,
         colunaId: String,
         tarefaId: String
@@ -597,14 +597,14 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         )
     }
 
-    override suspend fun criarComentario(
+    override suspend fun createComentario(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
-        conteudo: String
+        comentario: com.example.unihub.data.dto.ComentarioRequestDto
     ) = Comentario(
         id = "1",
-        conteudo = conteudo,
+        conteudo = comentario.conteudo,
         autorId = 1L,
         autorNome = "Usuário",
         isAutor = true,
@@ -612,15 +612,15 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         dataAtualizacao = System.currentTimeMillis()
     )
 
-    override suspend fun atualizarComentario(
+    override suspend fun updateComentario(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
         comentarioId: String,
-        conteudo: String
+        comentario: com.example.unihub.data.dto.ComentarioRequestDto
     ) = Comentario(
         id = comentarioId,
-        conteudo = conteudo,
+        conteudo = comentario.conteudo,
         autorId = 1L,
         autorNome = "Usuário",
         isAutor = true,
@@ -628,7 +628,7 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         dataAtualizacao = System.currentTimeMillis()
     )
 
-    override suspend fun excluirComentario(
+    override suspend fun deleteComentario(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
@@ -637,12 +637,12 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         // Nada para remover no mock
     }
 
-    override suspend fun atualizarPreferenciaComentarios(
+    override suspend fun updateComentarioPreference(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
-        receberNotificacoes: Boolean
-    ) = ComentarioPreferenciaResponse(receberNotificacoes)
+        request: com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
+    ) = ComentarioPreferenciaResponse(request.receberNotificacoes)
 }) {
     // Essa classe pode ficar vazia, já que a lógica de mock está na interface.
 }
