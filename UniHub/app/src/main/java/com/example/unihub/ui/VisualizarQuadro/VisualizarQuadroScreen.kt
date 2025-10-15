@@ -169,7 +169,6 @@ private fun VisualizarQuadroContent(
         }
     }
 
-    var colunaExpandidaId by remember { mutableStateOf<String?>(null) }
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
     var secaoConcluidaExpandida by remember { mutableStateOf(false) }
 
@@ -260,16 +259,13 @@ private fun VisualizarQuadroContent(
                                 items(colunasAtivas, key = { it.id }) { coluna ->
                                     ColunaCard(
                                         coluna = coluna,
-                                        isExpanded = colunaExpandidaId == coluna.id,
-                                        onExpandToggle = {
-                                            colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
-                                        },
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
                                         onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
                                         onTarefaStatusChange = { tarefa, isChecked ->
                                             viewModel.atualizarStatusTarefa(quadroId, coluna.id, tarefa, isChecked)
-                                        }                                    )
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -290,10 +286,6 @@ private fun VisualizarQuadroContent(
                                 items(colunasConcluidas, key = { it.id }) { coluna ->
                                     ColunaCard(
                                         coluna = coluna,
-                                        isExpanded = colunaExpandidaId == coluna.id,
-                                        onExpandToggle = {
-                                            colunaExpandidaId = if (colunaExpandidaId == coluna.id) null else coluna.id
-                                        },
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
                                         onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
@@ -346,8 +338,6 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
 @Composable
 private fun ColunaCard(
     coluna: Coluna,
-    isExpanded: Boolean,
-    onExpandToggle: () -> Unit,
     onEditColuna: () -> Unit,
     onEditTarefa: (tarefaId: String) -> Unit,
     onNewTarefa: () -> Unit,
@@ -361,16 +351,9 @@ private fun ColunaCard(
             .width(320.dp)
             .clip(MaterialTheme.shapes.large)
             .background(cardColor)
-            .clickable(onClick = onExpandToggle)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Expandir/Recolher",
-                    tint = contentColor.copy(alpha = 0.7f)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = coluna.titulo,
                     style = MaterialTheme.typography.bodyLarge,
@@ -379,71 +362,68 @@ private fun ColunaCard(
                     modifier = Modifier.weight(1f)
                 )
 
-                if (!isExpanded) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Tarefas: ${coluna.tarefas.size}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            val tarefasEmAndamento = coluna.tarefas.filter { it.status != Status.CONCLUIDA }
+            val tarefasConcluidas = coluna.tarefas.filter { it.status == Status.CONCLUIDA }
+
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                if (tarefasEmAndamento.isNotEmpty()) {
+                    TarefasSection(
+                        titulo = "Tarefas em andamento",
+                        tarefas = tarefasEmAndamento,
+                        contentColor = contentColor,
+                        onEditTarefa = onEditTarefa,
+                        onTarefaStatusChange = onTarefaStatusChange
+                    )
+                }
+
+                if (tarefasConcluidas.isNotEmpty()) {
+                    TarefasSection(
+                        titulo = "Tarefas concluídas",
+                        tarefas = tarefasConcluidas,
+                        contentColor = contentColor,
+                        onEditTarefa = onEditTarefa,
+                        onTarefaStatusChange = onTarefaStatusChange
+                    )
+                }
+
+                if (tarefasEmAndamento.isEmpty() && tarefasConcluidas.isEmpty()) {
                     Text(
-                        text = "Tarefas: ${coluna.tarefas.size}",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "Nenhuma tarefa cadastrada",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = contentColor.copy(alpha = 0.7f)
                     )
                 }
             }
 
-            if (isExpanded) {
-                Spacer(modifier = Modifier.height(12.dp))
-                val tarefasEmAndamento = coluna.tarefas.filter { it.status != Status.CONCLUIDA }
-                val tarefasConcluidas = coluna.tarefas.filter { it.status == Status.CONCLUIDA }
-
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    if (tarefasEmAndamento.isNotEmpty()) {
-                        TarefasSection(
-                            titulo = "Tarefas em andamento",
-                            tarefas = tarefasEmAndamento,
-                            contentColor = contentColor,
-                            onEditTarefa = onEditTarefa,
-                            onTarefaStatusChange = onTarefaStatusChange
-                        )
-                    }
-
-                    if (tarefasConcluidas.isNotEmpty()) {
-                        TarefasSection(
-                            titulo = "Tarefas concluídas",
-                            tarefas = tarefasConcluidas,
-                            contentColor = contentColor,
-                            onEditTarefa = onEditTarefa,
-                            onTarefaStatusChange = onTarefaStatusChange
-                        )
-                    }
-
-                    if (tarefasEmAndamento.isEmpty() && tarefasConcluidas.isEmpty()) {
-                        Text(
-                            text = "Nenhuma tarefa cadastrada",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = contentColor.copy(alpha = 0.7f)
-                        )
-                    }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onEditColuna) {
+                    Text("Editar Coluna",
+                        color = MaterialTheme.colorScheme.tertiary)
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = onNewTarefa,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.tertiary,
+                        contentColor = colorScheme.onTertiary
+                    )
                 ) {
-                    TextButton(onClick = onEditColuna) {
-                        Text("Editar Coluna",
-                            color = MaterialTheme.colorScheme.tertiary)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = onNewTarefa,
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = colorScheme.tertiary,
-                            contentColor = colorScheme.onTertiary
-                        )
-                    ) {
-                        Text("Nova Tarefa")
-                    }
+                    Text("Nova Tarefa")
                 }
             }
         }
