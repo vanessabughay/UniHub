@@ -150,21 +150,6 @@ fun TarefaFormScreen(
                 )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
-            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
-
-            if (isEditing) {
-                CampoCombobox(
-                    label = "Status",
-                    options = Status.values().toList(),
-                    selectedOption = statusSelecionado,
-                    onOptionSelected = { statusSelecionado = it },
-                    optionToDisplayedString = { status ->
-                        status.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
-                    },
-                    placeholder = "Selecione o Status"
-                )
-            }
-
             CampoDropdownMultiSelect(
                 label = "Responsável",
                 options = responsaveisDisponiveis,
@@ -179,6 +164,21 @@ fun TarefaFormScreen(
                 value = dateFormat.format(Date(prazo)),
                 onClick = { showDatePicker() }
             )
+
+            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
+
+            if (isEditing) {
+                CampoCombobox(
+                    label = "Estado",
+                    options = Status.values().toList(),
+                    selectedOption = statusSelecionado,
+                    onOptionSelected = { statusSelecionado = it },
+                    optionToDisplayedString = { status ->
+                        status.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    },
+                    placeholder = "Selecione o estado"
+                )
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
