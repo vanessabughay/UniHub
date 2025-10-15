@@ -484,6 +484,8 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val quadroId = backStackEntry.arguments?.getString("id")
+                        val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
 
 
                         VisualizarQuadroScreen(
@@ -506,7 +508,8 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ManterTarefa.createRoute(quadroId, colunaId, tarefaId))
                             },
                             viewModelFactory = VisualizarQuadroViewModelFactory(
-                                QuadroRepository(ApiQuadroBackend())
+                                quadroRepository,
+                                tarefaRepository
                             )
                         )
                     }

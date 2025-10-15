@@ -45,6 +45,8 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.platform.LocalContext
+import com.example.unihub.data.model.Tarefa
 
 
 data class OpcaoQuadro(
@@ -135,6 +137,13 @@ private fun VisualizarQuadroContent(
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { mensagem ->
+            Toast.makeText(context, mensagem, Toast.LENGTH_SHORT).show()
+        }
+    }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     var isFirstResume by remember(quadroId) { mutableStateOf(true) }
@@ -257,8 +266,10 @@ private fun VisualizarQuadroContent(
                                         },
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
-                                        onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) }
-                                    )
+                                        onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
+                                        onTarefaStatusChange = { tarefa, isChecked ->
+                                            viewModel.atualizarStatusTarefa(quadroId, coluna.id, tarefa, isChecked)
+                                        }                                    )
                                 }
                             }
                         }
@@ -285,7 +296,10 @@ private fun VisualizarQuadroContent(
                                         },
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
-                                        onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) }
+                                        onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
+                                        onTarefaStatusChange = { tarefa, isChecked ->
+                                            viewModel.atualizarStatusTarefa(quadroId, coluna.id, tarefa, isChecked)
+                                        }
                                     )
                                 }
                             }
@@ -336,7 +350,8 @@ private fun ColunaCard(
     onExpandToggle: () -> Unit,
     onEditColuna: () -> Unit,
     onEditTarefa: (tarefaId: String) -> Unit,
-    onNewTarefa: () -> Unit
+    onNewTarefa: () -> Unit,
+    onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
 ) {
     val cardColor = colorScheme.tertiary.copy(alpha = 0.1f)
     val contentColor = colorScheme.onSurface
@@ -389,7 +404,7 @@ private fun ColunaCard(
                             Checkbox(
                                 checked = tarefa.status == Status.CONCLUIDA,
                                 onCheckedChange = { isChecked ->
-                                    // AÇÃO DE ATUALIZAR STATUS DA TAREFA AQUI
+                                    onTarefaStatusChange(tarefa, isChecked)
                                 }
                             )
                             Text(

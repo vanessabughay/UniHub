@@ -4,9 +4,12 @@ import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.model.Quadro
+import com.example.unihub.data.model.Status
+import com.example.unihub.data.model.Tarefa
+import com.example.unihub.data.repository.QuadroRepository
+import com.example.unihub.data.repository.TarefaRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,7 +24,8 @@ data class VisualizarQuadroUiState(
 )
 
 class VisualizarQuadroViewModel(
-    private val quadroRepository: QuadroRepository
+    private val quadroRepository: QuadroRepository,
+    private val tarefaRepository: TarefaRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(VisualizarQuadroUiState())
@@ -46,6 +50,61 @@ class VisualizarQuadroViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar quadro.") }
+            }
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun atualizarStatusTarefa(
+        quadroId: String,
+        colunaId: String,
+        tarefa: Tarefa,
+        isChecked: Boolean
+    ) {
+        if (isChecked && tarefa.status == Status.CONCLUIDA) return
+        if (!isChecked && tarefa.status != Status.CONCLUIDA) return
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(error = null) }
+
+                val novoStatus = if (isChecked) Status.CONCLUIDA else Status.INICIADA
+                val tarefaParaSalvar = when {
+                    novoStatus == Status.CONCLUIDA && tarefa.status != Status.CONCLUIDA -> {
+                        tarefa.copy(status = novoStatus, dataFim = tarefa.dataFim ?: System.currentTimeMillis())
+                    }
+
+                    novoStatus == Status.INICIADA && tarefa.status == Status.CONCLUIDA -> {
+                        tarefa.copy(status = novoStatus, dataFim = null)
+                    }
+
+                    else -> tarefa.copy(status = novoStatus)
+                }
+
+                val tarefaAtualizada = tarefaRepository.updateTarefa(quadroId, colunaId, tarefaParaSalvar)
+
+                _uiState.update { currentState ->
+                    val colunasAtualizadas = currentState.colunas.map { coluna ->
+                        if (coluna.id == colunaId) {
+                            coluna.copy(
+                                tarefas = coluna.tarefas.map { tarefaExistente ->
+                                    if (tarefaExistente.id == tarefa.id) tarefaAtualizada else tarefaExistente
+                                }
+                            )
+                        } else {
+                            coluna
+                        }
+                    }
+
+                    currentState.copy(
+                        colunas = colunasAtualizadas,
+                        quadro = currentState.quadro?.copy(colunas = colunasAtualizadas)
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(error = e.message ?: "Erro ao atualizar status da tarefa.")
+                }
             }
         }
     }
