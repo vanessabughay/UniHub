@@ -391,37 +391,36 @@ private fun ColunaCard(
 
             if (isExpanded) {
                 Spacer(modifier = Modifier.height(12.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    coluna.tarefas.forEach { tarefa ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(MaterialTheme.shapes.medium)
-                                .clickable { onEditTarefa(tarefa.id) }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Checkbox(
-                                checked = tarefa.status == Status.CONCLUIDA,
-                                onCheckedChange = { isChecked ->
-                                    onTarefaStatusChange(tarefa, isChecked)
-                                }
-                            )
-                            Text(
-                                text = tarefa.titulo,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    textDecoration = if (tarefa.status == Status.CONCLUIDA) TextDecoration.LineThrough else null
-                                ),
-                                modifier = Modifier.weight(1f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = formatarPrazo(tarefa.prazo),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = contentColor.copy(alpha = 0.8f)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                        }
+                val tarefasEmAndamento = coluna.tarefas.filter { it.status != Status.CONCLUIDA }
+                val tarefasConcluidas = coluna.tarefas.filter { it.status == Status.CONCLUIDA }
+
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    if (tarefasEmAndamento.isNotEmpty()) {
+                        TarefasSection(
+                            titulo = "Tarefas em andamento",
+                            tarefas = tarefasEmAndamento,
+                            contentColor = contentColor,
+                            onEditTarefa = onEditTarefa,
+                            onTarefaStatusChange = onTarefaStatusChange
+                        )
+                    }
+
+                    if (tarefasConcluidas.isNotEmpty()) {
+                        TarefasSection(
+                            titulo = "Tarefas concluídas",
+                            tarefas = tarefasConcluidas,
+                            contentColor = contentColor,
+                            onEditTarefa = onEditTarefa,
+                            onTarefaStatusChange = onTarefaStatusChange
+                        )
+                    }
+
+                    if (tarefasEmAndamento.isEmpty() && tarefasConcluidas.isEmpty()) {
+                        Text(
+                            text = "Nenhuma tarefa cadastrada",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = contentColor.copy(alpha = 0.7f)
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -448,6 +447,73 @@ private fun ColunaCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun TarefasSection(
+    titulo: String,
+    tarefas: List<Tarefa>,
+    contentColor: Color,
+    onEditTarefa: (String) -> Unit,
+    onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = titulo,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor.copy(alpha = 0.7f),
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            tarefas.forEach { tarefa ->
+                TarefaItem(
+                    tarefa = tarefa,
+                    contentColor = contentColor,
+                    onEditTarefa = onEditTarefa,
+                    onTarefaStatusChange = onTarefaStatusChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TarefaItem(
+    tarefa: Tarefa,
+    contentColor: Color,
+    onEditTarefa: (String) -> Unit,
+    onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .clickable { onEditTarefa(tarefa.id) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = tarefa.status == Status.CONCLUIDA,
+            onCheckedChange = { isChecked ->
+                onTarefaStatusChange(tarefa, isChecked)
+            }
+        )
+        Text(
+            text = tarefa.titulo,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                textDecoration = if (tarefa.status == Status.CONCLUIDA) TextDecoration.LineThrough else null
+            ),
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = formatarPrazo(tarefa.prazo),
+            style = MaterialTheme.typography.bodySmall,
+            color = contentColor.copy(alpha = 0.8f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
     }
 }
 
