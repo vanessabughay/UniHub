@@ -1,19 +1,21 @@
 package com.example.unihub.data.config
 
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
+import com.example.unihub.BuildConfig
 import com.example.unihub.data.api.UniHubApi // Importa a sua interface de API
 import com.example.unihub.data.util.LocalDateAdapter
 import com.google.gson.GsonBuilder
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    // URL base do seu backend Spring Boot. Use o endereço do seu emulador.
-    private const val BASE_URL = "http://10.0.2.2:8080/"
+
+    private const val DEFAULT_BASE_URL = "http://10.0.2.2:8080/"
+    private val resolvedBaseUrl: String = BuildConfig.BASE_URL.ifBlank { DEFAULT_BASE_URL }
 
     // GsonBuilder para lidar com a conversão de LocalDate.
     private val gson = GsonBuilder()
@@ -31,7 +33,7 @@ object RetrofitClient {
 
 
     val retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
+        .baseUrl(resolvedBaseUrl)
         .client(client)
         .addConverterFactory(GsonConverterFactory.create(gson))
         .build()
