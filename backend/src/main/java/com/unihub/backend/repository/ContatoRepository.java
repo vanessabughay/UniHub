@@ -13,6 +13,7 @@ public interface ContatoRepository extends JpaRepository<Contato, Long> {
     Optional<Contato> findByIdAndOwnerId(Long id, Long ownerId);
     boolean existsByIdAndOwnerId(Long id, Long ownerId);
     List<Contato> findByOwnerIdAndIdIn(Long ownerId, List<Long> ids);
+    Optional<Contato> findByOwnerIdAndEmail(Long ownerId, String email);
 }
 
 

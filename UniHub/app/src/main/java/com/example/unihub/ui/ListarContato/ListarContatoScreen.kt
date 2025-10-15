@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -42,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,11 +48,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.components.SearchBox
+import com.example.unihub.components.CampoBusca
 import kotlin.text.contains
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
 
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
@@ -184,32 +181,14 @@ fun ListarContatoScreen(
                     .padding(paddingValues),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                SearchBox(
+                CampoBusca(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Buscar por nome, e-mail ou id",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp, end = 8.dp),
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 16.sp
-                        ),
-                        decorationBox = { innerTextField ->
-                            Box(contentAlignment = Alignment.CenterStart) {
-                                if (searchQuery.isEmpty()) {
-                                    Text("Buscar por nome, e-mail ou id", color = Color.Gray, fontSize = 16.sp)
-                                }
-                                innerTextField()
-                            }
-                        }
-                    )
-                }
+                )
 
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
