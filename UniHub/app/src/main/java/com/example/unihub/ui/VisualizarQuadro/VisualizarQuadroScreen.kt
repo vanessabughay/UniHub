@@ -348,7 +348,7 @@ private fun ColunaCard(
 
     Box(
         modifier = Modifier
-            .width(320.dp)
+            .width(290.dp)
             .clip(MaterialTheme.shapes.large)
             .background(cardColor)
     ) {
