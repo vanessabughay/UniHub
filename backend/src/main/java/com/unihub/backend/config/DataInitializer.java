@@ -6,6 +6,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import jakarta.persistence.EntityNotFoundException;
+import java.util.Objects;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -157,10 +159,11 @@ public class DataInitializer {
         Contato nicolasTeixeira = criarContatoSeNaoExistir(usuario, "Nicolas Teixeira", "nicolas.teixeira@email.com", "(41)90000-0014", false);
         Contato oliviaBarbosa = criarContatoSeNaoExistir(usuario, "Olívia Barbosa", "olivia.barbosa@email.com", "(41)90000-0015", false);
 
+        /*
         criarGrupoSeNaoExistir(usuario, "Família", List.of(anaSilva, brunoCosta, carlaMendes, danielSouza, elisaFerreira));
         criarGrupoSeNaoExistir(usuario, "Equipe de Projeto", List.of(felipeOliveira, gabrielaSantos, heitorLima,
                 isabelaRocha, joaoPereira, karinaAlves, lucasMartins, marianaDias, nicolasTeixeira, oliviaBarbosa));
-
+         */
         if (saob11 != null) {
             criarAusenciaSeNaoExistir(usuario, saob11, LocalDate.of(2025,8,19), "Congresso", "Trabalho");
             criarAusenciaSeNaoExistir(usuario, saob11, LocalDate.of(2025,9,9), "Show", "Pessoal");
@@ -254,6 +257,7 @@ public class DataInitializer {
             ausenciaRepository.save(ausencia);
         }
     }
+
     private Contato criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone, Boolean pendente){
         return contatoRepository.findByOwnerId(usuario.getId()).stream()
                 .filter(c -> (email != null && email.equalsIgnoreCase(c.getEmail()))
@@ -279,14 +283,22 @@ public class DataInitializer {
                     grupo.setOwnerId(usuario.getId());
                     if (membros != null) {
                         membros.stream()
-                                .filter(membro -> membro != null && membro.getId() != null)
-                                .map(membro -> contatoRepository.findById(membro.getId()).orElse(null))
-                                .filter(membroPersistido -> membroPersistido != null)
-                                .forEach(grupo::addMembro);
+                                .filter(Objects::nonNull)
+                                .map(Contato::getId)
+                                .filter(Objects::nonNull)
+                                .distinct()
+                                .forEach(id -> adicionarMembroPersistido(grupo, id));
                     }
                     return grupoRepository.save(grupo);
                 });
     }
 
 
+    private void adicionarMembroPersistido(Grupo grupo, Long contatoId) {
+        try {
+            grupo.addMembro(contatoRepository.getReferenceById(contatoId));
+        } catch (EntityNotFoundException ignored) {
+            // contato removido após o seed: ignore para não interromper a inicialização
+        }
+    }
 }
