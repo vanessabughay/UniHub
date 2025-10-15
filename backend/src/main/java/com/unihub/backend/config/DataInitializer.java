@@ -35,6 +35,9 @@ public class DataInitializer {
     @Autowired
     private ContatoRepository contatoRepository;
 
+    @Autowired
+    private GrupoRepository grupoRepository;
+
     @PostConstruct
     public void init() {
         initUsuarios();
@@ -126,7 +129,7 @@ public class DataInitializer {
                 "jeugenio@ufpr.br", "TEAMS e UFPR Virtual", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("segunda-feira", "A13", 1140, 2240)});
 
-        Disciplina saob22 = criarDisciplinaSeNaoExistir(usuario,
+        Disciplina saob11 = criarDisciplinaSeNaoExistir(usuario,
                 "SAOB22", "Disciplina II", "Cleverson Renan da Cunha",
                 "2025/2", 60, 18,4, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "cleverson@ufpr.br", "TEAMS", "(41)99999-9999", "B0", true, true,
@@ -138,10 +141,29 @@ public class DataInitializer {
                 "clayton@ufpr.br", "WhatsApp", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("quarta-feira", "229", 1140, 1360)});
 
+        Contato anaSilva = criarContatoSeNaoExistir(usuario, "Ana Silva-pend", "ana.silva@email.com", "(41)90000-0001", true);
+        Contato brunoCosta = criarContatoSeNaoExistir(usuario, "Bruno Costa-pend", "bruno.costa@email.com", "(41)90000-0002", true);
+        Contato carlaMendes = criarContatoSeNaoExistir(usuario, "Carla Mendes-pend", "carla.mendes@email.com", "(41)90000-0003", true);
+        Contato danielSouza = criarContatoSeNaoExistir(usuario, "Daniel Souza-pend", "daniel.souza@email.com", "(41)90000-0004", true);
+        Contato elisaFerreira = criarContatoSeNaoExistir(usuario, "Elisa Ferreira-pend", "elisa.ferreira@email.com", "(41)90000-0005", true);
+        Contato felipeOliveira = criarContatoSeNaoExistir(usuario, "Felipe Oliveira-pend", "felipe.oliveira@email.com", "(41)90000-0006", true);
+        Contato gabrielaSantos = criarContatoSeNaoExistir(usuario, "Gabriela Santos", "gabriela.santos@email.com", "(41)90000-0007", false);
+        Contato heitorLima = criarContatoSeNaoExistir(usuario, "Heitor Lima", "heitor.lima@email.com", "(41)90000-0008", false);
+        Contato isabelaRocha = criarContatoSeNaoExistir(usuario, "Isabela Rocha", "isabela.rocha@email.com", "(41)90000-0009", false);
+        Contato joaoPereira = criarContatoSeNaoExistir(usuario, "João Pereira", "joao.pereira@email.com", "(41)90000-0010", false);
+        Contato karinaAlves = criarContatoSeNaoExistir(usuario, "Karina Alves", "karina.alves@email.com", "(41)90000-0011", false);
+        Contato lucasMartins = criarContatoSeNaoExistir(usuario, "Lucas Martins", "lucas.martins@email.com", "(41)90000-0012", false);
+        Contato marianaDias = criarContatoSeNaoExistir(usuario, "Mariana Dias", "mariana.dias@email.com", "(41)90000-0013", false);
+        Contato nicolasTeixeira = criarContatoSeNaoExistir(usuario, "Nicolas Teixeira", "nicolas.teixeira@email.com", "(41)90000-0014", false);
+        Contato oliviaBarbosa = criarContatoSeNaoExistir(usuario, "Olívia Barbosa", "olivia.barbosa@email.com", "(41)90000-0015", false);
 
-        if (saob22 != null) {
-            criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,8,19), "Congresso", "Trabalho");
-            criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,9,9), "Show", "Pessoal");
+        criarGrupoSeNaoExistir(usuario, "Família", List.of(anaSilva, brunoCosta, carlaMendes, danielSouza, elisaFerreira));
+        criarGrupoSeNaoExistir(usuario, "Equipe de Projeto", List.of(felipeOliveira, gabrielaSantos, heitorLima,
+                isabelaRocha, joaoPereira, karinaAlves, lucasMartins, marianaDias, nicolasTeixeira, oliviaBarbosa));
+
+        if (saob11 != null) {
+            criarAusenciaSeNaoExistir(usuario, saob11, LocalDate.of(2025,8,19), "Congresso", "Trabalho");
+            criarAusenciaSeNaoExistir(usuario, saob11, LocalDate.of(2025,9,9), "Show", "Pessoal");
         }
 
 
@@ -232,15 +254,39 @@ public class DataInitializer {
             ausenciaRepository.save(ausencia);
         }
     }
-    /*
-    private void criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone){
-
-        boolean exists = contatoRepository.findByUsuarioId(usuario.getId()).stream()
-                .anyMatch(c -> c.getNome().equalsIgnoreCase(nome));
-
+    private Contato criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone, Boolean pendente){
+        return contatoRepository.findByOwnerId(usuario.getId()).stream()
+                .filter(c -> (email != null && email.equalsIgnoreCase(c.getEmail()))
+                        || c.getNome().equalsIgnoreCase(nome))
+                .findFirst()
+                .orElseGet(() -> {
+                    Contato contato = new Contato();
+                    contato.setNome(nome);
+                    contato.setEmail(email);
+                    contato.setOwnerId(usuario.getId());
+                    contato.setPendente(pendente);
+                    return contatoRepository.save(contato);
+                });
     }
 
-     */
+    private Grupo criarGrupoSeNaoExistir(Usuario usuario, String nome, List<Contato> membros){
+        return grupoRepository.findByOwnerId(usuario.getId()).stream()
+                .filter(g -> g.getNome().equalsIgnoreCase(nome))
+                .findFirst()
+                .orElseGet(() -> {
+                    Grupo grupo = new Grupo();
+                    grupo.setNome(nome);
+                    grupo.setOwnerId(usuario.getId());
+                    if (membros != null) {
+                        membros.stream()
+                                .filter(membro -> membro != null && membro.getId() != null)
+                                .map(membro -> contatoRepository.findById(membro.getId()).orElse(null))
+                                .filter(membroPersistido -> membroPersistido != null)
+                                .forEach(grupo::addMembro);
+                    }
+                    return grupoRepository.save(grupo);
+                });
+    }
 
 
 }
