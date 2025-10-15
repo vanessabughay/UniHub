@@ -32,6 +32,9 @@ public class DataInitializer {
     @Autowired
     private AusenciaRepository ausenciaRepository;
 
+    @Autowired
+    private ContatoRepository contatoRepository;
+
     @PostConstruct
     public void init() {
         initUsuarios();
@@ -111,7 +114,37 @@ public class DataInitializer {
     }
 
     private void initPaulo(Usuario usuario) {
-        criarInstituicaoSeNaoExistir(usuario, "UFPR", 80.0, 75);
+        criarInstituicaoSeNaoExistir(usuario, "UFPR", 70.0, 75);
+
+        criarCategoriaSeNaoExistir(usuario, "Trabalho");
+        criarCategoriaSeNaoExistir(usuario, "Saúde");
+        criarCategoriaSeNaoExistir(usuario, "Pessoal");
+
+        criarDisciplinaSeNaoExistir(usuario,
+                "DS340A", "Disciplina I", "João Marynowski",
+                "2025/2", 30, 16,4, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "jeugenio@ufpr.br", "TEAMS e UFPR Virtual", "(41)99999-9999", "B0", true, true,
+                new HorarioAula[]{criarHorarioAula("segunda-feira", "A13", 1140, 2240)});
+
+        Disciplina saob22 = criarDisciplinaSeNaoExistir(usuario,
+                "SAOB22", "Disciplina II", "Cleverson Renan da Cunha",
+                "2025/2", 60, 18,4, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "cleverson@ufpr.br", "TEAMS", "(41)99999-9999", "B0", true, true,
+                new HorarioAula[]{criarHorarioAula("terça-feira", "210", 1140, 1360)});
+
+        criarDisciplinaSeNaoExistir(usuario,
+                "SA060", "Disciplina III", "Clayton Gomes de Medeiros",
+                "2025/2", 60, 18,4, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
+                "clayton@ufpr.br", "WhatsApp", "(41)99999-9999", "B0", true, true,
+                new HorarioAula[]{criarHorarioAula("quarta-feira", "229", 1140, 1360)});
+
+
+        if (saob22 != null) {
+            criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,8,19), "Congresso", "Trabalho");
+            criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,9,9), "Show", "Pessoal");
+        }
+
+
     }
 
     private void criarInstituicaoSeNaoExistir(Usuario usuario, String nome, double media, int freq) {
@@ -199,4 +232,13 @@ public class DataInitializer {
             ausenciaRepository.save(ausencia);
         }
     }
+
+    private void criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone){
+
+        boolean exists = contatoRepository.findByUsuarioId(usuario.getId()).stream()
+                .anyMatch(c -> c.getNome().equalsIgnoreCase(nome));
+
+    }
+
+
 }
