@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
@@ -354,13 +355,20 @@ private fun ColunaCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = coluna.titulo,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = coluna.titulo,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = contentColor
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (coluna.status == Status.CONCLUIDA) "Concluída" else "Em andamento",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.7f)
+                    )
+                }
 
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
@@ -374,12 +382,17 @@ private fun ColunaCard(
             val tarefasEmAndamento = coluna.tarefas.filter { it.status != Status.CONCLUIDA }
             val tarefasConcluidas = coluna.tarefas.filter { it.status == Status.CONCLUIDA }
 
+            var andamentoExpandido by rememberSaveable(coluna.id, "andamento") { mutableStateOf(true) }
+            var concluidasExpandidas by rememberSaveable(coluna.id, "concluidas") { mutableStateOf(false) }
+
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (tarefasEmAndamento.isNotEmpty()) {
                     TarefasSection(
                         titulo = "Tarefas em andamento",
                         tarefas = tarefasEmAndamento,
                         contentColor = contentColor,
+                        isExpanded = andamentoExpandido,
+                        onToggleExpanded = { andamentoExpandido = !andamentoExpandido },
                         onEditTarefa = onEditTarefa,
                         onTarefaStatusChange = onTarefaStatusChange
                     )
@@ -390,6 +403,8 @@ private fun ColunaCard(
                         titulo = "Tarefas concluídas",
                         tarefas = tarefasConcluidas,
                         contentColor = contentColor,
+                        isExpanded = concluidasExpandidas,
+                        onToggleExpanded = { concluidasExpandidas = !concluidasExpandidas },
                         onEditTarefa = onEditTarefa,
                         onTarefaStatusChange = onTarefaStatusChange
                     )
@@ -435,25 +450,48 @@ private fun TarefasSection(
     titulo: String,
     tarefas: List<Tarefa>,
     contentColor: Color,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
     onEditTarefa: (String) -> Unit,
     onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.labelLarge,
-            color = contentColor.copy(alpha = 0.7f),
-            fontWeight = FontWeight.SemiBold
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleExpanded),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (isExpanded) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = contentColor.copy(alpha = 0.7f)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = titulo,
+                style = MaterialTheme.typography.labelLarge,
+                color = contentColor.copy(alpha = 0.7f),
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = tarefas.size.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor.copy(alpha = 0.6f)
+            )
+        }
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            tarefas.forEach { tarefa ->
-                TarefaItem(
-                    tarefa = tarefa,
-                    contentColor = contentColor,
-                    onEditTarefa = onEditTarefa,
-                    onTarefaStatusChange = onTarefaStatusChange
-                )
+        AnimatedVisibility(visible = isExpanded) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                tarefas.forEach { tarefa ->
+                    TarefaItem(
+                        tarefa = tarefa,
+                        contentColor = contentColor,
+                        onEditTarefa = onEditTarefa,
+                        onTarefaStatusChange = onTarefaStatusChange
+                    )
+                }
             }
         }
     }
