@@ -306,7 +306,8 @@ class ManterAvaliacaoViewModel(
                             ContatoResumoUi(
                                 id = id,
                                 nome = m.nome ?: "",
-                                email = m.email ?: ""
+                                email = m.email ?: "",
+                                pendente = m.pendente
                             )
                         }
                     }.sortedBy { it.nome.lowercase() }

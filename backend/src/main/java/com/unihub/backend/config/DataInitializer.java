@@ -232,13 +232,15 @@ public class DataInitializer {
             ausenciaRepository.save(ausencia);
         }
     }
-
+    /*
     private void criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone){
 
         boolean exists = contatoRepository.findByUsuarioId(usuario.getId()).stream()
                 .anyMatch(c -> c.getNome().equalsIgnoreCase(nome));
 
     }
+
+     */
 
 
 }
