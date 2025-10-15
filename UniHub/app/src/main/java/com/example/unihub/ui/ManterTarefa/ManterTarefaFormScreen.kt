@@ -590,8 +590,11 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
         quadroId: String,
         colunaId: String,
         tarefaId: String
-    ) = ComentariosResponse {
-        return ComentariosResponse(items = emptyList())
+    ): ComentariosResponse {
+        return ComentariosResponse(
+            comentarios = emptyList(),
+            receberNotificacoes = true
+        )
     }
 
     override suspend fun criarComentario(
