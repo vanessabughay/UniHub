@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoBuscaJanela
 import com.example.unihub.data.model.Modalidade
 import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
@@ -595,43 +596,69 @@ fun SelecaoContatosDialog(
                 } else if (contatosDisponiveis.isEmpty()) {
                     Text(if (isForRemoval) "Nenhum integrante para remover." else "Nenhum contato disponível.")
                 } else {
-                    Surface( // Adicionado Surface para melhor controle de altura e possível scroll interno
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp) // Limita altura
-                    ) {
-                        LazyColumn {
-                            items(contatosDisponiveis, key = { it.id }) { contato ->
-                                val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
-                                // Na adição, desabilitar se já for integrante (via idsContatosJaSelecionados)
-                                // Na remoção, todos os listados (que são os integrantesDaAvaliacao) são habilitados para seleção
-                                val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+                    var termoBusca by remember(contatosDisponiveis) { mutableStateOf("") }
+                    val contatosFiltrados = remember(termoBusca, contatosDisponiveis) {
+                        if (termoBusca.isBlank()) {
+                            contatosDisponiveis
+                        } else {
+                            contatosDisponiveis.filter { contato ->
+                                contato.nome.contains(termoBusca, ignoreCase = true)
+                            }
+                        }
+                    }
 
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = isEnabled) {
-                                            if (isEnabled) {
-                                                idsTemporariamenteSelecionados = if (isChecked) {
-                                                    idsTemporariamenteSelecionados - contato.id
-                                                } else {
-                                                    idsTemporariamenteSelecionados + contato.id
+                    CampoBuscaJanela(
+                        value = termoBusca,
+                        onValueChange = { termoBusca = it },
+                        placeholder = "Buscar contatos",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (contatosFiltrados.isEmpty()) {
+                        Text(
+                            text = if (isForRemoval) "Nenhum integrante encontrado." else "Nenhum contato encontrado.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Surface( // Adicionado Surface para melhor controle de altura e possível scroll interno
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp) // Limita altura
+                        ) {
+                            LazyColumn {
+                                items(contatosFiltrados, key = { it.id }) { contato ->
+                                    val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
+                                    // Na adição, desabilitar se já for integrante (via idsContatosJaSelecionados)
+                                    // Na remoção, todos os listados (que são os integrantesDaAvaliacao) são habilitados para seleção
+                                    val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(enabled = isEnabled) {
+                                                if (isEnabled) {
+                                                    idsTemporariamenteSelecionados = if (isChecked) {
+                                                        idsTemporariamenteSelecionados - contato.id
+                                                    } else {
+                                                        idsTemporariamenteSelecionados + contato.id
+                                                    }
                                                 }
                                             }
-                                        }
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = isChecked,
-                                        onCheckedChange = null, // Controlado pelo Row clickable
-                                        enabled = isEnabled
-                                    )
-                                    Text(
-                                        text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é integrante)" else "",
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                    )
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = null, // Controlado pelo Row clickable
+                                            enabled = isEnabled
+                                        )
+                                        Text(
+                                            text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é integrante)" else "",
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
                                 }
                             }
                         }
