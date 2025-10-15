@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -55,6 +56,14 @@ public class TarefaPlanejamento {
 
     @Column(name = "responsaveis_ids", length = 1000)
     private String responsaveisIds;
+
+    @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private List<TarefaComentario> comentarios = new ArrayList<>();
+
+    @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
+    private Set<TarefaComentarioNotificacao> notificacoesComentario = new LinkedHashSet<>();
 
     public Long getId() {
         return id;
@@ -162,5 +171,21 @@ public class TarefaPlanejamento {
                 .map(Contato::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    public List<TarefaComentario> getComentarios() {
+        return comentarios;
+    }
+
+    public void setComentarios(List<TarefaComentario> comentarios) {
+        this.comentarios = comentarios;
+    }
+
+    public Set<TarefaComentarioNotificacao> getNotificacoesComentario() {
+        return notificacoesComentario;
+    }
+
+    public void setNotificacoesComentario(Set<TarefaComentarioNotificacao> notificacoesComentario) {
+        this.notificacoesComentario = notificacoesComentario;
     }
 }

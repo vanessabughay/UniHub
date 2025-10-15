@@ -2,8 +2,13 @@ package com.example.unihub.data.repository
 
 import com.example.unihub.data.api.TarefaApi
 import com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
+import com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
+import com.example.unihub.data.dto.ComentarioRequestDto
 import com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
+import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.Tarefa
+import com.example.unihub.data.model.ComentarioPreferenciaResponse
+import com.example.unihub.data.model.ComentariosResponse
 import java.time.Instant
 import java.time.ZoneId
 
@@ -27,6 +32,59 @@ open class TarefaRepository(private val apiService: TarefaApi) {
     suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         apiService.deleteTarefa(quadroId, colunaId, tarefaId)
     }
+
+    open suspend fun carregarComentarios(quadroId: String, colunaId: String, tarefaId: String): ComentariosResponse {
+        return apiService.getComentarios(quadroId, colunaId, tarefaId)
+    }
+
+    open suspend fun criarComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        conteudo: String
+    ): Comentario {
+        return apiService.createComentario(quadroId, colunaId, tarefaId, ComentarioRequestDto(conteudo))
+    }
+
+    open suspend fun atualizarComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentarioId: String,
+        conteudo: String
+    ): Comentario {
+        return apiService.updateComentario(
+            quadroId,
+            colunaId,
+            tarefaId,
+            comentarioId,
+            ComentarioRequestDto(conteudo)
+        )
+    }
+
+    open suspend fun excluirComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentarioId: String
+    ) {
+        apiService.deleteComentario(quadroId, colunaId, tarefaId, comentarioId)
+    }
+
+    open suspend fun atualizarPreferenciaComentarios(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        receberNotificacoes: Boolean
+    ): ComentarioPreferenciaResponse {
+        return apiService.updateComentarioPreference(
+            quadroId,
+            colunaId,
+            tarefaId,
+            ComentarioNotificacaoRequestDto(receberNotificacoes)
+        )
+    }
+
 
 }
 
