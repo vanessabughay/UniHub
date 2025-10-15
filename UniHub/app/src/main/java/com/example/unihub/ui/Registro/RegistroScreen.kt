@@ -24,16 +24,19 @@ import androidx.navigation.NavController
 fun RegisterScreen(navController: NavController, viewModel: RegistroViewModel = viewModel()) {
 
     val context = LocalContext.current
+    var isSaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.errorMessage) {
         viewModel.errorMessage?.let {
+            isSaving = false
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.errorMessage = null
         }
     }
 
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
-            val repository = InstituicaoRepositoryProvider.getRepository(context)
+            isSaving = false
             Toast.makeText(context, "Cadastro realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
             navController.navigate("login") {
@@ -86,22 +89,65 @@ fun RegisterScreen(navController: NavController, viewModel: RegistroViewModel = 
 
                     Button(
                         onClick = {
-                            viewModel.registerUser()
+                            if (!isSaving) {
+                                // 1) Validação ANTES de ligar o isSaving
+                                val name = viewModel.name.trim()
+                                val email = viewModel.email.trim()
+                                val password = viewModel.password
+                                val confirm = viewModel.confirmPassword
+
+                                // Ex.: nome só com letras (inclui acentos), espaços, hífen e apóstrofo
+                                val nomeValido = name.matches(Regex("^[\\p{L}][\\p{L} '-]*$"))
+                                if (!nomeValido) {
+                                    Toast.makeText(context, "Nome inválido: use apenas letras.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                // Email básico (troque se já valida no backend)
+                                val emailValido = android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+                                if (!emailValido) {
+                                    Toast.makeText(context, "E-mail inválido.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                if (password.length < 6) {
+                                    Toast.makeText(context, "A senha deve ter pelo menos 6 caracteres.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                if (password != confirm) {
+                                    Toast.makeText(context, "As senhas não coincidem.", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                // 2) Só liga o isSaving DEPOIS de passar na validação
+                                isSaving = true
+                                viewModel.registerUser()
+                                // Se o backend retornar erro, o LaunchedEffect(errorMessage) acima desliga o isSaving
+                                // Se der certo, o LaunchedEffect(success) desliga também
+                            }
                         },
-                        enabled = !viewModel.isLoading,
+                        enabled = !isSaving,
                         modifier = Modifier
                             .width(120.dp)
                             .height(44.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4D6C8B) // Cor de botão do UniHub
+                            containerColor = Color(0xFF4D6C8B)
                         )
                     ) {
-                        if (viewModel.isLoading) {
+                        if (isSaving) {
                             CircularProgressIndicator(
                                 color = Color.White,
                                 modifier = Modifier.size(18.dp),
                                 strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Salvando...",
+                                color = Color.White,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
                             )
                         } else {
                             Text(
@@ -113,6 +159,7 @@ fun RegisterScreen(navController: NavController, viewModel: RegistroViewModel = 
                         }
                     }
                 }
+
             }
 
             Spacer(modifier = Modifier.height(36.dp))

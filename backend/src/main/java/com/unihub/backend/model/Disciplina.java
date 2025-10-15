@@ -39,6 +39,7 @@ public class Disciplina {
     private String salaProfessor;
     private boolean isAtiva; // Mantido como boolean primitivo
     private boolean receberNotificacoes; // Mantido como boolean primitivo
+    private Integer ausenciasPermitidas;
 
     @ManyToOne(fetch = FetchType.LAZY) // LAZY é geralmente uma boa prática
     @JoinColumn(name = "usuario_id")
@@ -63,6 +64,14 @@ public class Disciplina {
     @JsonManagedReference("disciplina-aulas") // Gerencia a serialização da lista de aulas
 
     private List<HorarioAula> aulas = new ArrayList<>();
+
+    @OneToMany(
+            mappedBy = "disciplina",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonManagedReference("disciplina-ausencias")
+    private List<Ausencia> ausencias = new ArrayList<>();
 
     // --- Construtor Padrão (Requerido pelo JPA) ---
     public Disciplina() {
@@ -114,6 +123,9 @@ public class Disciplina {
 
     public boolean isReceberNotificacoes() { return receberNotificacoes; }
     public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }
+
+    public Integer getAusenciasPermitidas() { return ausenciasPermitidas; }
+    public void setAusenciasPermitidas(Integer ausenciasPermitidas) { this.ausenciasPermitidas = ausenciasPermitidas; }
 
     public Usuario getUsuario() { return usuario; }
     public void setUsuario(Usuario usuario) { this.usuario = usuario; }
@@ -178,6 +190,35 @@ public class Disciplina {
         }
     }
 
+    public List<Ausencia> getAusencias() { return ausencias; }
+
+    public void setAusencias(List<Ausencia> ausencias) {
+        if (this.ausencias != null) {
+            for (Ausencia ausencia : new ArrayList<>(this.ausencias)) {
+                removeAusencia(ausencia);
+            }
+        }
+        if (ausencias != null) {
+            for (Ausencia ausencia : ausencias) {
+                addAusencia(ausencia);
+            }
+        }
+    }
+
+    public void addAusencia(Ausencia ausencia) {
+        if (ausencia != null && !this.ausencias.contains(ausencia)) {
+            this.ausencias.add(ausencia);
+            ausencia.setDisciplina(this);
+        }
+    }
+
+    public void removeAusencia(Ausencia ausencia) {
+        if (ausencia != null && this.ausencias.contains(ausencia)) {
+            this.ausencias.remove(ausencia);
+            ausencia.setDisciplina(null);
+        }
+    }
+
     // --- equals, hashCode, toString ---
 
     @Override
@@ -201,6 +242,8 @@ public class Disciplina {
                 ", codigo='" + codigo + '\'' +
                 ", professor='" + professor + '\'' +
                 ", qtdSemanas=" + qtdSemanas +
+                ", ausenciasPermitidas=" + ausenciasPermitidas +
+                ", numeroDeAusencias=" + (ausencias != null ? ausencias.size() : 0) +
                 ", usuarioId=" + (usuario != null ? usuario.getId() : "null") +
                 ", numeroDeAvaliacoes=" + (avaliacoes != null ? avaliacoes.size() : 0) +
                 ", numeroDeAulas=" + (aulas != null ? aulas.size() : 0) +

@@ -12,7 +12,8 @@ import java.io.IOException
 data class ContatoResumo(
     val id: Long,
     val nome: String,
-    val email: String
+    val email: String,
+    val pendente: Boolean
 )
 
 

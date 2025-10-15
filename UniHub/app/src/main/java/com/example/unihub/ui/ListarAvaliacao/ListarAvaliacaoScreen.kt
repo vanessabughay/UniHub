@@ -123,6 +123,7 @@ fun ListarAvaliacaoScreen(
 
     var avaliacaoParaConcluir by remember { mutableStateOf<Avaliacao?>(null) }
     var avaliacaoParaReativar by remember { mutableStateOf<Avaliacao?>(null) }
+    var isButtonEnabled by remember { mutableStateOf(true) }
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -266,15 +267,27 @@ fun ListarAvaliacaoScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        val valor = NotaCampo.toDouble(notaTemp)
-                        viewModel.updateNota(av, valor) { ok ->
-                            if (ok) {
-                                Toast.makeText(context, "Nota salva!", Toast.LENGTH_SHORT).show()
-                                notaDialogAvaliacao = null
+                        if (isButtonEnabled) {
+                            isButtonEnabled = false // desabilita o botão
+
+                            val valor = NotaCampo.toDouble(notaTemp)
+                            viewModel.updateNota(av, valor) { ok ->
+                                // Quando o backend responder, reabilita o botão
+                                isButtonEnabled = true
+
+                                if (ok) {
+                                    Toast.makeText(context, "Nota salva!", Toast.LENGTH_SHORT).show()
+                                    notaDialogAvaliacao = null
+                                } else {
+                                    Toast.makeText(context, "Erro ao salvar nota!", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
-                    }
-                ) { Text("SALVAR") }
+                    },
+                    enabled = isButtonEnabled // 🔐 controla se pode clicar
+                ) {
+                    Text(if (isButtonEnabled) "SALVAR" else "Salvando...")
+                }
             },
             dismissButton = {
                 TextButton(onClick = { notaDialogAvaliacao = null }) { Text("CANCELAR") }

@@ -50,20 +50,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle // Ícone para adicionar
 import androidx.compose.material.icons.filled.Delete // Ícone para remover
 import androidx.compose.material.icons.filled.Person // Ícone para membro
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Box // Para o indicador de loading sobre a lista
-import androidx.compose.material3.Surface // Para o diálogo
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
@@ -84,6 +74,7 @@ fun ManterGrupoScreen(
     // Estados para controlar a visibilidade dos diálogos de seleção de membros
     var showAddMembrosDialog by remember { mutableStateOf(false) }
     var showRemoveMembrosDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     // Efeitos (mantidos como estão)
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
@@ -110,10 +101,8 @@ fun ManterGrupoScreen(
         if (grupoId != null) {
             viewModel.loadGrupo(grupoId)
         }
-        // Sempre carregar contatos disponíveis, ou recarregar se necessário
-        // viewModel.loadAllAvailableContatos() // Já está no init do ViewModel
     }
-    // ---
+
 
     Scaffold(
         topBar = {
@@ -303,14 +292,19 @@ fun ManterGrupoScreen(
             ) {
                 Button( // Botão Salvar/Atualizar Grupo
                     onClick = {
-                        // O nome já está sendo atualizado no ViewModel via setNomeGrupo
-                        // A lista de membros também já está no ViewModel (_idMembrosSelecionados)
-                        if (grupoId == null) {
-                            viewModel.createGrupo(uiState.nome) // Passa o nome do uiState
-                        } else {
-                            viewModel.updateGrupo(grupoId, uiState.nome) // Passa o nome do uiState
+                        if (!isSaving) {
+                            isSaving = true // trava o botão e mostra "Salvando..."
+
+                            if (grupoId == null) {
+                                viewModel.createGrupo(uiState.nome)
+                            } else {
+                                viewModel.updateGrupo(grupoId, uiState.nome)
+                            }
+
+                            // Quando a tela for recarregada, o remember reseta e reativa o botão
                         }
                     },
+                    enabled = !isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
@@ -321,7 +315,12 @@ fun ManterGrupoScreen(
                     )
                 ) {
                     Text(
-                        if (grupoId == null) "Criar Grupo" else "Atualizar Grupo",
+                        text = if (isSaving)
+                            "Salvando..." // feedback visual
+                        else if (grupoId == null)
+                            "Criar Grupo"
+                        else
+                            "Atualizar Grupo",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -330,6 +329,7 @@ fun ManterGrupoScreen(
                 if (grupoId != null) { // Botão Excluir Grupo (somente em modo de edição)
                     Button(
                         onClick = { showDeleteDialog = true },
+                        enabled = !isSaving, // desativa enquanto salva
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
