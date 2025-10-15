@@ -92,6 +92,7 @@ fun TarefaFormScreen(
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
                 prazo = loadedTarefa.prazo
+                tarefaViewModel.atualizarResponsaveisSelecionados(loadedTarefa.responsaveisIds.toSet())
             }
         }
     }
