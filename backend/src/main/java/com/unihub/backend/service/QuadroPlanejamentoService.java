@@ -14,7 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -161,7 +164,7 @@ public class QuadroPlanejamentoService {
     public QuadroPlanejamentoDetalhesResponse detalhes(Long id, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(id, usuarioId);
         List<ColunaPlanejamento> colunas = colunaRepository.findByQuadroIdOrderByOrdemAsc(quadro.getId());
-        
+
         List<ColunaPlanejamento> andamento = colunas.stream()
                 .filter(coluna -> coluna.getEstado() == EstadoPlanejamento.EM_ANDAMENTO)
                 .collect(Collectors.toList());
@@ -198,10 +201,43 @@ public class QuadroPlanejamentoService {
         ColunaPlanejamento coluna = new ColunaPlanejamento();
         coluna.setTitulo(request.getTitulo());
         coluna.setEstado(request.getEstado() != null ? request.getEstado() : EstadoPlanejamento.EM_ANDAMENTO);
-        coluna.setOrdem(definirOrdemColuna(quadro.getId()));
+        Integer maiorOrdem = colunaRepository.findMaxOrdemByQuadroId(quadro.getId());
+        int proximaOrdem = (maiorOrdem != null ? maiorOrdem : 0) + 1;
+        coluna.setOrdem(proximaOrdem);
         coluna.setQuadro(quadro);
 
         return colunaRepository.save(coluna);
+    }
+
+    @Transactional(readOnly = true)
+    public ColunaPlanejamento buscarColunaPorId(Long quadroId, Long colunaId, Long usuarioId) {
+        return buscarColuna(quadroId, colunaId, usuarioId);
+    }
+
+    @Transactional
+    public ColunaPlanejamento atualizarColuna(Long quadroId, Long colunaId, ColunaPlanejamentoRequest request, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+
+        if (request.getTitulo() != null) {
+            validarTitulo(request.getTitulo());
+            coluna.setTitulo(request.getTitulo());
+        }
+
+        if (request.getEstado() != null) {
+            coluna.setEstado(request.getEstado());
+        }
+
+        if (request.getOrdem() != null) {
+            coluna.setOrdem(request.getOrdem());
+        }
+
+        return colunaRepository.save(coluna);
+    }
+
+    @Transactional
+    public void excluirColuna(Long quadroId, Long colunaId, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+        colunaRepository.delete(coluna);
     }
 
     @Transactional(readOnly = true)
@@ -214,21 +250,19 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<TarefaPlanejamentoResponse> listarTarefas(Long quadroId, Long colunaId, Long usuarioId) {
+    public List<TarefaPlanejamento> listarTarefas(Long quadroId, Long colunaId, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
-        return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId())
-                .stream()
-                .map(TarefaPlanejamentoResponse::fromEntity)
-                .collect(Collectors.toList());    }
-
-     @Transactional(readOnly = true)
-    public ColunaPlanejamento buscarColunaPorId(Long quadroId, Long colunaId, Long usuarioId) {
-        return buscarColuna(quadroId, colunaId, usuarioId);
+        return tarefaRepository.findByColunaIdOrderByDataPrazoAsc(coluna.getId());
     }
 
+    @Transactional(readOnly = true)
+    public TarefaPlanejamentoResponse buscarTarefa(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        return toResponse(tarefa);
+    }
 
     @Transactional
-    public TarefaPlanejamentoResponse criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {
+    public TarefaPlanejamento criarTarefa(Long quadroId, Long colunaId, TarefaPlanejamentoRequest request, Long usuarioId) {
         ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
         validarTitulo(request.getTitulo());
 
@@ -238,16 +272,47 @@ public class QuadroPlanejamentoService {
         tarefa.setDataPrazo(request.getDataPrazo());
         tarefa.setColuna(coluna);
 
-        if (request.getResponsavelId() != null) {
-            Contato contato = buscarContato(quadroId, request.getResponsavelId(), usuarioId);
-            tarefa.setResponsavel(contato);
-        }
+        tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
 
-        return TarefaPlanejamentoResponse.fromEntity(tarefaRepository.save(tarefa));
-        }
+        return tarefaRepository.save(tarefa);
+    }
 
     @Transactional
-    public TarefaPlanejamentoResponse atualizarStatusTarefa(Long quadroId, Long tarefaId, AtualizarStatusTarefaRequest request, Long usuarioId) {
+    public TarefaPlanejamentoResponse atualizarTarefa(Long quadroId, Long colunaId, Long tarefaId,
+                                                      AtualizarTarefaPlanejamentoRequest request, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+
+        if (request.getTitulo() != null) {
+            validarTitulo(request.getTitulo());
+            tarefa.setTitulo(request.getTitulo());
+        }
+
+        tarefa.setDescricao(request.getDescricao());
+
+        if (request.getPrazo() != null) {
+            tarefa.setDataPrazo(convertEpochToLocalDate(request.getPrazo()));
+        } else {
+            tarefa.setDataPrazo(null);
+        }
+
+        if ("CONCLUIDA".equalsIgnoreCase(request.getStatus())) {
+            tarefa.setStatus(TarefaStatus.CONCLUIDA);
+            tarefa.setDataConclusao(convertEpochToLocalDateTime(request.getDataFim(), LocalDateTime.now()));
+        } else {
+            tarefa.setStatus(TarefaStatus.PENDENTE);
+            tarefa.setDataConclusao(null);
+        }
+
+        if (request.getResponsavelIds() != null) {
+            tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
+        }
+
+        TarefaPlanejamento atualizado = tarefaRepository.save(tarefa);
+        return toResponse(atualizado);
+    }
+
+    @Transactional
+    public TarefaPlanejamento atualizarStatusTarefa(Long quadroId, Long tarefaId, AtualizarStatusTarefaRequest request, Long usuarioId) {
         TarefaPlanejamento tarefa = tarefaRepository.findByIdAndColunaQuadroId(tarefaId, quadroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada"));
 
@@ -261,8 +326,14 @@ public class QuadroPlanejamentoService {
             tarefa.setDataConclusao(null);
         }
 
-        return TarefaPlanejamentoResponse.fromEntity(tarefaRepository.save(tarefa));
-        }
+        return tarefaRepository.save(tarefa);
+    }
+
+    @Transactional
+    public void excluirTarefa(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        tarefaRepository.delete(tarefa);
+    }
 
     private Usuario referenciaUsuario(Long usuarioId) {
         Usuario usuario = new Usuario();
@@ -286,30 +357,73 @@ public class QuadroPlanejamentoService {
         }
     }
 
-    private Integer definirOrdemColuna(Long quadroId) {
-        Integer maiorOrdem = colunaRepository.findTopByQuadroIdOrderByOrdemDesc(quadroId)
-                .map(ColunaPlanejamento::getOrdem)
-                .orElse(0);
-
-        if (maiorOrdem == null) {
-            maiorOrdem = 0;
-        }
-
-        return maiorOrdem + 1;
-    }
-
     private ColunaPlanejamento buscarColuna(Long quadroId, Long colunaId, Long usuarioId) {
         buscarPorId(quadroId, usuarioId);
         return colunaRepository.findByIdAndQuadroId(colunaId, quadroId)
                 .orElseThrow(() -> new ResourceNotFoundException("Coluna não encontrada"));
     }
 
+    private TarefaPlanejamento buscarTarefaEntity(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        ColunaPlanejamento coluna = buscarColuna(quadroId, colunaId, usuarioId);
+        return tarefaRepository.findByIdAndColunaId(tarefaId, coluna.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Tarefa não encontrada"));
+    }
+
+    private TarefaPlanejamentoResponse toResponse(TarefaPlanejamento tarefa) {
+        TarefaPlanejamentoResponse response = new TarefaPlanejamentoResponse();
+        response.setId(tarefa.getId());
+        response.setTitulo(tarefa.getTitulo());
+        response.setDescricao(tarefa.getDescricao());
+        response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
+        response.setPrazo(convertLocalDateToEpoch(tarefa.getDataPrazo()));
+        response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
+        response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
+        response.setResponsavelIds(tarefa.getResponsaveisIds());
+        response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
+        return response;
+    }
+
+    private Long convertLocalDateToEpoch(LocalDate date) {
+        if (date == null) {
+            return null;
+        }
+        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    private Long convertLocalDateTimeToEpoch(LocalDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+    }
+
+    private LocalDate convertEpochToLocalDate(Long epochMillis) {
+        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate();
+    }
+
+    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis, LocalDateTime defaultValue) {
+        if (epochMillis == null) {
+            return defaultValue;
+        }
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+    }
+
     private Contato buscarContato(Long quadroId, Long contatoId, Long usuarioId) {
         Contato contato = contatoRepository.findByIdAndOwnerId(contatoId, usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
 
-        QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
-      
+        buscarPorId(quadroId, usuarioId);
+
         return contato;
+    }
+
+    private LinkedHashSet<Contato> buscarResponsaveis(Long quadroId, List<Long> responsavelIds, Long usuarioId) {
+        if (responsavelIds == null || responsavelIds.isEmpty()) {
+            return new LinkedHashSet<>();
+        }
+
+        return responsavelIds.stream()
+                .map(id -> buscarContato(quadroId, id, usuarioId))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

@@ -15,6 +15,9 @@ public class Grupo {
     @Column(nullable = false) // Exemplo: nome não pode ser nulo
     private String nome;
 
+    @Column(nullable = false)
+    private Long ownerId;
+
     // Se for ManyToMany (um Contato pode estar em vários Grupos e um Grupo pode ter vários Contatos)
     @ManyToMany(fetch = FetchType.LAZY, // Lazy loading é geralmente bom para coleções
             cascade = { CascadeType.PERSIST, CascadeType.MERGE })
@@ -49,6 +52,14 @@ public class Grupo {
 
     public void setNome(String nome) {
         this.nome = nome;
+    }
+
+    public Long getOwnerId() {
+        return ownerId;
+    }
+
+    public void setOwnerId(Long ownerId) {
+        this.ownerId = ownerId;
     }
 
     public List<Contato> getMembros() {
@@ -97,6 +108,7 @@ public class Grupo {
         return "Grupo{" +
                 "id=" + id +
                 ", nome='" + nome + '\'' +
+                ", ownerId=" + ownerId +
                 ", numeroDeMembros=" + (membros != null ? membros.size() : "0 (lista nula)") +
                 '}';
     }

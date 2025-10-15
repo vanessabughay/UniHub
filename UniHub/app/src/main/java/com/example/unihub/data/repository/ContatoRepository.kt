@@ -12,7 +12,8 @@ import java.io.IOException
 data class ContatoResumo(
     val id: Long,
     val nome: String,
-    val email: String
+    val email: String,
+    val pendente: Boolean
 )
 
 
@@ -44,6 +45,16 @@ class ContatoRepository(private val backend: Contatobackend) {
     fun getContatoById(id: Long): Flow<Contato?> = flow {
         try {
             emit(backend.getContatoByIdApi(id.toString()))
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+    suspend fun fetchContatoById(id: Long): Contato? {
+        return try {
+            backend.getContatoByIdApi(id.toString())
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {

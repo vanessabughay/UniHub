@@ -13,5 +13,7 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
 
     Optional<TarefaPlanejamento> findByIdAndColunaQuadroId(Long id, Long quadroId);
 
+     Optional<TarefaPlanejamento> findByIdAndColunaId(Long id, Long colunaId);
+
     long countByColunaQuadroIdAndStatus(Long quadroId, TarefaStatus status);
 }

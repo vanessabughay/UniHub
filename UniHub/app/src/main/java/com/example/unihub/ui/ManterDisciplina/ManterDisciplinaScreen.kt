@@ -10,9 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,12 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.unihub.data.model.Disciplina
-import com.example.unihub.data.model.HorarioAula
-import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
@@ -35,12 +28,12 @@ import java.util.Locale
 import java.util.UUID
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import androidx.compose.foundation.border
-import androidx.compose.ui.viewinterop.AndroidView
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.time.Instant
 import androidx.compose.ui.unit.sp
+import kotlin.math.floor
+import kotlin.math.max
 
 
 
@@ -240,9 +233,27 @@ fun ManterDisciplinaScreen(
     var plataformas by remember { mutableStateOf("") }
     var telefoneProfessor by remember { mutableStateOf("") }
     var salaProfessor by remember { mutableStateOf("") }
+    var ausenciasPermitidas by remember { mutableStateOf("") }
     var isAtiva by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var isExclusao by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    val frequenciaMinima = viewModel.frequenciaMinima.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.carregarFrequenciaMinima()
+    }
+
+    LaunchedEffect(qtdSemanas, qtdAulasSemana, frequenciaMinima.value, disciplinaId) {
+        if (disciplinaId == null) {
+            val freq = frequenciaMinima.value
+            val semanas = qtdSemanas.toIntOrNull()
+            if (freq != null && semanas != null) {
+                val limiteCalculado = floor(((100 - freq).coerceAtLeast(0) / 100.0) * semanas).toInt()
+                ausenciasPermitidas = max(limiteCalculado, 0).toString()
+            }
+        }
+    }
 
     LaunchedEffect(qtdAulasSemana) {
         val quantidade = qtdAulasSemana.toIntOrNull() ?: 0
@@ -301,6 +312,7 @@ fun ManterDisciplinaScreen(
             plataformas      = d.plataforma.orEmpty()
             telefoneProfessor= d.telefoneProfessor.orEmpty()
             salaProfessor    = d.salaProfessor.orEmpty()
+            ausenciasPermitidas = d.ausenciasPermitidas?.toString() ?: ""
 
             isAtiva = d.isAtiva  // se for Boolean?, use: (d.isAtiva ?: true)
         }
@@ -339,50 +351,69 @@ fun ManterDisciplinaScreen(
             ) {
                 Button(
                     onClick = {
-                        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        if (!isSaving) {
+                            isSaving = true // 🔒 Desabilita o botão e mostra "Salvando..."
 
-                        val inicio = Instant.ofEpochMilli(dataInicioSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
-                        val fim = Instant.ofEpochMilli(dataFimSemestre).atZone(ZoneId.systemDefault()).toLocalDate()
+                            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
+                            val inicio = Instant.ofEpochMilli(dataInicioSemestre)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val fim = Instant.ofEpochMilli(dataFimSemestre)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            val ausenciasExistentes = disciplina.value?.ausencias ?: emptyList()
+                            val disciplina = com.example.unihub.data.model.Disciplina(
+                                id = disciplinaId?.toLongOrNull(),
+                                codigo = codigo,
+                                nome = nomeDisciplina,
+                                professor = nomeProfessor,
+                                periodo = periodo,
+                                cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
+                                qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
+                                dataInicioSemestre = inicio,
+                                dataFimSemestre = fim,
+                                emailProfessor = emailProfessor,
+                                plataforma = plataformas,
+                                telefoneProfessor = telefoneProfessor,
+                                salaProfessor = salaProfessor,
+                                ausencias = ausenciasExistentes,
+                                ausenciasPermitidas = ausenciasPermitidas.toIntOrNull(),
+                                isAtiva = isAtiva,
+                                receberNotificacoes = true,
+                                avaliacoes = emptyList(),
+                                aulas = aulas.map {
+                                    com.example.unihub.data.model.HorarioAula(
+                                        diaDaSemana = it.dia,
+                                        sala = it.ensalamento,
+                                        horarioInicio = it.horarioInicio,
+                                        horarioFim = it.horarioFim
+                                    )
+                                }
+                            )
 
-                        val disciplina = com.example.unihub.data.model.Disciplina(
-                            id = disciplinaId?.toLongOrNull(),
-                            codigo = codigo,
-                            nome = nomeDisciplina,
-                            professor = nomeProfessor,
-                            periodo = periodo,
-                            cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
-                            qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
-                            dataInicioSemestre = inicio, // ✅ já no formato certo
-                            dataFimSemestre = fim,
-                            emailProfessor = emailProfessor,
-                            plataforma = plataformas,
-                            telefoneProfessor = telefoneProfessor,
-                            salaProfessor = salaProfessor,
-                            isAtiva = isAtiva,
-                            receberNotificacoes = true,
-                            avaliacoes = emptyList(),
-                            aulas = aulas.map {
-                                com.example.unihub.data.model.HorarioAula(
-                                    diaDaSemana = it.dia,
-                                    sala = it.ensalamento,
-                                    horarioInicio = it.horarioInicio,
-                                    horarioFim = it.horarioFim
-                                )
+                            if (disciplinaId == null) {
+                                viewModel.createDisciplina(disciplina)
+                            } else {
+                                viewModel.updateDisciplina(disciplina)
                             }
-                        )
 
-                        if (disciplinaId == null) {
-                            viewModel.createDisciplina(disciplina)
-                        } else {
-                            viewModel.updateDisciplina(disciplina)
+                            // Ao recarregar a tela, o remember reinicia e reabilita automaticamente
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    enabled = !isSaving, // Evita múltiplos cliques
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
                 ) {
-                    Text("Confirmar")
+                    Text(
+                        text = if (isSaving) "Salvando..." else "Confirmar",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
+                    )
                 }
             }
         }
@@ -430,9 +461,11 @@ fun ManterDisciplinaScreen(
             item {
                 CampoDisciplina(title = "Informações de Aula") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo("CH Total", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        CampoDeTextoComTitulo("Carga Horária", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Aulas/Semana", qtdAulasSemana, { qtdAulasSemana = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
                         CampoDeTextoComTitulo("Semanas (Total)", qtdSemanas, { qtdSemanas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+                        CampoDeTextoComTitulo("Limite de Ausências", ausenciasPermitidas,{ ausenciasPermitidas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     aulas.forEachIndexed { index, aula ->
@@ -452,6 +485,7 @@ fun ManterDisciplinaScreen(
                         CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
                         CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
                     }
+
                 }
             }
 

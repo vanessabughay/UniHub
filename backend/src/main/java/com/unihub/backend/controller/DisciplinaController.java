@@ -6,8 +6,8 @@ import com.unihub.backend.service.DisciplinaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-
 import java.util.List;
+import com.unihub.backend.model.Ausencia;
 
 @RestController
 @RequestMapping("/disciplinas")
@@ -50,7 +50,7 @@ public class DisciplinaController {
         existente.setSalaProfessor(novaDisciplina.getSalaProfessor());
         existente.setAtiva(novaDisciplina.isAtiva());
         existente.setReceberNotificacoes(novaDisciplina.isReceberNotificacoes());
-
+        existente.setAusenciasPermitidas(novaDisciplina.getAusenciasPermitidas());
     
         existente.getAulas().clear();
         if (novaDisciplina.getAulas() != null) {

@@ -49,7 +49,8 @@ class ListarContatoViewModel(
                         ContatoResumoUi(
                             id = contato.id,
                             nome = contato.nome,
-                            email = contato.email
+                            email = contato.email,
+                            pendente = contato.pendente
 
                         )
                     }.sortedBy { it.nome.lowercase() }

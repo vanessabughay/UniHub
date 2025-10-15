@@ -3,13 +3,10 @@ package com.example.unihub.ui.ManterContato
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState // Para rolagem
 import androidx.compose.foundation.shape.RoundedCornerShape // Para formas de botões e cards
 import androidx.compose.foundation.verticalScroll // Para rolagem
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete // Ícone para excluir
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
@@ -39,6 +36,7 @@ fun ManterContatoScreen(
     val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     // Efeitos (sucesso, erro, loadContato) - Mantidos como estão
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
@@ -66,19 +64,16 @@ fun ManterContatoScreen(
             viewModel.loadContato(contatoId)
         }
     }
-    // ---
 
     Scaffold(
         topBar = {
             CabecalhoAlternativo(
                 titulo = if (contatoId == null) "Novo Contato" else "Editar Contato",
                 onVoltar = onVoltar
-                // Se o CabecalhoAlternativo tiver opções de cor, configure-as aqui
-                // backgroundColor = MaterialTheme.colorScheme.primary, // Exemplo
-                // contentColor = MaterialTheme.colorScheme.onPrimary  // Exemplo
+
             )
         },
-        // Não teremos um FAB aqui, mas sim botões de ação no final do formulário
+
     ) { paddingValues ->
 
         if (showDeleteDialog) {
@@ -184,27 +179,42 @@ fun ManterContatoScreen(
                     ////////////////////////////////
 
                     onClick = {
-                        if (contatoId == null) {
-                            viewModel.createContato(nomeState, emailState)
-                        } else {
-                            viewModel.updateContato(contatoId, nomeState, emailState)
+                        if (!isSaving) {
+                            isSaving = true // 🔒 trava o botão e mostra “Salvando…”
+
+                            if (contatoId == null) {
+                                viewModel.createContato(nomeState, emailState)
+                            } else {
+                                viewModel.updateContato(contatoId, nomeState, emailState)
+                            }
+
+                            // remember é reiniciado ao recarregar a tela, reabilitando automaticamente
                         }
                     },
+                    enabled = !isSaving, // desativa enquanto salva
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors( // Estilo dos botões principais
-                        containerColor = Color(0xFFCD9B9B), // Cor
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFCD9B9B),
                         contentColor = Color.Black
                     )
                 ) {
                     Text(
-                        if (contatoId == null) "Enviar Solicitação" else "Atualizar Contato",
+                        text = if (isSaving)
+                            "Salvando..." //feedback visual
+                        else if (contatoId == null)
+                            "Enviar Solicitação"
+                        else
+                            "Atualizar Contato",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
+
+
+
 
             }
             Spacer(modifier = Modifier.height(8.dp)) // Espaço extra no final antes da borda da tela

@@ -6,6 +6,7 @@ import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.AdicionarGruposRequest;
 import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
+import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
@@ -64,6 +65,7 @@ public class QuadroPlanejamentoController {
         return service.buscarColunaPorId(id, colunaId, usuarioId);
     }
 
+
     @PostMapping("/{id}/colunas")
     public ColunaPlanejamento criarColuna(@PathVariable Long id,
                                            @RequestBody ColunaPlanejamentoRequest request,
@@ -71,23 +73,65 @@ public class QuadroPlanejamentoController {
         return service.criarColuna(id, request, usuarioId);
     }
 
+    @PutMapping("/{id}/colunas/{colunaId}")
+    public ColunaPlanejamento atualizarColuna(@PathVariable Long id,
+                                              @PathVariable Long colunaId,
+                                              @RequestBody ColunaPlanejamentoRequest request,
+                                              @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarColuna(id, colunaId, request, usuarioId);
+    }
+
+    @DeleteMapping("/{id}/colunas/{colunaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirColuna(@PathVariable Long id,
+                              @PathVariable Long colunaId,
+                              @AuthenticationPrincipal Long usuarioId) {
+        service.excluirColuna(id, colunaId, usuarioId);
+    }
+
     @GetMapping("/{id}/colunas/{colunaId}/tarefas")
-    public List<TarefaPlanejamentoResponse> listarTarefas(@PathVariable Long id,
-                                                      @PathVariable Long colunaId,
+    public List<TarefaPlanejamento> listarTarefas(@PathVariable Long id,
+                                                  @PathVariable Long colunaId,
                                                   @AuthenticationPrincipal Long usuarioId) {
         return service.listarTarefas(id, colunaId, usuarioId);
     }
 
+    @GetMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}")
+    public TarefaPlanejamentoResponse buscarTarefa(@PathVariable Long id,
+                                                   @PathVariable Long colunaId,
+                                                   @PathVariable Long tarefaId,
+                                                   @AuthenticationPrincipal Long usuarioId) {
+        return service.buscarTarefa(id, colunaId, tarefaId, usuarioId);
+    }
+
     @PostMapping("/{id}/colunas/{colunaId}/tarefas")
-    public TarefaPlanejamentoResponse criarTarefa(@PathVariable Long id,
+    public TarefaPlanejamento criarTarefa(@PathVariable Long id,
                                           @PathVariable Long colunaId,
                                           @RequestBody TarefaPlanejamentoRequest request,
                                           @AuthenticationPrincipal Long usuarioId) {
         return service.criarTarefa(id, colunaId, request, usuarioId);
     }
+    @PutMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}")
+    public TarefaPlanejamentoResponse atualizarTarefa(@PathVariable Long id,
+                                                      @PathVariable Long colunaId,
+                                                      @PathVariable Long tarefaId,
+                                                      @RequestBody AtualizarTarefaPlanejamentoRequest request,
+                                                      @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarTarefa(id, colunaId, tarefaId, request, usuarioId);
+    }
+
+    @DeleteMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirTarefa(@PathVariable Long id,
+                              @PathVariable Long colunaId,
+                              @PathVariable Long tarefaId,
+                              @AuthenticationPrincipal Long usuarioId) {
+        service.excluirTarefa(id, colunaId, tarefaId, usuarioId);
+    }
+
 
     @PatchMapping("/{id}/tarefas/{tarefaId}/status")
-    public TarefaPlanejamentoResponse atualizarStatusTarefa(@PathVariable Long id,
+    public TarefaPlanejamento atualizarStatusTarefa(@PathVariable Long id,
                                                     @PathVariable Long tarefaId,
                                                     @RequestBody AtualizarStatusTarefaRequest request,
                                                     @AuthenticationPrincipal Long usuarioId) {

@@ -10,7 +10,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Importante para operações de modificação
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class GrupoService {
@@ -21,45 +24,35 @@ public class GrupoService {
     @Autowired
     private ContatoRepository contatoRepository;
 
-    @Transactional(readOnly = true) // Boa prática para métodos de leitura
-    public List<Grupo> listarTodas() {
-        return grupoRepository.findAll();
+    @Transactional(readOnly = true)
+    public List<Grupo> listarTodas(Long usuarioId) {
+        Long ownerId = requireUsuario(usuarioId);
+        return grupoRepository.findByOwnerId(ownerId);
     }
 
     @Transactional(readOnly = true)
-    public Grupo buscarPorId(Long id) {
-        return grupoRepository.findById(id)
+        public Grupo buscarPorId(Long id, Long usuarioId) {
+            Long ownerId = requireUsuario(usuarioId);
+            return grupoRepository.findByIdAndOwnerId(id, ownerId)
                 .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + id));
     }
 
     @Transactional // Métodos que modificam dados devem ser transacionais
-    public Grupo criarGrupo(Grupo grupo) {
-        // Se o grupo vem com uma lista de membros (Contatos) que já existem (têm ID),
-        // precisamos garantir que estamos associando as instâncias gerenciadas.
-        if (grupo.getMembros() != null && !grupo.getMembros().isEmpty()) {
-            List<Contato> membrosGerenciados = new ArrayList<>();
-            for (Contato membroDto : grupo.getMembros()) {
-                if (membroDto.getId() == null) {
-                    throw new IllegalArgumentException("Contatos fornecidos para um novo grupo devem ter um ID (devem existir).");
-                    // Ou, se você permitir criar Contatos transitivamente (mais complexo):
-                    // Contato novoContato = contatoRepository.save(membroDto);
-                    // membrosGerenciados.add(novoContato);
-                } else {
-                    Contato membroExistente = contatoRepository.findById(membroDto.getId())
-                            .orElseThrow(() -> new EntityNotFoundException("Contato com ID " + membroDto.getId() + " não encontrado ao criar grupo."));
-                    membrosGerenciados.add(membroExistente);
-                }
-            }
-            // Substitui a lista de DTOs pela lista de entidades gerenciadas
+        public Grupo criarGrupo(Grupo grupo, Long usuarioId) {
+            Long ownerId = requireUsuario(usuarioId);
+            grupo.setId(null);
+            grupo.setOwnerId(ownerId);
+            List<Contato> membrosGerenciados = carregarMembrosValidos(grupo.getMembros(), ownerId);
             grupo.getMembros().clear();
             grupo.getMembros().addAll(membrosGerenciados);
-        }
+
         return grupoRepository.save(grupo);
     }
 
     @Transactional
-    public Grupo atualizarGrupo(Long id, Grupo grupoDetalhesRequest) {
-        Grupo grupoExistente = buscarPorId(id); // Reusa o método que já lança exceção
+        public Grupo atualizarGrupo(Long id, Grupo grupoDetalhesRequest, Long usuarioId) {
+            Long ownerId = requireUsuario(usuarioId);
+            Grupo grupoExistente = buscarPorId(id, ownerId);
 
         if (grupoDetalhesRequest.getNome() != null) {
             grupoExistente.setNome(grupoDetalhesRequest.getNome());
@@ -67,54 +60,54 @@ public class GrupoService {
 
         // Lógica para atualizar a lista de membros
         if (grupoDetalhesRequest.getMembros() != null) {
-            // O cliente enviou uma lista de membros (pode ser vazia, indicando que quer remover todos).
-            // Precisamos transformar os Contatos da requisição (DTOs) em entidades Contato gerenciadas.
-            List<Contato> novosMembrosGerenciados = new ArrayList<>();
-            if (!grupoDetalhesRequest.getMembros().isEmpty()) {
-                for (Contato membroDto : grupoDetalhesRequest.getMembros()) {
-                    if (membroDto.getId() == null) {
-                        // Decide como lidar com isso: erro, ignorar, ou tentar criar (se permitido)
-                        throw new IllegalArgumentException("Contato fornecido para atualização de grupo não possui ID: " + membroDto.getNome());
-                    }
-                    Contato membroGerenciado = contatoRepository.findById(membroDto.getId())
-                            .orElseThrow(() -> new EntityNotFoundException("Contato com ID " + membroDto.getId() + " não encontrado para adicionar ao grupo."));
-                    novosMembrosGerenciados.add(membroGerenciado);
-                }
-            }
-
-            // Agora atualiza a coleção gerenciada no 'grupoExistente'
-            // 1. Limpa os membros antigos da relação
-            // (Para ManyToMany, isso remove as entradas da tabela de junção.
-            //  Se houver orphanRemoval=true em um OneToMany, os órfãos seriam deletados do DB.)
+            List<Contato> novosMembros = carregarMembrosValidos(grupoDetalhesRequest.getMembros(), ownerId);
             grupoExistente.getMembros().clear();
-
-            // 2. Adiciona os novos membros (já gerenciados) à relação
-            if (!novosMembrosGerenciados.isEmpty()) {
-                grupoExistente.getMembros().addAll(novosMembrosGerenciados);
-            }
+            grupoExistente.getMembros().addAll(novosMembros);
         }
-        // Se grupoDetalhesRequest.getMembros() for null, não fazemos nada,
-        // preservando a lista de membros atual do grupoExistente.
-
         return grupoRepository.save(grupoExistente);
     }
 
     @Transactional
-    public void excluir(Long id) {
-        if (!grupoRepository.existsById(id)) {
+        public void excluir(Long id, Long usuarioId) {
+            Long ownerId = requireUsuario(usuarioId);
+            if (!grupoRepository.existsByIdAndOwnerId(id, ownerId)) {
             throw new EntityNotFoundException("Grupo não encontrado com ID: " + id + " para exclusão.");
         }
         grupoRepository.deleteById(id);
     }
 
     @Transactional(readOnly = true)
-    public List<Grupo> buscarPorNome(String nome) {
-        return grupoRepository.findByNomeContainingIgnoreCase(nome);
+        public List<Grupo> buscarPorNome(String nome, Long usuarioId) {
+            Long ownerId = requireUsuario(usuarioId);
+            return grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId);
     }
 
-    // Método auxiliar para expor o ContatoRepository se o Controller precisar dele
-    // (embora seja melhor manter a lógica de busca de contatos no service)
-    // public ContatoRepository getContatoRepository() {
-    //     return contatoRepository;
-    // }
+        private List<Contato> carregarMembrosValidos(List<Contato> membros, Long ownerId) {
+            if (membros == null || membros.isEmpty()) {
+                return new ArrayList<>();
+            }
+
+            List<Long> ids = membros.stream()
+                    .map(Contato::getId)
+                    .toList();
+
+            if (ids.stream().anyMatch(Objects::isNull)) {
+                throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a um grupo.");
+            }
+
+            List<Contato> encontrados = contatoRepository.findByOwnerIdAndIdIn(ownerId, ids);
+            Set<Long> encontradosIds = new HashSet<>(encontrados.stream().map(Contato::getId).toList());
+            if (encontradosIds.size() != new HashSet<>(ids).size()) {
+                throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+            }
+
+            return new ArrayList<>(encontrados);
+        }
+
+        private Long requireUsuario(Long usuarioId) {
+            if (usuarioId == null) {
+                throw new IllegalArgumentException("Usuário autenticado é obrigatório");
+            }
+            return usuarioId;
+        }
 }

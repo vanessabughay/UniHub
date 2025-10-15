@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -21,8 +22,6 @@ import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import android.content.Intent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-
-
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ListarContato.ListarContatoScreen
 import com.example.unihub.ui.ManterConta.ManterContaScreen
@@ -34,7 +33,6 @@ import com.example.unihub.data.apiBackend.ApiCategoriaBackend
 import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.ui.ListarGrupo.ListarGrupoScreen
 import com.example.unihub.ui.ManterContato.ManterContatoScreen
-import com.example.unihub.data.model.Coluna
 import com.example.unihub.ui.ManterGrupo.ManterGrupoScreen
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoScreen
 import com.example.unihub.ui.ManterAvaliacao.ManterAvaliacaoScreen
@@ -64,6 +62,7 @@ import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.ui.Anotacoes.AnotacoesView
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import com.example.unihub.ui.ManterColuna.ColunaFormScreen
 import com.example.unihub.ui.ManterColuna.ManterColunaFormViewModelFactory
 import com.example.unihub.ui.ManterDisciplina.ManterDisciplinaViewModel
@@ -241,12 +240,14 @@ class MainActivity : ComponentActivity() {
                         })
                     ) { backStackEntry ->
                         val disciplinaId = backStackEntry.arguments?.getString("id")
+                        val context = LocalContext.current
                         val repository = DisciplinaRepository(
                             ApiDisciplinaBackend()
                         )
                         val factory =
                             ManterDisciplinaViewModelFactory(
-                                repository
+                                repository,
+                                InstituicaoRepositoryProvider.getRepository(context)
                             )
                         val viewModel: ManterDisciplinaViewModel =
                             viewModel(factory = factory)
@@ -483,9 +484,12 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val quadroId = backStackEntry.arguments?.getString("id")
+                        val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
 
 
                         VisualizarQuadroScreen(
+                            navController = navController,
                             quadroId = quadroId,
                             onVoltar = { navController.popBackStack() },
                             onNavigateToEditQuadro = { id ->
@@ -494,18 +498,18 @@ class MainActivity : ComponentActivity() {
                             onNavigateToNovaColuna = { id ->
                                 navController.navigate(Screen.ManterColuna.createRoute(id))
                             },
-                            onNavigateToEditarColuna = { qId, coluna ->
-                                navController.currentBackStackEntry?.savedStateHandle?.set("colunaEmEdicao", coluna)
-                                navController.navigate(Screen.ManterColuna.createRoute(qId, coluna.id))
+                            onNavigateToEditarColuna = { qId, colunaId ->
+                                navController.navigate(Screen.ManterColuna.createRoute(qId, colunaId))
                             },
-                            onNavigateToNovaTarefa = { qId, colunaId ->
-                                navController.navigate(Screen.ManterTarefa.createRoute(qId, colunaId))
+                            onNavigateToNovaTarefa = { quadroId, colunaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(quadroId, colunaId))
                             },
-                            onNavigateToEditarTarefa = { qId, colunaId, tarefaId ->
-                                navController.navigate(Screen.ManterTarefa.createRoute(qId, colunaId, tarefaId))
+                            onNavigateToEditarTarefa = { quadroId, colunaId, tarefaId ->
+                                navController.navigate(Screen.ManterTarefa.createRoute(quadroId, colunaId, tarefaId))
                             },
                             viewModelFactory = VisualizarQuadroViewModelFactory(
-                                QuadroRepository(ApiQuadroBackend())
+                                quadroRepository,
+                                tarefaRepository
                             )
                         )
                     }
@@ -649,22 +653,25 @@ class MainActivity : ComponentActivity() {
                         )
                     ) { backStackEntry ->
                         val quadroId = backStackEntry.arguments?.getString("quadroId")
-                        if (quadroId.isNullOrBlank()) {
-                            navController.popBackStack()
-                            return@composable
-                        }
-
                         val colunaId = backStackEntry.arguments?.getString("colunaId")
-                        if (colunaId.isNullOrBlank()) {
+                        if (quadroId.isNullOrBlank() || colunaId.isNullOrBlank()) {
                             navController.popBackStack()
                             return@composable
                         }
 
                         val tarefaIdArg = backStackEntry.arguments?.getString("tarefaId")
-                        val tarefaId = tarefaIdArg?.takeUnless { it == "new" }
+                        val tarefaId = tarefaIdArg?.takeUnless { it == "new" || it.isBlank() }
 
                         val tarefaRepository = TarefaRepository(ApiTarefaBackend.apiService)
-                        val viewModelFactory = ManterTarefaViewModelFactory(tarefaRepository)
+                        val quadroRepository = QuadroRepository(ApiQuadroBackend())
+                        val grupoRepository = GrupoRepository(ApiGrupoBackend())
+                        val contatoRepository = ContatoRepository(ApiContatoBackend())
+                        val viewModelFactory = ManterTarefaViewModelFactory(
+                            tarefaRepository,
+                            quadroRepository,
+                            grupoRepository,
+                            contatoRepository
+                        )
 
                         TarefaFormScreen(
                             navController = navController,

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -24,7 +26,14 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        val baseUrl: String = System.getenv("INSTITUICAO_BASE_URL") ?: "http://10.0.2.2:8080/"
+        val properties = Properties()
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+            localPropertiesFile.inputStream().use(properties::load)
+        }
+        val localBaseUrl = properties.getProperty("INSTITUICAO_BASE_URL")?.takeIf { it.isNotBlank() }
+        val envBaseUrl = System.getenv("INSTITUICAO_BASE_URL")?.takeIf { it.isNotBlank() }
+        val baseUrl: String = localBaseUrl ?: envBaseUrl ?: "http://10.0.2.2:8080/"
         buildConfigField("String", "BASE_URL", "\"$baseUrl\"")
     }
 

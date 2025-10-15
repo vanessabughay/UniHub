@@ -10,21 +10,34 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.unihub.components.BotoesFormulario
 import com.example.unihub.components.CampoCombobox
+import com.example.unihub.components.CampoDropdownMultiSelect
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
+import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.lifecycle.ViewModelProvider
+import com.example.unihub.data.repository.ContatoRepository
+import com.example.unihub.data.repository.ContatoResumo
+import com.example.unihub.data.repository.Grupobackend
+import com.example.unihub.data.repository.GrupoRepository
+import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository.TarefaRepository
+import com.example.unihub.data.repository._quadrobackend
 import com.example.unihub.data.api.TarefaApi
+import com.example.unihub.data.repository.Contatobackend
+import com.example.unihub.data.model.Contato
+import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.model.Quadro
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
@@ -35,38 +48,40 @@ private fun getDefaultPrazoForUI(): Long {
     }.timeInMillis
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TarefaFormScreen(
     navController: NavHostController,
     quadroId: String,
     colunaId: String,
-    tarefaId: String?, // Renomeado de subtarefaId para tarefaId
+    tarefaId: String? = null,
     viewModelFactory: ViewModelProvider.Factory
 ) {
 
-    val TarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
+    val tarefaViewModel: TarefaFormViewModel = viewModel(factory = viewModelFactory)
 
     val context = LocalContext.current
-    val isEditing = tarefaId != null // Atualizada a verificação
+    val isEditing = tarefaId != null
+    val tarefaState by tarefaViewModel.tarefa.collectAsState()
+    val isLoading by tarefaViewModel.isLoading.collectAsState()
+    val formResult by tarefaViewModel.formResult.collectAsState()
+    val responsaveisDisponiveis by tarefaViewModel.responsaveisDisponiveis.collectAsState()
+    val responsaveisSelecionados by tarefaViewModel.responsaveisSelecionados.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var statusSelecionado by remember { mutableStateOf(Status.INICIADA) }
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
+    var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
 
-    val tarefaState by TarefaViewModel.tarefa.collectAsState()
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+    LaunchedEffect(key1 = quadroId) {
+        tarefaViewModel.carregarResponsaveis(quadroId)
+    }
 
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
-            // AQUI: a função no ViewModel também precisa ser renomeada para 'carregarTarefa'
-            TarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
-        } else {
-            titulo = ""
-            descricao = ""
-            statusSelecionado = Status.INICIADA
-            prazo = getDefaultPrazoForUI()
+            tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
         }
     }
 
@@ -77,7 +92,31 @@ fun TarefaFormScreen(
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
                 prazo = loadedTarefa.prazo
+                tarefaViewModel.atualizarResponsaveisSelecionados(loadedTarefa.responsaveisIds.toSet())
             }
+        }
+    }
+
+    LaunchedEffect(formResult) {
+        when (val result = formResult) {
+            TarefaFormResult.Success -> {
+                val mensagem = when (ultimaAcao) {
+                    TarefaFormAction.CREATE -> "Tarefa criada com sucesso!"
+                    TarefaFormAction.UPDATE -> "Tarefa atualizada com sucesso!"
+                    TarefaFormAction.DELETE -> "Tarefa excluída com sucesso!"
+                    null -> "Operação realizada com sucesso!"
+                }
+
+                Toast.makeText(context, mensagem, Toast.LENGTH_SHORT).show()
+                tarefaViewModel.resetFormResult()
+                navController.popBackStack()
+            }
+
+            is TarefaFormResult.Error -> {
+                Toast.makeText(context, result.message, Toast.LENGTH_LONG).show()
+                tarefaViewModel.resetFormResult()
+            }
+            else -> {}
         }
     }
 
@@ -96,7 +135,9 @@ fun TarefaFormScreen(
         ).show()
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(MaterialTheme.colorScheme.background)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -105,9 +146,8 @@ fun TarefaFormScreen(
         ) {
             Header(
                 titulo = if (isEditing) "Editar tarefa" else "Cadastrar tarefa",
-                onVoltar = { navController.popBackStack() },
-                onClickIconeDireita = null
-            )
+                onVoltar = { navController.popBackStack() }
+                )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
             CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
@@ -125,6 +165,15 @@ fun TarefaFormScreen(
                 )
             }
 
+            CampoDropdownMultiSelect(
+                label = "Responsável",
+                options = responsaveisDisponiveis,
+                selectedIds = responsaveisSelecionados,
+                onSelectionChange = tarefaViewModel::atualizarResponsaveisSelecionados,
+                placeholder = if (responsaveisDisponiveis.isEmpty()) "Nenhum membro disponível" else "Selecione os responsáveis",
+                enabled = responsaveisDisponiveis.isNotEmpty()
+            )
+
             CampoData(
                 label = "Prazo",
                 value = dateFormat.format(Date(prazo)),
@@ -132,6 +181,11 @@ fun TarefaFormScreen(
             )
 
             Spacer(modifier = Modifier.weight(1f))
+
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
 
             BotoesFormulario(
                 onConfirm = {
@@ -148,7 +202,8 @@ fun TarefaFormScreen(
                             prazo = prazo,
                             dataInicio = System.currentTimeMillis()
                         )
-                        TarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
+                        ultimaAcao = TarefaFormAction.CREATE
+                        tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
                     } else {
                         tarefaState?.let { tarefaCarregada ->
                             val tarefaAtualizada = tarefaCarregada.copy(
@@ -157,15 +212,15 @@ fun TarefaFormScreen(
                                 status = statusSelecionado,
                                 prazo = prazo
                             )
-                            TarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
+                            ultimaAcao = TarefaFormAction.UPDATE
+                            tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
                         }
                     }
-                    navController.popBackStack()
                 },
                 onDelete = if (isEditing) {
                     {
-                        TarefaViewModel.excluirTarefa(quadroId, colunaId, tarefaId!!)
-                        navController.popBackStack()
+                        ultimaAcao = TarefaFormAction.DELETE
+                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
                     }
                 } else null
             )
@@ -173,7 +228,11 @@ fun TarefaFormScreen(
     }
 }
 
-
+private enum class TarefaFormAction {
+    CREATE,
+    UPDATE,
+    DELETE
+}
 
 
 
@@ -191,16 +250,36 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
             descricao = "Esta é uma descrição de exemplo.",
             status = Status.INICIADA,
             prazo = System.currentTimeMillis() + 86400000,
-            dataInicio = System.currentTimeMillis()
+            dataInicio = System.currentTimeMillis(),
+            responsaveisIds = listOf(1L)
         )
     }
 
-    override suspend fun createTarefa(quadroId: String, colunaId: String, tarefa: Tarefa): Tarefa {
-        return tarefa
+    override suspend fun createTarefa(
+        quadroId: String,
+        colunaId: String,
+        tarefa: com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
+    ) {
+        // Nada a ser feito aqui para o mock
     }
 
-    override suspend fun updateTarefa(quadroId: String, colunaId: String, tarefaId: String, tarefa: Tarefa): Tarefa {
-        return tarefa
+    override suspend fun updateTarefa(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        tarefa: com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
+    ): Tarefa {
+        val status = tarefa.status?.let { Status.valueOf(it) } ?: Status.INICIADA
+        return Tarefa(
+            id = tarefaId,
+            titulo = tarefa.titulo ?: "",
+            descricao = tarefa.descricao,
+            status = status,
+            prazo = tarefa.prazo ?: System.currentTimeMillis(),
+            dataInicio = tarefa.dataInicio ?: System.currentTimeMillis(),
+            dataFim = tarefa.dataFim,
+            responsaveisIds = tarefa.responsavelIds
+        )
     }
 
     override suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
@@ -214,8 +293,49 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
 class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
     override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(TarefaFormViewModel::class.java)) {
+            val tarefaRepository = FakeTarefaRepository()
+            val quadroRepository = QuadroRepository(object : _quadrobackend {
+                override suspend fun getQuadrosApi(): List<Quadro> = emptyList()
+                override suspend fun getQuadroByIdApi(id: String): Quadro? =
+                    Quadro(id = id, nome = "Quadro Preview", grupoId = 1L)
+                override suspend fun addQuadroApi(quadro: Quadro) {}
+                override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
+                override suspend fun deleteQuadroApi(id: Long): Boolean = true
+            })
+
+            val grupoRepository = GrupoRepository(object : Grupobackend {
+                override suspend fun getGrupoApi(): List<Grupo> = emptyList()
+                override suspend fun getGrupoByIdApi(id: String): Grupo? = Grupo(
+                    id = id.toLong(),
+                    nome = "Grupo Preview",
+                    membros = listOf(
+                        Contato(id = 1L, nome = "Ana", email = "ana@example.com", pendente = false),
+                        Contato(id = 2L, nome = "Bruno", email = "bruno@example.com", pendente = false),
+                        Contato(id = 3L, nome = "Carla", email = "carla@example.com", pendente = false)
+                    )
+                )
+
+                override suspend fun addGrupoApi(grupo: Grupo) {}
+                override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
+                override suspend fun deleteGrupoApi(id: Long): Boolean = true
+            })
+
+            val contatoRepository = ContatoRepository(object : Contatobackend {
+                override suspend fun getContatoResumoApi(): List<ContatoResumo> = emptyList()
+                override suspend fun getContatoByIdApi(id: String): Contato? =
+                    Contato(id = id.toLong(), nome = "Contato $id", email = "contato$id@example.com", pendente = false)
+                override suspend fun addContatoApi(contato: Contato) {}
+                override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
+                override suspend fun deleteContatoApi(id: Long): Boolean = true
+            })
+
             @Suppress("UNCHECKED_CAST")
-            return TarefaFormViewModel(FakeTarefaRepository()) as T
+            return TarefaFormViewModel(
+                repository = tarefaRepository,
+                quadroRepository = quadroRepository,
+                grupoRepository = grupoRepository,
+                contatoRepository = contatoRepository
+            ) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }
@@ -227,7 +347,7 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
 fun TarefaFormScreenPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
-        quadroId = "quadro-exemplo",
+        quadroId = "id-do-quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = null,
         viewModelFactory = FakeTarefaFormViewModelFactory()
@@ -239,7 +359,7 @@ fun TarefaFormScreenPreview() {
 fun TarefaFormScreenEditingPreview() {
     TarefaFormScreen(
         navController = rememberNavController(),
-        quadroId = "quadro-exemplo",
+        quadroId = "id-do-quadro-exemplo",
         colunaId = "id-da-coluna-exemplo",
         tarefaId = "id-da-tarefa-exemplo",
         viewModelFactory = FakeTarefaFormViewModelFactory()

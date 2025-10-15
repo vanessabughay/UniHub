@@ -38,6 +38,7 @@ public class QuadroPlanejamento {
     private Usuario usuario;
 
     @OneToMany(mappedBy = "quadro", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("ordem ASC")
     @JsonManagedReference("quadro-colunas")
     private List<ColunaPlanejamento> colunas = new ArrayList<>();
 

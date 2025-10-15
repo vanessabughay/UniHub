@@ -25,10 +25,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Ausencia
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.CategoriaRepository
@@ -63,6 +65,7 @@ fun ManterAusenciaScreen(
     var showAddCategoria by remember { mutableStateOf(false) }
     var novaCategoria by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
 
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
@@ -200,22 +203,37 @@ fun ManterAusenciaScreen(
 
                 Button(
                     onClick = {
-                        val aus = Ausencia(
-                            id = ausenciaId?.toLongOrNull(),
-                            disciplinaId = disciplinaId.toLong(),
-                            data = data,
-                            categoria = categoria.takeIf { it.isNotBlank() },
-                            justificativa = justificativa.takeIf { it.isNotBlank() }
-                        )
-                        if (ausenciaId == null) {
-                            viewModel.criarAusencia(aus)
-                        } else {
-                            viewModel.atualizarAusencia(aus)
+                        if (!isSaving) {
+                            isSaving = true // desativa o botão e mostra "Salvando..."
+
+                            val aus = Ausencia(
+                                id = ausenciaId?.toLongOrNull(),
+                                disciplinaId = disciplinaId.toLong(),
+                                data = data,
+                                categoria = categoria.takeIf { it.isNotBlank() },
+                                justificativa = justificativa.takeIf { it.isNotBlank() }
+                            )
+
+                            if (ausenciaId == null) {
+                                viewModel.criarAusencia(aus)
+                            } else {
+                                viewModel.atualizarAusencia(aus)
+                            }
+
+                            // remember reseta ao recarregar a tela, reabilitando automaticamente
                         }
                     },
+                    enabled = !isSaving, // evita múltiplos cliques
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = AusenciasBtnColor)
-                ) { Text("Salvar", color = Color.Black) }
+                ) {
+                    Text(
+                        text = if (isSaving) "Salvando..." else "Salvar",
+                        color = Color.Black,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
             erro?.let { Text(text = it, color = Color.Red) }

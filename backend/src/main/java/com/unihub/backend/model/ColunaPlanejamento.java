@@ -1,7 +1,10 @@
 package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.unihub.backend.model.enums.EstadoPlanejamento;
 import jakarta.persistence.*;
 
@@ -50,6 +53,7 @@ public class ColunaPlanejamento {
         this.titulo = titulo;
     }
 
+    @JsonIgnore
     public EstadoPlanejamento getEstado() {
         return estado;
     }
@@ -57,6 +61,34 @@ public class ColunaPlanejamento {
     public void setEstado(EstadoPlanejamento estado) {
         this.estado = estado;
     }
+
+    @JsonProperty("status")
+    public String getStatusJson() {
+        if (estado == null) {
+            return "INICIADA";
+        }
+        return estado == EstadoPlanejamento.CONCLUIDO ? "CONCLUIDA" : "INICIADA";
+    }
+
+    @JsonSetter("status")
+    public void setStatusJson(String status) {
+        if (status == null) {
+            this.estado = EstadoPlanejamento.EM_ANDAMENTO;
+            return;
+        }
+
+        switch (status.toUpperCase()) {
+            case "CONCLUIDA":
+                this.estado = EstadoPlanejamento.CONCLUIDO;
+                break;
+            case "EM_ANDAMENTO":
+            case "INICIADA":
+            default:
+                this.estado = EstadoPlanejamento.EM_ANDAMENTO;
+                break;
+        }
+    }
+
 
     public Integer getOrdem() {
         return ordem;

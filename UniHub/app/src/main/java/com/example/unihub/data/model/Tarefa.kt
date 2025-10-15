@@ -24,6 +24,7 @@ data class Tarefa(
     val titulo: String = "",
     val descricao: String? = null,
     val status: Status = Status.INICIADA,
+    val responsaveisIds: List<Long> = emptyList(),
     @JsonAdapter(FlexibleLongAdapter::class)
     val prazo: Long = getDefaultPrazo(), // PRAZO AGORA É NÃO-NULLABLE e tem um padrão
     @JsonAdapter(FlexibleLongAdapter::class)

@@ -21,6 +21,7 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
+import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
 import java.text.SimpleDateFormat
@@ -40,20 +41,8 @@ fun ColunaFormScreen(
     val isEditing = colunaId != null
     val colunaState by viewModel.coluna.collectAsState()
 
-    val colunaInicial = remember(isEditing) {
-        if (isEditing) {
-            val savedColuna = navController.previousBackStackEntry?.savedStateHandle?.get<Coluna>("colunaEmEdicao")
-            navController.previousBackStackEntry?.savedStateHandle?.remove<Coluna>("colunaEmEdicao")
-            savedColuna
-        } else {
-            null
-        }
-    }
-
-    var titulo by remember(colunaInicial) { mutableStateOf(colunaInicial?.titulo ?: "") }
-    var status by remember(colunaInicial) { mutableStateOf(colunaInicial?.status ?: Status.INICIADA) }
-    var prazo by remember(colunaInicial) { mutableStateOf(colunaInicial?.prazoManual ?: System.currentTimeMillis()) }
-
+    var titulo by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf(Status.INICIADA) }
 
 
     LaunchedEffect(key1 = colunaId) {
@@ -67,18 +56,16 @@ fun ColunaFormScreen(
             colunaState?.let { loadedColuna ->
                 titulo = loadedColuna.titulo
                 status = loadedColuna.status
-                prazo = loadedColuna.prazoManual
             }
         }
     }
-
-    val colunaParaStatus = colunaState ?: colunaInicial
 
     val formResult by viewModel.formResult.collectAsState()
     LaunchedEffect(formResult) {
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
+                // navController.previousBackStackEntry?.savedStateHandle?.set("colunaAtualizada", true)
                 navController.popBackStack()
                 viewModel.resetFormResult()
             }
@@ -90,14 +77,6 @@ fun ColunaFormScreen(
         }
     }
 
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val showDatePicker = {
-        val calendar = Calendar.getInstance().apply { timeInMillis = prazo }
-        DatePickerDialog(context, { _, year, month, day ->
-            calendar.set(year, month, day)
-            prazo = calendar.timeInMillis
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
-    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
@@ -113,9 +92,8 @@ fun ColunaFormScreen(
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
 
-            val canMarkAsCompleted = colunaParaStatus?.todasTarefasConcluidas ?: true
-            val statusOptions = if (colunaParaStatus?.tarefas?.isNotEmpty() == true) {
-                
+            val canMarkAsCompleted = colunaState?.todasTarefasConcluidas ?: true
+            val statusOptions = if (colunaState?.tarefas?.isNotEmpty() == true) {
                 Status.values().toList().filter { it != Status.CONCLUIDA || canMarkAsCompleted || status == Status.CONCLUIDA }
             } else {
                 Status.values().toList()
@@ -126,7 +104,7 @@ fun ColunaFormScreen(
                 options = statusOptions,
                 selectedOption = status,
                 onOptionSelected = { newStatus ->
-                    if (newStatus == Status.CONCLUIDA && colunaParaStatus?.tarefas?.isNotEmpty() == true && !canMarkAsCompleted) {
+                    if (newStatus == Status.CONCLUIDA && colunaState?.tarefas?.isNotEmpty() == true && !canMarkAsCompleted) {
                         Toast.makeText(context, "Conclua todas as tarefas primeiro.", Toast.LENGTH_SHORT).show()
                     } else {
                         status = newStatus
@@ -135,7 +113,6 @@ fun ColunaFormScreen(
                 optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
             )
 
-            CampoData(label = "Prazo", value = dateFormat.format(Date(prazo)), onClick = { showDatePicker() })
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -146,8 +123,8 @@ fun ColunaFormScreen(
                             id = if (isEditing) colunaId!! else "",
                             titulo = titulo,
                             status = status,
-                            prazoManual = prazo,
-                            tarefas = if (isEditing) colunaState?.tarefas ?: colunaInicial?.tarefas ?: emptyList() else emptyList()
+                            ordem = colunaState?.ordem ?: 0,
+                            tarefas = if (isEditing) colunaState?.tarefas ?: emptyList() else emptyList()
                         )
                         viewModel.salvarOuAtualizarColuna(quadroId, colunaParaSalvar)
                     } else {
@@ -158,80 +135,4 @@ fun ColunaFormScreen(
             )
         }
     }
-}
-
-
-
-
-
-
-
-
-
-// Um repositório falso que simula a API real, mas sem chamadas de rede.
-class FakeColunaRepository : ColunaRepository(object : ColunaApi {
-
-    override suspend fun getColunas(quadroId: String): List<Coluna> {
-        return emptyList()
-    }
-
-    override suspend fun getColunaById(quadroId: String, colunaId: String): Coluna {
-        // Retorna um objeto de coluna de exemplo para o modo de edição.
-        return Coluna(
-            id = colunaId,
-            titulo = "Coluna de Exemplo",
-            status = Status.INICIADA,
-            prazoManual = System.currentTimeMillis() + 86400000L,
-            dataInicio = System.currentTimeMillis(),
-            tarefas = emptyList()
-        )
-    }
-
-
-    override suspend fun addColuna(quadroId: String, coluna: Coluna): Coluna {
-        return coluna
-    }
-
-    override suspend fun updateColuna(quadroId: String, colunaId: String, coluna: Coluna): Coluna {
-        return coluna
-    }
-
-    override suspend fun deleteColuna(quadroId: String, colunaId: String) {
-        // Não faz nada, já que é uma simulação.
-    }
-})
-
-// Uma fábrica de ViewModel falsa que injeta o repositório falso no ViewModel.
-class FakeColunaFormViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ColunaFormViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ColunaFormViewModel(FakeColunaRepository()) as T
-        }
-        throw IllegalArgumentException("Classe de ViewModel desconhecida")
-    }
-}
-
-// Prévia para o modo de cadastro de coluna.
-@Preview(showBackground = true)
-@Composable
-fun ColunaFormScreenPreview() {
-    ColunaFormScreen(
-        navController = rememberNavController(),
-        colunaId = null,
-        viewModelFactory = FakeColunaFormViewModelFactory(),
-        quadroId = "id-do-quadro-exemplo"
-    )
-}
-
-// Prévia para o modo de edição de coluna.
-@Preview(showBackground = true)
-@Composable
-fun ColunaFormScreenEditingPreview() {
-    ColunaFormScreen(
-        navController = rememberNavController(),
-        colunaId = "id-da-coluna-exemplo",
-        viewModelFactory = FakeColunaFormViewModelFactory(),
-        quadroId = "id-do-quadro-exemplo"
-    )
 }

@@ -94,6 +94,10 @@ class AnotacoesViewModel(
     }
 
     fun excluir(id: Long) {
+        if (id < 0) {
+            _anotacoes.update { it.filterNot { a -> a.id == id } }
+            return
+        }
         viewModelScope.launch {
             try {
                 repository.excluir(disciplinaId, id)

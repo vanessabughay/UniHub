@@ -159,9 +159,7 @@ fun ManterPesoNotasScreen(
                 titulo = buildString {
                     append("Notas - ")
                     if (nomeDisciplina.isNotBlank()) {
-
                         append(nomeDisciplina)
-
                     }
                 },
                 onVoltar = onVoltar

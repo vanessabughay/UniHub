@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
@@ -24,14 +22,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.data.model.Anotacao
 import com.example.unihub.data.repository.AnotacoesRepository
-import com.example.unihub.ui.Anotacoes.AnotacoesViewModel
 import androidx.compose.runtime.remember
 import com.example.unihub.components.CabecalhoAlternativo
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 // Paleta semelhante ao mock
 private val Beige = Color(0xFFF5E9DB)
@@ -53,6 +51,7 @@ fun AnotacoesView(
 
     // Observa o estado das anotações
     val anotacoes by vm.anotacoes.collectAsState()
+    var anotacaoParaExcluir by remember { mutableStateOf<Anotacao?>(null) }
 
     Scaffold(
         topBar = {
@@ -97,7 +96,7 @@ fun AnotacoesView(
                 AnotacaoCard(
                     anotacao = a,
                     onToggle = { vm.alternarExpandida(a.id) },
-                    onDelete = { vm.excluir(a.id) },
+                    onDelete = { anotacaoParaExcluir = a },
                     onDraftTitleChange = { vm.alterarRascunhoTitulo(a.id, it) },
                     onDraftContentChange = { vm.alterarRascunhoConteudo(a.id, it) },
                     onCancel = { vm.cancelar(a.id) },
@@ -105,6 +104,32 @@ fun AnotacoesView(
                 )
             }
             item { Spacer(Modifier.height(72.dp)) }
+        }
+
+        anotacaoParaExcluir?.let { selecionada ->
+            AlertDialog(
+                onDismissRequest = { anotacaoParaExcluir = null },
+                confirmButton = {
+                    TextButton(onClick = {
+                        vm.excluir(selecionada.id)
+                        anotacaoParaExcluir = null
+                    }) {
+                        Text("Confirmar")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { anotacaoParaExcluir = null }) {
+                        Text("Cancelar")
+                    }
+                },
+                title = { Text("Confirmar exclusão") },
+                text = {
+                    Text(
+                        text = "Tem certeza de que deseja excluir esta anotação?",
+                        color = OnBeige
+                    )
+                }
+            )
         }
     }
 }

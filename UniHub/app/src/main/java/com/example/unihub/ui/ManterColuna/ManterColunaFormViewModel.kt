@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.unihub.data.model.Status
-import java.util.UUID
 
 sealed class FormResult {
     object Idle : FormResult()
@@ -39,29 +38,13 @@ class ColunaFormViewModel(
     fun salvarOuAtualizarColuna(quadroId: String, coluna: Coluna) {
         viewModelScope.launch {
             try {
-                val existingColuna = if (coluna.id.isNotBlank()) {
-                    // Passa o quadroId para o repositório
-                    repository.getColunaById(quadroId, coluna.id)
+                val resultado = if (coluna.id.isNotBlank()) {
+                    repository.updateColuna(quadroId, coluna)
                 } else {
-                    null
+                    repository.addColuna(quadroId, coluna)
                 }
 
-                var colunaToSave = coluna
-
-                if (colunaToSave.status == Status.CONCLUIDA && existingColuna?.status != Status.CONCLUIDA) {
-                    colunaToSave = colunaToSave.copy(dataFim = System.currentTimeMillis())
-                } else if (colunaToSave.status != Status.CONCLUIDA && existingColuna?.status == Status.CONCLUIDA) {
-                    colunaToSave = colunaToSave.copy(dataFim = null)
-                }
-
-                if (colunaToSave.id.isNotBlank()) {
-                    // MUDANÇA: Passa o quadroId para o repositório
-                    repository.updateColuna(quadroId, colunaToSave)
-                } else {
-                    // MUDANÇA: Passa o quadroId para o repositório
-                    val newColunaWithId = colunaToSave.copy(id = UUID.randomUUID().toString())
-                    repository.addColuna(quadroId, newColunaWithId)
-                }
+                resultado?.let { _colunaState.value = it }
 
                 _formResult.value = FormResult.Success
             } catch (e: Exception) {

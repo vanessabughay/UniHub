@@ -42,19 +42,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import kotlin.text.contains
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
 
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
@@ -77,6 +77,8 @@ fun ListarContatoScreen(
     var contatoParaExcluir by remember { mutableStateOf<ContatoResumoUi?>(null) }
 
     var searchQuery by remember { mutableStateOf("") }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabTitles = listOf("Contatos", "Convites Enviados", "Convites Recebidos")
 
     // Efeito para exibir Toast de erro
     LaunchedEffect(errorMessage) {
@@ -100,10 +102,16 @@ fun ListarContatoScreen(
         }
     }
 
+    val contatosDaAba = when (selectedTabIndex) {
+        0 -> contatosState.filter { !it.pendente }
+        1 -> contatosState.filter { it.pendente }
+        else -> emptyList()
+    }
+
     val contatosFiltrados = if (searchQuery.isBlank()) {
-        contatosState
+        contatosDaAba
     } else {
-        contatosState.filter {
+        contatosDaAba.filter {
             it.nome.contains(searchQuery, ignoreCase = true) ||
                     it.email.contains(searchQuery, ignoreCase = true) ||
                     it.id.toString().contains(searchQuery, ignoreCase = true)
@@ -203,8 +211,34 @@ fun ListarContatoScreen(
                     )
                 }
 
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    tabTitles.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTabIndex == index,
+                            onClick = { selectedTabIndex = index },
+                            text = {
+                                Text(
+                                title,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+
+
+
+                                )
+                            }
+                        )
+                    }
+                }
+
+
                 when {
-                    isLoading -> {
+                    isLoading && contatosState.isEmpty() -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
@@ -212,7 +246,7 @@ fun ListarContatoScreen(
                             CircularProgressIndicator()
                         }
                     }
-                    contatosState.isEmpty() && !isLoading && errorMessage == null -> {
+                    selectedTabIndex == 2 -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -220,7 +254,26 @@ fun ListarContatoScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                "Nenhum contato cadastrado.",
+                                text = "Aguarde! Em breve listaremos os convites recebidos nesta aba.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    contatosDaAba.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val mensagem = when (selectedTabIndex) {
+                                0 -> "Nenhum contato cadastrado."
+                                1 -> "Nenhum convite enviado."
+                                else -> ""
+                            }
+                            Text(
+                                mensagem,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -232,17 +285,24 @@ fun ListarContatoScreen(
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
+                            val mensagemBusca = when (selectedTabIndex) {
+                                0 -> "Nenhum contato encontrado para \"$searchQuery\""
+                                1 -> "Nenhum convite enviado encontrado para \"$searchQuery\""
+                                else -> "Nenhum convite recebido encontrado para \"$searchQuery\""
+                            }
                             Text(
-                                text = "Nenhum contato encontrado para \"$searchQuery\"",
+                                text = mensagemBusca,
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
                     }
                     else -> {
                         if (isLoading) { // Mostrar um indicador de progresso menor no topo se atualizando
-                            LinearProgressIndicator(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 4.dp))
+                            LinearProgressIndicator(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 4.dp)
+                            )
                         }
                         LazyColumn(
                             modifier = Modifier

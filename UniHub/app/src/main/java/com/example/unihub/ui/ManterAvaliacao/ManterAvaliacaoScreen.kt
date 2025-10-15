@@ -61,6 +61,8 @@ fun ManterAvaliacaoScreen(
     var showAddIntegrantesDialog by remember { mutableStateOf(false) }
     var showRemoveIntegrantesDialog by remember { mutableStateOf(false) }
 
+    var isSaving by remember { mutableStateOf(false) }
+
     val focusManager = LocalFocusManager.current
 
 
@@ -455,12 +457,18 @@ fun ManterAvaliacaoScreen(
             ) {
                 Button( // BOTÃO DE CONFIRMAR
                     onClick = {
-                        if (avaliacaoId == null) {
-                            viewModel.createAvaliacao()
-                        } else {
-                            viewModel.updateAvaliacao()
+                        if (!isSaving) {
+                            isSaving = true //  trava o botão e mostra "Salvando..."
+
+                            if (avaliacaoId == null) {
+                                viewModel.createAvaliacao()
+                            } else {
+                                viewModel.updateAvaliacao()
+                            }
+                            // Aqui não volto para false: ao recarregar a tela, o remember reinicia e reabilita.
                         }
                     },
+                    enabled = !isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
@@ -471,7 +479,7 @@ fun ManterAvaliacaoScreen(
                     )
                 ) {
                     Text(
-                        if (avaliacaoId == null) "Confirmar" else "Salvar Alterações",
+                        text = if (isSaving) "Salvando..." else if (avaliacaoId == null) "Confirmar" else "Salvar Alterações",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -480,13 +488,14 @@ fun ManterAvaliacaoScreen(
                 if (avaliacaoId != null) {
                     Button( // BOTÃO DE EXCLUIR
                         onClick = { showDeleteDialog = true },
+                        enabled = !isSaving, // desativa excluir enquanto salva
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f), // Ou MaterialTheme.colorScheme.errorContainer
-                            contentColor = DeleteButtonErrorColor // Ou MaterialTheme.colorScheme.onErrorContainer
+                            containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f),
+                            contentColor = DeleteButtonErrorColor
                         )
                     ) {
                         Text("Excluir Avaliação", fontSize = 16.sp, fontWeight = FontWeight.Medium)

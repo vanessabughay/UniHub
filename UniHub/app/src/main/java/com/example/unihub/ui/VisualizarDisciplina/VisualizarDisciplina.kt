@@ -70,6 +70,7 @@ fun BotaoOpcao(item: OpcaoDisciplina) {
 fun AusenciasCard(
     expanded: Boolean,
     ausencias: List<Ausencia>,
+    ausenciasPermitidas: Int?,
     onToggle: () -> Unit,
     onAdd: () -> Unit,                   // botão de rodapé
     onItemClick: (Ausencia) -> Unit
@@ -99,12 +100,14 @@ fun AusenciasCard(
 
             if (expanded) {
                 val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
                 if (ausencias.isEmpty()) {
                     Text(
                         text = "Nenhuma ausência registrada",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
                 } else {
+                    val totalAusencias = ausencias.size
                     ausencias.forEach { aus ->
                         Text(
                             text = aus.data.format(formatter) + (aus.categoria?.let { " - $it" } ?: ""),
@@ -113,6 +116,14 @@ fun AusenciasCard(
                                 .clickable { onItemClick(aus) }
                         )
                     }
+
+                    Text(
+                        text = ausenciasPermitidas?.let {
+                            "Você tem $totalAusencias ausências. Seu limite para ausências é $it"
+                        } ?: "Você tem $totalAusencias ausências. Limite de ausências não definido, alterar em 'Informações da disciplina'",
+
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)
+                    )
                 }
 
                 // Botão de rodapé: ADICIONAR AUSÊNCIA
@@ -403,6 +414,7 @@ fun VisualizarDisciplinaScreen(
                     AusenciasCard(
                         expanded = expandAusencias,
                         ausencias = ausencias,
+                        ausenciasPermitidas = disc.ausenciasPermitidas,
                         onToggle = { expandAusencias = !expandAusencias },
                         onAdd = { onNavigateToAusencias(disc.id.toString(), null) },   // botão de rodapé
                         onItemClick = { aus -> onNavigateToAusencias(disc.id.toString(), aus.id?.toString()) }

@@ -44,6 +44,7 @@ import com.example.unihub.data.repository._disciplinabackend
 import com.example.unihub.data.repository._quadrobackend
 import java.time.LocalDate
 import com.example.unihub.data.model.Quadro
+import com.example.unihub.Screen
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -63,13 +64,14 @@ fun QuadroFormScreen(
         viewModel.carregarDados(quadroId)
     }
 
+    //novo
     LaunchedEffect(formResult) {
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
                 navController.previousBackStackEntry?.savedStateHandle?.set("refreshQuadros", true)
-                navController.popBackStack()
-                viewModel.resetFormResult()
+                // pra voltar duas telas
+                navController.popBackStack(Screen.ListarQuadros.route, false)
             }
             is FormResult.Error -> {
                 Toast.makeText(context, "Erro: ${result.message}", Toast.LENGTH_LONG).show()
@@ -262,8 +264,8 @@ private val MOCK_DISCIPLINAS = listOf(
     DisciplinaResumo(id = 3, codigo = "CE003", nome = "Estatística II")
 )
 private val MOCK_CONTATOS = listOf(
-    ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com"),
-    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com")
+    ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com", pendente = false),
+    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com", pendente = true)
 )
 // CÓDIGO CORRIGIDO
 private val MOCK_GRUPOS = listOf(

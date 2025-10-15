@@ -14,7 +14,14 @@ class ApiContatoBackend : Contatobackend {
 
 
     override suspend fun getContatoResumoApi(): List<ContatoResumo> {
-        return api.list().map { ContatoResumo(it.id!!, it.nome!!, it.email!!) }
+        return api.list().map {
+            ContatoResumo(
+                id = it.id!!,
+                nome = it.nome!!,
+                email = it.email!!,
+                pendente = it.pendente
+            )
+        }
     }
 
     override suspend fun getContatoByIdApi(id: String): Contato? {
