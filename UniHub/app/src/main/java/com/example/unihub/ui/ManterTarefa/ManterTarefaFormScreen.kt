@@ -350,7 +350,7 @@ fun TarefaFormScreen(
                                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                                             ) {
                                                 Row(
-                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    verticalAlignment = Alignment.Top,
                                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                                     modifier = Modifier.fillMaxWidth()
                                                 ) {
@@ -394,7 +394,9 @@ fun TarefaFormScreen(
                                                         val iconSize = 18.dp
 
                                                         Row(
-                                                            modifier = Modifier.wrapContentWidth(Alignment.End),
+                                                            modifier = Modifier
+                                                                .wrapContentWidth(Alignment.End)
+                                                                .align(Alignment.Top),
                                                             verticalAlignment = Alignment.CenterVertically,
                                                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                                                         ) {
