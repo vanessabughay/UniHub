@@ -201,7 +201,7 @@ fun TarefaFormScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 50.dp)
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -523,46 +523,48 @@ fun TarefaFormScreen(
                 .padding(horizontal = 24.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
 
         BotoesFormulario(
-                onConfirm = {
-                    if (titulo.isBlank()) {
-                        Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
-                        return@BotoesFormulario
-                    }
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            onConfirm = {
+                if (titulo.isBlank()) {
+                    Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
+                    return@BotoesFormulario
+                }
 
-                    if (!isEditing) {
-                        val novaTarefa = Tarefa(
+                if (!isEditing) {
+                    val novaTarefa = Tarefa(
+                        titulo = titulo,
+                        descricao = if (descricao.isBlank()) null else descricao,
+                        status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
+                        prazo = prazo,
+                        dataInicio = System.currentTimeMillis()
+                    )
+                    ultimaAcao = TarefaFormAction.CREATE
+                    tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
+                } else {
+                    tarefaState?.let { tarefaCarregada ->
+                        val tarefaAtualizada = tarefaCarregada.copy(
                             titulo = titulo,
                             descricao = if (descricao.isBlank()) null else descricao,
-                            status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
-                            prazo = prazo,
-                            dataInicio = System.currentTimeMillis()
+                            status = statusSelecionado,
+                            prazo = prazo
                         )
-                        ultimaAcao = TarefaFormAction.CREATE
-                        tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
-                    } else {
-                        tarefaState?.let { tarefaCarregada ->
-                            val tarefaAtualizada = tarefaCarregada.copy(
-                                titulo = titulo,
-                                descricao = if (descricao.isBlank()) null else descricao,
-                                status = statusSelecionado,
-                                prazo = prazo
-                            )
-                            ultimaAcao = TarefaFormAction.UPDATE
-                            tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
-                        }
+                        ultimaAcao = TarefaFormAction.UPDATE
+                        tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
                     }
-                },
-                onDelete = if (isEditing) {
-                    {
-                        ultimaAcao = TarefaFormAction.DELETE
-                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
-                    }
-                } else null
-            )
+                }
+            },
+            onDelete = if (isEditing) {
+                {
+                    ultimaAcao = TarefaFormAction.DELETE
+                    tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
+                }
+            } else null
+        )
         }
     }
 
