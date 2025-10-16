@@ -112,7 +112,12 @@ fun QuadroFormScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
-                CampoFormulario(label = "Nome", value = uiState.nome, onValueChange = viewModel::onNomeChange)
+                CampoFormulario(
+                    label = "Nome",
+                    value = uiState.nome,
+                    onValueChange = viewModel::onNomeChange,
+                    singleLine = true
+                )
 
                 CampoCombobox(
                     label = "Disciplina (Opcional)",

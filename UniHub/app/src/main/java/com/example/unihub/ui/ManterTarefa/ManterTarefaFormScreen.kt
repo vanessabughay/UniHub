@@ -210,7 +210,12 @@ fun TarefaFormScreen(
                 onVoltar = { navController.popBackStack() }
             )
 
-            CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
+            CampoFormulario(
+                label = "Título",
+                value = titulo,
+                onValueChange = { titulo = it },
+                singleLine = true
+            )
             CampoDropdownMultiSelect(
                 label = "Responsável",
                 options = responsaveisDisponiveis,

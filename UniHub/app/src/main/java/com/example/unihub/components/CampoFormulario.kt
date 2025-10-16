@@ -19,7 +19,8 @@ fun CampoFormulario(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -46,7 +47,14 @@ fun CampoFormulario(
 
             BasicTextField(
                 value = value,
-                onValueChange = onValueChange,
+                onValueChange = { newValue ->
+                    val sanitizedValue = if (singleLine) {
+                        newValue.replace("\n", " ").replace("\r", "")
+                    } else {
+                        newValue
+                    }
+                    onValueChange(sanitizedValue)
+                },
                 textStyle = TextStyle(
                     color = Color.Black.copy(alpha = 0.5f),
                     fontSize = 14.sp,
@@ -55,7 +63,9 @@ fun CampoFormulario(
                     fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
                 ),
                 modifier = Modifier
-                    .weight(0.7f) // Ocupa 70% do espaço restante
+                    .weight(0.7f), // Ocupa 70% do espaço restante
+                singleLine = singleLine,
+                maxLines = if (singleLine) 1 else Int.MAX_VALUE
             )
         }
     }
