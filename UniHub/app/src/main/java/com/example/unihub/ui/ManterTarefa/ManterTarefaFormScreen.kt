@@ -237,221 +237,235 @@ fun TarefaFormScreen(
                     placeholder = "Selecione o estado"
                 )
 
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF))
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF))
                     ) {
-                        Text(
-                            text = "Comentários",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-
-                        OutlinedTextField(
-                            value = novoComentario,
-                            onValueChange = { novoComentario = it },
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 56.dp),
-                            placeholder = { Text("Escrever um comentário") },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFFE8FAED),
-                                unfocusedContainerColor = Color(0xFFE8FAED),
-                                focusedBorderColor = Color(0xFF28A745),
-                                unfocusedBorderColor = Color(0xFF28A745).copy(alpha = 0.4f),
-                                cursorColor = Color(0xFF28A745)
-                            ),
-                            trailingIcon = {
-                                IconButton(
-                                    onClick = {
-                                        if (novoComentario.isNotBlank()) {
-                                            tarefaId?.let { id ->
-                                                tarefaViewModel.criarComentario(
-                                                    quadroId,
-                                                    colunaId,
-                                                    id,
-                                                    novoComentario
-                                                )
-                                            }
-                                        }
-                                    },
-                                    enabled = novoComentario.isNotBlank()
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Send,
-                                        contentDescription = "Enviar comentário",
-                                        tint = Color(0xFF28A745)
-                                    )
-                                }
-                            }
-                        )
-
-                        if (comentariosCarregando) {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                        }
-
-                        if (comentarios.isEmpty() && !comentariosCarregando) {
-                            Text(
-                                text = "Nenhum comentário ainda.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                            )
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                comentarios.forEach { comentario ->
-                                    val autorLabel = if (comentario.isAutor) {
-                                        "${comentario.autorNome} (eu)"
-                                    } else {
-                                        comentario.autorNome
-                                    }
-                                    val dataComentario = comentario.dataAtualizacao ?: comentario.dataCriacao
-                                    val dataTexto = dataComentario?.let { comentarioDateFormat.format(Date(it)) } ?: ""
-
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF)),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                    ) {
-                                        Column(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(12.dp),
-                                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                                        ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically,
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                modifier = Modifier.fillMaxWidth()
-                                            ) {
-                                                Column(modifier = Modifier.weight(1f)) {
-                                                    if (comentarioEmEdicaoId == comentario.id) {
-                                                        OutlinedTextField(
-                                                            value = textoComentarioEdicao,
-                                                            onValueChange = { textoComentarioEdicao = it },
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .heightIn(min = 56.dp),
-                                                            shape = RoundedCornerShape(12.dp),
-                                                            colors = OutlinedTextFieldDefaults.colors(
-                                                                focusedContainerColor = Color.White,
-                                                                unfocusedContainerColor = Color.White,
-                                                                focusedBorderColor = Color(0xFF28A745),
-                                                                unfocusedBorderColor = Color(0xFF28A745).copy(alpha = 0.4f)
-                                                            )
-                                                        )
-                                                    } else {
-                                                        Text(
-                                                            text = buildAnnotatedString {
-                                                                withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                                                    append("$autorLabel: ")
-                                                                }
-                                                                append(comentario.conteudo)
-                                                            },
-                                                            style = MaterialTheme.typography.bodyMedium
-                                                        )
-                                                    }
-                                                }
-
-                                                if (comentario.isAutor) {
-                                                    if (comentarioEmEdicaoId == comentario.id) {
-                                                        IconButton(
-                                                            onClick = {
-                                                                if (textoComentarioEdicao.isNotBlank()) {
-                                                                    tarefaId?.let { id ->
-                                                                        tarefaViewModel.atualizarComentario(
-                                                                            quadroId,
-                                                                            colunaId,
-                                                                            id,
-                                                                            comentario.id,
-                                                                            textoComentarioEdicao
-                                                                        )
-                                                                    }
-                                                                }
-                                                            },
-                                                            enabled = textoComentarioEdicao.isNotBlank()
-                                                        ) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Check,
-                                                                contentDescription = "Salvar edição",
-                                                                tint = Color(0xFF28A745)
-                                                            )
-                                                        }
-
-                                                        IconButton(onClick = {
-                                                            comentarioEmEdicaoId = null
-                                                            textoComentarioEdicao = ""
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Close,
-                                                                contentDescription = "Cancelar edição"
-                                                            )
-                                                        }
-                                                    } else {
-                                                        IconButton(onClick = {
-                                                            comentarioEmEdicaoId = comentario.id
-                                                            textoComentarioEdicao = comentario.conteudo
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Edit,
-                                                                contentDescription = "Editar comentário"
-                                                            )
-                                                        }
-
-                                                        IconButton(onClick = {
-                                                            comentarioParaExcluir = comentario.id
-                                                        }) {
-                                                            Icon(
-                                                                imageVector = Icons.Default.Delete,
-                                                                contentDescription = "Excluir comentário"
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            if (dataTexto.isNotEmpty()) {
-                                                Text(
-                                                    text = dataTexto,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = Color.Gray,
-                                                    fontSize = 12.sp
-                                                )
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Checkbox(
-                                checked = receberNotificacoesComentarios,
-                                onCheckedChange = { marcado ->
-                                    tarefaId?.let { id ->
-                                        tarefaViewModel.atualizarPreferenciaComentarios(
-                                            quadroId,
-                                            colunaId,
-                                            id,
-                                            marcado
+                            Text(
+                                text = "Comentários",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+
+                            OutlinedTextField(
+                                value = novoComentario,
+                                onValueChange = { novoComentario = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 56.dp),
+                                placeholder = { Text("Escrever um comentário") },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color(0xFFE8FAED),
+                                    unfocusedContainerColor = Color(0xFFE8FAED),
+                                    focusedBorderColor = Color(0xFF28A745),
+                                    unfocusedBorderColor = Color(0xFF28A745).copy(alpha = 0.4f),
+                                    cursorColor = Color(0xFF28A745)
+                                ),
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            if (novoComentario.isNotBlank()) {
+                                                tarefaId?.let { id ->
+                                                    tarefaViewModel.criarComentario(
+                                                        quadroId,
+                                                        colunaId,
+                                                        id,
+                                                        novoComentario
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        enabled = novoComentario.isNotBlank()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Send,
+                                            contentDescription = "Enviar comentário",
+                                            tint = Color(0xFF28A745)
                                         )
                                     }
-                                },
-                                colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
+                                }
                             )
-                            Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
+
+
+                            if (comentariosCarregando) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+
+                            if (comentarios.isEmpty() && !comentariosCarregando) {
+                                Text(
+                                    text = "Nenhum comentário ainda.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                )
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    comentarios.forEach { comentario ->
+                                        val autorLabel = if (comentario.isAutor) {
+                                            "${comentario.autorNome} (eu)"
+                                        } else {
+                                            comentario.autorNome
+                                        }
+                                        val dataComentario = comentario.dataAtualizacao ?: comentario.dataCriacao
+                                        val dataTexto = dataComentario?.let { comentarioDateFormat.format(Date(it)) } ?: ""
+
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF)),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        if (comentarioEmEdicaoId == comentario.id) {
+                                                            OutlinedTextField(
+                                                                value = textoComentarioEdicao,
+                                                                onValueChange = {
+                                                                    textoComentarioEdicao = it
+                                                                },
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .heightIn(min = 56.dp),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = OutlinedTextFieldDefaults.colors(
+                                                                    focusedContainerColor = Color.White,
+                                                                    unfocusedContainerColor = Color.White,
+                                                                    focusedBorderColor = Color(
+                                                                        0xFF28A745
+                                                                    ),
+                                                                    unfocusedBorderColor = Color(
+                                                                        0xFF28A745
+                                                                    ).copy(alpha = 0.4f)
+                                                                )
+                                                            )
+                                                        } else {
+                                                            Text(
+                                                                text = buildAnnotatedString {
+                                                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                                                        append("$autorLabel: ")
+                                                                    }
+                                                                    append(comentario.conteudo)
+                                                                },
+                                                                style = MaterialTheme.typography.bodyMedium
+                                                            )
+                                                        }
+                                                    }
+
+                                                    if (comentario.isAutor) {
+                                                        if (comentarioEmEdicaoId == comentario.id) {
+                                                            IconButton(
+                                                                onClick = {
+                                                                    if (textoComentarioEdicao.isNotBlank()) {
+                                                                        tarefaId?.let { id ->
+                                                                            tarefaViewModel.atualizarComentario(
+                                                                                quadroId,
+                                                                                colunaId,
+                                                                                id,
+                                                                                comentario.id,
+                                                                                textoComentarioEdicao
+                                                                            )
+                                                                        }
+                                                                    }
+                                                                },
+                                                                enabled = textoComentarioEdicao.isNotBlank()
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Check,
+                                                                    contentDescription = "Salvar edição",
+                                                                    tint = Color(0xFF28A745)
+                                                                )
+                                                            }
+
+                                                            IconButton(onClick = {
+                                                                comentarioEmEdicaoId = null
+                                                                textoComentarioEdicao = ""
+                                                            }) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Close,
+                                                                    contentDescription = "Cancelar edição"
+                                                                )
+                                                            }
+                                                        } else {
+                                                            IconButton(onClick = {
+                                                                comentarioEmEdicaoId = comentario.id
+                                                                textoComentarioEdicao = comentario.conteudo
+                                                            }) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Edit,
+                                                                    contentDescription = "Editar comentário"
+                                                                )
+                                                            }
+
+                                                            IconButton(onClick = {
+                                                                comentarioParaExcluir = comentario.id
+                                                            }) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Delete,
+                                                                    contentDescription = "Excluir comentário"
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                if (dataTexto.isNotEmpty()) {
+                                                    Text(
+                                                        text = dataTexto,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color.Gray,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
                         }
                     }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = receberNotificacoesComentarios,
+                        onCheckedChange = { marcado ->
+                            tarefaId?.let { id ->
+                                tarefaViewModel.atualizarPreferenciaComentarios(
+                                    quadroId,
+                                    colunaId,
+                                    id,
+                                    marcado
+                                )
+                            }
+                        },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
+                    )
+                    Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
+                }
                 }
 
                 comentarioParaExcluir?.let { idParaExcluir ->
@@ -529,7 +543,7 @@ fun TarefaFormScreen(
             )
         }
     }
-}
+
 
 private enum class TarefaFormAction {
     CREATE,
