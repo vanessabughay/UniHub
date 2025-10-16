@@ -2,6 +2,7 @@ package com.example.unihub.ui.ManterTarefa
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.repository.ContatoRepository
@@ -19,6 +20,16 @@ sealed class TarefaFormResult {
     object Idle : TarefaFormResult()
     object Success : TarefaFormResult()
     data class Error(val message: String) : TarefaFormResult()
+}
+
+sealed class ComentarioActionResult {
+    data class Success(
+        val message: String,
+        val clearNewComment: Boolean = false,
+        val resetEditing: Boolean = false
+    ) : ComentarioActionResult()
+
+    data class Error(val message: String) : ComentarioActionResult()
 }
 
 data class ResponsavelOption(
@@ -47,6 +58,18 @@ class TarefaFormViewModel(
 
     private val _responsaveisSelecionados = MutableStateFlow<Set<Long>>(emptySet())
     val responsaveisSelecionados: StateFlow<Set<Long>> = _responsaveisSelecionados.asStateFlow()
+
+    private val _comentarios = MutableStateFlow<List<Comentario>>(emptyList())
+    val comentarios: StateFlow<List<Comentario>> = _comentarios.asStateFlow()
+
+    private val _comentariosCarregando = MutableStateFlow(false)
+    val comentariosCarregando: StateFlow<Boolean> = _comentariosCarregando.asStateFlow()
+
+    private val _receberNotificacoes = MutableStateFlow(false)
+    val receberNotificacoes: StateFlow<Boolean> = _receberNotificacoes.asStateFlow()
+
+    private val _comentarioResultado = MutableStateFlow<ComentarioActionResult?>(null)
+    val comentarioResultado: StateFlow<ComentarioActionResult?> = _comentarioResultado.asStateFlow()
 
     fun carregarTarefa(quadroId: String, colunaId: String, tarefaId: String) {
         // _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -122,6 +145,133 @@ class TarefaFormViewModel(
                 _isLoading.value = false
             }
         }
+    }
+
+    fun carregarComentarios(quadroId: String, colunaId: String, tarefaId: String) {
+        viewModelScope.launch {
+            _comentariosCarregando.value = true
+            try {
+                val response = repository.carregarComentarios(quadroId, colunaId, tarefaId)
+                _comentarios.value = response.comentarios
+                _receberNotificacoes.value = response.receberNotificacoes
+            } catch (e: Exception) {
+                _comentarioResultado.value = ComentarioActionResult.Error(
+                    e.message ?: "Erro ao carregar comentários."
+                )
+            } finally {
+                _comentariosCarregando.value = false
+            }
+        }
+    }
+
+    fun criarComentario(quadroId: String, colunaId: String, tarefaId: String, conteudo: String) {
+        if (conteudo.isBlank()) {
+            _comentarioResultado.value = ComentarioActionResult.Error("O comentário não pode ser vazio.")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val novoComentario = repository.criarComentario(quadroId, colunaId, tarefaId, conteudo.trim())
+                _comentarios.update { it + novoComentario }
+                _comentarioResultado.value = ComentarioActionResult.Success(
+                    message = "Comentário adicionado com sucesso!",
+                    clearNewComment = true,
+                    resetEditing = true
+                )
+            } catch (e: Exception) {
+                _comentarioResultado.value = ComentarioActionResult.Error(
+                    e.message ?: "Erro ao salvar comentário."
+                )
+            }
+        }
+    }
+
+    fun atualizarComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentarioId: String,
+        conteudo: String
+    ) {
+        if (conteudo.isBlank()) {
+            _comentarioResultado.value = ComentarioActionResult.Error("O comentário não pode ser vazio.")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val comentarioAtualizado = repository.atualizarComentario(
+                    quadroId,
+                    colunaId,
+                    tarefaId,
+                    comentarioId,
+                    conteudo.trim()
+                )
+                _comentarios.update { lista ->
+                    lista.map { comentario ->
+                        if (comentario.id == comentarioId) comentarioAtualizado else comentario
+                    }
+                }
+                _comentarioResultado.value = ComentarioActionResult.Success(
+                    message = "Comentário atualizado com sucesso!",
+                    resetEditing = true
+                )
+            } catch (e: Exception) {
+                _comentarioResultado.value = ComentarioActionResult.Error(
+                    e.message ?: "Erro ao atualizar comentário."
+                )
+            }
+        }
+    }
+
+    fun excluirComentario(quadroId: String, colunaId: String, tarefaId: String, comentarioId: String) {
+        viewModelScope.launch {
+            try {
+                repository.excluirComentario(quadroId, colunaId, tarefaId, comentarioId)
+                _comentarios.update { lista -> lista.filterNot { it.id == comentarioId } }
+                _comentarioResultado.value = ComentarioActionResult.Success(
+                    message = "Comentário excluído com sucesso!",
+                    resetEditing = true
+                )
+            } catch (e: Exception) {
+                _comentarioResultado.value = ComentarioActionResult.Error(
+                    e.message ?: "Erro ao excluir comentário."
+                )
+            }
+        }
+    }
+
+    fun atualizarPreferenciaComentarios(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        receberNotificacoes: Boolean
+    ) {
+        viewModelScope.launch {
+            try {
+                val resposta = repository.atualizarPreferenciaComentarios(
+                    quadroId,
+                    colunaId,
+                    tarefaId,
+                    receberNotificacoes
+                )
+                _receberNotificacoes.value = resposta.receberNotificacoes
+                _comentarioResultado.value = ComentarioActionResult.Success(
+                    message = if (resposta.receberNotificacoes) {
+                        "Notificações habilitadas"
+                    } else {
+                        "Notificações desabilitadas"
+                    }
+                )
+            } catch (e: Exception) {
+                _comentarioResultado.value = ComentarioActionResult.Error(
+                    e.message ?: "Erro ao atualizar preferências."
+                )
+            }
+        }
+    }
+
+    fun resetComentarioResultado() {
+        _comentarioResultado.value = null
     }
 
     fun carregarResponsaveis(quadroId: String) {

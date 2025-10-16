@@ -21,7 +21,9 @@ fun BotoesFormulario(
 ) {
     Row(
         horizontalArrangement = if (onDelete != null) Arrangement.spacedBy(12.dp) else Arrangement.End, // Ajusta o arranjo
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
     ) {
         onDelete?.let { deleteAction ->
             OutlinedButton(

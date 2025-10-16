@@ -1,6 +1,18 @@
 package com.unihub.backend.service;
 
-import com.unihub.backend.dto.planejamento.*;
+import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
+import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
+import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.PreferenciaComentarioResponse;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
+import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.TarefaComentarioRequest;
+import com.unihub.backend.dto.planejamento.TarefaComentarioResponse;
+import com.unihub.backend.dto.planejamento.TarefaComentariosResponse;
+import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.TarefaPlanejamentoResponse;
 import com.unihub.backend.exceptions.ResourceNotFoundException;
 import com.unihub.backend.model.*;
 import com.unihub.backend.model.enums.EstadoPlanejamento;
@@ -39,6 +51,10 @@ public class QuadroPlanejamentoService {
     private DisciplinaRepository disciplinaRepository;
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private TarefaComentarioRepository tarefaComentarioRepository;
+    @Autowired
+    private TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository;
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
         boolean possuiTitulo = titulo != null && !titulo.trim().isEmpty();
@@ -334,6 +350,105 @@ public class QuadroPlanejamentoService {
         TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
         tarefaRepository.delete(tarefa);
     }
+    @Transactional(readOnly = true)
+    public TarefaComentariosResponse listarComentarios(Long quadroId, Long colunaId, Long tarefaId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+
+        List<TarefaComentarioResponse> comentarios = tarefaComentarioRepository
+                .findByTarefaOrderByDataCriacaoAsc(tarefa)
+                .stream()
+                .map(comentario -> toComentarioResponse(comentario, usuarioId))
+                .collect(Collectors.toList());
+
+        boolean receberNotificacoes = tarefaComentarioNotificacaoRepository
+                .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+
+        TarefaComentariosResponse response = new TarefaComentariosResponse();
+        response.setComentarios(comentarios);
+        response.setReceberNotificacoes(receberNotificacoes);
+        return response;
+    }
+
+    @Transactional
+    public TarefaComentarioResponse adicionarComentario(Long quadroId, Long colunaId, Long tarefaId,
+                                                        TarefaComentarioRequest request, Long usuarioId) {
+        if (request.getConteudo() == null || request.getConteudo().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O comentário não pode ser vazio.");
+        }
+
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        Usuario autor = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+
+        TarefaComentario comentario = new TarefaComentario();
+        comentario.setTarefa(tarefa);
+        comentario.setAutor(autor);
+        comentario.setConteudo(request.getConteudo().trim());
+
+        TarefaComentario salvo = tarefaComentarioRepository.save(comentario);
+        return toComentarioResponse(salvo, usuarioId);
+    }
+
+    @Transactional
+    public TarefaComentarioResponse atualizarComentario(Long quadroId, Long colunaId, Long tarefaId, Long comentarioId,
+                                                        TarefaComentarioRequest request, Long usuarioId) {
+        if (request.getConteudo() == null || request.getConteudo().trim().isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O comentário não pode ser vazio.");
+        }
+
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        TarefaComentario comentario = tarefaComentarioRepository.findByIdAndTarefaId(comentarioId, tarefa.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Comentário não encontrado"));
+
+        if (!comentario.getAutor().getId().equals(usuarioId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para editar este comentário.");
+        }
+
+        comentario.setConteudo(request.getConteudo().trim());
+        TarefaComentario atualizado = tarefaComentarioRepository.save(comentario);
+        return toComentarioResponse(atualizado, usuarioId);
+    }
+
+    @Transactional
+    public void excluirComentario(Long quadroId, Long colunaId, Long tarefaId, Long comentarioId, Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        TarefaComentario comentario = tarefaComentarioRepository.findByIdAndTarefaId(comentarioId, tarefa.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Comentário não encontrado"));
+
+        if (!comentario.getAutor().getId().equals(usuarioId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não tem permissão para excluir este comentário.");
+        }
+
+        tarefaComentarioRepository.delete(comentario);
+    }
+
+    @Transactional
+    public PreferenciaComentarioResponse atualizarPreferenciaComentario(Long quadroId, Long colunaId, Long tarefaId,
+                                                                        AtualizarPreferenciaComentarioRequest request,
+                                                                        Long usuarioId) {
+        TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+
+        boolean desejaReceber = request.isReceberNotificacoes();
+        if (desejaReceber) {
+            boolean jaExiste = tarefaComentarioNotificacaoRepository
+                    .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+            if (!jaExiste) {
+                Usuario usuario = usuarioRepository.findById(usuarioId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
+                TarefaComentarioNotificacao notificacao = new TarefaComentarioNotificacao();
+                notificacao.setTarefa(tarefa);
+                notificacao.setUsuario(usuario);
+                tarefaComentarioNotificacaoRepository.save(notificacao);
+            }
+        } else {
+            tarefaComentarioNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+        }
+
+        boolean estadoAtual = tarefaComentarioNotificacaoRepository
+                .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+        return new PreferenciaComentarioResponse(estadoAtual);
+    }
+
 
     private Usuario referenciaUsuario(Long usuarioId) {
         Usuario usuario = new Usuario();
@@ -382,6 +497,26 @@ public class QuadroPlanejamentoService {
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
     }
+
+    private TarefaComentarioResponse toComentarioResponse(TarefaComentario comentario, Long usuarioId) {
+        TarefaComentarioResponse response = new TarefaComentarioResponse();
+        response.setId(comentario.getId());
+        response.setConteudo(comentario.getConteudo());
+        response.setAutorId(comentario.getAutor().getId());
+        response.setAutorNome(comentario.getAutor().getNomeUsuario());
+        response.setAutor(comentario.getAutor().getId().equals(usuarioId));
+
+        LocalDateTime criado = comentario.getDataCriacao();
+        LocalDateTime atualizado = comentario.getDataAtualizacao();
+        if (criado != null) {
+            response.setDataCriacao(criado.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        }
+        if (atualizado != null) {
+            response.setDataAtualizacao(atualizado.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli());
+        }
+        return response;
+    }
+
 
     private Long convertLocalDateToEpoch(LocalDate date) {
         if (date == null) {

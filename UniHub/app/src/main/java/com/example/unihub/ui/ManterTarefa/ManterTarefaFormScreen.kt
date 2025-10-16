@@ -4,12 +4,28 @@ import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -23,6 +39,9 @@ import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
+import com.example.unihub.data.model.Comentario
+import com.example.unihub.data.model.ComentarioPreferenciaResponse
+import com.example.unihub.data.model.ComentariosResponse
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
 import java.util.*
@@ -66,14 +85,23 @@ fun TarefaFormScreen(
     val formResult by tarefaViewModel.formResult.collectAsState()
     val responsaveisDisponiveis by tarefaViewModel.responsaveisDisponiveis.collectAsState()
     val responsaveisSelecionados by tarefaViewModel.responsaveisSelecionados.collectAsState()
+    val comentarios by tarefaViewModel.comentarios.collectAsState()
+    val comentariosCarregando by tarefaViewModel.comentariosCarregando.collectAsState()
+    val receberNotificacoesComentarios by tarefaViewModel.receberNotificacoes.collectAsState()
+    val comentarioResultado by tarefaViewModel.comentarioResultado.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var statusSelecionado by remember { mutableStateOf(Status.INICIADA) }
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
     var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
+    var novoComentario by remember { mutableStateOf("") }
+    var comentarioEmEdicaoId by remember { mutableStateOf<String?>(null) }
+    var textoComentarioEdicao by remember { mutableStateOf("") }
+    var comentarioParaExcluir by remember { mutableStateOf<String?>(null) }
 
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", Locale.getDefault()) }
 
     LaunchedEffect(key1 = quadroId) {
         tarefaViewModel.carregarResponsaveis(quadroId)
@@ -82,6 +110,12 @@ fun TarefaFormScreen(
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
             tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
+        }
+    }
+
+    LaunchedEffect(key1 = tarefaId, key2 = isEditing) {
+        if (isEditing && tarefaId != null) {
+            tarefaViewModel.carregarComentarios(quadroId, colunaId, tarefaId)
         }
     }
 
@@ -120,6 +154,29 @@ fun TarefaFormScreen(
         }
     }
 
+    LaunchedEffect(comentarioResultado) {
+        when (val resultado = comentarioResultado) {
+            is ComentarioActionResult.Success -> {
+                Toast.makeText(context, resultado.message, Toast.LENGTH_SHORT).show()
+                if (resultado.clearNewComment) {
+                    novoComentario = ""
+                }
+                if (resultado.resetEditing) {
+                    comentarioEmEdicaoId = null
+                    textoComentarioEdicao = ""
+                }
+                tarefaViewModel.resetComentarioResultado()
+            }
+
+            is ComentarioActionResult.Error -> {
+                Toast.makeText(context, resultado.message, Toast.LENGTH_LONG).show()
+                tarefaViewModel.resetComentarioResultado()
+            }
+
+            null -> Unit
+        }
+    }
+
     val showDatePicker = {
         val calendar = Calendar.getInstance().apply { timeInMillis = prazo }
         DatePickerDialog(
@@ -135,36 +192,25 @@ fun TarefaFormScreen(
         ).show()
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 50.dp),
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Header(
                 titulo = if (isEditing) "Editar tarefa" else "Cadastrar tarefa",
                 onVoltar = { navController.popBackStack() }
-                )
+            )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
-            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
-
-            if (isEditing) {
-                CampoCombobox(
-                    label = "Status",
-                    options = Status.values().toList(),
-                    selectedOption = statusSelecionado,
-                    onOptionSelected = { statusSelecionado = it },
-                    optionToDisplayedString = { status ->
-                        status.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
-                    },
-                    placeholder = "Selecione o Status"
-                )
-            }
-
             CampoDropdownMultiSelect(
                 label = "Responsável",
                 options = responsaveisDisponiveis,
@@ -180,53 +226,373 @@ fun TarefaFormScreen(
                 onClick = { showDatePicker() }
             )
 
-            Spacer(modifier = Modifier.weight(1f))
+            CampoFormulario(
+                label = "Descrição",
+                value = descricao,
+                onValueChange = { descricao = it })
 
-            if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            if (isEditing) {
+                CampoCombobox(
+                    label = "Estado",
+                    options = Status.values().toList(),
+                    selectedOption = statusSelecionado,
+                    onOptionSelected = { statusSelecionado = it },
+                    optionToDisplayedString = { status ->
+                        status.name.lowercase()
+                            .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    },
+                    placeholder = "Selecione o estado"
+                )
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF))
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Comentários",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+
+                            OutlinedTextField(
+                                value = novoComentario,
+                                onValueChange = { novoComentario = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 56.dp),
+                                placeholder = { Text("Escrever um comentário") },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor = Color(0xFFE8FAED),
+                                    unfocusedContainerColor = Color(0xFFE8FAED),
+                                    focusedBorderColor = Color(0xFF28A745),
+                                    unfocusedBorderColor = Color(0xFF28A745).copy(alpha = 0.4f),
+                                    cursorColor = Color(0xFF28A745)
+                                ),
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = {
+                                            if (novoComentario.isNotBlank()) {
+                                                tarefaId?.let { id ->
+                                                    tarefaViewModel.criarComentario(
+                                                        quadroId,
+                                                        colunaId,
+                                                        id,
+                                                        novoComentario
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        enabled = novoComentario.isNotBlank()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Send,
+                                            contentDescription = "Enviar comentário",
+                                            tint = Color(0xFF28A745)
+                                        )
+                                    }
+                                }
+                            )
+
+
+                            if (comentariosCarregando) {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
+
+                            if (comentarios.isEmpty() && !comentariosCarregando) {
+                                Text(
+                                    text = "Nenhum comentário ainda.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
+                                        alpha = 0.8f
+                                    )
+                                )
+                            } else {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    comentarios.forEach { comentario ->
+                                        val autorLabel = if (comentario.isAutor) {
+                                            "${comentario.autorNome} (eu)"
+                                        } else {
+                                            comentario.autorNome
+                                        }
+                                        val dataComentario =
+                                            comentario.dataAtualizacao ?: comentario.dataCriacao
+                                        val dataTexto = dataComentario?.let {
+                                            comentarioDateFormat.format(
+                                                Date(it)
+                                            )
+                                        } ?: ""
+
+                                        Card(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = Color(
+                                                    0xFFD9F6DF
+                                                )
+                                            ),
+                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                        ) {
+                                            Column(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(12.dp),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.Top,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                    modifier = Modifier.fillMaxWidth()
+                                                ) {
+                                                    Column(modifier = Modifier.weight(1f)) {
+                                                        if (comentarioEmEdicaoId == comentario.id) {
+                                                            OutlinedTextField(
+                                                                value = textoComentarioEdicao,
+                                                                onValueChange = {
+                                                                    textoComentarioEdicao = it
+                                                                },
+                                                                modifier = Modifier
+                                                                    .fillMaxWidth()
+                                                                    .heightIn(min = 56.dp),
+                                                                shape = RoundedCornerShape(12.dp),
+                                                                colors = OutlinedTextFieldDefaults.colors(
+                                                                    focusedContainerColor = Color.White,
+                                                                    unfocusedContainerColor = Color.White,
+                                                                    focusedBorderColor = Color(
+                                                                        0xFF28A745
+                                                                    ),
+                                                                    unfocusedBorderColor = Color(
+                                                                        0xFF28A745
+                                                                    ).copy(alpha = 0.4f)
+                                                                )
+                                                            )
+                                                        } else {
+                                                            Text(
+                                                                text = buildAnnotatedString {
+                                                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                                                        append("$autorLabel: ")
+                                                                    }
+                                                                    append(comentario.conteudo)
+                                                                },
+                                                                style = MaterialTheme.typography.bodyMedium
+                                                            )
+                                                        }
+                                                    }
+
+                                                    if (comentario.isAutor) {
+                                                        val iconButtonSize = 32.dp
+                                                        val iconSize = 18.dp
+
+                                                        Row(
+                                                            modifier = Modifier
+                                                                .wrapContentWidth(Alignment.End)
+                                                                .align(Alignment.Top),
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                            if (comentarioEmEdicaoId == comentario.id) {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        if (textoComentarioEdicao.isNotBlank()) {
+                                                                            tarefaId?.let { id ->
+                                                                                tarefaViewModel.atualizarComentario(
+                                                                                    quadroId,
+                                                                                    colunaId,
+                                                                                    id,
+                                                                                    comentario.id,
+                                                                                    textoComentarioEdicao
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    enabled = textoComentarioEdicao.isNotBlank(),
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Check,
+                                                                        contentDescription = "Salvar edição",
+                                                                        tint = Color(0xFF28A745),
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
+
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioEmEdicaoId = null
+                                                                        textoComentarioEdicao = ""
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Close,
+                                                                        contentDescription = "Cancelar edição",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioEmEdicaoId = comentario.id
+                                                                        textoComentarioEdicao =
+                                                                            comentario.conteudo
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Edit,
+                                                                        contentDescription = "Editar comentário",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
+
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioParaExcluir =
+                                                                            comentario.id
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Delete,
+                                                                        contentDescription = "Excluir comentário",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                if (dataTexto.isNotEmpty()) {
+                                                    Text(
+                                                        text = dataTexto,
+                                                        style = MaterialTheme.typography.bodySmall,
+                                                        color = Color.Gray,
+                                                        fontSize = 12.sp
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = receberNotificacoesComentarios,
+                        onCheckedChange = { marcado ->
+                            tarefaId?.let { id ->
+                                tarefaViewModel.atualizarPreferenciaComentarios(
+                                    quadroId,
+                                    colunaId,
+                                    id,
+                                    marcado
+                                )
+                            }
+                        },
+                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
+                    )
+                    Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
+                }
             }
 
-
-            BotoesFormulario(
-                onConfirm = {
-                    if (titulo.isBlank()) {
-                        Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
-                        return@BotoesFormulario
-                    }
-
-                    if (!isEditing) {
-                        val novaTarefa = Tarefa(
-                            titulo = titulo,
-                            descricao = if (descricao.isBlank()) null else descricao,
-                            status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
-                            prazo = prazo,
-                            dataInicio = System.currentTimeMillis()
-                        )
-                        ultimaAcao = TarefaFormAction.CREATE
-                        tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
-                    } else {
-                        tarefaState?.let { tarefaCarregada ->
-                            val tarefaAtualizada = tarefaCarregada.copy(
-                                titulo = titulo,
-                                descricao = if (descricao.isBlank()) null else descricao,
-                                status = statusSelecionado,
-                                prazo = prazo
-                            )
-                            ultimaAcao = TarefaFormAction.UPDATE
-                            tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
+            comentarioParaExcluir?.let { idParaExcluir ->
+                AlertDialog(
+                    onDismissRequest = { comentarioParaExcluir = null },
+                    title = { Text("Excluir comentário") },
+                    text = { Text("Tem certeza de que deseja excluir este comentário?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            tarefaId?.let { tarefaAtual ->
+                                tarefaViewModel.excluirComentario(
+                                    quadroId,
+                                    colunaId,
+                                    tarefaAtual,
+                                    idParaExcluir
+                                )
+                            }
+                            comentarioParaExcluir = null
+                        }) {
+                            Text("Excluir")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { comentarioParaExcluir = null }) {
+                            Text("Cancelar")
                         }
                     }
-                },
-                onDelete = if (isEditing) {
-                    {
-                        ultimaAcao = TarefaFormAction.DELETE
-                        tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
+                )
+            }
+        }
+
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp))
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+
+        BotoesFormulario(
+            modifier = Modifier
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            onConfirm = {
+                if (titulo.isBlank()) {
+                    Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
+                    return@BotoesFormulario
+                }
+
+                if (!isEditing) {
+                    val novaTarefa = Tarefa(
+                        titulo = titulo,
+                        descricao = if (descricao.isBlank()) null else descricao,
+                        status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
+                        prazo = prazo,
+                        dataInicio = System.currentTimeMillis()
+                    )
+                    ultimaAcao = TarefaFormAction.CREATE
+                    tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
+                } else {
+                    tarefaState?.let { tarefaCarregada ->
+                        val tarefaAtualizada = tarefaCarregada.copy(
+                            titulo = titulo,
+                            descricao = if (descricao.isBlank()) null else descricao,
+                            status = statusSelecionado,
+                            prazo = prazo
+                        )
+                        ultimaAcao = TarefaFormAction.UPDATE
+                        tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
                     }
-                } else null
-            )
+                }
+            },
+            onDelete = if (isEditing) {
+                {
+                    ultimaAcao = TarefaFormAction.DELETE
+                    tarefaId?.let { id -> tarefaViewModel.excluirTarefa(quadroId, colunaId, id) }
+                }
+            } else null
+        )
         }
     }
-}
+
 
 private enum class TarefaFormAction {
     CREATE,
@@ -283,8 +649,66 @@ class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
     }
 
     override suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
-    // Nada a ser feito aqui
+        // Nada a ser feito aqui
     }
+
+    override suspend fun getComentarios(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String
+    ): ComentariosResponse {
+        return ComentariosResponse(
+            comentarios = emptyList(),
+            receberNotificacoes = true
+        )
+    }
+
+    override suspend fun createComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentario: com.example.unihub.data.dto.ComentarioRequestDto
+    ) = Comentario(
+        id = "1",
+        conteudo = comentario.conteudo,
+        autorId = 1L,
+        autorNome = "Usuário",
+        isAutor = true,
+        dataCriacao = System.currentTimeMillis(),
+        dataAtualizacao = System.currentTimeMillis()
+    )
+
+    override suspend fun updateComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentarioId: String,
+        comentario: com.example.unihub.data.dto.ComentarioRequestDto
+    ) = Comentario(
+        id = comentarioId,
+        conteudo = comentario.conteudo,
+        autorId = 1L,
+        autorNome = "Usuário",
+        isAutor = true,
+        dataCriacao = System.currentTimeMillis(),
+        dataAtualizacao = System.currentTimeMillis()
+    )
+
+    override suspend fun deleteComentario(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        comentarioId: String
+    ) {
+        // Nada para remover no mock
+    }
+
+    override suspend fun updateComentarioPreference(
+        quadroId: String,
+        colunaId: String,
+        tarefaId: String,
+        request: com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
+    ) = ComentarioPreferenciaResponse(request.receberNotificacoes)
 }) {
     // Essa classe pode ficar vazia, já que a lógica de mock está na interface.
 }

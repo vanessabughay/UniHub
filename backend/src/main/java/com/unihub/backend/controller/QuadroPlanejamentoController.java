@@ -3,14 +3,17 @@ package com.unihub.backend.controller;
 //  novo DTO
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
 
-import com.unihub.backend.dto.planejamento.AdicionarGruposRequest;
-import com.unihub.backend.dto.planejamento.AdicionarMembrosRequest;
+import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
+import com.unihub.backend.dto.planejamento.TarefaComentarioRequest;
+import com.unihub.backend.dto.planejamento.TarefaComentarioResponse;
+import com.unihub.backend.dto.planejamento.TarefaComentariosResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
+import com.unihub.backend.dto.planejamento.PreferenciaComentarioResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoResponse;
 import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.QuadroPlanejamento;
@@ -129,6 +132,51 @@ public class QuadroPlanejamentoController {
         service.excluirTarefa(id, colunaId, tarefaId, usuarioId);
     }
 
+    @GetMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios")
+    public TarefaComentariosResponse listarComentarios(@PathVariable Long id,
+                                                       @PathVariable Long colunaId,
+                                                       @PathVariable Long tarefaId,
+                                                       @AuthenticationPrincipal Long usuarioId) {
+        return service.listarComentarios(id, colunaId, tarefaId, usuarioId);
+    }
+
+    @PostMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios")
+    public TarefaComentarioResponse adicionarComentario(@PathVariable Long id,
+                                                        @PathVariable Long colunaId,
+                                                        @PathVariable Long tarefaId,
+                                                        @RequestBody TarefaComentarioRequest request,
+                                                        @AuthenticationPrincipal Long usuarioId) {
+        return service.adicionarComentario(id, colunaId, tarefaId, request, usuarioId);
+    }
+
+    @PutMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios/{comentarioId}")
+    public TarefaComentarioResponse atualizarComentario(@PathVariable Long id,
+                                                        @PathVariable Long colunaId,
+                                                        @PathVariable Long tarefaId,
+                                                        @PathVariable Long comentarioId,
+                                                        @RequestBody TarefaComentarioRequest request,
+                                                        @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarComentario(id, colunaId, tarefaId, comentarioId, request, usuarioId);
+    }
+
+    @DeleteMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios/{comentarioId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void excluirComentario(@PathVariable Long id,
+                                  @PathVariable Long colunaId,
+                                  @PathVariable Long tarefaId,
+                                  @PathVariable Long comentarioId,
+                                  @AuthenticationPrincipal Long usuarioId) {
+        service.excluirComentario(id, colunaId, tarefaId, comentarioId, usuarioId);
+    }
+
+    @PutMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios/preferencias")
+    public PreferenciaComentarioResponse atualizarPreferenciaComentario(@PathVariable Long id,
+                                                                        @PathVariable Long colunaId,
+                                                                        @PathVariable Long tarefaId,
+                                                                        @RequestBody AtualizarPreferenciaComentarioRequest request,
+                                                                        @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarPreferenciaComentario(id, colunaId, tarefaId, request, usuarioId);
+    }
 
     @PatchMapping("/{id}/tarefas/{tarefaId}/status")
     public TarefaPlanejamento atualizarStatusTarefa(@PathVariable Long id,
