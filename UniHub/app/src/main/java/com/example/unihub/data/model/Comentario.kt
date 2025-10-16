@@ -1,10 +1,13 @@
 package com.example.unihub.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class Comentario(
     val id: String,
     val conteudo: String,
     val autorId: Long,
     val autorNome: String,
+    @SerializedName("autor")
     val isAutor: Boolean,
     val dataCriacao: Long?,
     val dataAtualizacao: Long?
