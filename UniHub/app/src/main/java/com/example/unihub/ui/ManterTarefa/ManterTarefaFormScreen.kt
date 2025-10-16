@@ -192,12 +192,15 @@ fun TarefaFormScreen(
         ).show()
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 50.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -205,7 +208,7 @@ fun TarefaFormScreen(
             Header(
                 titulo = if (isEditing) "Editar tarefa" else "Cadastrar tarefa",
                 onVoltar = { navController.popBackStack() }
-                )
+            )
 
             CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
             CampoDropdownMultiSelect(
@@ -223,7 +226,10 @@ fun TarefaFormScreen(
                 onClick = { showDatePicker() }
             )
 
-            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
+            CampoFormulario(
+                label = "Descrição",
+                value = descricao,
+                onValueChange = { descricao = it })
 
             if (isEditing) {
                 CampoCombobox(
@@ -232,7 +238,8 @@ fun TarefaFormScreen(
                     selectedOption = statusSelecionado,
                     onOptionSelected = { statusSelecionado = it },
                     optionToDisplayedString = { status ->
-                        status.name.lowercase().replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                        status.name.lowercase()
+                            .replaceFirstChar { it.titlecase(Locale.getDefault()) }
                     },
                     placeholder = "Selecione o estado"
                 )
@@ -306,7 +313,9 @@ fun TarefaFormScreen(
                                 Text(
                                     text = "Nenhum comentário ainda.",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
+                                        alpha = 0.8f
+                                    )
                                 )
                             } else {
                                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -316,13 +325,22 @@ fun TarefaFormScreen(
                                         } else {
                                             comentario.autorNome
                                         }
-                                        val dataComentario = comentario.dataAtualizacao ?: comentario.dataCriacao
-                                        val dataTexto = dataComentario?.let { comentarioDateFormat.format(Date(it)) } ?: ""
+                                        val dataComentario =
+                                            comentario.dataAtualizacao ?: comentario.dataCriacao
+                                        val dataTexto = dataComentario?.let {
+                                            comentarioDateFormat.format(
+                                                Date(it)
+                                            )
+                                        } ?: ""
 
                                         Card(
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(12.dp),
-                                            colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF)),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = Color(
+                                                    0xFFD9F6DF
+                                                )
+                                            ),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                         ) {
                                             Column(
@@ -408,7 +426,8 @@ fun TarefaFormScreen(
                                                         } else {
                                                             IconButton(onClick = {
                                                                 comentarioEmEdicaoId = comentario.id
-                                                                textoComentarioEdicao = comentario.conteudo
+                                                                textoComentarioEdicao =
+                                                                    comentario.conteudo
                                                             }) {
                                                                 Icon(
                                                                     imageVector = Icons.Default.Edit,
@@ -417,7 +436,8 @@ fun TarefaFormScreen(
                                                             }
 
                                                             IconButton(onClick = {
-                                                                comentarioParaExcluir = comentario.id
+                                                                comentarioParaExcluir =
+                                                                    comentario.id
                                                             }) {
                                                                 Icon(
                                                                     imageVector = Icons.Default.Delete,
@@ -443,8 +463,8 @@ fun TarefaFormScreen(
                         }
 
 
-                        }
                     }
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -466,45 +486,47 @@ fun TarefaFormScreen(
                     )
                     Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
                 }
-                }
+            }
 
-                comentarioParaExcluir?.let { idParaExcluir ->
-                    AlertDialog(
-                        onDismissRequest = { comentarioParaExcluir = null },
-                        title = { Text("Excluir comentário") },
-                        text = { Text("Tem certeza de que deseja excluir este comentário?") },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                tarefaId?.let { tarefaAtual ->
-                                    tarefaViewModel.excluirComentario(
-                                        quadroId,
-                                        colunaId,
-                                        tarefaAtual,
-                                        idParaExcluir
-                                    )
-                                }
-                                comentarioParaExcluir = null
-                            }) {
-                                Text("Excluir")
+            comentarioParaExcluir?.let { idParaExcluir ->
+                AlertDialog(
+                    onDismissRequest = { comentarioParaExcluir = null },
+                    title = { Text("Excluir comentário") },
+                    text = { Text("Tem certeza de que deseja excluir este comentário?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            tarefaId?.let { tarefaAtual ->
+                                tarefaViewModel.excluirComentario(
+                                    quadroId,
+                                    colunaId,
+                                    tarefaAtual,
+                                    idParaExcluir
+                                )
                             }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { comentarioParaExcluir = null }) {
-                                Text("Cancelar")
-                            }
+                            comentarioParaExcluir = null
+                        }) {
+                            Text("Excluir")
                         }
-                    )
-                }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { comentarioParaExcluir = null }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
             }
+        }
 
-            Spacer(modifier = Modifier.weight(1f))
+        if (isLoading) {
+            LinearProgressIndicator(modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp))
+        }
 
-            if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-            }
+        Spacer(modifier = Modifier.height(16.dp))
 
 
-            BotoesFormulario(
+        BotoesFormulario(
                 onConfirm = {
                     if (titulo.isBlank()) {
                         Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
