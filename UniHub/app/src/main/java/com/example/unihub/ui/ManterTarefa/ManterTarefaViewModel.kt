@@ -172,7 +172,7 @@ class TarefaFormViewModel(
         viewModelScope.launch {
             try {
                 val novoComentario = repository.criarComentario(quadroId, colunaId, tarefaId, conteudo.trim())
-                _comentarios.update { it + novoComentario }
+                _comentarios.update { listaAtual -> listOf(novoComentario) + listaAtual }
                 _comentarioResultado.value = ComentarioActionResult.Success(
                     message = "Comentário adicionado com sucesso!",
                     clearNewComment = true,

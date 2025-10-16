@@ -355,7 +355,7 @@ public class QuadroPlanejamentoService {
         TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
 
         List<TarefaComentarioResponse> comentarios = tarefaComentarioRepository
-                .findByTarefaOrderByDataCriacaoAsc(tarefa)
+                .findByTarefaOrderByDataCriacaoDesc(tarefa)
                 .stream()
                 .map(comentario -> toComentarioResponse(comentario, usuarioId))
                 .collect(Collectors.toList());

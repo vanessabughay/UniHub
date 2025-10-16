@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public interface TarefaComentarioRepository extends JpaRepository<TarefaComentario, Long> {
 
-    List<TarefaComentario> findByTarefaOrderByDataCriacaoAsc(TarefaPlanejamento tarefa);
+    List<TarefaComentario> findByTarefaOrderByDataCriacaoDesc(TarefaPlanejamento tarefa);
 
     Optional<TarefaComentario> findByIdAndTarefaId(Long id, Long tarefaId);
 }
