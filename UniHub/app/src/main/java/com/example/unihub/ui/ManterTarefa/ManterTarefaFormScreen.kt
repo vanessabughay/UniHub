@@ -390,59 +390,82 @@ fun TarefaFormScreen(
                                                     }
 
                                                     if (comentario.isAutor) {
-                                                        if (comentarioEmEdicaoId == comentario.id) {
-                                                            IconButton(
-                                                                onClick = {
-                                                                    if (textoComentarioEdicao.isNotBlank()) {
-                                                                        tarefaId?.let { id ->
-                                                                            tarefaViewModel.atualizarComentario(
-                                                                                quadroId,
-                                                                                colunaId,
-                                                                                id,
-                                                                                comentario.id,
-                                                                                textoComentarioEdicao
-                                                                            )
+                                                        val iconButtonSize = 32.dp
+                                                        val iconSize = 18.dp
+
+                                                        Row(
+                                                            modifier = Modifier.wrapContentWidth(Alignment.End),
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                                        ) {
+                                                            if (comentarioEmEdicaoId == comentario.id) {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        if (textoComentarioEdicao.isNotBlank()) {
+                                                                            tarefaId?.let { id ->
+                                                                                tarefaViewModel.atualizarComentario(
+                                                                                    quadroId,
+                                                                                    colunaId,
+                                                                                    id,
+                                                                                    comentario.id,
+                                                                                    textoComentarioEdicao
+                                                                                )
+                                                                            }
                                                                         }
-                                                                    }
-                                                                },
-                                                                enabled = textoComentarioEdicao.isNotBlank()
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Check,
-                                                                    contentDescription = "Salvar edição",
-                                                                    tint = Color(0xFF28A745)
-                                                                )
-                                                            }
+                                                                    },
+                                                                    enabled = textoComentarioEdicao.isNotBlank(),
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Check,
+                                                                        contentDescription = "Salvar edição",
+                                                                        tint = Color(0xFF28A745),
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
 
-                                                            IconButton(onClick = {
-                                                                comentarioEmEdicaoId = null
-                                                                textoComentarioEdicao = ""
-                                                            }) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Close,
-                                                                    contentDescription = "Cancelar edição"
-                                                                )
-                                                            }
-                                                        } else {
-                                                            IconButton(onClick = {
-                                                                comentarioEmEdicaoId = comentario.id
-                                                                textoComentarioEdicao =
-                                                                    comentario.conteudo
-                                                            }) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Edit,
-                                                                    contentDescription = "Editar comentário"
-                                                                )
-                                                            }
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioEmEdicaoId = null
+                                                                        textoComentarioEdicao = ""
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Close,
+                                                                        contentDescription = "Cancelar edição",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
+                                                            } else {
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioEmEdicaoId = comentario.id
+                                                                        textoComentarioEdicao =
+                                                                            comentario.conteudo
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Edit,
+                                                                        contentDescription = "Editar comentário",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
 
-                                                            IconButton(onClick = {
-                                                                comentarioParaExcluir =
-                                                                    comentario.id
-                                                            }) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Delete,
-                                                                    contentDescription = "Excluir comentário"
-                                                                )
+                                                                IconButton(
+                                                                    onClick = {
+                                                                        comentarioParaExcluir =
+                                                                            comentario.id
+                                                                    },
+                                                                    modifier = Modifier.size(iconButtonSize)
+                                                                ) {
+                                                                    Icon(
+                                                                        imageVector = Icons.Default.Delete,
+                                                                        contentDescription = "Excluir comentário",
+                                                                        modifier = Modifier.size(iconSize)
+                                                                    )
+                                                                }
                                                             }
                                                         }
                                                     }
