@@ -90,7 +90,12 @@ fun ColunaFormScreen(
                 onVoltar = { navController.popBackStack() }
             )
 
-            CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
+            CampoFormulario(
+                label = "Título",
+                value = titulo,
+                onValueChange = { titulo = it },
+                singleLine = true
+            )
 
             val canMarkAsCompleted = colunaState?.todasTarefasConcluidas ?: true
             val statusOptions = if (colunaState?.tarefas?.isNotEmpty() == true) {

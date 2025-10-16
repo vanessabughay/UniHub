@@ -54,6 +54,21 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
         criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
         criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
+        criarUsuarioSeNaoExistir("Carla Mendes", "carla.mendes@email.com", "carlamendes");
+        criarUsuarioSeNaoExistir("Daniel Souza", "daniel.souza@email.com", "danielsouza");
+        criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa.ferreira@email.com", "elisaferreira");
+        criarUsuarioSeNaoExistir("Felipe Oliveira", "felipe.oliveira@email.com", "felipeoliveira");
+        criarUsuarioSeNaoExistir("Gabriela Santos", "gabriela.santos@email.com", "gabrielasantos");
+        criarUsuarioSeNaoExistir("Heitor Lima", "heitor.lima@email.com", "heitorlima");
+        criarUsuarioSeNaoExistir("Isabela Rocha", "isabela.rocha@email.com", "isabellarocha");  
+        criarUsuarioSeNaoExistir("João Pereira", "joao.pereira@email.com", "joaopereira");
+        criarUsuarioSeNaoExistir("Karina Alves", "karina.alves@email.com", "karinalves");
+        criarUsuarioSeNaoExistir("Lucas Martins", "lucas.martins@email.com", "lucasmartins");       
+        criarUsuarioSeNaoExistir("Mariana Dias", "mariana.dias@email.com", "mariandias");
+        criarUsuarioSeNaoExistir("Nicolas Teixeira", "nicolas.teixeira@email.com", "nicolasteixeira");
+        criarUsuarioSeNaoExistir("Olívia Barbosa", "olivia.barbosa@email.com", "oliviabarbosa");
+
+
     }
 
     private void criarUsuarioSeNaoExistir(String nome, String email, String senha) {
