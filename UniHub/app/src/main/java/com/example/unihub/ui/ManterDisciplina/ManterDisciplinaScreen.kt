@@ -501,6 +501,17 @@ fun ManterDisciplinaScreen(
             }
 
             item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = isAtiva, onCheckedChange = { isAtiva = it }, colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor))
+                }
+            }
+
+            item {
                 OutlinedButton(
                     onClick = { showDialog = true },
                     modifier = Modifier
@@ -514,16 +525,7 @@ fun ManterDisciplinaScreen(
 
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = isAtiva, onCheckedChange = { isAtiva = it }, colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor))
-                }
-            }
+
 
         }
     }

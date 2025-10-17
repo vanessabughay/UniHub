@@ -248,6 +248,104 @@ fun ManterAvaliacaoScreen(
                         colors = OutlinedTextFieldDefaults.colors()
                     )
 
+                    // DATA E HORA DA ENTREGA (lado a lado)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        CampoData(
+                            label = "Data de Entrega",
+                            value = stringDateToMillis(uiState.dataEntrega),
+                            onDateSelected = { millis ->
+                                val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
+                                viewModel.setDataEntrega(iso)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        CampoHorario(
+                            label = "Hora de Entrega",
+                            value = stringTimeToMinutes(uiState.horaEntrega),
+                            onTimeSelected = { totalMinutes ->
+                                viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // NOTA E PESO (linha única)
+                    var prioridadeExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        OutlinedTextField(
+                            value = NotaCampo.formatFieldText(uiState.nota),
+                            onValueChange = { viewModel.setNota(it) },
+                            label = { Text("Nota") },
+                            placeholder = { Text("Ex.: 8,5") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors()
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.peso,
+                            onValueChange = { viewModel.setPeso(it) },
+                            label = { Text("Peso (%)") },
+                            placeholder = { Text("Ex.: 20") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = true, // Mude para false para desativar completamente a digitação
+                            colors = OutlinedTextFieldDefaults.colors()
+                        )
+
+
+                    }
+
+                    // PRIORIDADE
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        ExposedDropdownMenuBox(
+                            expanded = prioridadeExpanded,
+                            onExpandedChange = { prioridadeExpanded = !prioridadeExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.prioridade.displayName, // Assumindo que Prioridade tem 'displayName'
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Prioridade *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = prioridadeExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = prioridadeExpanded,
+                                onDismissRequest = { prioridadeExpanded = false }
+                            ) {
+                                uiState.todasPrioridades.forEach { prioridade ->
+                                    DropdownMenuItem(
+                                        text = { Text(prioridade.displayName) },
+                                        onClick = {
+                                            viewModel.setPrioridade(prioridade)
+                                            prioridadeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // MODALIDADE (Dropdown)
                     var modalidadeExpanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(
@@ -277,86 +375,6 @@ fun ManterAvaliacaoScreen(
                                     onClick = {
                                         viewModel.setModalidade(modalidade)
                                         modalidadeExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // DATA DA ENTREGA (somente seleção, sem digitar)
-                    CampoData(
-                        label = "Data de Entrega",
-                        value = stringDateToMillis(uiState.dataEntrega),
-                        onDateSelected = { millis ->
-                            val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
-                            viewModel.setDataEntrega(iso)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // HORA DA ENTREGA (somente seleção, sem digitar)
-                    CampoHorario(
-                        label = "Hora de Entrega",
-                        value = stringTimeToMinutes(uiState.horaEntrega),
-                        onTimeSelected = { totalMinutes ->
-                            viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // NOTA
-                    OutlinedTextField(
-                        value = NotaCampo.formatFieldText(uiState.nota),
-                        onValueChange = { viewModel.setNota(it) },
-                        label = { Text("Nota") },
-                        placeholder = { Text("Ex.: 8,5") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-
-                    // PESO (Desativado para interação complexa por enquanto)
-                    OutlinedTextField(
-                        value = uiState.peso,
-                        onValueChange = { viewModel.setPeso(it) },
-                        label = { Text("Peso (%)") },
-                        placeholder = { Text("Ex.: 20") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = true, // Mude para false para desativar completamente a digitação
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-
-                    // PRIORIDADE (Dropdown)
-                    var prioridadeExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = prioridadeExpanded,
-                        onExpandedChange = { prioridadeExpanded = !prioridadeExpanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.prioridade.displayName, // Assumindo que Prioridade tem 'displayName'
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Prioridade *") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = prioridadeExpanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = prioridadeExpanded,
-                            onDismissRequest = { prioridadeExpanded = false }
-                        ) {
-                            uiState.todasPrioridades.forEach { prioridade ->
-                                DropdownMenuItem(
-                                    text = { Text(prioridade.displayName) },
-                                    onClick = {
-                                        viewModel.setPrioridade(prioridade)
-                                        prioridadeExpanded = false
                                     }
                                 )
                             }
