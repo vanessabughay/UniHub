@@ -28,6 +28,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,9 +54,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.SearchBox
 import kotlin.text.contains
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.Text
+import com.example.unihub.data.config.TokenManager
 
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
@@ -71,6 +71,7 @@ fun ListarContatoScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val context = LocalContext.current
     val contatosState by viewModel.contatos.collectAsState()
+    val convitesRecebidosState by viewModel.convitesRecebidos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -102,10 +103,25 @@ fun ListarContatoScreen(
         }
     }
 
+    val usuarioEmail = TokenManager.emailUsuario?.trim().orEmpty()
+    val usuarioEmailLower = remember(usuarioEmail) { usuarioEmail.lowercase() }
+
+    val contatosAtivos = remember(contatosState) { contatosState.filter { !it.pendente } }
+    val contatosPendentes = remember(contatosState) { contatosState.filter { it.pendente } }
+    val convitesRecebidos = remember(convitesRecebidosState) { convitesRecebidosState }
+    val convitesEnviados = remember(contatosPendentes, usuarioEmailLower) {
+        if (usuarioEmailLower.isBlank()) {
+            contatosPendentes
+        } else {
+            contatosPendentes.filterNot { it.email.lowercase() == usuarioEmailLower }
+        }
+    }
+
     val contatosDaAba = when (selectedTabIndex) {
-        0 -> contatosState.filter { !it.pendente }
-        1 -> contatosState.filter { it.pendente }
-        else -> emptyList()
+        0 -> contatosAtivos
+        1 -> convitesEnviados
+        else -> convitesRecebidos
+
     }
 
     val contatosFiltrados = if (searchQuery.isBlank()) {
@@ -223,7 +239,7 @@ fun ListarContatoScreen(
                             onClick = { selectedTabIndex = index },
                             text = {
                                 Text(
-                                title,
+                                    text = title,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -246,20 +262,7 @@ fun ListarContatoScreen(
                             CircularProgressIndicator()
                         }
                     }
-                    selectedTabIndex == 2 -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Aguarde! Em breve listaremos os convites recebidos nesta aba.",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+
                     contatosDaAba.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
                         Box(
                             modifier = Modifier
@@ -270,7 +273,11 @@ fun ListarContatoScreen(
                             val mensagem = when (selectedTabIndex) {
                                 0 -> "Nenhum contato cadastrado."
                                 1 -> "Nenhum convite enviado."
-                                else -> ""
+                                else -> if (usuarioEmail.isBlank()) {
+                                    "Não foi possível identificar seu e-mail para verificar convites recebidos."
+                                } else {
+                                    "Nenhum convite recebido."
+                                }
                             }
                             Text(
                                 mensagem,
@@ -321,7 +328,8 @@ fun ListarContatoScreen(
                                     onDeleteClick = { // Nova ação para o clique na lixeira
                                         contatoParaExcluir = contato
                                         showDeleteDialog = true
-                                    }
+                                    },
+                                    showDelete = selectedTabIndex != 2
                                 )
                             }
                         }
@@ -337,7 +345,8 @@ fun ListarContatoScreen(
 fun ContatoItem(
     contato: ContatoResumoUi,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    showDelete: Boolean = true
 ) {
 
     Card(
@@ -383,12 +392,14 @@ fun ContatoItem(
                     }
                 }
             }
-            IconButton(onClick = onDeleteClick) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = "Excluir Contato",
-                    tint = MaterialTheme.colorScheme.error // Cor de erro para o ícone de exclusão
-                )
+            if (showDelete) {
+                IconButton(onClick = onDeleteClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Excluir Contato",
+                        tint = MaterialTheme.colorScheme.error // Cor de erro para o ícone de exclusão
+                    )
+                }
             }
         }
     }

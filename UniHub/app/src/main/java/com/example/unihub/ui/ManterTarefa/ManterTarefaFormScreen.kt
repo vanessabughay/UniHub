@@ -756,6 +756,7 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
                 override suspend fun addContatoApi(contato: Contato) {}
                 override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
                 override suspend fun deleteContatoApi(id: Long): Boolean = true
+                override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> = emptyList()
             })
 
             @Suppress("UNCHECKED_CAST")

@@ -59,4 +59,9 @@ public class ContatoController {
     public List<Contato> buscarPorNome(@RequestParam String nome) {
         return service.buscarPorNome(nome);
     }
+
+    @GetMapping("/pendentes")
+    public List<Contato> buscarPendentesPorEmail(@RequestParam String email) {
+        return service.buscarPendentesPorEmail(email);
+    }
 }

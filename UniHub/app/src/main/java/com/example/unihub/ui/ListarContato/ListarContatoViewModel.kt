@@ -4,11 +4,12 @@ import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.ContatoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -27,6 +28,9 @@ class ListarContatoViewModel(
     private val _contatos = MutableStateFlow<List<ContatoResumoUi>>(emptyList())
     val contatos: StateFlow<List<ContatoResumoUi>> = _contatos.asStateFlow()
 
+    private val _convitesRecebidos = MutableStateFlow<List<ContatoResumoUi>>(emptyList())
+    val convitesRecebidos: StateFlow<List<ContatoResumoUi>> = _convitesRecebidos.asStateFlow()
+
     private val _isLoading = MutableStateFlow<Boolean>(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -43,29 +47,58 @@ class ListarContatoViewModel(
             _isLoading.value = true
             _errorMessage.value = null
 
-            repository.getContatoResumo()
-                .map { contatosDoRepositorio ->
-                    contatosDoRepositorio.map { contato ->
-                        ContatoResumoUi(
-                            id = contato.id,
-                            nome = contato.nome,
-                            email = contato.email,
-                            pendente = contato.pendente
+            val emailParaBusca = TokenManager.emailUsuario?.trim().orEmpty()
 
-                        )
-                    }.sortedBy { it.nome.lowercase() }
+            try {
+                val contatosOrdenadosParaUi = repository.getContatoResumo()
+                    .map { contatosDoRepositorio ->
+                        contatosDoRepositorio.map { contato ->
+                            ContatoResumoUi(
+                                id = contato.id,
+                                nome = contato.nome,
+                                email = contato.email,
+                                pendente = contato.pendente
+                            )
+                        }.sortedBy { it.nome.lowercase() }
+                    }
+                    .first()
+
+                _contatos.value = contatosOrdenadosParaUi
+            } catch (exception: Exception) {
+                _contatos.value = emptyList()
+                _errorMessage.value = "Falha ao carregar contatos: ${exception.message}"
+            }
+
+            if (emailParaBusca.isBlank()) {
+                _convitesRecebidos.value = emptyList()
+            } else {
+                try {
+                    val convitesPendentesParaUi = repository.getConvitesPendentesPorEmail(emailParaBusca)
+                        .map { convitesPendentes ->
+                            convitesPendentes.map { contato ->
+                                ContatoResumoUi(
+                                    id = contato.id,
+                                    nome = contato.nome,
+                                    email = contato.email,
+                                    pendente = contato.pendente
+                                )
+                            }.sortedBy { it.nome.lowercase() }
+                        }
+                        .first()
+
+                    _convitesRecebidos.value = convitesPendentesParaUi
+                } catch (exception: Exception) {
+                    _convitesRecebidos.value = emptyList()
+                    if (_errorMessage.value == null) {
+                        _errorMessage.value = "Falha ao carregar convites recebidos: ${exception.message}"
+                    }
                 }
-                .catch { exception ->
-                    _errorMessage.value = "Falha ao carregar contatos: ${exception.message}"
-                    _contatos.value = emptyList()
-                    _isLoading.value = false
-                }
-                .collect { contatosOrdenadosParaUi ->
-                    _contatos.value = contatosOrdenadosParaUi
-                    _isLoading.value = false
-                }
+            }
+
+            _isLoading.value = false
         }
     }
+
 
     /**
      * Exclui um contato pelo ID.

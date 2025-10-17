@@ -23,6 +23,7 @@ interface Contatobackend { // Removi o "_" inicial, é uma convenção melhor
     suspend fun addContatoApi(contato: Contato)
     suspend fun updateContatoApi(id: Long, contato: Contato): Boolean
     suspend fun deleteContatoApi(id: Long): Boolean
+    suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo>
 }
 
 // Esta é agora a única classe ContatoRepository
@@ -33,6 +34,17 @@ class ContatoRepository(private val backend: Contatobackend) {
     fun getContatoResumo(): Flow<List<ContatoResumo>> = flow {
         try {
             emit(backend.getContatoResumoApi())
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun getConvitesPendentesPorEmail(email: String): Flow<List<ContatoResumo>> = flow {
+        try {
+            emit(backend.getConvitesPendentesPorEmail(email))
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {

@@ -7,6 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ContatoApi {
     @GET("contato")
@@ -23,4 +24,7 @@ interface ContatoApi {
 
     @DELETE("contato/{id}")
     suspend fun delete(@Path("id") id: Long)
+
+    @GET("contato/pendentes")
+    suspend fun listPendentes(@Query("email") email: String): List<Contato>
 }

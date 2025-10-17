@@ -306,6 +306,12 @@ private fun createFakeContatoRepository() = ContatoRepository(object : Contatoba
     override suspend fun getContatoResumoApi(): List<ContatoResumo> = MOCK_CONTATOS
     override suspend fun getContatoByIdApi(id: String): Contato? = null
     // --- FUNÇÕES QUE FALTAVAM ---
+
+
+    override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> {
+        // This is the function causing the error. Return an empty list for the mock.
+        return emptyList()
+    }
     override suspend fun addContatoApi(contato: Contato) {} // Implementação vazia
     override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
     override suspend fun deleteContatoApi(id: Long): Boolean = true

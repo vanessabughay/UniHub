@@ -41,4 +41,15 @@ class ApiContatoBackend : Contatobackend {
         api.delete(id)
         return true // Retorno booleano como na interface
     }
+
+    override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> {
+        return api.listPendentes(email).map {
+            ContatoResumo(
+                id = it.id!!,
+                nome = it.nome!!,
+                email = it.email!!,
+                pendente = it.pendente
+            )
+        }
+    }
 }

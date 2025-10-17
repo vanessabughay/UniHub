@@ -29,6 +29,20 @@ public class ContatoService {
         return repository.findByOwnerId(currentUserId());
     }
 
+    public List<Contato> buscarPendentesPorEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+
+        Long ownerId = currentUserId();
+
+        return repository.findByEmailIgnoreCaseAndPendenteTrue(email.trim())
+                .stream()
+                .filter(contato -> ownerId == null || !ownerId.equals(contato.getOwnerId()))
+                .collect(Collectors.toList());
+    }
+
+
     public Contato salvar(Contato contato) {
         contato.setOwnerId(currentUserId());
         return repository.save(contato);
