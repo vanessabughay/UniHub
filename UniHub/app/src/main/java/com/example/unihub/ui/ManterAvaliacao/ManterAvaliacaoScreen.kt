@@ -275,7 +275,7 @@ fun ManterAvaliacaoScreen(
                         }
 
                         CampoHorario(
-                            label = "Hora de Entrega",
+                            label = "Horário",
                             value = horaEntregaEmMinutos,
                             onTimeSelected = { totalMinutes ->
                                 viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
