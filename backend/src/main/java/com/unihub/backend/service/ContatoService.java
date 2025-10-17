@@ -14,6 +14,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.stream.Collectors;
@@ -95,6 +96,77 @@ public class ContatoService {
         if (!repository.existsByIdAndOwnerId(id, currentUserId()))
             throw new RuntimeException("Sem acesso");
         repository.deleteById(id);
+    }
+
+    public void aceitarConvite(Long conviteId) {
+        Long usuarioId = currentUserId();
+        if (usuarioId == null) {
+            throw new RuntimeException("Usuário não autenticado");
+        }
+
+        Usuario usuarioAtual = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        Contato convite = repository.findById(conviteId)
+                .orElseThrow(() -> new RuntimeException("Convite não encontrado"));
+
+        if (!Boolean.TRUE.equals(convite.getPendente())) {
+            throw new RuntimeException("Convite já respondido");
+        }
+
+        if (convite.getEmail() == null || !convite.getEmail().equalsIgnoreCase(usuarioAtual.getEmail())) {
+            throw new RuntimeException("Sem acesso");
+        }
+
+        convite.setPendente(false);
+        convite.setNome(usuarioAtual.getNomeUsuario());
+        convite.setEmail(usuarioAtual.getEmail());
+        repository.save(convite);
+
+        Long ownerId = convite.getOwnerId();
+        if (ownerId != null) {
+            Optional<Usuario> donoOptional = usuarioRepository.findById(ownerId);
+            if (donoOptional.isPresent()) {
+                Usuario dono = donoOptional.get();
+                String emailDono = dono.getEmail();
+                if (emailDono != null) {
+                    boolean jaExiste = repository.findByOwnerIdAndEmailIgnoreCase(usuarioAtual.getId(), emailDono)
+                            .isPresent();
+
+                    if (!jaExiste) {
+                        Contato novoContato = new Contato();
+                        novoContato.setOwnerId(usuarioAtual.getId());
+                        novoContato.setNome(dono.getNomeUsuario());
+                        novoContato.setEmail(emailDono);
+                        novoContato.setPendente(false);
+                        repository.save(novoContato);
+                    }
+                }
+            }
+        }
+    }
+
+    public void rejeitarConvite(Long conviteId) {
+        Long usuarioId = currentUserId();
+        if (usuarioId == null) {
+            throw new RuntimeException("Usuário não autenticado");
+        }
+
+        Usuario usuarioAtual = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+
+        Contato convite = repository.findById(conviteId)
+                .orElseThrow(() -> new RuntimeException("Convite não encontrado"));
+
+        if (convite.getEmail() == null || !convite.getEmail().equalsIgnoreCase(usuarioAtual.getEmail())) {
+            throw new RuntimeException("Sem acesso");
+        }
+
+        if (!Boolean.TRUE.equals(convite.getPendente())) {
+            throw new RuntimeException("Convite já respondido");
+        }
+
+        repository.deleteById(conviteId);
     }
 
     public List<Contato> buscarPorNome(String nome) {

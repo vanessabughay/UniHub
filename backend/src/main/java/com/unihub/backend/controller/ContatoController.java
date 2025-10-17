@@ -55,6 +55,18 @@ public class ContatoController {
         service.excluir(id);
     }
 
+    @PostMapping("/pendentes/{id:\\d+}/aceitar")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void aceitarConvite(@PathVariable Long id) {
+        service.aceitarConvite(id);
+    }
+
+    @PostMapping("/pendentes/{id:\\d+}/rejeitar")
+    @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void rejeitarConvite(@PathVariable Long id) {
+        service.rejeitarConvite(id);
+    }
+
     @GetMapping("/pesquisa")
     public List<Contato> buscarPorNome(@RequestParam String nome) {
         return service.buscarPorNome(nome);

@@ -320,6 +320,7 @@ fun ListarContatoScreen(
                             contentPadding = PaddingValues(bottom = 16.dp) // Adicionado para espaçamento no final
                         ) {
                             items(contatosFiltrados, key = { it.id }) { contato ->
+                                val isConviteRecebido = selectedTabIndex == 2
                                 ContatoItem(
                                     contato = contato,
                                     onClick = {
@@ -329,7 +330,37 @@ fun ListarContatoScreen(
                                         contatoParaExcluir = contato
                                         showDeleteDialog = true
                                     },
-                                    showDelete = selectedTabIndex != 2
+                                    showDelete = !isConviteRecebido,
+                                    onAcceptClick = if (isConviteRecebido) {
+                                        {
+                                            viewModel.aceitarConvite(contato.id) { sucesso ->
+                                                if (sucesso) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Convite aceito!",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                    onRejectClick = if (isConviteRecebido) {
+                                        {
+                                            viewModel.rejeitarConvite(contato.id) { sucesso ->
+                                                if (sucesso) {
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Convite rejeitado.",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+                                            }
+                                        }
+                                    } else {
+                                        null
+                                    }
                                 )
                             }
                         }
@@ -346,7 +377,9 @@ fun ContatoItem(
     contato: ContatoResumoUi,
     onClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    showDelete: Boolean = true
+    showDelete: Boolean = true,
+    onAcceptClick: (() -> Unit)? = null,
+    onRejectClick: (() -> Unit)? = null
 ) {
 
     Card(
@@ -389,6 +422,25 @@ fun ContatoItem(
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(top = 4.dp)
                         )
+                    }
+                }
+                if (!showDelete && (onAcceptClick != null || onRejectClick != null)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        onAcceptClick?.let { onClick ->
+                            TextButton(onClick = onClick) {
+                                Text("Aceitar")
+                            }
+                        }
+                        onRejectClick?.let { onClick ->
+                            TextButton(onClick = onClick) {
+                                Text("Rejeitar", color = MaterialTheme.colorScheme.error)
+                            }
+                        }
                     }
                 }
             }

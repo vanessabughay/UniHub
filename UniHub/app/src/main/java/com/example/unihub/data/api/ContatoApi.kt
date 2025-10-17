@@ -27,4 +27,10 @@ interface ContatoApi {
 
     @GET("contato/pendentes")
     suspend fun listPendentes(@Query("email") email: String): List<Contato>
+
+    @POST("contato/pendentes/{id}/aceitar")
+    suspend fun acceptInvite(@Path("id") id: Long)
+
+    @POST("contato/pendentes/{id}/rejeitar")
+    suspend fun rejectInvite(@Path("id") id: Long)
 }

@@ -24,6 +24,8 @@ interface Contatobackend { // Removi o "_" inicial, é uma convenção melhor
     suspend fun updateContatoApi(id: Long, contato: Contato): Boolean
     suspend fun deleteContatoApi(id: Long): Boolean
     suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo>
+    suspend fun acceptInvitation(id: Long)
+    suspend fun rejectInvitation(id: Long)
 }
 
 // Esta é agora a única classe ContatoRepository
@@ -111,4 +113,27 @@ class ContatoRepository(private val backend: Contatobackend) {
             throw Exception("Erro do servidor: ${e.code()}")
         }
     }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun acceptInvitation(id: Long) {
+        try {
+            backend.acceptInvitation(id)
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun rejectInvitation(id: Long) {
+        try {
+            backend.rejectInvitation(id)
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
 }

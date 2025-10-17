@@ -52,4 +52,12 @@ class ApiContatoBackend : Contatobackend {
             )
         }
     }
+
+    override suspend fun acceptInvitation(id: Long) {
+        api.acceptInvite(id)
+    }
+
+    override suspend fun rejectInvitation(id: Long) {
+        api.rejectInvite(id)
+    }
 }

@@ -142,6 +142,44 @@ class ListarContatoViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun aceitarConvite(contatoId: Long, onResult: (sucesso: Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                repository.acceptInvitation(contatoId)
+                loadContatos()
+                onResult(true)
+            } catch (e: Exception) {
+                _errorMessage.value = "Erro ao aceitar convite: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            }
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun rejeitarConvite(contatoId: Long, onResult: (sucesso: Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                repository.rejectInvitation(contatoId)
+                loadContatos()
+                onResult(true)
+            } catch (e: Exception) {
+                _errorMessage.value = "Erro ao rejeitar convite: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            }
+        }
+    }
+
+
+
     fun clearErrorMessage() {
         _errorMessage.value = null
     }
