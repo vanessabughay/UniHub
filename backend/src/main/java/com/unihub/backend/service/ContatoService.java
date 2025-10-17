@@ -2,6 +2,8 @@ package com.unihub.backend.service;
 
 import com.unihub.backend.model.Contato;
 import com.unihub.backend.repository.ContatoRepository;
+import com.unihub.backend.repository.UsuarioRepository;
+import com.unihub.backend.model.Usuario;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,12 +12,19 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 @Service
 public class ContatoService {
     @Autowired
     private ContatoRepository repository;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     private Long currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -36,16 +45,45 @@ public class ContatoService {
 
         Long ownerId = currentUserId();
 
-        return repository.findByEmailIgnoreCaseAndPendenteTrue(email.trim())
-                .stream()
+       List<Contato> convitesPendentes = repository.findByEmailIgnoreCaseAndPendenteTrue(email.trim());
+
+        Set<Long> ownerIds = convitesPendentes.stream()
+                .map(Contato::getOwnerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, Usuario> owners = new HashMap<>();
+        usuarioRepository.findAllById(ownerIds)
+                .forEach(usuario -> owners.put(usuario.getId(), usuario));
+
+        return convitesPendentes.stream()
                 .filter(contato -> ownerId == null || !ownerId.equals(contato.getOwnerId()))
+                .map(contato -> mapearConviteParaDono(contato, owners.get(contato.getOwnerId())))
                 .collect(Collectors.toList());
     }
+
 
 
     public Contato salvar(Contato contato) {
         contato.setOwnerId(currentUserId());
         return repository.save(contato);
+    }
+
+    private Contato mapearConviteParaDono(Contato conviteOriginal, Usuario dono) {
+        Contato resposta = new Contato();
+        resposta.setId(conviteOriginal.getId());
+        resposta.setPendente(conviteOriginal.getPendente());
+        resposta.setOwnerId(conviteOriginal.getOwnerId());
+
+        if (dono != null) {
+            resposta.setNome(dono.getNomeUsuario());
+            resposta.setEmail(dono.getEmail());
+        } else {
+            resposta.setNome(conviteOriginal.getNome());
+            resposta.setEmail(conviteOriginal.getEmail());
+        }
+
+        return resposta;
     }
 
     public Contato buscarPorId(Long id) {
