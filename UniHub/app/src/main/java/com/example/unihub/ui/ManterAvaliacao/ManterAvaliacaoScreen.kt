@@ -2,8 +2,7 @@
 
 package com.example.unihub.ui.ManterAvaliacao
 
-import android.app.DatePickerDialog // Para DatePicker (se for ativar)
-import android.app.TimePickerDialog   // Para TimePicker (se for ativar)
+import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
@@ -35,12 +34,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBuscaJanela
 import com.example.unihub.data.model.Modalidade
+import com.example.unihub.components.CampoData
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
 import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 import com.example.unihub.ui.ManterContato.DeleteButtonErrorColor
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import com.example.unihub.ui.Shared.NotaCampo
 
@@ -56,6 +56,7 @@ fun ManterAvaliacaoScreen(
     onExcluirSucessoNavegarParaLista: () -> Unit
 ) {
     val context = LocalContext.current
+    val locale = remember { Locale("pt", "BR") }
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -254,12 +255,17 @@ fun ManterAvaliacaoScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.Top
                     ) {
+                        val dataEntregaMillis = remember(uiState.dataEntrega) {
+                            stringDateToMillis(uiState.dataEntrega)
+                        }
                         CampoData(
-                            label = "Data de Entrega",
-                            value = stringDateToMillis(uiState.dataEntrega),
-                            onDateSelected = { millis ->
-                                val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
-                                viewModel.setDataEntrega(iso)
+                            label = "Data",
+                            value = formatDateToLocale(dataEntregaMillis, locale),
+                            onClick = {
+                                showLocalizedDatePicker(context, dataEntregaMillis, locale) { millis ->
+                                    val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
+                                    viewModel.setDataEntrega(iso)
+                                }
                             },
                             modifier = Modifier.weight(1f)
                         )
@@ -702,57 +708,7 @@ fun SelecaoContatosDialog(
     )
 }
 
-@Composable
-fun CampoData(
-    label: String,
-    value: Long,
-    onDateSelected: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-    val showDatePicker = {
-        val calendar = Calendar.getInstance().apply {
-            if (value != 0L) timeInMillis = value
-        }
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                calendar.set(year, month, day)
-                onDateSelected(calendar.timeInMillis)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
-    }
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showDatePicker() }) {
-            TextField(
-                value = if (value != 0L) dateFormat.format(Date(value)) else "",
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                )
-            )
-        }
-    }
-}
 
 @Composable
 fun CampoHorario(

@@ -1,6 +1,5 @@
 package com.example.unihub.ui.ManterTarefa
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,11 +19,13 @@ import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.lifecycle.ViewModelProvider
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.api.TarefaApi
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Calendar
+import java.util.Locale
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
@@ -55,7 +56,7 @@ fun TarefaFormScreen(
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
 
     val tarefaState by TarefaViewModel.tarefa.collectAsState()
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val locale = remember { Locale("pt", "BR") }
 
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
@@ -81,18 +82,7 @@ fun TarefaFormScreen(
     }
 
     val showDatePicker = {
-        val calendar = Calendar.getInstance().apply { timeInMillis = prazo }
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                val selectedCalendar = Calendar.getInstance().apply {
-                    set(Calendar.YEAR, year); set(Calendar.MONTH, month); set(Calendar.DAY_OF_MONTH, day)
-                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }
-                prazo = selectedCalendar.timeInMillis
-            },
-            calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        showLocalizedDatePicker(context, prazo, locale) { prazo = it }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -126,8 +116,8 @@ fun TarefaFormScreen(
 
             CampoData(
                 label = "Prazo",
-                value = dateFormat.format(Date(prazo)),
-                onClick = { showDatePicker() }
+                value = formatDateToLocale(prazo, locale),
+                onClick = showDatePicker
             )
 
             Spacer(modifier = Modifier.weight(1f))
