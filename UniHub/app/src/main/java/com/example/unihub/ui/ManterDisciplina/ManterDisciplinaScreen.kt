@@ -1,8 +1,6 @@
 package com.example.unihub.ui.ManterDisciplina
 
-import android.app.TimePickerDialog
 import android.os.Build
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.floor
 import kotlin.math.max
 import com.example.unihub.components.CampoData
+import com.example.unihub.components.CampoHorario
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 
@@ -74,54 +73,6 @@ fun CampoDeTextoComTitulo(
         )
     }
 }
-
-
-
-@Composable
-fun CampoHorario(
-    label: String,
-    value: Int,
-    onTimeSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val locale = remember { Locale("pt", "BR") }
-    val hour = value / 60
-    val minute = value % 60
-
-    val showTimePicker = {
-        val timePickerDialog = TimePickerDialog(
-            context,
-            { _, hourOfDay, minuteOfHour ->
-                onTimeSelected(hourOfDay * 60 + minuteOfHour)
-            },
-            hour,
-            minute,
-            true
-        )
-        timePickerDialog.show()
-    }
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showTimePicker() }) {
-            TextField(
-                value = String.format("%02d:%02d", hour, minute),
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true
-            )
-        }
-    }
-}
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -2,7 +2,6 @@
 
 package com.example.unihub.ui.ManterAvaliacao
 
-import android.app.TimePickerDialog
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
@@ -35,6 +34,7 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBuscaJanela
 import com.example.unihub.data.model.Modalidade
 import com.example.unihub.components.CampoData
+import com.example.unihub.components.CampoHorario
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
@@ -270,9 +270,13 @@ fun ManterAvaliacaoScreen(
                             modifier = Modifier.weight(1f)
                         )
 
+                        val horaEntregaEmMinutos = remember(uiState.horaEntrega) {
+                            stringTimeToMinutes(uiState.horaEntrega).takeIf { it >= 0 }
+                        }
+
                         CampoHorario(
                             label = "Hora de Entrega",
-                            value = stringTimeToMinutes(uiState.horaEntrega),
+                            value = horaEntregaEmMinutos,
                             onTimeSelected = { totalMinutes ->
                                 viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
                             },
@@ -709,51 +713,4 @@ fun SelecaoContatosDialog(
 }
 
 
-
-@Composable
-fun CampoHorario(
-    label: String,
-    value: Int,
-    onTimeSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val hasValue = value >= 0
-    val safeValue = if (hasValue) value else 0
-    val hour = safeValue / 60
-    val minute = safeValue % 60
-
-    val showTimePicker = {
-        TimePickerDialog(
-            context,
-            { _, hourOfDay, minuteOfHour ->
-                onTimeSelected(hourOfDay * 60 + minuteOfHour)
-            },
-            if (hasValue) hour else 12,
-            if (hasValue) minute else 0,
-            true
-        ).show()
-    }
-
-    val displayText = if (!hasValue) "" else String.format("%02d:%02d", hour, minute)
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showTimePicker() }) {
-            TextField(
-                value = displayText,
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true
-            )
-        }
-    }
-}
 
