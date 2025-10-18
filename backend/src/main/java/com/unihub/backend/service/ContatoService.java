@@ -7,6 +7,7 @@ import com.unihub.backend.model.Usuario;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -98,6 +99,7 @@ public class ContatoService {
         repository.deleteById(id);
     }
 
+    @Transactional
     public void aceitarConvite(Long conviteId) {
         Long usuarioId = currentUserId();
         if (usuarioId == null) {
@@ -122,6 +124,13 @@ public class ContatoService {
         convite.setNome(usuarioAtual.getNomeUsuario());
         convite.setEmail(usuarioAtual.getEmail());
         repository.save(convite);
+
+        Long novoId = usuarioAtual.getId();
+        if (!conviteId.equals(novoId)) {
+            repository.atualizarId(conviteId, novoId);
+            convite.setId(novoId);
+        }
+
 
         Long ownerId = convite.getOwnerId();
         if (ownerId != null) {
