@@ -1,12 +1,10 @@
 package com.example.unihub.ui.ManterAusencia
 
-import android.app.DatePickerDialog
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -28,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoData
 import com.example.unihub.data.model.Ausencia
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
@@ -38,9 +37,12 @@ import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.data.apiBackend.ApiCategoriaBackend
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Locale
 import kotlinx.coroutines.delay
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
 
 //cores
 private val AusenciasCardColor = Color(0xFFF3E4F8)
@@ -67,22 +69,17 @@ fun ManterAusenciaScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
 
-    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val locale = remember { Locale("pt", "BR") }
+    val zoneId = remember { ZoneId.systemDefault() }
 
     val disciplina by viewModel.disciplina.collectAsState()
     val ausenciaLoaded by viewModel.ausencia.collectAsState()
 
     val showDatePicker = {
-        val now = Calendar.getInstance()
-        DatePickerDialog(
-            context,
-            { _, year, month, dayOfMonth ->
-                data = LocalDate.of(year, month + 1, dayOfMonth)
-            },
-            data.year,
-            data.monthValue - 1,
-            data.dayOfMonth
-        ).show()
+        val currentMillis = data.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        showLocalizedDatePicker(context, currentMillis, locale) { millis ->
+            data = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+        }
     }
 
     val sucesso by viewModel.sucesso.collectAsState()
@@ -154,14 +151,14 @@ fun ManterAusenciaScreen(
                     readOnly = true,
                     enabled = false
                 )
-                OutlinedTextField(
-                    value = data.format(formatter),
-                    onValueChange = {},
-                    label = { Text("Data da ausência") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showDatePicker() },
-                    readOnly = true
+                val dataMillis = remember(data) {
+                    data.atStartOfDay(zoneId).toInstant().toEpochMilli()
+                }
+                CampoData(
+                    label = "Data da ausência",
+                    value = formatDateToLocale(dataMillis, locale),
+                    onClick = showDatePicker,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 ExposedDropdownMenuBox(

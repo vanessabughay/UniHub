@@ -1,6 +1,5 @@
 package com.example.unihub.ui.ManterTarefa
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -43,8 +42,6 @@ import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import com.example.unihub.data.model.Tarefa
-import java.text.SimpleDateFormat
-import java.util.*
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.Grupobackend
@@ -57,6 +54,10 @@ import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.model.Quadro
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Calendar
+import java.util.Locale
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
@@ -100,7 +101,7 @@ fun TarefaFormScreen(
     var textoComentarioEdicao by remember { mutableStateOf("") }
     var comentarioParaExcluir by remember { mutableStateOf<String?>(null) }
 
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val locale = remember { Locale("pt", "BR") }
     val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", Locale.getDefault()) }
 
     LaunchedEffect(key1 = quadroId) {
@@ -246,315 +247,17 @@ fun TarefaFormScreen(
                         status.name.lowercase()
                             .replaceFirstChar { it.titlecase(Locale.getDefault()) }
                     },
-                    placeholder = "Selecione o estado"
-                )
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Text(
-                                text = "Comentários",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-
-                            OutlinedTextField(
-                                value = novoComentario,
-                                onValueChange = { novoComentario = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 56.dp),
-                                placeholder = { Text("Escrever um comentário") },
-                                shape = RoundedCornerShape(12.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedContainerColor = Color(0xFFE8FAED),
-                                    unfocusedContainerColor = Color(0xFFE8FAED),
-                                    focusedBorderColor = Color(0xFF28A745),
-                                    unfocusedBorderColor = Color(0xFF28A745).copy(alpha = 0.4f),
-                                    cursorColor = Color(0xFF28A745)
-                                ),
-                                trailingIcon = {
-                                    IconButton(
-                                        onClick = {
-                                            if (novoComentario.isNotBlank()) {
-                                                tarefaId?.let { id ->
-                                                    tarefaViewModel.criarComentario(
-                                                        quadroId,
-                                                        colunaId,
-                                                        id,
-                                                        novoComentario
-                                                    )
-                                                }
-                                            }
-                                        },
-                                        enabled = novoComentario.isNotBlank()
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Send,
-                                            contentDescription = "Enviar comentário",
-                                            tint = Color(0xFF28A745)
-                                        )
-                                    }
-                                }
-                            )
-
-
-                            if (comentariosCarregando) {
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                            }
-
-                            if (comentarios.isEmpty() && !comentariosCarregando) {
-                                Text(
-                                    text = "Nenhum comentário ainda.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(
-                                        alpha = 0.8f
-                                    )
-                                )
-                            } else {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    comentarios.forEach { comentario ->
-                                        val autorLabel = if (comentario.isAutor) {
-                                            "${comentario.autorNome} (eu)"
-                                        } else {
-                                            comentario.autorNome
-                                        }
-                                        val dataComentario =
-                                            comentario.dataAtualizacao ?: comentario.dataCriacao
-                                        val dataTexto = dataComentario?.let {
-                                            comentarioDateFormat.format(
-                                                Date(it)
-                                            )
-                                        } ?: ""
-
-                                        Card(
-                                            modifier = Modifier.fillMaxWidth(),
-                                            shape = RoundedCornerShape(12.dp),
-                                            colors = CardDefaults.cardColors(
-                                                containerColor = Color(
-                                                    0xFFD9F6DF
-                                                )
-                                            ),
-                                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                                        ) {
-                                            Column(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .padding(12.dp),
-                                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                                            ) {
-                                                Row(
-                                                    verticalAlignment = Alignment.Top,
-                                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                                    modifier = Modifier.fillMaxWidth()
-                                                ) {
-                                                    Column(modifier = Modifier.weight(1f)) {
-                                                        if (comentarioEmEdicaoId == comentario.id) {
-                                                            OutlinedTextField(
-                                                                value = textoComentarioEdicao,
-                                                                onValueChange = {
-                                                                    textoComentarioEdicao = it
-                                                                },
-                                                                modifier = Modifier
-                                                                    .fillMaxWidth()
-                                                                    .heightIn(min = 56.dp),
-                                                                shape = RoundedCornerShape(12.dp),
-                                                                colors = OutlinedTextFieldDefaults.colors(
-                                                                    focusedContainerColor = Color.White,
-                                                                    unfocusedContainerColor = Color.White,
-                                                                    focusedBorderColor = Color(
-                                                                        0xFF28A745
-                                                                    ),
-                                                                    unfocusedBorderColor = Color(
-                                                                        0xFF28A745
-                                                                    ).copy(alpha = 0.4f)
-                                                                )
-                                                            )
-                                                        } else {
-                                                            Text(
-                                                                text = buildAnnotatedString {
-                                                                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                                                                        append("$autorLabel: ")
-                                                                    }
-                                                                    append(comentario.conteudo)
-                                                                },
-                                                                style = MaterialTheme.typography.bodyMedium
-                                                            )
-                                                        }
-                                                    }
-
-                                                    if (comentario.isAutor) {
-                                                        val iconButtonSize = 32.dp
-                                                        val iconSize = 18.dp
-
-                                                        Row(
-                                                            modifier = Modifier
-                                                                .wrapContentWidth(Alignment.End)
-                                                                .align(Alignment.Top),
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                                        ) {
-                                                            if (comentarioEmEdicaoId == comentario.id) {
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        if (textoComentarioEdicao.isNotBlank()) {
-                                                                            tarefaId?.let { id ->
-                                                                                tarefaViewModel.atualizarComentario(
-                                                                                    quadroId,
-                                                                                    colunaId,
-                                                                                    id,
-                                                                                    comentario.id,
-                                                                                    textoComentarioEdicao
-                                                                                )
-                                                                            }
-                                                                        }
-                                                                    },
-                                                                    enabled = textoComentarioEdicao.isNotBlank(),
-                                                                    modifier = Modifier.size(iconButtonSize)
-                                                                ) {
-                                                                    Icon(
-                                                                        imageVector = Icons.Default.Check,
-                                                                        contentDescription = "Salvar edição",
-                                                                        tint = Color(0xFF28A745),
-                                                                        modifier = Modifier.size(iconSize)
-                                                                    )
-                                                                }
-
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        comentarioEmEdicaoId = null
-                                                                        textoComentarioEdicao = ""
-                                                                    },
-                                                                    modifier = Modifier.size(iconButtonSize)
-                                                                ) {
-                                                                    Icon(
-                                                                        imageVector = Icons.Default.Close,
-                                                                        contentDescription = "Cancelar edição",
-                                                                        modifier = Modifier.size(iconSize)
-                                                                    )
-                                                                }
-                                                            } else {
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        comentarioEmEdicaoId = comentario.id
-                                                                        textoComentarioEdicao =
-                                                                            comentario.conteudo
-                                                                    },
-                                                                    modifier = Modifier.size(iconButtonSize)
-                                                                ) {
-                                                                    Icon(
-                                                                        imageVector = Icons.Default.Edit,
-                                                                        contentDescription = "Editar comentário",
-                                                                        modifier = Modifier.size(iconSize)
-                                                                    )
-                                                                }
-
-                                                                IconButton(
-                                                                    onClick = {
-                                                                        comentarioParaExcluir =
-                                                                            comentario.id
-                                                                    },
-                                                                    modifier = Modifier.size(iconButtonSize)
-                                                                ) {
-                                                                    Icon(
-                                                                        imageVector = Icons.Default.Delete,
-                                                                        contentDescription = "Excluir comentário",
-                                                                        modifier = Modifier.size(iconSize)
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                                if (dataTexto.isNotEmpty()) {
-                                                    Text(
-                                                        text = dataTexto,
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = Color.Gray,
-                                                        fontSize = 12.sp
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-
-                    }
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = receberNotificacoesComentarios,
-                        onCheckedChange = { marcado ->
-                            tarefaId?.let { id ->
-                                tarefaViewModel.atualizarPreferenciaComentarios(
-                                    quadroId,
-                                    colunaId,
-                                    id,
-                                    marcado
-                                )
-                            }
-                        },
-                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
-                    )
-                    Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-
-            comentarioParaExcluir?.let { idParaExcluir ->
-                AlertDialog(
-                    onDismissRequest = { comentarioParaExcluir = null },
-                    title = { Text("Excluir comentário") },
-                    text = { Text("Tem certeza de que deseja excluir este comentário?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            tarefaId?.let { tarefaAtual ->
-                                tarefaViewModel.excluirComentario(
-                                    quadroId,
-                                    colunaId,
-                                    tarefaAtual,
-                                    idParaExcluir
-                                )
-                            }
-                            comentarioParaExcluir = null
-                        }) {
-                            Text("Excluir")
-                        }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { comentarioParaExcluir = null }) {
-                            Text("Cancelar")
-                        }
-                    }
+                    placeholder = "Selecione o Status"
                 )
             }
-        }
 
-        if (isLoading) {
-            LinearProgressIndicator(modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp))
-        }
+            CampoData(
+                label = "Prazo",
+                value = formatDateToLocale(prazo, locale),
+                onClick = showDatePicker
+            )
 
-        Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(modifier = Modifier.weight(1f))
 
         BotoesFormulario(
             modifier = Modifier
