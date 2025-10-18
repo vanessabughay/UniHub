@@ -6,7 +6,6 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
@@ -21,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.components.SearchBox
+import com.example.unihub.components.CampoBusca
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
@@ -81,24 +80,14 @@ fun ListarDisciplinasScreen(
             )
 
             // SearchBox
-            SearchBox(modifier = Modifier.padding(16.dp)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(start = 8.dp),
-                    contentAlignment = Alignment.CenterStart
-                ) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                    )
-                    if (searchQuery.isEmpty()) {
-                        Text(text = "Buscar por nome ou id", color = Color.Gray)
-                    }
-                }
-            }
+            CampoBusca(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = "Buscar por nome ou id",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            )
 
             LazyColumn(
                 modifier = Modifier

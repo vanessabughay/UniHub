@@ -176,6 +176,7 @@ class ManterGrupoViewModel(
             contatoRepository.getContatoResumo() // usa o ContatoRepository injetado
                 .map { listaDeModelosContato -> // listaDeModelosContato é List<com.example.unihub.data.model.Contato>
                     listaDeModelosContato
+                        .filter { !it.pendente }
                         .mapNotNull { modeloContato -> // modeloContato é com.example.unihub.data.model.Contato
                             // Se id, nome, ou email forem essenciais e puderem ser nulos, decida como tratar.
                             // Aqui, estamos usando o operador elvis (?:) para fornecer padrões ou pular o item.

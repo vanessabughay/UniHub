@@ -1,10 +1,6 @@
 package com.example.unihub.ui.ManterDisciplina
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
-import java.util.Calendar
 import android.os.Build
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,17 +19,19 @@ import androidx.compose.ui.unit.dp
 import java.time.format.DateTimeFormatter
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoDisciplina
-import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import java.text.SimpleDateFormat
 import java.time.ZoneId
 import java.time.Instant
 import androidx.compose.ui.unit.sp
 import kotlin.math.floor
 import kotlin.math.max
+import com.example.unihub.components.CampoData
+import com.example.unihub.components.CampoHorario
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
 
 
 
@@ -75,103 +73,6 @@ fun CampoDeTextoComTitulo(
         )
     }
 }
-
-@Composable
-fun CampoData(
-    label: String,
-    value: Long,
-    onDateSelected: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-
-    val showDatePicker = {
-        val calendar = Calendar.getInstance().apply {
-            if (value != 0L) timeInMillis = value
-        }
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                calendar.set(year, month, day)
-                onDateSelected(calendar.timeInMillis)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
-    }
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showDatePicker() }) {
-            TextField(
-                value = if (value != 0L) dateFormat.format(Date(value)) else "",
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun CampoHorario(
-    label: String,
-    value: Int,
-    onTimeSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val hour = value / 60
-    val minute = value % 60
-
-    val showTimePicker = {
-        val timePickerDialog = TimePickerDialog(
-            context,
-            { _, hourOfDay, minuteOfHour ->
-                onTimeSelected(hourOfDay * 60 + minuteOfHour)
-            },
-            hour,
-            minute,
-            true
-        )
-        timePickerDialog.show()
-    }
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showTimePicker() }) {
-            TextField(
-                value = String.format("%02d:%02d", hour, minute),
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true
-            )
-        }
-    }
-}
-
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -262,6 +163,7 @@ fun ManterDisciplinaScreen(
     }
 
     val context = LocalContext.current
+    val locale = remember { Locale("pt", "BR") }
     val disciplina = viewModel.disciplina.collectAsState()
     val erro = viewModel.erro.collectAsState()
     val sucesso = viewModel.sucesso.collectAsState()
@@ -482,8 +384,26 @@ fun ManterDisciplinaScreen(
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoData("Início do Semestre", dataInicioSemestre, { dataInicioSemestre = it }, Modifier.weight(1f))
-                        CampoData("Fim do Semestre", dataFimSemestre, { dataFimSemestre = it }, Modifier.weight(1f))
+                        CampoData(
+                            label = "Início do Semestre",
+                            value = formatDateToLocale(dataInicioSemestre, locale),
+                            onClick = {
+                                showLocalizedDatePicker(context, dataInicioSemestre, locale) {
+                                    dataInicioSemestre = it
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        CampoData(
+                            label = "Fim do Semestre",
+                            value = formatDateToLocale(dataFimSemestre, locale),
+                            onClick = {
+                                showLocalizedDatePicker(context, dataFimSemestre, locale) {
+                                    dataFimSemestre = it
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
 
                 }
@@ -501,6 +421,17 @@ fun ManterDisciplinaScreen(
             }
 
             item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = isAtiva, onCheckedChange = { isAtiva = it }, colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor))
+                }
+            }
+
+            item {
                 OutlinedButton(
                     onClick = { showDialog = true },
                     modifier = Modifier
@@ -514,16 +445,7 @@ fun ManterDisciplinaScreen(
 
             }
 
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = isAtiva, onCheckedChange = { isAtiva = it }, colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor))
-                }
-            }
+
 
         }
     }

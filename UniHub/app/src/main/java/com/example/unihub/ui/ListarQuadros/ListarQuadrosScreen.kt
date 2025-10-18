@@ -6,17 +6,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.example.unihub.components.CampoBusca
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
@@ -33,6 +32,7 @@ import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.unihub.Screen
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,18 +191,11 @@ fun ListarQuadrosScreen(
 
 @Composable
 private fun SearchSection(searchQuery: String, onSearchQueryChanged: (String) -> Unit) {
-    OutlinedTextField(
+    CampoBusca(
         value = searchQuery,
         onValueChange = onSearchQueryChanged,
-        placeholder = { Text("Buscar quadro...") },
-        modifier = Modifier.fillMaxWidth(),
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Buscar") },
-        shape = CircleShape,
-        colors = OutlinedTextFieldDefaults.colors(
-            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-            focusedBorderColor = MaterialTheme.colorScheme.primary
-        ),
-        singleLine = true
+        placeholder = "Buscar quadro...",
+        modifier = Modifier.fillMaxWidth()
     )
 }
 

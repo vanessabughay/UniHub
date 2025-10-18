@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -28,8 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,9 +48,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.components.SearchBox
+import com.example.unihub.components.CampoBusca
 import kotlin.text.contains
-import com.example.unihub.data.config.TokenManager
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
@@ -71,7 +68,6 @@ fun ListarContatoScreen(
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val context = LocalContext.current
     val contatosState by viewModel.contatos.collectAsState()
-    val convitesRecebidosState by viewModel.convitesRecebidos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -103,25 +99,10 @@ fun ListarContatoScreen(
         }
     }
 
-    val usuarioEmail = TokenManager.emailUsuario?.trim().orEmpty()
-    val usuarioEmailLower = remember(usuarioEmail) { usuarioEmail.lowercase() }
-
-    val contatosAtivos = remember(contatosState) { contatosState.filter { !it.pendente } }
-    val contatosPendentes = remember(contatosState) { contatosState.filter { it.pendente } }
-    val convitesRecebidos = remember(convitesRecebidosState) { convitesRecebidosState }
-    val convitesEnviados = remember(contatosPendentes, usuarioEmailLower) {
-        if (usuarioEmailLower.isBlank()) {
-            contatosPendentes
-        } else {
-            contatosPendentes.filterNot { it.email.lowercase() == usuarioEmailLower }
-        }
-    }
-
     val contatosDaAba = when (selectedTabIndex) {
-        0 -> contatosAtivos
-        1 -> convitesEnviados
-        else -> convitesRecebidos
-
+        0 -> contatosState.filter { !it.pendente }
+        1 -> contatosState.filter { it.pendente }
+        else -> emptyList()
     }
 
     val contatosFiltrados = if (searchQuery.isBlank()) {
@@ -200,32 +181,14 @@ fun ListarContatoScreen(
                     .padding(paddingValues),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                SearchBox(
+                CampoBusca(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Buscar por nome, e-mail ou id",
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 8.dp, end = 8.dp),
-                        singleLine = true,
-                        textStyle = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 16.sp
-                        ),
-                        decorationBox = { innerTextField ->
-                            Box(contentAlignment = Alignment.CenterStart) {
-                                if (searchQuery.isEmpty()) {
-                                    Text("Buscar por nome, e-mail ou id", color = Color.Gray, fontSize = 16.sp)
-                                }
-                                innerTextField()
-                            }
-                        }
-                    )
-                }
+                )
 
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
@@ -239,7 +202,7 @@ fun ListarContatoScreen(
                             onClick = { selectedTabIndex = index },
                             text = {
                                 Text(
-                                    text = title,
+                                title,
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
@@ -262,7 +225,20 @@ fun ListarContatoScreen(
                             CircularProgressIndicator()
                         }
                     }
-
+                    selectedTabIndex == 2 -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Aguarde! Em breve listaremos os convites recebidos nesta aba.",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                     contatosDaAba.isEmpty() && !isLoading && errorMessage == null && searchQuery.isBlank() -> {
                         Box(
                             modifier = Modifier
@@ -273,11 +249,7 @@ fun ListarContatoScreen(
                             val mensagem = when (selectedTabIndex) {
                                 0 -> "Nenhum contato cadastrado."
                                 1 -> "Nenhum convite enviado."
-                                else -> if (usuarioEmail.isBlank()) {
-                                    "Não foi possível identificar seu e-mail para verificar convites recebidos."
-                                } else {
-                                    "Nenhum convite recebido."
-                                }
+                                else -> ""
                             }
                             Text(
                                 mensagem,
@@ -320,7 +292,6 @@ fun ListarContatoScreen(
                             contentPadding = PaddingValues(bottom = 16.dp) // Adicionado para espaçamento no final
                         ) {
                             items(contatosFiltrados, key = { it.id }) { contato ->
-                                val isConviteRecebido = selectedTabIndex == 2
                                 ContatoItem(
                                     contato = contato,
                                     onClick = {
@@ -329,37 +300,6 @@ fun ListarContatoScreen(
                                     onDeleteClick = { // Nova ação para o clique na lixeira
                                         contatoParaExcluir = contato
                                         showDeleteDialog = true
-                                    },
-                                    showDelete = !isConviteRecebido,
-                                    onAcceptClick = if (isConviteRecebido) {
-                                        {
-                                            viewModel.aceitarConvite(contato.id) { sucesso ->
-                                                if (sucesso) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Convite aceito!",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                    onRejectClick = if (isConviteRecebido) {
-                                        {
-                                            viewModel.rejeitarConvite(contato.id) { sucesso ->
-                                                if (sucesso) {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Convite rejeitado.",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        null
                                     }
                                 )
                             }
@@ -376,10 +316,7 @@ fun ListarContatoScreen(
 fun ContatoItem(
     contato: ContatoResumoUi,
     onClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-    showDelete: Boolean = true,
-    onAcceptClick: (() -> Unit)? = null,
-    onRejectClick: (() -> Unit)? = null
+    onDeleteClick: () -> Unit
 ) {
 
     Card(
@@ -424,34 +361,13 @@ fun ContatoItem(
                         )
                     }
                 }
-                if (!showDelete && (onAcceptClick != null || onRejectClick != null)) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        onAcceptClick?.let { onClick ->
-                            TextButton(onClick = onClick) {
-                                Text("Aceitar")
-                            }
-                        }
-                        onRejectClick?.let { onClick ->
-                            TextButton(onClick = onClick) {
-                                Text("Rejeitar", color = MaterialTheme.colorScheme.error)
-                            }
-                        }
-                    }
-                }
             }
-            if (showDelete) {
-                IconButton(onClick = onDeleteClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Delete,
-                        contentDescription = "Excluir Contato",
-                        tint = MaterialTheme.colorScheme.error // Cor de erro para o ícone de exclusão
-                    )
-                }
+            IconButton(onClick = onDeleteClick) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "Excluir Contato",
+                    tint = MaterialTheme.colorScheme.error // Cor de erro para o ícone de exclusão
+                )
             }
         }
     }

@@ -1,6 +1,6 @@
 package com.example.unihub.ui.ManterQuadro
 
-import android.app.DatePickerDialog
+
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
@@ -20,31 +20,27 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.unihub.components.*
 import com.example.unihub.data.model.Estado
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
-import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.model.Grupo
-import com.example.unihub.data.model.HorarioAula
 import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.repository.DisciplinaResumo
 import com.example.unihub.data.repository.Grupobackend
 import com.example.unihub.data.repository._disciplinabackend
 import com.example.unihub.data.repository._quadrobackend
-import java.time.LocalDate
 import com.example.unihub.data.model.Quadro
-import com.example.unihub.Screen
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Locale
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -64,14 +60,13 @@ fun QuadroFormScreen(
         viewModel.carregarDados(quadroId)
     }
 
-    //novo
     LaunchedEffect(formResult) {
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
                 navController.previousBackStackEntry?.savedStateHandle?.set("refreshQuadros", true)
-                // pra voltar duas telas
-                navController.popBackStack(Screen.ListarQuadros.route, false)
+                navController.popBackStack()
+                viewModel.resetFormResult()
             }
             is FormResult.Error -> {
                 Toast.makeText(context, "Erro: ${result.message}", Toast.LENGTH_LONG).show()
@@ -90,13 +85,9 @@ fun QuadroFormScreen(
         )
     }
 
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val locale = remember { Locale("pt", "BR") }
     val showDatePicker = {
-        val calendar = Calendar.getInstance().apply { timeInMillis = uiState.prazo }
-        DatePickerDialog(context, { _, year, month, day ->
-            calendar.set(year, month, day)
-            viewModel.onPrazoChange(calendar.timeInMillis)
-        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
+        showLocalizedDatePicker(context, uiState.prazo, locale, viewModel::onPrazoChange)
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -112,12 +103,7 @@ fun QuadroFormScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
-                CampoFormulario(
-                    label = "Nome",
-                    value = uiState.nome,
-                    onValueChange = viewModel::onNomeChange,
-                    singleLine = true
-                )
+                CampoFormulario(label = "Nome", value = uiState.nome, onValueChange = viewModel::onNomeChange)
 
                 CampoCombobox(
                     label = "Disciplina (Opcional)",
@@ -161,7 +147,11 @@ fun QuadroFormScreen(
                     optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
                 )
 
-                CampoData(label = "Prazo (Data de Fim)", value = dateFormat.format(Date(uiState.prazo)), onClick = { showDatePicker() })
+                CampoData(
+                    label = "Prazo (Data de Fim)",
+                    value = formatDateToLocale(uiState.prazo, locale),
+                    onClick = showDatePicker
+                )
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -306,12 +296,6 @@ private fun createFakeContatoRepository() = ContatoRepository(object : Contatoba
     override suspend fun getContatoResumoApi(): List<ContatoResumo> = MOCK_CONTATOS
     override suspend fun getContatoByIdApi(id: String): Contato? = null
     // --- FUNÇÕES QUE FALTAVAM ---
-
-
-    override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> {
-        // This is the function causing the error. Return an empty list for the mock.
-        return emptyList()
-    }
     override suspend fun addContatoApi(contato: Contato) {} // Implementação vazia
     override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
     override suspend fun deleteContatoApi(id: Long): Boolean = true

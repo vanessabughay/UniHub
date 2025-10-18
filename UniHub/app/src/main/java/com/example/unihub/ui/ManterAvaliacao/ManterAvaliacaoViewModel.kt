@@ -301,7 +301,9 @@ class ManterAvaliacaoViewModel(
             _uiState.update { it.copy(isLoadingAllContatos = true, errorLoadingAllContatos = null) }
             contatoRepository.getContatoResumo()
                 .map { lista ->
-                    lista.mapNotNull { m ->
+                    lista
+                        .filter { !it.pendente }
+                        .mapNotNull { m ->
                         m.id?.let { id ->
                             ContatoResumoUi(
                                 id = id,

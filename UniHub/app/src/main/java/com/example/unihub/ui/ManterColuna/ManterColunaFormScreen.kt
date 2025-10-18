@@ -1,6 +1,5 @@
 package com.example.unihub.ui.ManterColuna
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,9 +23,10 @@ import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
-import java.text.SimpleDateFormat
-import java.util.*
 import com.example.unihub.data.api.ColunaApi
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Locale
 
 @Composable
 fun ColunaFormScreen(
@@ -42,7 +42,10 @@ fun ColunaFormScreen(
     val colunaState by viewModel.coluna.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
+    var descricao by remember { mutableStateOf("") }
+    var prioridade by remember { mutableStateOf(Priority.MEDIA) }
     var status by remember { mutableStateOf(Status.INICIADA) }
+    var prazo by remember { mutableStateOf(System.currentTimeMillis()) }
 
 
     LaunchedEffect(key1 = colunaId) {
@@ -55,7 +58,10 @@ fun ColunaFormScreen(
         if (isEditing) {
             colunaState?.let { loadedColuna ->
                 titulo = loadedColuna.titulo
+                descricao = loadedColuna.descricao ?: ""
+                prioridade = loadedColuna.prioridade
                 status = loadedColuna.status
+                prazo = loadedColuna.prazoManual
             }
         }
     }
@@ -65,7 +71,6 @@ fun ColunaFormScreen(
         when (val result = formResult) {
             is FormResult.Success -> {
                 Toast.makeText(context, "Operação realizada com sucesso!", Toast.LENGTH_SHORT).show()
-                // navController.previousBackStackEntry?.savedStateHandle?.set("colunaAtualizada", true)
                 navController.popBackStack()
                 viewModel.resetFormResult()
             }
@@ -77,6 +82,10 @@ fun ColunaFormScreen(
         }
     }
 
+    val locale = remember { Locale("pt", "BR") }
+    val showDatePicker = {
+        showLocalizedDatePicker(context, prazo, locale) { prazo = it }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
@@ -90,12 +99,9 @@ fun ColunaFormScreen(
                 onVoltar = { navController.popBackStack() }
             )
 
-            CampoFormulario(
-                label = "Título",
-                value = titulo,
-                onValueChange = { titulo = it },
-                singleLine = true
-            )
+            CampoFormulario(label = "Título", value = titulo, onValueChange = { titulo = it })
+            CampoFormulario(label = "Descrição", value = descricao, onValueChange = { descricao = it })
+            CampoCombobox(label = "Prioridade", options = Priority.values().toList(), selectedOption = prioridade, onOptionSelected = { prioridade = it }, optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } })
 
             val canMarkAsCompleted = colunaState?.todasTarefasConcluidas ?: true
             val statusOptions = if (colunaState?.tarefas?.isNotEmpty() == true) {
@@ -118,6 +124,7 @@ fun ColunaFormScreen(
                 optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
             )
 
+            CampoData(label = "Prazo", value = formatDateToLocale(prazo, locale), onClick = showDatePicker)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -127,8 +134,10 @@ fun ColunaFormScreen(
                         val colunaParaSalvar = Coluna(
                             id = if (isEditing) colunaId!! else "",
                             titulo = titulo,
+                            descricao = descricao.ifBlank { null },
+                            prioridade = prioridade,
                             status = status,
-                            ordem = colunaState?.ordem ?: 0,
+                            prazoManual = prazo,
                             tarefas = if (isEditing) colunaState?.tarefas ?: emptyList() else emptyList()
                         )
                         viewModel.salvarOuAtualizarColuna(quadroId, colunaParaSalvar)
@@ -140,4 +149,82 @@ fun ColunaFormScreen(
             )
         }
     }
+}
+
+
+
+
+
+
+
+
+
+// Um repositório falso que simula a API real, mas sem chamadas de rede.
+class FakeColunaRepository : ColunaRepository(object : ColunaApi {
+
+    override suspend fun getColunas(quadroId: String): List<Coluna> {
+        return emptyList()
+    }
+
+    override suspend fun getColunaById(quadroId: String, colunaId: String): Coluna {
+        // Retorna um objeto de coluna de exemplo para o modo de edição.
+        return Coluna(
+            id = colunaId,
+            titulo = "Coluna de Exemplo",
+            descricao = "Esta é uma descrição de exemplo para o preview.",
+            prioridade = Priority.MEDIA,
+            status = Status.INICIADA,
+            prazoManual = System.currentTimeMillis() + 86400000L,
+            dataInicio = System.currentTimeMillis(),
+            tarefas = emptyList()
+        )
+    }
+
+
+    override suspend fun addColuna(quadroId: String, coluna: Coluna): Coluna {
+        return coluna
+    }
+
+    override suspend fun updateColuna(quadroId: String, colunaId: String, coluna: Coluna): Coluna {
+        return coluna
+    }
+
+    override suspend fun deleteColuna(quadroId: String, colunaId: String) {
+        // Não faz nada, já que é uma simulação.
+    }
+})
+
+// Uma fábrica de ViewModel falsa que injeta o repositório falso no ViewModel.
+class FakeColunaFormViewModelFactory : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ColunaFormViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ColunaFormViewModel(FakeColunaRepository()) as T
+        }
+        throw IllegalArgumentException("Classe de ViewModel desconhecida")
+    }
+}
+
+// Prévia para o modo de cadastro de coluna.
+@Preview(showBackground = true)
+@Composable
+fun ColunaFormScreenPreview() {
+    ColunaFormScreen(
+        navController = rememberNavController(),
+        colunaId = null,
+        viewModelFactory = FakeColunaFormViewModelFactory(),
+        quadroId = "id-do-quadro-exemplo"
+    )
+}
+
+// Prévia para o modo de edição de coluna.
+@Preview(showBackground = true)
+@Composable
+fun ColunaFormScreenEditingPreview() {
+    ColunaFormScreen(
+        navController = rememberNavController(),
+        colunaId = "id-da-coluna-exemplo",
+        viewModelFactory = FakeColunaFormViewModelFactory(),
+        quadroId = "id-do-quadro-exemplo"
+    )
 }
