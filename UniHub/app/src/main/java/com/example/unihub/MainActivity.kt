@@ -21,6 +21,7 @@ import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import android.content.Intent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.unihub.data.apiBackend.ApiAvaliacaoBackend
 
 
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
@@ -54,6 +55,7 @@ import com.example.unihub.data.apiBackend.ApiContatoBackend
 import com.example.unihub.data.apiBackend.ApiGrupoBackend
 import com.example.unihub.data.apiBackend.ApiTarefaBackend
 import com.example.unihub.data.repository.AusenciaRepository
+import com.example.unihub.data.repository.AvaliacaoRepository
 import com.example.unihub.data.repository.CategoriaRepository
 import com.example.unihub.data.repository.ColunaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
@@ -61,6 +63,9 @@ import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.ui.Anotacoes.AnotacoesView
+import com.example.unihub.ui.Calendario.CalendarioRoute
+import com.example.unihub.ui.Calendario.CalendarioViewModel
+import com.example.unihub.ui.Calendario.CalendarioViewModelFactory
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory
 import com.example.unihub.ui.ManterColuna.ColunaFormScreen
@@ -170,6 +175,8 @@ sealed class Screen(val route: String) {
     object PesoNotas : Screen("peso_notas?disciplinaId={disciplinaId}") {
         fun createRoute(disciplinaId: String) = "peso_notas?disciplinaId=$disciplinaId"
     }
+
+    object Calendario : Screen("calendario")
 }
 
 class MainActivity : ComponentActivity() {
@@ -710,6 +717,30 @@ class MainActivity : ComponentActivity() {
                                 onVoltar = { navController.popBackStack() }
                             )
                         }
+                    }
+
+                    // CALENDARIO
+                    composable(Screen.Calendario.route) {
+                        val avaliacaoRepository = AvaliacaoRepository(ApiAvaliacaoBackend())
+                        val factory = CalendarioViewModelFactory(avaliacaoRepository)
+                        val viewModel: CalendarioViewModel = viewModel(factory = factory)
+
+                        CalendarioRoute(
+                            viewModel = viewModel,
+                            onNovaAvaliacao = {
+                                // Navega para a tela de manter, sem ID (criação)
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(id = null, disciplinaId = null)
+                                )
+                            },
+                            onAvaliacaoClick = { avaliacaoId ->
+                                // Navega para a tela de manter, com o ID da avaliação clicada (edição)
+                                navController.navigate(
+                                    Screen.ManterAvaliacao.createRoute(id = avaliacaoId.toString(), disciplinaId = null)
+                                )
+                            },
+                            onVoltar = { navController.popBackStack() }
+                        )
                     }
 
                     // ESQUECI SENHA
