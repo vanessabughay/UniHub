@@ -427,7 +427,19 @@ class MainActivity : ComponentActivity() {
                             onContatoClick = { contatoId ->
                                 navController.navigate(Screen.ManterContato.createRoute(contatoId))
                             },
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = {
+                                val voltouParaMenu =
+                                    navController.popBackStack(Screen.TelaInicial.route, false)
+                                if (!voltouParaMenu) {
+                                    navController.navigate(Screen.TelaInicial.route) {
+                                        popUpTo(Screen.TelaInicial.route) { inclusive = false }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
+                            onNavigateToGrupos = {
+                                navController.navigate(Screen.ListarGrupo.route)
+                            }
                         )
                     }
 
@@ -456,7 +468,19 @@ class MainActivity : ComponentActivity() {
                             onNavigateToManterGrupo = { grupoId ->
                                 navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
                             },
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = {
+                                val voltouParaMenu =
+                                    navController.popBackStack(Screen.TelaInicial.route, false)
+                                if (!voltouParaMenu) {
+                                    navController.navigate(Screen.TelaInicial.route) {
+                                        popUpTo(Screen.TelaInicial.route) { inclusive = false }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
+                            onNavigateToContatos = {
+                                navController.navigate(Screen.ListarContato.route)
+                            }
                         )
                     }
 
