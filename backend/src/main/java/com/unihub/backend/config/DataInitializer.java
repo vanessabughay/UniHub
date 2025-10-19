@@ -48,6 +48,7 @@ public class DataInitializer {
         usuarioRepository.findByEmail("victoria@email.com").ifPresent(this::initVictoria);
         usuarioRepository.findByEmail("rafaella@email.com").ifPresent(this::initRafaella);
         usuarioRepository.findByEmail("paulo@email.com").ifPresent(this::initPaulo);
+
     }
 
     private void initUsuarios() {
@@ -55,6 +56,9 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
         criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
         criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
+        criarUsuarioSeNaoExistir("Aaaaa", "a@a.com", "000000");
+        criarUsuarioSeNaoExistir("Bbbbb", "b@b.com", "000000");
+        criarUsuarioSeNaoExistir("Ccccc", "c@c.com", "000000");
         criarUsuarioSeNaoExistir("Carla Mendes", "carla@email.com", "000000");
         criarUsuarioSeNaoExistir("Daniel Souza", "daniel@email.com", "000000");
         criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa@email.com", "000000");
