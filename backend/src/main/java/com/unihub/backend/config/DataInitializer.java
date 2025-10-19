@@ -61,11 +61,11 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Felipe Oliveira", "felipe.oliveira@email.com", "felipeoliveira");
         criarUsuarioSeNaoExistir("Gabriela Santos", "gabriela.santos@email.com", "gabrielasantos");
         criarUsuarioSeNaoExistir("Heitor Lima", "heitor.lima@email.com", "heitorlima");
-        criarUsuarioSeNaoExistir("Isabela Rocha", "isabela.rocha@email.com", "isabellarocha");  
+        criarUsuarioSeNaoExistir("Isabela Rocha", "isabela.rocha@email.com", "isabelarocha");  
         criarUsuarioSeNaoExistir("João Pereira", "joao.pereira@email.com", "joaopereira");
-        criarUsuarioSeNaoExistir("Karina Alves", "karina.alves@email.com", "karinalves");
+        criarUsuarioSeNaoExistir("Karina Alves", "karina.alves@email.com", "karinaalves");
         criarUsuarioSeNaoExistir("Lucas Martins", "lucas.martins@email.com", "lucasmartins");       
-        criarUsuarioSeNaoExistir("Mariana Dias", "mariana.dias@email.com", "mariandias");
+        criarUsuarioSeNaoExistir("Mariana Dias", "mariana.dias@email.com", "marianadias");
         criarUsuarioSeNaoExistir("Nicolas Teixeira", "nicolas.teixeira@email.com", "nicolasteixeira");
         criarUsuarioSeNaoExistir("Olívia Barbosa", "olivia.barbosa@email.com", "oliviabarbosa");
 

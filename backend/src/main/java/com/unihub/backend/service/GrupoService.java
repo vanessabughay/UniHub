@@ -74,7 +74,8 @@ public class GrupoService {
                 .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + id));
         Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                 ? buscarContatoDoUsuario(ownerId).orElse(null)
-                : localizarContatoDoOwner(grupo);        definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                : localizarContatoDoOwner(grupo);
+                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         return grupo;
     }
 
@@ -301,14 +302,39 @@ public class GrupoService {
         }
 
         Long ownerId = grupo.getOwnerId();
+
+        Optional<Contato> contatoPorVinculoDireto = grupo.getMembros().stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> Objects.equals(ownerId, contato.getIdContato()))
+                .findFirst();
+        if (contatoPorVinculoDireto.isPresent()) {
+            return contatoPorVinculoDireto.get();
+        }
+
+        Optional<Usuario> owner = usuarioRepository.findById(ownerId);
+        if (owner.isEmpty()) {
+            return null;
+        }
+
+        String emailOwner = owner.get().getEmail();
+        if (emailOwner != null && !emailOwner.isBlank()) {
+            Optional<Contato> contatoPorEmail = grupo.getMembros().stream()
+                    .filter(Objects::nonNull)
+                    .filter(contato -> emailOwner.equalsIgnoreCase(contato.getEmail()))
+                    .findFirst();
+            if (contatoPorEmail.isPresent()) {
+                return contatoPorEmail.get();
+            }
+        }
+
         return grupo.getMembros().stream()
                 .filter(Objects::nonNull)
-                .filter(contato -> Objects.equals(ownerId, contato.getIdContato())
-                        || Objects.equals(ownerId, contato.getOwnerId()))
+                .filter(contato -> Objects.equals(ownerId, contato.getOwnerId())
+                        && contato.getIdContato() == null)
                 .findFirst()
                 .orElse(null);
     }
-    
+
     private Optional<Contato> buscarContatoDoUsuario(Long ownerId) {
         if (ownerId == null) {
             return Optional.empty();
