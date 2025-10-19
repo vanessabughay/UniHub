@@ -23,11 +23,11 @@ interface Avaliacaobackend { // Removi o "_" inicial, é uma convenção melhor
 }
 
 // Esta é agora a única classe AvaliacaoRepository
-class AvaliacaoRepository(private val backend: Avaliacaobackend) {
+open class AvaliacaoRepository(private val backend: Avaliacaobackend) {
 
     //LISTA
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun getAvaliacao(): Flow<List<Avaliacao>> = flow {
+    open fun getAvaliacao(): Flow<List<Avaliacao>> = flow {
         try {
             emit(backend.getAvaliacaoApi())
         } catch (e: IOException) {

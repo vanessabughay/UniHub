@@ -1,5 +1,7 @@
 package com.example.unihub.ui.TelaInicial
 
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -11,8 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Outlined
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
@@ -20,7 +24,6 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -36,8 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
@@ -45,9 +46,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.config.TokenManager
-
-
-
+import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -63,17 +62,21 @@ private object CoresApp {
 }
 
 /* ====== Entrada da tela com ViewModel ====== */
+@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun TelaInicial(
     navController: NavHostController,
-    viewModel: TelaInicialViewModel = viewModel()) {
-    val estado by viewModel.estado.collectAsStateWithLifecycleCompat()
+    viewModel: TelaInicialViewModel = viewModel(factory = TelaInicialViewModelFactory())
+) {
+    val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.atualizarNomeUsuario()
+                viewModel.refreshData()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -82,23 +85,19 @@ fun TelaInicial(
 
 
     LaunchedEffect(Unit) {
-        viewModel.atualizarNomeUsuario()
-        // Chama a função para filtrar avaliações e tarefas logo após o carregamento da tela
-        viewModel.filtrarAvaliacoesEValidarTarefas()
-
         viewModel.eventoNavegacao.collect { destino ->
             when (destino.lowercase()) {
                 "projetos" -> navController.navigate("lista_quadros")
-                //"calendário" -> navController.navigate("calendario")
+                "calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
                 "avaliações" -> navController.navigate("lista_avaliacao")
                 "perfil" -> navController.navigate("manter_conta")
-               // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 "contatos" -> navController.navigate("lista_contato")
                 "grupos" -> navController.navigate("lista_grupo")
+                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 //"configurar notificações" -> navController.navigate("configurar_notificacoes")
                 //"atividades" -> navController.navigate("atividades")
-                else -> {} // fallback
+                else -> {}
             }
         }
     }
@@ -113,7 +112,8 @@ fun TelaInicial(
         onClicarOpcaoMenu = { viewModel.aoClicarOpcaoMenu(it) },
         onAlternarSecaoAvaliacoes = { viewModel.alternarSecaoAvaliacoes() },
         onAlternarSecaoTarefas = { viewModel.alternarSecaoTarefas() },
-        onLogout = { TokenManager.clearToken(context)
+        onLogout = {
+            TokenManager.clearToken(context)
             viewModel.fecharMenu()
             navController.navigate("login") {
                 popUpTo(0) { inclusive = true }
@@ -123,7 +123,6 @@ fun TelaInicial(
     )
 }
 
-/* ====== Versão pura (View) ====== */
 @Composable
 fun TelaInicialView(
     estado: EstadoTelaInicial,
@@ -167,7 +166,7 @@ fun TelaInicialView(
             )
         }
 
-        /* Menu lateral à direita */
+        /* Menu lateral */
         AnimatedVisibility(
             visible = estado.menuAberto,
             enter = slideInHorizontally(
@@ -181,15 +180,14 @@ fun TelaInicialView(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(280.dp)
-                .align(Alignment.TopEnd)   // alinhando o AnimatedVisibility
+                .align(Alignment.TopEnd)
         ) {
             MenuLateral(
                 opcoes = estado.opcoesMenu,
                 onFechar = onFecharMenu,
                 onClicarOpcao = onClicarOpcaoMenu,
                 onLogout = onLogout,
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
@@ -221,6 +219,7 @@ private fun ConteudoPrincipal(
         )
     }
 }
+
 
 @Composable
 private fun CabecalhoPerfil(
@@ -324,6 +323,8 @@ private fun CabecalhoPerfil(
     }
 }
 
+
+
 @Composable
 private fun AtalhoRapido(icone: ImageVector, rotulo: String, onClick: () -> Unit) {
     Column(modifier = Modifier
@@ -351,19 +352,29 @@ private fun ConteudoAbaixoDoTopo(
 ) {
     Column(modifier = Modifier
         .fillMaxSize()
+        .verticalScroll(rememberScrollState())
         .padding(horizontal = 20.dp)) {
         Spacer(Modifier.height(18.dp))
         TituloDeSecao(
             titulo = "Próximas avaliações",
-            setaAbaixo = estado.secaoTarefasAberta,
+            setaAbaixo = estado.secaoAvaliacoesAberta,
             onClick = onAlternarSecaoAvaliacoes)
         Spacer(Modifier.height(10.dp))
 
         AnimatedVisibility(visible = estado.secaoAvaliacoesAberta) {
             Column {
-                estado.avaliacoes.forEachIndexed { i, a -> // Use o estado
-                    CartaoAvaliacao(a.diaSemana, a.dataCurta, a.titulo, a.descricao)
-                    if (i != estado.avaliacoes.lastIndex) Spacer(Modifier.height(14.dp))
+                if (estado.avaliacoes.isEmpty()) {
+                    Text(
+                        text = "Nenhuma avaliação nos próximos 15 dias.",
+                        color = CoresApp.TextoSecundario,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    estado.avaliacoes.forEachIndexed { i, a ->
+                        CartaoAvaliacao(a.diaSemana, a.dataCurta, a.titulo, a.descricao)
+                        if (i != estado.avaliacoes.lastIndex) Spacer(Modifier.height(14.dp))
+                    }
                 }
             }
         }
@@ -378,15 +389,25 @@ private fun ConteudoAbaixoDoTopo(
 
         AnimatedVisibility(visible = estado.secaoTarefasAberta) {
             Column {
-                estado.tarefas.forEachIndexed { i, t ->
-                    CartaoAvaliacao(t.diaSemana, t.dataCurta, t.titulo, t.descricao)
-                    if (i != estado.tarefas.lastIndex) Spacer(Modifier.height(14.dp))
+                if (estado.tarefas.isEmpty()) {
+                    Text(
+                        text = "Nenhuma tarefa nos próximos 15 dias.",
+                        color = CoresApp.TextoSecundario,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                } else {
+                    estado.tarefas.forEachIndexed { i, t ->
+                        CartaoAvaliacao(t.diaSemana, t.dataCurta, t.titulo, t.descricao)
+                        if (i != estado.tarefas.lastIndex) Spacer(Modifier.height(14.dp))
+                    }
                 }
             }
         }
         Spacer(Modifier.height(20.dp))
     }
 }
+
 
 @Composable
 private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Unit) {
@@ -414,6 +435,7 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
         color = CoresApp.Divisor
     )
 }
+
 
 @Composable
 private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String, descricao: String) {
@@ -463,14 +485,15 @@ private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String
     }
 }
 
+
 @Composable
 private fun LinhaListaSimples(titulo: String, onClick: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                .fillMaxWidth()
+                .clickable { onClick() }
+                .padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Outlined.ChevronRight,
                 contentDescription = null,
@@ -487,6 +510,7 @@ private fun LinhaListaSimples(titulo: String, onClick: () -> Unit) {
         HorizontalDivider(Modifier, DividerDefaults.Thickness, color = CoresApp.Divisor)
     }
 }
+
 
 @Composable
 private fun MenuLateral(
@@ -517,23 +541,6 @@ private fun MenuLateral(
             TextButton(onClick = onLogout) {
                 Text(text = "Sair", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
             }
-
-            /* FUNÇÃO PARA LOGOUT ADAPTAR, SUBSTITUIR ONFECHAR!!!  performLogout()
-            fun performLogout() {
-                // Realiza uma chamada para o backend para efetuar o logout
-                GlobalScope.launch(Dispatchers.IO) {
-                    try {
-                        val response = api.logout()
-                        if (response.isSuccessful) {
-                            // Se o logout for bem-sucedido, pode redirecionar o usuário
-                            navController.navigate("login_screen")
-                        }
-                    } catch (e: Exception) {
-
-                    }
-                }
-            }
-            */
         }
     }
 }
@@ -553,7 +560,6 @@ private fun ItemMenu(texto: String, icone: ImageVector, onClick: () -> Unit) {
     }
 }
 
-/* ====== Mapeamentos de ícones ====== */
 private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercase()) {
     "projetos" -> Outlined.Groups
     "calendário" -> Outlined.CalendarMonth
@@ -563,88 +569,7 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
     "serviço de nuvem" -> Outlined.CloudQueue
     "contatos" -> Outlined.Contacts
     "grupos" -> Outlined.Groups
-    "configurar" -> Outlined.Settings
-    "notificações" -> Outlined.Notifications
+    "configurar notificações" -> Outlined.Settings
     "atividades" -> Outlined.Assignment
     else -> Outlined.Circle
-}
-
-/* ====== Preview sem ViewModel (estado fake) ====== */
-@Preview(showBackground = true, backgroundColor = 0xFFF6F7F8, widthDp = 360, heightDp = 800)
-@Composable
-private fun Preview_TelaInicialView() {
-    val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Aluno Exemplo"),
-        menuAberto = false,
-        avaliacoes = listOf(
-            Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
-            Avaliacao("Segunda", "01/04", "Trabalho Microsserviços", "Desenvolvimento Web II")
-        ),
-        opcoesMenu = listOf(
-            "Perfil", "Disciplinas", "Serviço de nuvem", "Calendário", "Contatos",
-            "Grupos", "Projetos", "Configurar", "notificações", "Atividades"
-        ),
-        atalhosRapidos = listOf("Projetos", "Calendário", "Disciplinas", "Avaliações")
-    )
-
-    MaterialTheme {
-        TelaInicialView(
-            estado = estadoExemplo,
-            onAbrirMenu = {},
-            onFecharMenu = {},
-            onAlternarMenu = {},
-            onClicarAtalho = {},
-            onClicarOpcaoMenu = {},
-            onAlternarSecaoAvaliacoes = {},
-            onAlternarSecaoTarefas = {},
-            onLogout = {}
-        )
-    }
-}
-
-/* ====== Preview com menu aberto ====== */
-@Preview(showBackground = true, backgroundColor = 0xFFF6F7F8, widthDp = 360, heightDp = 800)
-@Composable
-private fun Preview_MenuAberto() {
-    val estadoExemplo = EstadoTelaInicial(
-        usuario = Usuario("Aluno Exemplo"),
-        menuAberto = true,
-        avaliacoes = listOf(
-            Avaliacao("Quarta", "27/03", "Prova 1", "Estrutura de dados"),
-            Avaliacao("Segunda", "01/04", "Trabalho Microsserviços", "Desenvolvimento Web II")
-        ),
-        opcoesMenu = listOf(
-            "Perfil", "Disciplinas", "Serviço de nuvem", "Calendário", "Contatos",
-            "Grupos", "Projetos", "Configurar notificações", "Atividades"
-        ),
-        atalhosRapidos = listOf("Projetos", "Calendário", "Disciplinas", "Avaliações")
-    )
-
-    MaterialTheme {
-        TelaInicialView(
-            estado = estadoExemplo,
-            onAbrirMenu = {},
-            onFecharMenu = {},
-            onAlternarMenu = {},
-            onClicarAtalho = {},
-            onClicarOpcaoMenu = {},
-            onAlternarSecaoAvaliacoes = { },
-            onAlternarSecaoTarefas = {},
-            onLogout = {}
-        )
-    }
-}
-
-
-
-@Composable
-fun <T> StateFlow<T>.collectAsStateWithLifecycleCompat(): State<T> {
-    return this.collectAsStateWithLifecycle()
-}
-
-@Composable
-fun <T> StateFlow<T>.collectAsStateCompat(): State<T> {
-    val initialValue = (this as? MutableStateFlow<T>)?.value
-        ?: error("collectAsStateCompat requires a MutableStateFlow with an initial value")
-    return this.collectAsState(initial = initialValue)
 }
