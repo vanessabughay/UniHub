@@ -277,18 +277,18 @@ fun ManterContaScreen(
                     Text("Deletar conta", color = Color.Red)
                 }
 
-                Button(
-                    onClick = {
-                        viewModel.salvar()
+                              }
 
-                              },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                ) {
-                    Text("Salvar", color = Color.White)
-                }
+            Button(
+                onClick = {
+                    viewModel.salvar()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp)
+            ) {
+                Text("Salvar", color = Color.White)
             }
         }
     }

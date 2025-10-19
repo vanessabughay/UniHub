@@ -15,7 +15,14 @@ public class InstituicaoService {
     private InstituicaoRepository repository;
 
     public List<Instituicao> buscarPorNome(String nome, Long usuarioId) {
-        return repository.findByUsuarioIdAndNomeContainingIgnoreCase(usuarioId, nome);
+        if (nome == null || nome.isBlank()) {
+            if (usuarioId == null) {
+                return List.of();
+            }
+            return repository.findByUsuarioIdOrderByNomeAsc(usuarioId);
+                }
+
+        return repository.findByNomeContainingIgnoreCaseOrderByNomeAsc(nome.trim());
     }
 
 

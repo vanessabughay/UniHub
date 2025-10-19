@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -57,27 +58,25 @@ public class QuadroPlanejamentoService {
     private TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository;
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
-        boolean possuiTitulo = titulo != null && !titulo.trim().isEmpty();
-        List<QuadroPlanejamento> quadros;
-
-        if (status != null && possuiTitulo) {
-            quadros = repository.findByUsuarioIdAndStatusAndTituloContainingIgnoreCase(usuarioId, status, titulo);
-        } else if (status != null) {
-            quadros = repository.findByUsuarioIdAndStatus(usuarioId, status);
-        } else if (possuiTitulo) {
-            quadros = repository.findByUsuarioIdAndTituloContainingIgnoreCase(usuarioId, titulo);
-        } else {
-            quadros = repository.findByUsuarioId(usuarioId);
-        }
+        String tituloNormalizado = titulo != null ? titulo.trim() : null;
+        List<QuadroPlanejamento> quadros = repository.findAllAccessibleByUsuarioId(usuarioId);
 
         return quadros.stream()
+                .filter(quadro -> status == null || quadro.getStatus() == status)
+                .filter(quadro -> {
+                    if (tituloNormalizado == null || tituloNormalizado.isEmpty()) {
+                        return true;
+                    }
+                    String tituloQuadro = quadro.getTitulo();
+                    return tituloQuadro != null && tituloQuadro.toLowerCase(Locale.ROOT).contains(tituloNormalizado.toLowerCase(Locale.ROOT));
+                })
                 .map(QuadroPlanejamentoListaResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     public QuadroPlanejamento buscarPorId(Long id, Long usuarioId) {
-        return repository.findByIdAndUsuarioId(id, usuarioId)
-                .orElseThrow(() -> new ResourceNotFoundException("Quadro de Planejamento não encontrado"));
+        return repository.findByIdAndUsuarioHasAccess(id, usuarioId)
+                        .orElseThrow(() -> new ResourceNotFoundException("Quadro de Planejamento não encontrado"));
     }
 
     // criar atualizado
