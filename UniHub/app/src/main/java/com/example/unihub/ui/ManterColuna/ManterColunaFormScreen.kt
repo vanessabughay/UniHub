@@ -20,7 +20,6 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
-import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
 import com.example.unihub.data.api.ColunaApi

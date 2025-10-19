@@ -37,7 +37,6 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
 import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
-import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse

@@ -2,7 +2,6 @@ package com.example.unihub.data.model
 
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
-import com.example.unihub.data.model.Priority
 import com.example.unihub.data.util.FlexibleLongAdapter
 import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
