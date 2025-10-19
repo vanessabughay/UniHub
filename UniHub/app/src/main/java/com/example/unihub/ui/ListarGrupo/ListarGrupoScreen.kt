@@ -58,6 +58,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Grupo
 
 //Cores
@@ -85,6 +86,7 @@ fun ListarGrupoScreen(
 
     var searchQuery by remember { mutableStateOf("") }
 
+    val usuarioLogadoId = TokenManager.usuarioId
 
     LaunchedEffect(errorMessage) {
         errorMessage?.let { message ->
@@ -269,7 +271,8 @@ fun ListarGrupoScreen(
                                         grupoExpandidoId = null // Recolhe ao tentar excluir
                                         grupoParaExcluir = grupo
                                         showConfirmDeleteDialog = true
-                                    }
+                                    },
+                                    usuarioLogadoId = usuarioLogadoId
                                 )
                             }
                         }
@@ -287,7 +290,8 @@ fun GrupoItemExpansivel(
     isExpanded: Boolean,
     onHeaderClick: () -> Unit,
     onEditarClick: () -> Unit,
-    onExcluirClick: () -> Unit
+    onExcluirClick: () -> Unit,
+    usuarioLogadoId: Long?
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -360,7 +364,19 @@ fun GrupoItemExpansivel(
                             )
                         } else {
                             membrosOrdenados.forEach { contato ->
-                                val nomeContato = contato.nome ?: "Sem nome"
+                                val nomeContato = if (usuarioLogadoId != null && contato.ownerId != null && contato.ownerId != usuarioLogadoId) {
+                                    when {
+                                        !contato.email.isNullOrBlank() -> contato.email!!
+                                        !contato.nome.isNullOrBlank() -> contato.nome!!
+                                        else -> "Sem nome"
+                                    }
+                                } else {
+                                    when {
+                                        !contato.nome.isNullOrBlank() -> contato.nome!!
+                                        !contato.email.isNullOrBlank() -> contato.email!!
+                                        else -> "Sem nome"
+                                    }
+                                }
                                 val isAdministrador = when {
                                     grupo.ownerId != null && (
                                             (contato.idContato != null && contato.idContato == grupo.ownerId) ||
