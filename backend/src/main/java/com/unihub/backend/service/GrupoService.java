@@ -15,7 +15,9 @@ import com.unihub.backend.repository.UsuarioRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -35,21 +37,43 @@ public class GrupoService {
     @Transactional(readOnly = true)
     public List<Grupo> listarTodas(Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        List<Grupo> grupos = grupoRepository.findByOwnerId(ownerId);
-        Contato contatoDoUsuario = buscarContatoDoUsuario(ownerId).orElse(null);
-        grupos.forEach(grupo -> {
-            definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario);
+        Contato contatoProprio = buscarContatoDoUsuario(ownerId).orElse(null);
+
+        Map<Long, Grupo> gruposVisiveis = new LinkedHashMap<>();
+        grupoRepository.findByOwnerId(ownerId)
+                .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
+
+        Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
+        if (!idsContatosAssociados.isEmpty()) {
+            grupoRepository.findDistinctByMembros_IdIn(idsContatosAssociados)
+                    .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
+        }
+
+        gruposVisiveis.values().forEach(grupo -> {
+            Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId) ? contatoProprio : null;
+            definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         });
-        return grupos;
+        return new ArrayList<>(gruposVisiveis.values());
     }
 
     @Transactional(readOnly = true)
     public Grupo buscarPorId(Long id, Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        Grupo grupo = grupoRepository.findByIdAndOwnerId(id, ownerId)
+        Optional<Grupo> grupoOptional = grupoRepository.findByIdAndOwnerId(id, ownerId);
+
+        if (grupoOptional.isEmpty()) {
+            Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
+            if (!idsContatosAssociados.isEmpty()) {
+                grupoOptional = grupoRepository.findDistinctByIdAndMembros_IdIn(id, idsContatosAssociados);
+            }
+        }
+
+        Grupo grupo = grupoOptional
                 .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + id));
-        Contato contatoDoUsuario = buscarContatoDoUsuario(ownerId).orElse(null);
-        definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario);
+        Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
+                ? buscarContatoDoUsuario(ownerId).orElse(null)
+                : null;
+        definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         return grupo;
     }
 
@@ -122,12 +146,42 @@ public class GrupoService {
     @Transactional(readOnly = true)
     public List<Grupo> buscarPorNome(String nome, Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        List<Grupo> grupos = grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId);
-        Contato contatoDoUsuario = buscarContatoDoUsuario(ownerId).orElse(null);
-        grupos.forEach(grupo -> {
-            definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario);
+        Contato contatoProprio = buscarContatoDoUsuario(ownerId).orElse(null);
+
+        Map<Long, Grupo> gruposVisiveis = new LinkedHashMap<>();
+        grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId)
+                .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
+
+        Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
+        if (!idsContatosAssociados.isEmpty()) {
+            grupoRepository.findDistinctByNomeContainingIgnoreCaseAndMembros_IdIn(nome, idsContatosAssociados)
+                    .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
+        }
+
+        gruposVisiveis.values().forEach(grupo -> {
+            Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId) ? contatoProprio : null;
+            definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         });
-        return grupos;
+
+        return new ArrayList<>(gruposVisiveis.values());
+    }
+
+    private Set<Long> buscarIdsDeContatosDoUsuario(Long usuarioId) {
+        Set<Long> ids = new HashSet<>();
+
+        contatoRepository.findByIdContato(usuarioId).stream()
+                .filter(contato -> contato != null && contato.getId() != null)
+                .forEach(contato -> ids.add(contato.getId()));
+
+        usuarioRepository.findById(usuarioId).ifPresent(usuario -> {
+            String email = usuario.getEmail();
+            if (email != null && !email.isBlank()) {
+                contatoRepository.findByEmailIgnoreCase(email).stream()
+                        .filter(contato -> contato != null && contato.getId() != null)
+                        .forEach(contato -> ids.add(contato.getId()));
+            }
+        });
+        return ids;
     }
 
     private List<Contato> carregarMembrosValidos(List<Contato> membros, Long ownerId) {

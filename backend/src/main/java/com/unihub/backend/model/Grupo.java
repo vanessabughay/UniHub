@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects; // Para equals e hashCode
 
+
 @Entity
 public class Grupo {
 
