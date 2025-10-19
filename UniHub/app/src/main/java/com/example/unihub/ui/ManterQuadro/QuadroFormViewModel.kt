@@ -40,7 +40,13 @@ class QuadroFormViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val disciplinasAsync = async { disciplinaRepository.getDisciplinasResumo().first().map { DisciplinaResumoUi(it.id, it.nome) } }
-                val contatosAsync = async { contatoRepository.getContatoResumo().first().map { ContatoResumoUi(it.id, it.nome) } }
+                val contatosAsync = async {
+                    contatoRepository
+                        .getContatoResumo()
+                        .first()
+                        .filter { !it.pendente }
+                        .map { ContatoResumoUi(it.id, it.nome) }
+                }
                 val gruposAsync = async { grupoRepository.getGrupo().first().map { GrupoResumoUi(it.id, it.nome) } }
 
                 val disciplinas = disciplinasAsync.await()

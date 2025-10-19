@@ -267,7 +267,7 @@ private val MOCK_DISCIPLINAS = listOf(
 )
 private val MOCK_CONTATOS = listOf(
     ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com", pendente = false),
-    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com", pendente = true)
+    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com", pendente = false)
 )
 // CÓDIGO CORRIGIDO
 private val MOCK_GRUPOS = listOf(
