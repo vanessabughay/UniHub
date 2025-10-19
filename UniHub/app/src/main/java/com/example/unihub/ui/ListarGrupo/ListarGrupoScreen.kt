@@ -28,6 +28,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,7 +60,7 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.model.Grupo
 
-
+//Cores
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
 
 
@@ -69,7 +70,8 @@ fun ListarGrupoScreen(
     viewModel: ListarGrupoViewModel = viewModel(factory = ListarGrupoViewModelFactory),
     onAddGrupo: () -> Unit,
     onVoltar: () -> Unit,
-    onNavigateToManterGrupo: (grupoId: String) -> Unit
+    onNavigateToManterGrupo: (grupoId: String) -> Unit,
+    onNavigateToContatos: () -> Unit
 ) {
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -115,9 +117,7 @@ fun ListarGrupoScreen(
                 gruposComIdValido
             } else {
                 gruposComIdValido.filter { grupo ->
-                    val nomeMatches = grupo.nome.contains(searchQuery, ignoreCase = true)
-                    val idMatches = grupo.id!!.toString().contains(searchQuery, ignoreCase = true)
-                    nomeMatches || idMatches
+                    grupo.nome.contains(searchQuery, ignoreCase = true)
                 }
             }
         }
@@ -180,14 +180,28 @@ fun ListarGrupoScreen(
                     .padding(paddingValues),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CampoBusca(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = "Buscar por nome do grupo",
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CampoBusca(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = "Buscar por nome do grupo",
+                        modifier = Modifier
+                            .weight(2f)
+                    )
+                    Button(
+                        onClick = onNavigateToContatos,
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Text("ir para Contatos", textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
 
                 when {
                     isLoading -> {

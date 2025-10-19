@@ -427,7 +427,10 @@ class MainActivity : ComponentActivity() {
                             onContatoClick = { contatoId ->
                                 navController.navigate(Screen.ManterContato.createRoute(contatoId))
                             },
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = { navController.popBackStack() },
+                            onNavigateToGrupos = {
+                                navController.navigate(Screen.ListarGrupo.route)
+                            }
                         )
                     }
 
@@ -456,7 +459,10 @@ class MainActivity : ComponentActivity() {
                             onNavigateToManterGrupo = { grupoId ->
                                 navController.navigate(Screen.ManterGrupo.createRoute(grupoId))
                             },
-                            onVoltar = { navController.popBackStack() }
+                            onVoltar = { navController.popBackStack() },
+                            onNavigateToContatos = {
+                                navController.navigate(Screen.ListarContato.route)
+                            }
                         )
                     }
 

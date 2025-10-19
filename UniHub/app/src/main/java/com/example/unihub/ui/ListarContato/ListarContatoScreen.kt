@@ -21,6 +21,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator // Para o estado de loading
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -57,7 +59,7 @@ import androidx.compose.material3.TabRow
 import com.example.unihub.data.config.TokenManager
 
 
-
+//Cores
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Exemplo de cor padrão
 
 
@@ -68,7 +70,8 @@ fun ListarContatoScreen(
     viewModel: ListarContatoViewModel = viewModel(factory = ListarContatoViewModelFactory),
     onAddContato: () -> Unit,
     onVoltar: () -> Unit,
-    onContatoClick: (contatoId: String) -> Unit
+    onContatoClick: (contatoId: String) -> Unit,
+    onNavigateToGrupos: () -> Unit
 ) {
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -131,8 +134,7 @@ fun ListarContatoScreen(
     } else {
         contatosDaAba.filter {
             it.nome.contains(searchQuery, ignoreCase = true) ||
-                    it.email.contains(searchQuery, ignoreCase = true) ||
-                    it.id.toString().contains(searchQuery, ignoreCase = true)
+                    it.email.contains(searchQuery, ignoreCase = true)
         }
     }
 
@@ -202,14 +204,33 @@ fun ListarContatoScreen(
                     .padding(paddingValues),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CampoBusca(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    placeholder = "Buscar por nome, e-mail ou id",
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CampoBusca(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = "Buscar por nome ou e-mail",
+                        modifier = Modifier
+                            .weight(2f)
+                    )
+                    Button(
+                        onClick = onNavigateToGrupos,
+                        modifier = Modifier
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CardDefaultBackgroundColor,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text("ir para Grupos",
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
+                }
 
                 TabRow(
                     selectedTabIndex = selectedTabIndex,
