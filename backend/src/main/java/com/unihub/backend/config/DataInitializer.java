@@ -10,6 +10,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.util.Objects;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -284,6 +285,10 @@ public class DataInitializer {
                     contato.setEmail(email);
                     contato.setOwnerId(usuario.getId());
                     contato.setPendente(pendente);
+                    contato.setIdContato(null);
+                    LocalDateTime agora = LocalDateTime.now();
+                    contato.setDataSolicitacao(agora);
+                    contato.setDataConfirmacao(pendente ? null : agora);
                     return contatoRepository.save(contato);
                 });
     }

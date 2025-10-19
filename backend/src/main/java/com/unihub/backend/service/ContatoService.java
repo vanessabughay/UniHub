@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,6 +19,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.HashMap;
 import java.util.stream.Collectors;
+
+
 
 @Service
 public class ContatoService {
@@ -66,6 +69,17 @@ public class ContatoService {
 
 
     public Contato salvar(Contato contato) {
+        if (contato.getId() == null) {
+            contato.setIdContato(null);
+            if (contato.getDataSolicitacao() == null) {
+                contato.setDataSolicitacao(LocalDateTime.now());
+            }
+            if (Boolean.TRUE.equals(contato.getPendente())) {
+                contato.setDataConfirmacao(null);
+            } else if (contato.getDataConfirmacao() == null) {
+                contato.setDataConfirmacao(LocalDateTime.now());
+            }
+        }
         contato.setOwnerId(currentUserId());
         return repository.save(contato);
     }
@@ -75,6 +89,9 @@ public class ContatoService {
         resposta.setId(conviteOriginal.getId());
         resposta.setPendente(conviteOriginal.getPendente());
         resposta.setOwnerId(conviteOriginal.getOwnerId());
+        resposta.setIdContato(conviteOriginal.getIdContato());
+        resposta.setDataSolicitacao(conviteOriginal.getDataSolicitacao());
+        resposta.setDataConfirmacao(conviteOriginal.getDataConfirmacao());
 
         if (dono != null) {
             resposta.setNome(dono.getNomeUsuario());
@@ -122,6 +139,8 @@ public class ContatoService {
         convite.setPendente(false);
         convite.setNome(usuarioAtual.getNomeUsuario());
         convite.setEmail(usuarioAtual.getEmail());
+        convite.setIdContato(usuarioAtual.getId());
+        convite.setDataConfirmacao(LocalDateTime.now());
         repository.save(convite);
 
       
@@ -142,6 +161,10 @@ public class ContatoService {
                         novoContato.setNome(dono.getNomeUsuario());
                         novoContato.setEmail(emailDono);
                         novoContato.setPendente(false);
+                        novoContato.setIdContato(dono.getId());
+                        LocalDateTime agora = LocalDateTime.now();
+                        novoContato.setDataSolicitacao(agora);
+                        novoContato.setDataConfirmacao(agora);
                         repository.save(novoContato);
                     }
                 }
