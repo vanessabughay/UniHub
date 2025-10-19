@@ -15,8 +15,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Optional;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class GrupoServiceTest {
@@ -108,5 +114,100 @@ class GrupoServiceTest {
         List<Grupo> resultado = grupoService.listarTodas(ownerId);
 
         assertEquals(membroA.getId(), resultado.get(0).getAdminContatoId());
+    }
+
+
+    @Test
+    void atualizarGrupoTransferePropriedadeParaNovoAdministrador() {
+        Long ownerId = 1L;
+        Long novoAdministradorUsuarioId = 2L;
+
+        Usuario usuarioOwner = new Usuario();
+        usuarioOwner.setId(ownerId);
+        usuarioOwner.setEmail("owner@example.com");
+
+        Usuario usuarioNovoAdministrador = new Usuario();
+        usuarioNovoAdministrador.setId(novoAdministradorUsuarioId);
+        usuarioNovoAdministrador.setEmail("novo@example.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(11L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail("owner@example.com");
+        contatoOwner.setPendente(Boolean.FALSE);
+
+        Contato contatoNovoAdmin = new Contato();
+        contatoNovoAdmin.setId(12L);
+        contatoNovoAdmin.setOwnerId(ownerId);
+        contatoNovoAdmin.setEmail("novo@example.com");
+        contatoNovoAdmin.setIdContato(novoAdministradorUsuarioId);
+        contatoNovoAdmin.setPendente(Boolean.FALSE);
+
+        Grupo grupoExistente = new Grupo();
+        grupoExistente.setId(100L);
+        grupoExistente.setNome("Grupo Teste");
+        grupoExistente.setOwnerId(ownerId);
+        grupoExistente.addMembro(contatoOwner);
+        grupoExistente.addMembro(contatoNovoAdmin);
+        grupoExistente.setAdminContatoId(contatoOwner.getId());
+
+        Grupo request = new Grupo();
+        request.setMembros(List.of(contatoNovoAdmin));
+
+        when(grupoRepository.findByIdAndOwnerId(grupoExistente.getId(), ownerId))
+                .thenReturn(Optional.of(grupoExistente));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuarioOwner));
+        when(usuarioRepository.findById(novoAdministradorUsuarioId)).thenReturn(Optional.of(usuarioNovoAdministrador));
+        when(contatoRepository.findByOwnerIdAndIdIn(ownerId, List.of(contatoNovoAdmin.getId())))
+                .thenReturn(List.of(contatoNovoAdmin));
+        when(contatoRepository.findByOwnerIdAndEmail(ownerId, "owner@example.com"))
+                .thenReturn(Optional.of(contatoOwner));
+        when(contatoRepository.findByOwnerIdAndEmailIgnoreCase(ownerId, "owner@example.com"))
+                .thenReturn(Optional.of(contatoOwner));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Grupo atualizado = grupoService.atualizarGrupo(grupoExistente.getId(), request, ownerId);
+
+        assertEquals(contatoNovoAdmin.getId(), atualizado.getAdminContatoId());
+        assertEquals(novoAdministradorUsuarioId, atualizado.getOwnerId());
+        verify(grupoRepository, never()).delete(any(Grupo.class));
+    }
+
+    @Test
+    void atualizarGrupoExcluiQuandoNaoHaMembros() {
+        Long ownerId = 3L;
+
+        Usuario usuario = new Usuario();
+        usuario.setId(ownerId);
+        usuario.setEmail("owner3@example.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(30L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail("owner3@example.com");
+        contatoOwner.setPendente(Boolean.FALSE);
+
+        Grupo grupoExistente = new Grupo();
+        grupoExistente.setId(200L);
+        grupoExistente.setNome("Grupo Vazio");
+        grupoExistente.setOwnerId(ownerId);
+        grupoExistente.addMembro(contatoOwner);
+
+        Grupo request = new Grupo();
+        request.setMembros(List.of());
+
+        when(grupoRepository.findByIdAndOwnerId(grupoExistente.getId(), ownerId))
+                .thenReturn(Optional.of(grupoExistente));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuario));
+        when(contatoRepository.findByOwnerIdAndIdIn(ownerId, List.of())).thenReturn(List.of());
+        when(contatoRepository.findByOwnerIdAndEmail(ownerId, "owner3@example.com"))
+                .thenReturn(Optional.of(contatoOwner));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () ->
+                grupoService.atualizarGrupo(grupoExistente.getId(), request, ownerId));
+
+        assertEquals("Grupo removido por não possuir membros ativos.", exception.getMessage());
+        verify(grupoRepository).delete(grupoExistente);
     }
 }

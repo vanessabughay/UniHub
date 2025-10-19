@@ -37,7 +37,9 @@ public class GrupoService {
         Long ownerId = requireUsuario(usuarioId);
         List<Grupo> grupos = grupoRepository.findByOwnerId(ownerId);
         Contato contatoDoUsuario = buscarContatoDoUsuario(ownerId).orElse(null);
-        grupos.forEach(grupo -> definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario));
+        grupos.forEach(grupo -> {
+            definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario);
+        });
         return grupos;
     }
 
@@ -60,9 +62,13 @@ public class GrupoService {
         Contato contatoAdministrador = garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId, true);
         grupo.getMembros().clear();
         grupo.getMembros().addAll(membrosGerenciados);
-        definirAdminContato(grupo, contatoAdministrador, contatoAdministrador);
+        Contato administrador = definirAdminContato(grupo, contatoAdministrador, contatoAdministrador);
+        boolean ownerAlterado = atualizarOwnerPorAdmin(grupo, administrador);
         Grupo grupoSalvo = grupoRepository.save(grupo);
-        definirAdminContato(grupoSalvo, contatoAdministrador, contatoAdministrador);
+        Contato administradorSalvo = definirAdminContato(grupoSalvo, contatoAdministrador, contatoAdministrador);
+        if (atualizarOwnerPorAdmin(grupoSalvo, administradorSalvo) && !ownerAlterado) {
+            grupoSalvo = grupoRepository.save(grupoSalvo);
+        }
         return grupoSalvo;
     }
 
@@ -85,12 +91,22 @@ public class GrupoService {
         } else {
             contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(grupoExistente.getMembros(), ownerId, false);
         }
+        if (grupoExistente.getMembros().isEmpty()) {
+            grupoRepository.delete(grupoExistente);
+            throw new EntityNotFoundException("Grupo removido por não possuir membros ativos.");
+        }
+
         Contato contatoDoUsuario = contatoAdministradorPreferencial != null
                 ? contatoAdministradorPreferencial
                 : buscarContatoDoUsuario(ownerId).orElse(null);
-        definirAdminContato(grupoExistente, contatoAdministradorPreferencial, contatoDoUsuario);
+
+        Contato administrador = definirAdminContato(grupoExistente, contatoAdministradorPreferencial, contatoDoUsuario);
+        boolean ownerAlterado = atualizarOwnerPorAdmin(grupoExistente, administrador);
         Grupo grupoAtualizado = grupoRepository.save(grupoExistente);
-        definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial, contatoDoUsuario);
+        Contato administradorAtualizado = definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial, contatoDoUsuario);
+        if (atualizarOwnerPorAdmin(grupoAtualizado, administradorAtualizado) && !ownerAlterado) {
+            grupoAtualizado = grupoRepository.save(grupoAtualizado);
+        }
         return grupoAtualizado;
     }
 
@@ -108,7 +124,9 @@ public class GrupoService {
         Long ownerId = requireUsuario(usuarioId);
         List<Grupo> grupos = grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId);
         Contato contatoDoUsuario = buscarContatoDoUsuario(ownerId).orElse(null);
-        grupos.forEach(grupo -> definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario));
+        grupos.forEach(grupo -> {
+            definirAdminContato(grupo, contatoDoUsuario, contatoDoUsuario);
+        });
         return grupos;
     }
 
@@ -165,15 +183,15 @@ public class GrupoService {
         return jaPresente ? contatoDoUsuario : null;
     }
 
-    private void definirAdminContato(Grupo grupo, Contato contatoPreferencial, Contato contatoDoUsuario) {
+    private Contato definirAdminContato(Grupo grupo, Contato contatoPreferencial, Contato contatoDoUsuario) {
         if (grupo == null) {
-            return;
+            return null;
         }
 
         List<Contato> membros = grupo.getMembros();
         if (membros == null || membros.isEmpty()) {
             grupo.setAdminContatoId(null);
-            return;
+            return null;
         }
 
         Long candidato = null;
@@ -191,7 +209,6 @@ public class GrupoService {
         if (candidato == null) {
             candidato = membros.stream()
                     .filter(Objects::nonNull)
-
                     .map(Contato::getId)
                     .filter(Objects::nonNull)
                     .min(Comparator.naturalOrder())
@@ -199,6 +216,17 @@ public class GrupoService {
         }
 
         grupo.setAdminContatoId(candidato);
+
+        if (candidato == null) {
+            return null;
+        }
+
+        Long candidatoFinal = candidato;
+        return membros.stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> candidatoFinal.equals(contato.getId()))
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean isContatoNoGrupo(List<Contato> membros, Long contatoId) {
@@ -232,6 +260,28 @@ public class GrupoService {
                 .sorted(Comparator.comparing(Contato::getId))
                 .findFirst();
     }
+
+    private boolean atualizarOwnerPorAdmin(Grupo grupo, Contato administrador) {
+        if (grupo == null || administrador == null) {
+            return false;
+        }
+
+        Long novoOwnerId = administrador.getIdContato();
+        if (novoOwnerId == null) {
+            return false;
+        }
+
+        if (Objects.equals(grupo.getOwnerId(), novoOwnerId)) {
+            return false;
+        }
+
+        usuarioRepository.findById(novoOwnerId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário administrador não encontrado com ID: " + novoOwnerId));
+
+        grupo.setOwnerId(novoOwnerId);
+        return true;
+    }
+
 
     private Contato obterOuCriarContatoDoUsuario(Long ownerId) {
         Usuario usuario = usuarioRepository.findById(ownerId)
