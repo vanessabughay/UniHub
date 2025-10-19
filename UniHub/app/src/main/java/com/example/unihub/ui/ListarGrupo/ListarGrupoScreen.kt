@@ -361,7 +361,15 @@ fun GrupoItemExpansivel(
                         } else {
                             membrosOrdenados.forEach { contato ->
                                 val nomeContato = contato.nome ?: "Sem nome"
-                                val rotuloAdministrador = if (contato.id != null && contato.id == grupo.adminContatoId) {
+                                val isAdministrador = when {
+                                    grupo.ownerId != null && (
+                                            (contato.idContato != null && contato.idContato == grupo.ownerId) ||
+                                                    (contato.id != null && contato.id == grupo.ownerId)
+                                            ) -> true
+                                    contato.id != null && contato.id == grupo.adminContatoId -> true
+                                    else -> false
+                                }
+                                val rotuloAdministrador = if (isAdministrador) {
                                     " (Administrador do Grupo)"
                                 } else {
                                     ""

@@ -46,7 +46,8 @@ class ListarGrupoViewModel(
                             id = grupo.id,
                             nome = grupo.nome,
                             membros = grupo.membros,
-                            adminContatoId = grupo.adminContatoId
+                            adminContatoId = grupo.adminContatoId,
+                            ownerId = grupo.ownerId
 
                         )
                     }.sortedBy { it.nome.lowercase() }
