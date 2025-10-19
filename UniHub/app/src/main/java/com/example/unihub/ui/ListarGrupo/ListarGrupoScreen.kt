@@ -79,6 +79,7 @@ fun ListarGrupoScreen(
     val gruposState by viewModel.grupos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val emailsContatos by viewModel.emailsContatos.collectAsState()
 
     var grupoExpandidoId by remember { mutableStateOf<Long?>(null) }
     var showConfirmDeleteDialog by remember { mutableStateOf(false) } // MODIFICADO: Nome simplificado
@@ -99,6 +100,7 @@ fun ListarGrupoScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.loadGrupo()
+                viewModel.loadContatosDoUsuario()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -272,7 +274,8 @@ fun ListarGrupoScreen(
                                         grupoParaExcluir = grupo
                                         showConfirmDeleteDialog = true
                                     },
-                                    usuarioLogadoId = usuarioLogadoId
+                                    usuarioLogadoId = usuarioLogadoId,
+                                    emailsContatosUsuario = emailsContatos
                                 )
                             }
                         }
@@ -291,7 +294,8 @@ fun GrupoItemExpansivel(
     onHeaderClick: () -> Unit,
     onEditarClick: () -> Unit,
     onExcluirClick: () -> Unit,
-    usuarioLogadoId: Long?
+    usuarioLogadoId: Long?,
+    emailsContatosUsuario: Set<String>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -364,18 +368,21 @@ fun GrupoItemExpansivel(
                             )
                         } else {
                             membrosOrdenados.forEach { contato ->
-                                val nomeContato = if (usuarioLogadoId != null && contato.ownerId != null && contato.ownerId != usuarioLogadoId) {
-                                    when {
-                                        !contato.email.isNullOrBlank() -> contato.email!!
-                                        !contato.nome.isNullOrBlank() -> contato.nome!!
-                                        else -> "Sem nome"
-                                    }
-                                } else {
-                                    when {
-                                        !contato.nome.isNullOrBlank() -> contato.nome!!
-                                        !contato.email.isNullOrBlank() -> contato.email!!
-                                        else -> "Sem nome"
-                                    }
+                                val nomeDisponivel = contato.nome?.trim()?.takeIf { it.isNotEmpty() }
+                                val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
+                                val emailNormalizado = emailDisponivel?.lowercase()
+                                val isContatoDoUsuario = when {
+                                    usuarioLogadoId != null && contato.ownerId != null && contato.ownerId == usuarioLogadoId -> true
+                                    usuarioLogadoId != null && contato.idContato != null && contato.idContato == usuarioLogadoId -> true
+                                    emailNormalizado != null && emailsContatosUsuario.contains(emailNormalizado) -> true
+                                    else -> false
+                                }
+                                val nomeContato = when {
+                                    isContatoDoUsuario && nomeDisponivel != null -> nomeDisponivel
+                                    !isContatoDoUsuario && emailDisponivel != null -> emailDisponivel
+                                    nomeDisponivel != null -> nomeDisponivel
+                                    emailDisponivel != null -> emailDisponivel
+                                    else -> "Sem nome"
                                 }
                                 val isAdministrador = when {
                                     grupo.ownerId != null && (

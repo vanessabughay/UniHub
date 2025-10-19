@@ -6,6 +6,7 @@ import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.GrupoRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,7 +18,8 @@ import kotlinx.coroutines.launch
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 class ListarGrupoViewModel(
-    private val repository: GrupoRepository
+    private val repository: GrupoRepository,
+    private val contatoRepository: ContatoRepository
 ) : ViewModel() {
 
     private val _grupos = MutableStateFlow<List<Grupo>>(emptyList())
@@ -29,8 +31,12 @@ class ListarGrupoViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+    private val _emailsContatos = MutableStateFlow<Set<String>>(emptySet())
+    val emailsContatos: StateFlow<Set<String>> = _emailsContatos.asStateFlow()
+
     init {
         loadGrupo()
+        loadContatosDoUsuario()
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -67,6 +73,27 @@ class ListarGrupoViewModel(
                 .collect { gruposOrdenadosParaUi ->
                     _grupos.value = gruposOrdenadosParaUi
                     _isLoading.value = false
+                }
+        }
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun loadContatosDoUsuario() {
+        viewModelScope.launch {
+            contatoRepository.getContatoResumo()
+                .map { contatosDoRepositorio ->
+                    contatosDoRepositorio
+                        .filterNot { it.pendente }
+                        .mapNotNull { contato ->
+                            contato.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+                        }
+                        .toSet()
+                }
+                .catch {
+                    _emailsContatos.value = emptySet()
+                }
+                .collect { emailsNormalizados ->
+                    _emailsContatos.value = emailsNormalizados
                 }
         }
     }
