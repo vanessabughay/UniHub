@@ -275,23 +275,106 @@ public class DataInitializer {
     }
 
     private Contato criarContatoSeNaoExistir(Usuario usuario, String nome, String email, String telefone, Boolean pendente){
-        return contatoRepository.findByOwnerId(usuario.getId()).stream()
-                .filter(c -> (email != null && email.equalsIgnoreCase(c.getEmail()))
+        Contato contato = contatoRepository.findByOwnerId(usuario.getId()).stream()
+                        .filter(c -> (email != null && email.equalsIgnoreCase(c.getEmail()))
                         || c.getNome().equalsIgnoreCase(nome))
                 .findFirst()
                 .orElseGet(() -> {
-                    Contato contato = new Contato();
-                    contato.setNome(nome);
-                    contato.setEmail(email);
-                    contato.setOwnerId(usuario.getId());
-                    contato.setPendente(pendente);
-                    contato.setIdContato(null);
+                    Contato novoContato = new Contato();
+                    novoContato.setNome(nome);
+                    novoContato.setEmail(email);
+                    novoContato.setOwnerId(usuario.getId());
+                    novoContato.setPendente(pendente);
+                    novoContato.setIdContato(null);
                     LocalDateTime agora = LocalDateTime.now();
-                    contato.setDataSolicitacao(agora);
-                    contato.setDataConfirmacao(pendente ? null : agora);
-                    return contatoRepository.save(contato);
+                    novoContato.setDataSolicitacao(agora);
+                    novoContato.setDataConfirmacao(pendente ? null : agora);
+                    return contatoRepository.save(novoContato);
                 });
+
+                if (!Boolean.TRUE.equals(contato.getPendente()) && email != null) {
+            usuarioRepository.findByEmail(email)
+                    .filter(u -> !u.getId().equals(usuario.getId()))
+                    .ifPresent(usuarioContato -> {
+                        boolean atualizado = false;
+                        if (contato.getIdContato() == null || !contato.getIdContato().equals(usuarioContato.getId())) {
+                            contato.setIdContato(usuarioContato.getId());
+                            atualizado = true;
+                        }
+                        if (contato.getDataConfirmacao() == null) {
+                            contato.setDataConfirmacao(LocalDateTime.now());
+                            atualizado = true;
+                        }
+                        if (atualizado) {
+                            contatoRepository.save(contato);
+                        }
+                        criarContatoReciprocoSeNecessario(usuario, usuarioContato);
+                    });
+        }
+
+        return contato;
     }
+
+    private void criarContatoReciprocoSeNecessario(Usuario usuarioOrigem, Usuario usuarioContato) {
+        if (usuarioOrigem.getId().equals(usuarioContato.getId())) {
+            return;
+        }
+
+        Contato reciproco = contatoRepository.findByOwnerId(usuarioContato.getId()).stream()
+                .filter(c -> {
+                    if (c.getIdContato() != null) {
+                        return c.getIdContato().equals(usuarioOrigem.getId());
+                    }
+                    return c.getEmail() != null && c.getEmail().equalsIgnoreCase(usuarioOrigem.getEmail());
+                })
+                .findFirst()
+                .orElse(null);
+
+        if (reciproco == null) {
+            Contato novoContato = new Contato();
+            novoContato.setOwnerId(usuarioContato.getId());
+            novoContato.setNome(usuarioOrigem.getNomeUsuario());
+            novoContato.setEmail(usuarioOrigem.getEmail());
+            novoContato.setPendente(false);
+            novoContato.setIdContato(usuarioOrigem.getId());
+            LocalDateTime agora = LocalDateTime.now();
+            novoContato.setDataSolicitacao(agora);
+            novoContato.setDataConfirmacao(agora);
+            contatoRepository.save(novoContato);
+            return;
+        }
+
+        boolean atualizado = false;
+        if (!Boolean.FALSE.equals(reciproco.getPendente())) {
+            reciproco.setPendente(false);
+            atualizado = true;
+        }
+        if (reciproco.getIdContato() == null || !reciproco.getIdContato().equals(usuarioOrigem.getId())) {
+            reciproco.setIdContato(usuarioOrigem.getId());
+            atualizado = true;
+        }
+        if (usuarioOrigem.getNomeUsuario() != null && !usuarioOrigem.getNomeUsuario().equals(reciproco.getNome())) {
+            reciproco.setNome(usuarioOrigem.getNomeUsuario());
+            atualizado = true;
+        }
+        if (usuarioOrigem.getEmail() != null && (reciproco.getEmail() == null || !reciproco.getEmail().equalsIgnoreCase(usuarioOrigem.getEmail()))) {
+            reciproco.setEmail(usuarioOrigem.getEmail());
+            atualizado = true;
+        }
+        if (reciproco.getDataConfirmacao() == null) {
+            reciproco.setDataConfirmacao(LocalDateTime.now());
+            atualizado = true;
+        }
+        if (reciproco.getDataSolicitacao() == null) {
+            reciproco.setDataSolicitacao(LocalDateTime.now());
+            atualizado = true;
+        }
+
+        if (atualizado) {
+            contatoRepository.save(reciproco);
+        }
+    }
+    
 
     private Grupo criarGrupoSeNaoExistir(Usuario usuario, String nome, List<Contato> membros){
         return grupoRepository.findByOwnerId(usuario.getId()).stream()
