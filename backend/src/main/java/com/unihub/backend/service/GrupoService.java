@@ -50,8 +50,10 @@ public class GrupoService {
         }
 
         gruposVisiveis.values().forEach(grupo -> {
-            Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId) ? contatoProprio : null;
-            definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
+                    ? contatoProprio
+                    : localizarContatoDoOwner(grupo);
+                                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         });
         return new ArrayList<>(gruposVisiveis.values());
     }
@@ -72,8 +74,7 @@ public class GrupoService {
                 .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + id));
         Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                 ? buscarContatoDoUsuario(ownerId).orElse(null)
-                : null;
-        definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                : localizarContatoDoOwner(grupo);        definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         return grupo;
     }
 
@@ -159,8 +160,10 @@ public class GrupoService {
         }
 
         gruposVisiveis.values().forEach(grupo -> {
-            Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId) ? contatoProprio : null;
-            definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+            Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
+                    ? contatoProprio
+                    : localizarContatoDoOwner(grupo);
+                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
         });
 
         return new ArrayList<>(gruposVisiveis.values());
@@ -291,6 +294,21 @@ public class GrupoService {
                 .filter(Objects::nonNull)
                 .anyMatch(contato -> contatoId.equals(contato.getId()));
     }
+
+    private Contato localizarContatoDoOwner(Grupo grupo) {
+        if (grupo == null || grupo.getMembros() == null || grupo.getOwnerId() == null) {
+            return null;
+        }
+
+        Long ownerId = grupo.getOwnerId();
+        return grupo.getMembros().stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> Objects.equals(ownerId, contato.getIdContato())
+                        || Objects.equals(ownerId, contato.getOwnerId()))
+                .findFirst()
+                .orElse(null);
+    }
+    
     private Optional<Contato> buscarContatoDoUsuario(Long ownerId) {
         if (ownerId == null) {
             return Optional.empty();
