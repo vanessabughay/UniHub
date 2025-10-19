@@ -24,9 +24,6 @@ import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
 import com.example.unihub.data.api.ColunaApi
-import com.example.unihub.components.formatDateToLocale
-import com.example.unihub.components.showLocalizedDatePicker
-import java.util.Locale
 
 @Composable
 fun ColunaFormScreen(
@@ -77,10 +74,7 @@ fun ColunaFormScreen(
         }
     }
 
-val locale = remember { Locale("pt", "BR") }
-val showDatePicker = {
-    showLocalizedDatePicker(context, prazo, locale) { prazo = it }
-}
+
 
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -123,11 +117,7 @@ val showDatePicker = {
                 optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
             )
 
-CampoData(
-    label = "Prazo",
-    value = formatDateToLocale(prazo, locale),
-    onClick = showDatePicker
-)
+
 
 
             Spacer(modifier = Modifier.weight(1f))

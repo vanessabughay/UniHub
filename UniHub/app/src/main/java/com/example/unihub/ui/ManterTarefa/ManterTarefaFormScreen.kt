@@ -49,7 +49,7 @@ import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.Grupobackend
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
-import androidx.lifecycle.ViewModelProvider
+
 
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.repository._quadrobackend
@@ -110,7 +110,7 @@ val locale = remember { Locale("pt", "BR") }
 val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", locale) }
 val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", locale) }
 
-val tarefaState by tarefaViewModel.tarefa.collectAsState()
+
 
 LaunchedEffect(quadroId) {
     tarefaViewModel.carregarResponsaveis(quadroId)
@@ -756,6 +756,8 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
                 override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
                 override suspend fun deleteContatoApi(id: Long): Boolean = true
                 override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> = emptyList()
+                override suspend fun acceptInvitation(id: Long) { /* no-op para preview */ }
+                override suspend fun rejectInvitation(id: Long) { /* no-op para preview */ }
             })
 
             @Suppress("UNCHECKED_CAST")

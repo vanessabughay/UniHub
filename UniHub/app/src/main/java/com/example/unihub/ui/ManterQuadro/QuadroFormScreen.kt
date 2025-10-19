@@ -302,6 +302,7 @@ private fun createFakeDisciplinaRepository() = DisciplinaRepository(object : _di
 private fun createFakeContatoRepository() = ContatoRepository(object : Contatobackend {
     override suspend fun getContatoResumoApi(): List<ContatoResumo> = MOCK_CONTATOS
     override suspend fun getContatoByIdApi(id: String): Contato? = null
+
     // --- FUNÇÕES QUE FALTAVAM ---
 
 
@@ -312,6 +313,8 @@ private fun createFakeContatoRepository() = ContatoRepository(object : Contatoba
     override suspend fun addContatoApi(contato: Contato) {} // Implementação vazia
     override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
     override suspend fun deleteContatoApi(id: Long): Boolean = true
+    override suspend fun acceptInvitation(id: Long) { /* no-op para preview */ }
+    override suspend fun rejectInvitation(id: Long) { /* no-op para preview */ }
 })
 
 private fun createFakeGrupoRepository() = GrupoRepository(object : Grupobackend {
