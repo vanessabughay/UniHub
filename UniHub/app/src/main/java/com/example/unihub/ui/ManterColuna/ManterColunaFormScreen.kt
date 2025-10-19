@@ -1,6 +1,5 @@
 package com.example.unihub.ui.ManterColuna
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -24,9 +23,10 @@ import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Priority
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
-import java.text.SimpleDateFormat
-import java.util.*
 import com.example.unihub.data.api.ColunaApi
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Locale
 
 @Composable
 fun ColunaFormScreen(
@@ -77,6 +77,11 @@ fun ColunaFormScreen(
         }
     }
 
+val locale = remember { Locale("pt", "BR") }
+val showDatePicker = {
+    showLocalizedDatePicker(context, prazo, locale) { prazo = it }
+}
+
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
@@ -117,6 +122,12 @@ fun ColunaFormScreen(
                 },
                 optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
             )
+
+CampoData(
+    label = "Prazo",
+    value = formatDateToLocale(prazo, locale),
+    onClick = showDatePicker
+)
 
 
             Spacer(modifier = Modifier.weight(1f))

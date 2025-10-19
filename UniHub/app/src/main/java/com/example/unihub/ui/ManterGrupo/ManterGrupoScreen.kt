@@ -28,8 +28,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -50,10 +48,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoBuscaJanela
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle // Ícone para adicionar
 import androidx.compose.material.icons.filled.Delete // Ícone para remover
 import androidx.compose.material.icons.filled.Person // Ícone para membro
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
@@ -378,42 +379,68 @@ fun SelecaoContatosDialog(
                 } else if (contatosDisponiveis.isEmpty()) {
                     Text(if (isForRemoval) "Nenhum membro para remover." else "Nenhum contato disponível.")
                 } else {
-                    Surface( // Usar Surface para dar um limite de altura à LazyColumn dentro do AlertDialog
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp) // Limita a altura
-                    ) {
-                        LazyColumn {
-                            items(contatosDisponiveis, key = { it.id }) { contato ->
-                                val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
-                                // No modo de adição, desabilita se já for membro (a menos que seja o próprio membro sendo 're-adicionado')
-                                val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+                    var termoBusca by remember(contatosDisponiveis) { mutableStateOf("") }
+                    val contatosFiltrados = remember(termoBusca, contatosDisponiveis) {
+                        if (termoBusca.isBlank()) {
+                            contatosDisponiveis
+                        } else {
+                            contatosDisponiveis.filter { contato ->
+                                contato.nome.contains(termoBusca, ignoreCase = true)
+                            }
+                        }
+                    }
 
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = isEnabled) {
-                                            if (isEnabled) {
-                                                idsTemporariamenteSelecionados = if (isChecked) {
-                                                    idsTemporariamenteSelecionados - contato.id
-                                                } else {
-                                                    idsTemporariamenteSelecionados + contato.id
+                    CampoBuscaJanela(
+                        value = termoBusca,
+                        onValueChange = { termoBusca = it },
+                        placeholder = "Buscar contatos",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (contatosFiltrados.isEmpty()) {
+                        Text(
+                            text = if (isForRemoval) "Nenhum membro encontrado." else "Nenhum contato encontrado.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Surface( // Usar Surface para dar um limite de altura à LazyColumn dentro do AlertDialog
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp) // Limita a altura
+                        ) {
+                            LazyColumn {
+                                items(contatosFiltrados, key = { it.id }) { contato ->
+                                    val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
+                                    // No modo de adição, desabilita se já for membro (a menos que seja o próprio membro sendo 're-adicionado')
+                                    val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(enabled = isEnabled) {
+                                                if (isEnabled) {
+                                                    idsTemporariamenteSelecionados = if (isChecked) {
+                                                        idsTemporariamenteSelecionados - contato.id
+                                                    } else {
+                                                        idsTemporariamenteSelecionados + contato.id
+                                                    }
                                                 }
                                             }
-                                        }
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = isChecked,
-                                        onCheckedChange = null, // Controlado pelo Row clickable
-                                        enabled = isEnabled
-                                    )
-                                    Text(
-                                        text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é membro)" else "",
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                    )
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = null, // Controlado pelo Row clickable
+                                            enabled = isEnabled
+                                        )
+                                        Text(
+                                            text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é membro)" else "",
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -2,8 +2,6 @@
 
 package com.example.unihub.ui.ManterAvaliacao
 
-import android.app.DatePickerDialog // Para DatePicker (se for ativar)
-import android.app.TimePickerDialog   // Para TimePicker (se for ativar)
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
@@ -33,13 +31,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoBuscaJanela
 import com.example.unihub.data.model.Modalidade
+import com.example.unihub.components.CampoData
+import com.example.unihub.components.CampoHorario
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
 import com.example.unihub.ui.ListarAvaliacao.CardDefaultBackgroundColor
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 import com.example.unihub.ui.ManterContato.DeleteButtonErrorColor
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import com.example.unihub.ui.Shared.NotaCampo
 
@@ -55,6 +56,7 @@ fun ManterAvaliacaoScreen(
     onExcluirSucessoNavegarParaLista: () -> Unit
 ) {
     val context = LocalContext.current
+    val locale = remember { Locale("pt", "BR") }
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -247,6 +249,113 @@ fun ManterAvaliacaoScreen(
                         colors = OutlinedTextFieldDefaults.colors()
                     )
 
+                    // DATA E HORA DA ENTREGA (lado a lado)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        val dataEntregaMillis = remember(uiState.dataEntrega) {
+                            stringDateToMillis(uiState.dataEntrega)
+                        }
+                        CampoData(
+                            label = "Data",
+                            value = formatDateToLocale(dataEntregaMillis, locale),
+                            onClick = {
+                                showLocalizedDatePicker(context, dataEntregaMillis, locale) { millis ->
+                                    val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
+                                    viewModel.setDataEntrega(iso)
+                                }
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        val horaEntregaEmMinutos = remember(uiState.horaEntrega) {
+                            stringTimeToMinutes(uiState.horaEntrega).takeIf { it >= 0 }
+                        }
+
+                        CampoHorario(
+                            label = "Horário",
+                            value = horaEntregaEmMinutos,
+                            onTimeSelected = { totalMinutes ->
+                                viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // NOTA E PESO (linha única)
+                    var prioridadeExpanded by remember { mutableStateOf(false) }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        OutlinedTextField(
+                            value = NotaCampo.formatFieldText(uiState.nota),
+                            onValueChange = { viewModel.setNota(it) },
+                            label = { Text("Nota") },
+                            placeholder = { Text("Ex.: 8,5") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            colors = OutlinedTextFieldDefaults.colors()
+                        )
+
+                        OutlinedTextField(
+                            value = uiState.peso,
+                            onValueChange = { viewModel.setPeso(it) },
+                            label = { Text("Peso (%)") },
+                            placeholder = { Text("Ex.: 20") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            enabled = true, // Mude para false para desativar completamente a digitação
+                            colors = OutlinedTextFieldDefaults.colors()
+                        )
+
+
+                    }
+
+                    // PRIORIDADE
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        ExposedDropdownMenuBox(
+                            expanded = prioridadeExpanded,
+                            onExpandedChange = { prioridadeExpanded = !prioridadeExpanded },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            OutlinedTextField(
+                                value = uiState.prioridade.displayName, // Assumindo que Prioridade tem 'displayName'
+                                onValueChange = {},
+                                readOnly = true,
+                                label = { Text("Prioridade *") },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = prioridadeExpanded) },
+                                modifier = Modifier
+                                    .menuAnchor()
+                                    .fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = prioridadeExpanded,
+                                onDismissRequest = { prioridadeExpanded = false }
+                            ) {
+                                uiState.todasPrioridades.forEach { prioridade ->
+                                    DropdownMenuItem(
+                                        text = { Text(prioridade.displayName) },
+                                        onClick = {
+                                            viewModel.setPrioridade(prioridade)
+                                            prioridadeExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     // MODALIDADE (Dropdown)
                     var modalidadeExpanded by remember { mutableStateOf(false) }
                     ExposedDropdownMenuBox(
@@ -276,86 +385,6 @@ fun ManterAvaliacaoScreen(
                                     onClick = {
                                         viewModel.setModalidade(modalidade)
                                         modalidadeExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // DATA DA ENTREGA (somente seleção, sem digitar)
-                    CampoData(
-                        label = "Data de Entrega",
-                        value = stringDateToMillis(uiState.dataEntrega),
-                        onDateSelected = { millis ->
-                            val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
-                            viewModel.setDataEntrega(iso)
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // HORA DA ENTREGA (somente seleção, sem digitar)
-                    CampoHorario(
-                        label = "Hora de Entrega",
-                        value = stringTimeToMinutes(uiState.horaEntrega),
-                        onTimeSelected = { totalMinutes ->
-                            viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // NOTA
-                    OutlinedTextField(
-                        value = NotaCampo.formatFieldText(uiState.nota),
-                        onValueChange = { viewModel.setNota(it) },
-                        label = { Text("Nota") },
-                        placeholder = { Text("Ex.: 8,5") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-
-                    // PESO (Desativado para interação complexa por enquanto)
-                    OutlinedTextField(
-                        value = uiState.peso,
-                        onValueChange = { viewModel.setPeso(it) },
-                        label = { Text("Peso (%)") },
-                        placeholder = { Text("Ex.: 20") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = true, // Mude para false para desativar completamente a digitação
-                        colors = OutlinedTextFieldDefaults.colors()
-                    )
-
-                    // PRIORIDADE (Dropdown)
-                    var prioridadeExpanded by remember { mutableStateOf(false) }
-                    ExposedDropdownMenuBox(
-                        expanded = prioridadeExpanded,
-                        onExpandedChange = { prioridadeExpanded = !prioridadeExpanded },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = uiState.prioridade.displayName, // Assumindo que Prioridade tem 'displayName'
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Prioridade *") },
-                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = prioridadeExpanded) },
-                            modifier = Modifier
-                                .menuAnchor()
-                                .fillMaxWidth(),
-                            colors = OutlinedTextFieldDefaults.colors()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = prioridadeExpanded,
-                            onDismissRequest = { prioridadeExpanded = false }
-                        ) {
-                            uiState.todasPrioridades.forEach { prioridade ->
-                                DropdownMenuItem(
-                                    text = { Text(prioridade.displayName) },
-                                    onClick = {
-                                        viewModel.setPrioridade(prioridade)
-                                        prioridadeExpanded = false
                                     }
                                 )
                             }
@@ -595,43 +624,69 @@ fun SelecaoContatosDialog(
                 } else if (contatosDisponiveis.isEmpty()) {
                     Text(if (isForRemoval) "Nenhum integrante para remover." else "Nenhum contato disponível.")
                 } else {
-                    Surface( // Adicionado Surface para melhor controle de altura e possível scroll interno
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp) // Limita altura
-                    ) {
-                        LazyColumn {
-                            items(contatosDisponiveis, key = { it.id }) { contato ->
-                                val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
-                                // Na adição, desabilitar se já for integrante (via idsContatosJaSelecionados)
-                                // Na remoção, todos os listados (que são os integrantesDaAvaliacao) são habilitados para seleção
-                                val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+                    var termoBusca by remember(contatosDisponiveis) { mutableStateOf("") }
+                    val contatosFiltrados = remember(termoBusca, contatosDisponiveis) {
+                        if (termoBusca.isBlank()) {
+                            contatosDisponiveis
+                        } else {
+                            contatosDisponiveis.filter { contato ->
+                                contato.nome.contains(termoBusca, ignoreCase = true)
+                            }
+                        }
+                    }
 
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable(enabled = isEnabled) {
-                                            if (isEnabled) {
-                                                idsTemporariamenteSelecionados = if (isChecked) {
-                                                    idsTemporariamenteSelecionados - contato.id
-                                                } else {
-                                                    idsTemporariamenteSelecionados + contato.id
+                    CampoBuscaJanela(
+                        value = termoBusca,
+                        onValueChange = { termoBusca = it },
+                        placeholder = "Buscar contatos",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (contatosFiltrados.isEmpty()) {
+                        Text(
+                            text = if (isForRemoval) "Nenhum integrante encontrado." else "Nenhum contato encontrado.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Surface( // Adicionado Surface para melhor controle de altura e possível scroll interno
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp) // Limita altura
+                        ) {
+                            LazyColumn {
+                                items(contatosFiltrados, key = { it.id }) { contato ->
+                                    val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
+                                    // Na adição, desabilitar se já for integrante (via idsContatosJaSelecionados)
+                                    // Na remoção, todos os listados (que são os integrantesDaAvaliacao) são habilitados para seleção
+                                    val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable(enabled = isEnabled) {
+                                                if (isEnabled) {
+                                                    idsTemporariamenteSelecionados = if (isChecked) {
+                                                        idsTemporariamenteSelecionados - contato.id
+                                                    } else {
+                                                        idsTemporariamenteSelecionados + contato.id
+                                                    }
                                                 }
                                             }
-                                        }
-                                        .padding(vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = isChecked,
-                                        onCheckedChange = null, // Controlado pelo Row clickable
-                                        enabled = isEnabled
-                                    )
-                                    Text(
-                                        text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é integrante)" else "",
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                                    )
+                                            .padding(vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Checkbox(
+                                            checked = isChecked,
+                                            onCheckedChange = null, // Controlado pelo Row clickable
+                                            enabled = isEnabled
+                                        )
+                                        Text(
+                                            text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é integrante)" else "",
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -657,102 +712,5 @@ fun SelecaoContatosDialog(
     )
 }
 
-@Composable
-fun CampoData(
-    label: String,
-    value: Long,
-    onDateSelected: (Long) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
-    val showDatePicker = {
-        val calendar = Calendar.getInstance().apply {
-            if (value != 0L) timeInMillis = value
-        }
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                calendar.set(year, month, day)
-                onDateSelected(calendar.timeInMillis)
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
-    }
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showDatePicker() }) {
-            TextField(
-                value = if (value != 0L) dateFormat.format(Date(value)) else "",
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    disabledTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    disabledIndicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun CampoHorario(
-    label: String,
-    value: Int,
-    onTimeSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-    val hasValue = value >= 0
-    val safeValue = if (hasValue) value else 0
-    val hour = safeValue / 60
-    val minute = safeValue % 60
-
-    val showTimePicker = {
-        TimePickerDialog(
-            context,
-            { _, hourOfDay, minuteOfHour ->
-                onTimeSelected(hourOfDay * 60 + minuteOfHour)
-            },
-            if (hasValue) hour else 12,
-            if (hasValue) minute else 0,
-            true
-        ).show()
-    }
-
-    val displayText = if (!hasValue) "" else String.format("%02d:%02d", hour, minute)
-
-    Column(modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.padding(bottom = 4.dp)
-        )
-        Box(modifier = Modifier.clickable { showTimePicker() }) {
-            TextField(
-                value = displayText,
-                onValueChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                readOnly = true,
-                enabled = false,
-                singleLine = true
-            )
-        }
-    }
-}
 

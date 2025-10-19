@@ -1,6 +1,5 @@
 package com.example.unihub.ui.ManterTarefa
 
-import android.app.DatePickerDialog
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -50,6 +49,8 @@ import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.Grupobackend
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
+import androidx.lifecycle.ViewModelProvider
+
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.repository._quadrobackend
 import com.example.unihub.data.api.TarefaApi
@@ -57,6 +58,11 @@ import com.example.unihub.data.repository.Contatobackend
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.model.Quadro
+import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.components.showLocalizedDatePicker
+import java.util.Calendar
+import java.util.Locale
+
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
@@ -100,12 +106,16 @@ fun TarefaFormScreen(
     var textoComentarioEdicao by remember { mutableStateOf("") }
     var comentarioParaExcluir by remember { mutableStateOf<String?>(null) }
 
-    val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", Locale.getDefault()) }
+val locale = remember { Locale("pt", "BR") }
+val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", locale) }
+val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", locale) }
 
-    LaunchedEffect(key1 = quadroId) {
-        tarefaViewModel.carregarResponsaveis(quadroId)
-    }
+val tarefaState by tarefaViewModel.tarefa.collectAsState()
+
+LaunchedEffect(quadroId) {
+    tarefaViewModel.carregarResponsaveis(quadroId)
+}
+
 
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
@@ -178,18 +188,7 @@ fun TarefaFormScreen(
     }
 
     val showDatePicker = {
-        val calendar = Calendar.getInstance().apply { timeInMillis = prazo }
-        DatePickerDialog(
-            context,
-            { _, year, month, day ->
-                val selectedCalendar = Calendar.getInstance().apply {
-                    set(Calendar.YEAR, year); set(Calendar.MONTH, month); set(Calendar.DAY_OF_MONTH, day)
-                    set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-                }
-                prazo = selectedCalendar.timeInMillis
-            },
-            calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        showLocalizedDatePicker(context, prazo, locale) { prazo = it }
     }
 
     Column(
@@ -227,8 +226,8 @@ fun TarefaFormScreen(
 
             CampoData(
                 label = "Prazo",
-                value = dateFormat.format(Date(prazo)),
-                onClick = { showDatePicker() }
+                value = formatDateToLocale(prazo, locale),
+                onClick = showDatePicker
             )
 
             CampoFormulario(
