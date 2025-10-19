@@ -739,7 +739,8 @@ class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
                         Contato(id = 1L, nome = "Ana", email = "ana@example.com", pendente = false),
                         Contato(id = 2L, nome = "Bruno", email = "bruno@example.com", pendente = false),
                         Contato(id = 3L, nome = "Carla", email = "carla@example.com", pendente = false)
-                    )
+                    ),
+                    adminContatoId = 1L
                 )
 
                 override suspend fun addGrupoApi(grupo: Grupo) {}

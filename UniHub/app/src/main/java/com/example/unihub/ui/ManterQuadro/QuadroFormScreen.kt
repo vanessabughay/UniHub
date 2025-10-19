@@ -271,8 +271,8 @@ private val MOCK_CONTATOS = listOf(
 )
 // CÓDIGO CORRIGIDO
 private val MOCK_GRUPOS = listOf(
-    Grupo(id = 201, nome = "Grupo de Estudo de IA", membros = emptyList()),
-    Grupo(id = 202, nome = "Projeto TCC", membros = emptyList())
+    Grupo(id = 201, nome = "Grupo de Estudo de IA", membros = emptyList(), adminContatoId = null),
+    Grupo(id = 202, nome = "Projeto TCC", membros = emptyList(), adminContatoId = null)
 )
 
 private val MOCK_QUADRO_PARA_EDICAO = Quadro(
