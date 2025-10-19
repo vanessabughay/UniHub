@@ -18,6 +18,9 @@ public class Grupo {
     @Column(nullable = false)
     private Long ownerId;
 
+    @Transient
+    private Long adminContatoId; // ID do contato dentro da lista de membros que atua como administrador
+
     // Se for ManyToMany (um Contato pode estar em vários Grupos e um Grupo pode ter vários Contatos)
     @ManyToMany(fetch = FetchType.LAZY, // Lazy loading é geralmente bom para coleções
             cascade = { CascadeType.PERSIST, CascadeType.MERGE })
@@ -60,6 +63,14 @@ public class Grupo {
 
     public void setOwnerId(Long ownerId) {
         this.ownerId = ownerId;
+    }
+
+    public Long getAdminContatoId() {
+        return adminContatoId;
+    }
+
+    public void setAdminContatoId(Long adminContatoId) {
+        this.adminContatoId = adminContatoId;
     }
 
     public List<Contato> getMembros() {
@@ -109,6 +120,7 @@ public class Grupo {
                 "id=" + id +
                 ", nome='" + nome + '\'' +
                 ", ownerId=" + ownerId +
+                ", adminContatoId=" + adminContatoId +
                 ", numeroDeMembros=" + (membros != null ? membros.size() : "0 (lista nula)") +
                 '}';
     }

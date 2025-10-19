@@ -55,19 +55,19 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
         criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
         criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
-        criarUsuarioSeNaoExistir("Carla Mendes", "carla.mendes@email.com", "carlamendes");
-        criarUsuarioSeNaoExistir("Daniel Souza", "daniel.souza@email.com", "danielsouza");
-        criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa.ferreira@email.com", "elisaferreira");
-        criarUsuarioSeNaoExistir("Felipe Oliveira", "felipe.oliveira@email.com", "felipeoliveira");
-        criarUsuarioSeNaoExistir("Gabriela Santos", "gabriela.santos@email.com", "gabrielasantos");
-        criarUsuarioSeNaoExistir("Heitor Lima", "heitor.lima@email.com", "heitorlima");
-        criarUsuarioSeNaoExistir("Isabela Rocha", "isabela.rocha@email.com", "isabellarocha");  
-        criarUsuarioSeNaoExistir("João Pereira", "joao.pereira@email.com", "joaopereira");
-        criarUsuarioSeNaoExistir("Karina Alves", "karina.alves@email.com", "karinalves");
-        criarUsuarioSeNaoExistir("Lucas Martins", "lucas.martins@email.com", "lucasmartins");       
-        criarUsuarioSeNaoExistir("Mariana Dias", "mariana.dias@email.com", "mariandias");
-        criarUsuarioSeNaoExistir("Nicolas Teixeira", "nicolas.teixeira@email.com", "nicolasteixeira");
-        criarUsuarioSeNaoExistir("Olívia Barbosa", "olivia.barbosa@email.com", "oliviabarbosa");
+        criarUsuarioSeNaoExistir("Carla Mendes", "carla@email.com", "000000");
+        criarUsuarioSeNaoExistir("Daniel Souza", "daniel@email.com", "000000");
+        criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa@email.com", "000000");
+        criarUsuarioSeNaoExistir("Felipe Oliveira", "felipe@email.com", "000000");
+        criarUsuarioSeNaoExistir("Gabriela Santos", "gabriela@email.com", "000000");
+        criarUsuarioSeNaoExistir("Heitor Lima", "heitor@email.com", "000000");
+        criarUsuarioSeNaoExistir("Isabela Rocha", "isabela@email.com", "000000");
+        criarUsuarioSeNaoExistir("João Pereira", "joao@email.com", "000000");
+        criarUsuarioSeNaoExistir("Karina Alves", "karina@email.com", "000000");
+        criarUsuarioSeNaoExistir("Lucas Martins", "lucas@email.com", "000000");
+        criarUsuarioSeNaoExistir("Mariana Dias", "mariana@email.com", "000000");
+        criarUsuarioSeNaoExistir("Nicolas Teixeira", "nicolas@email.com", "000000");
+        criarUsuarioSeNaoExistir("Olívia Barbosa", "olivia@email.com", "000000");
 
 
     }
@@ -159,6 +159,14 @@ public class DataInitializer {
                 "clayton@ufpr.br", "WhatsApp", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("quarta-feira", "229", 1140, 1360)});
 
+
+        /*
+        criarContatoSeNaoExistir(usuario, "Vanessa TADS", "vanessa@email.com", "(41)90000-0001", false);
+        criarContatoSeNaoExistir(usuario, "Rafa TADS", "rafaella@email.com", "(41)90000-0001", false);
+        criarContatoSeNaoExistir(usuario, "Victoria TADS", "victoria@email.com", "(41)90000-0001", false);
+        criarContatoSeNaoExistir(usuario, "Carla", "carla.mendes", "(41)90000-0001", false);
+
+
         Contato anaSilva = criarContatoSeNaoExistir(usuario, "Ana Silva-pend", "ana.silva@email.com", "(41)90000-0001", true);
         Contato brunoCosta = criarContatoSeNaoExistir(usuario, "Bruno Costa-pend", "bruno.costa@email.com", "(41)90000-0002", true);
         Contato carlaMendes = criarContatoSeNaoExistir(usuario, "Carla Mendes-pend", "carla.mendes@email.com", "(41)90000-0003", true);
@@ -174,6 +182,7 @@ public class DataInitializer {
         Contato marianaDias = criarContatoSeNaoExistir(usuario, "Mariana Dias", "mariana.dias@email.com", "(41)90000-0013", false);
         Contato nicolasTeixeira = criarContatoSeNaoExistir(usuario, "Nicolas Teixeira", "nicolas.teixeira@email.com", "(41)90000-0014", false);
         Contato oliviaBarbosa = criarContatoSeNaoExistir(usuario, "Olívia Barbosa", "olivia.barbosa@email.com", "(41)90000-0015", false);
+        */
 
         /*
         criarGrupoSeNaoExistir(usuario, "Família", List.of(anaSilva, brunoCosta, carlaMendes, danielSouza, elisaFerreira));

@@ -13,11 +13,12 @@ import com.unihub.backend.repository.UsuarioRepository;
 
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class GrupoService {
@@ -34,14 +35,18 @@ public class GrupoService {
     @Transactional(readOnly = true)
     public List<Grupo> listarTodas(Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        return grupoRepository.findByOwnerId(ownerId);
+        List<Grupo> grupos = grupoRepository.findByOwnerId(ownerId);
+        grupos.forEach(grupo -> definirAdminContato(grupo, null));
+        return grupos;
     }
 
     @Transactional(readOnly = true)
     public Grupo buscarPorId(Long id, Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        return grupoRepository.findByIdAndOwnerId(id, ownerId)
+        Grupo grupo = grupoRepository.findByIdAndOwnerId(id, ownerId)
                 .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + id));
+        definirAdminContato(grupo, null);
+        return grupo;
     }
 
     @Transactional // Métodos que modificam dados devem ser transacionais
@@ -50,11 +55,13 @@ public class GrupoService {
         grupo.setId(null);
         grupo.setOwnerId(ownerId);
         List<Contato> membrosGerenciados = carregarMembrosValidos(grupo.getMembros(), ownerId);
-        garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId);
+        Contato contatoAdministrador = garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId, true);
         grupo.getMembros().clear();
         grupo.getMembros().addAll(membrosGerenciados);
-
-        return grupoRepository.save(grupo);
+        definirAdminContato(grupo, contatoAdministrador);
+        Grupo grupoSalvo = grupoRepository.save(grupo);
+        definirAdminContato(grupoSalvo, contatoAdministrador);
+        return grupoSalvo;
     }
 
     @Transactional
@@ -67,15 +74,19 @@ public class GrupoService {
         }
 
         // Lógica para atualizar a lista de membros
+        Contato contatoAdministradorPreferencial;
         if (grupoDetalhesRequest.getMembros() != null) {
             List<Contato> novosMembros = carregarMembrosValidos(grupoDetalhesRequest.getMembros(), ownerId);
-            garantirContatoDoUsuarioNoGrupo(novosMembros, ownerId);
+            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(novosMembros, ownerId, false);
             grupoExistente.getMembros().clear();
             grupoExistente.getMembros().addAll(novosMembros);
         } else {
-            garantirContatoDoUsuarioNoGrupo(grupoExistente.getMembros(), ownerId);
+            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(grupoExistente.getMembros(), ownerId, false);
         }
-        return grupoRepository.save(grupoExistente);
+        definirAdminContato(grupoExistente, contatoAdministradorPreferencial);
+        Grupo grupoAtualizado = grupoRepository.save(grupoExistente);
+        definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial);
+        return grupoAtualizado;
     }
 
     @Transactional
@@ -90,7 +101,9 @@ public class GrupoService {
     @Transactional(readOnly = true)
     public List<Grupo> buscarPorNome(String nome, Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        return grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId);
+        List<Grupo> grupos = grupoRepository.findByNomeContainingIgnoreCaseAndOwnerId(nome, ownerId);
+        grupos.forEach(grupo -> definirAdminContato(grupo, null));
+        return grupos;
     }
 
     private List<Contato> carregarMembrosValidos(List<Contato> membros, Long ownerId) {
@@ -116,23 +129,86 @@ public class GrupoService {
         return new ArrayList<>(encontrados);
     }
 
-    private void garantirContatoDoUsuarioNoGrupo(List<Contato> membros, Long ownerId) {
+    private Contato garantirContatoDoUsuarioNoGrupo(List<Contato> membros, Long ownerId, boolean forcarInclusao) {
         if (membros == null) {
-            return;
+            return null;
         }
 
         Contato contatoDoUsuario = obterOuCriarContatoDoUsuario(ownerId);
 
         if (contatoDoUsuario == null) {
-            return;
+            return null;
         }
 
         boolean jaPresente = membros.stream()
                 .filter(contato -> contato != null && contato.getId() != null)
                 .anyMatch(contato -> contato.getId().equals(contatoDoUsuario.getId()));
-        if (!jaPresente) {
+        if (!jaPresente && (forcarInclusao || membros.isEmpty())) {
             membros.add(contatoDoUsuario);
+            jaPresente = true;
         }
+
+        if (jaPresente && contatoDoUsuario.getId() != null) {
+            Long contatoId = contatoDoUsuario.getId();
+            return membros.stream()
+                    .filter(contato -> contato != null && contatoId.equals(contato.getId()))
+                    .findFirst()
+                    .orElse(contatoDoUsuario);
+        }
+
+        return jaPresente ? contatoDoUsuario : null;
+    }
+
+    private void definirAdminContato(Grupo grupo, Contato contatoPreferencial) {
+        if (grupo == null) {
+            return;
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            grupo.setAdminContatoId(null);
+            return;
+        }
+
+        Long candidato = null;
+
+        if (contatoPreferencial != null && contatoPreferencial.getId() != null) {
+            candidato = contatoPreferencial.getId();
+        }
+
+        if (candidato == null && grupo.getOwnerId() != null) {
+            candidato = membros.stream()
+                    .filter(Objects::nonNull)
+                    .filter(contato -> Objects.equals(contato.getOwnerId(), grupo.getOwnerId()))
+                    .map(Contato::getId)
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        if (candidato == null) {
+            candidato = grupo.getAdminContatoId();
+        }
+
+        if (candidato != null) {
+            Long finalCandidato = candidato;
+            boolean aindaNoGrupo = membros.stream()
+                    .filter(Objects::nonNull)
+                    .anyMatch(contato -> contato.getId() != null && contato.getId().equals(finalCandidato));
+            if (aindaNoGrupo) {
+                grupo.setAdminContatoId(candidato);
+                return;
+            }
+        }
+
+        Long novoAdmin = membros.stream()
+                .filter(Objects::nonNull)
+                .map(Contato::getId)
+                .filter(Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(null);
+
+        grupo.setAdminContatoId(novoAdmin);
     }
 
     private Contato obterOuCriarContatoDoUsuario(Long ownerId) {

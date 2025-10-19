@@ -349,16 +349,25 @@ fun GrupoItemExpansivel(
                             .padding(horizontal = 32.dp)
                     ) {
 
-                        if (grupo.membros.isEmpty()) {
+                        val membrosOrdenados = grupo.membros
+                            .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
+
+                        if (membrosOrdenados.isEmpty()) {
                             Text(
                                 "Nenhum integrante neste grupo.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
                             )
                         } else {
-                            grupo.membros.forEach { contato ->
+                            membrosOrdenados.forEach { contato ->
+                                val nomeContato = contato.nome ?: "Sem nome"
+                                val rotuloAdministrador = if (contato.id != null && contato.id == grupo.adminContatoId) {
+                                    " (Administrador do Grupo)"
+                                } else {
+                                    ""
+                                }
                                 Text(
-                                    text = "- ${contato.nome}",
+                                    text = "- $nomeContato$rotuloAdministrador",
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(bottom = 2.dp)
                                 )
