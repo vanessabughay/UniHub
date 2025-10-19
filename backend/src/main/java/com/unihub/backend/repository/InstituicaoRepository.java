@@ -10,9 +10,9 @@ import java.util.Optional;
 public interface InstituicaoRepository extends JpaRepository<Instituicao, Long> {
     // Este método foi removido pois a funcionalidade foi unificada no método abaixo.
     // List<Instituicao> findByUsuarioId(Long usuarioId);
-    @Query("SELECT i FROM Instituicao i WHERE i.usuario.id = :usuarioId AND (:nome IS NULL OR LOWER(i.nome) LIKE LOWER(CONCAT('%', :nome, '%')))")
-    List<Instituicao> findByUsuarioIdAndNomeContainingIgnoreCase(Long usuarioId, String nome);
+    @Query("SELECT i FROM Instituicao i WHERE i.usuario.id = :usuarioId AND (:nome IS NULL OR LOWER(i.nome) LIKE LOWER(CONCAT('%', :nome, '%'))) ORDER BY LOWER(i.nome)")    List<Instituicao> findByUsuarioIdAndNomeContainingIgnoreCase(Long usuarioId, String nome);
     Optional<Instituicao> findByIdAndUsuarioId(Long id, Long usuarioId);
-    List<Instituicao> findByNomeContainingIgnoreCase(String nome);
-    List<Instituicao> findByUsuarioId(Long usuarioId);
+    List<Instituicao> findByNomeContainingIgnoreCaseOrderByNomeAsc(String nome);
+    List<Instituicao> findByUsuarioIdOrderByNomeAsc(Long usuarioId);
+ 
 }

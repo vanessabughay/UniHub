@@ -189,7 +189,7 @@ public class DataInitializer {
     }
 
     private void criarInstituicaoSeNaoExistir(Usuario usuario, String nome, double media, int freq) {
-        boolean exists = instituicaoRepository.findByUsuarioId(usuario.getId()).stream()
+        boolean exists = instituicaoRepository.findByUsuarioIdOrderByNomeAsc(usuario.getId()).stream()
                 .anyMatch(i -> i.getNome().equalsIgnoreCase(nome));
         if (!exists) {
             Instituicao inst = new Instituicao();

@@ -19,10 +19,10 @@ public class InstituicaoService {
             if (usuarioId == null) {
                 return List.of();
             }
-            return repository.findByUsuarioId(usuarioId);
-        }
+            return repository.findByUsuarioIdOrderByNomeAsc(usuarioId);
+                }
 
-        return repository.findByNomeContainingIgnoreCase(nome.trim());
+        return repository.findByNomeContainingIgnoreCaseOrderByNomeAsc(nome.trim());
     }
 
 
