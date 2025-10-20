@@ -28,7 +28,7 @@ public class Grupo {
     @JoinTable(
             name = "grupo_membros_contato", // Nome da tabela de junção
             joinColumns = @JoinColumn(name = "grupo_id"),
-            inverseJoinColumns = @JoinColumn(name = "contato_id")
+            inverseJoinColumns = @JoinColumn(name = "id_contato", referencedColumnName = "id_contato")
     )
     private List<Contato> membros = new ArrayList<>(); // Nome da coleção: 'membros'
 
@@ -78,6 +78,14 @@ public class Grupo {
         return membros;
     }
 
+    public void setMembros(List<Contato> membros) {
+        if (membros == null) {
+            this.membros = new ArrayList<>();
+        } else {
+            this.membros = membros;
+        }
+    }
+    
 
 
     // Métodos utilitários para gerenciar a coleção (boa prática)

@@ -15,11 +15,11 @@ public interface GrupoRepository extends JpaRepository<Grupo, Long> {
     boolean existsByIdAndOwnerId(Long id, Long ownerId);
     List<Grupo> findByNomeContainingIgnoreCaseAndOwnerId(String nome, Long ownerId);
 
-    List<Grupo> findDistinctByMembros_IdIn(Collection<Long> membroIds);
+    List<Grupo> findDistinctByMembros_IdContatoIn(Collection<Long> membroIds);
 
-    Optional<Grupo> findDistinctByIdAndMembros_IdIn(Long id, Collection<Long> membroIds);
+    Optional<Grupo> findDistinctByIdAndMembros_IdContatoIn(Long id, Collection<Long> membroIds);
 
-    List<Grupo> findDistinctByNomeContainingIgnoreCaseAndMembros_IdIn(String nome, Collection<Long> membroIds);
+    List<Grupo> findDistinctByNomeContainingIgnoreCaseAndMembros_IdContatoIn(String nome, Collection<Long> membroIds);
 
 }
 

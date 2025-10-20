@@ -45,7 +45,7 @@ public class GrupoService {
 
         Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
         if (!idsContatosAssociados.isEmpty()) {
-            grupoRepository.findDistinctByMembros_IdIn(idsContatosAssociados)
+            grupoRepository.findDistinctByMembros_IdContatoIn(idsContatosAssociados)
                     .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
         }
 
@@ -66,7 +66,7 @@ public class GrupoService {
         if (grupoOptional.isEmpty()) {
             Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
             if (!idsContatosAssociados.isEmpty()) {
-                grupoOptional = grupoRepository.findDistinctByIdAndMembros_IdIn(id, idsContatosAssociados);
+                grupoOptional = grupoRepository.findDistinctByIdAndMembros_IdContatoIn(id, idsContatosAssociados);
             }
         }
 
@@ -156,7 +156,7 @@ public class GrupoService {
 
         Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(ownerId);
         if (!idsContatosAssociados.isEmpty()) {
-            grupoRepository.findDistinctByNomeContainingIgnoreCaseAndMembros_IdIn(nome, idsContatosAssociados)
+            grupoRepository.findDistinctByNomeContainingIgnoreCaseAndMembros_IdContatoIn(nome, idsContatosAssociados)
                     .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
         }
 
@@ -172,17 +172,27 @@ public class GrupoService {
 
     private Set<Long> buscarIdsDeContatosDoUsuario(Long usuarioId) {
         Set<Long> ids = new HashSet<>();
+        if (usuarioId == null) {
+            return ids;
+        }
+
+        ids.add(usuarioId);
 
         contatoRepository.findByIdContato(usuarioId).stream()
-                .filter(contato -> contato != null && contato.getId() != null)
-                .forEach(contato -> ids.add(contato.getId()));
+                .filter(Objects::nonNull)
+                .map(Contato::getIdContato)
+                .filter(Objects::nonNull)
+                .forEach(ids::add);
+
 
         usuarioRepository.findById(usuarioId).ifPresent(usuario -> {
             String email = usuario.getEmail();
             if (email != null && !email.isBlank()) {
                 contatoRepository.findByEmailIgnoreCase(email).stream()
-                        .filter(contato -> contato != null && contato.getId() != null)
-                        .forEach(contato -> ids.add(contato.getId()));
+                        .filter(Objects::nonNull)
+                        .map(Contato::getIdContato)
+                        .filter(Objects::nonNull)
+                        .forEach(ids::add);
             }
         });
         return ids;
@@ -392,13 +402,19 @@ public class GrupoService {
         }
 
         if (existente.isPresent()) {
-            return existente.get();
+            Contato contatoExistente = existente.get();
+            if (contatoExistente.getIdContato() == null) {
+                contatoExistente.setIdContato(ownerId);
+                contatoExistente = contatoRepository.save(contatoExistente);
+            }
+            return contatoExistente;
         }
         Contato contato = new Contato();
         contato.setOwnerId(ownerId);
         contato.setNome(usuario.getNomeUsuario() != null ? usuario.getNomeUsuario() : "Usuário " + ownerId);
         contato.setEmail(email);
         contato.setPendente(Boolean.FALSE);
+        contato.setIdContato(ownerId);
         return contatoRepository.save(contato);
     }
 

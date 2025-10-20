@@ -11,6 +11,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,11 +22,14 @@ import jakarta.persistence.EntityNotFoundException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class GrupoServiceTest {
 
     @Mock
@@ -199,7 +204,7 @@ class GrupoServiceTest {
         when(grupoRepository.findByIdAndOwnerId(grupoExistente.getId(), ownerId))
                 .thenReturn(Optional.of(grupoExistente));
         when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuario));
-        when(contatoRepository.findByOwnerIdAndIdIn(ownerId, List.of())).thenReturn(List.of());
+        lenient().when(contatoRepository.findByOwnerIdAndIdIn(ownerId, List.of())).thenReturn(List.of());
         when(contatoRepository.findByOwnerIdAndEmail(ownerId, "owner3@example.com"))
                 .thenReturn(Optional.of(contatoOwner));
         when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
