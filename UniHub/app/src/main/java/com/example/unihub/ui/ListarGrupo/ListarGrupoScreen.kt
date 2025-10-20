@@ -368,8 +368,7 @@ fun GrupoItemExpansivel(
                                 modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
                             )
                         } else {
-                            val usuarioEhOwner = usuarioLogadoId != null && usuarioLogadoId == grupo.ownerId
-                            val contatosDisponiveis = if (usuarioEhOwner && usuarioLogadoId != null) {
+                            val contatosDisponiveis = if (usuarioLogadoId != null) {
                                 contatosDoUsuario.filter { it.ownerId == usuarioLogadoId }
                             } else {
                                 emptyList()
@@ -400,13 +399,12 @@ fun GrupoItemExpansivel(
                                     return@forEachIndexed
                                 }
 
-                                val nomeContato = if (usuarioEhOwner) {
+                                val nomeContato = run {
                                     val contatoEncontradoPorId = contato.id?.let { contatosPorId[it] }
                                     val contatoEncontrado = contatoEncontradoPorId
                                         ?: emailNormalizado?.let { contatosPorEmail[it] }
                                     contatoEncontrado?.nome?.trim()?.takeIf { it.isNotEmpty() }
-                                } else {
-                                    null
+                                
                                 }
 
                                 val textoBase = nomeContato
