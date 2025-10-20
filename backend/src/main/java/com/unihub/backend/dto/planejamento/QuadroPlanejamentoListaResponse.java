@@ -33,8 +33,8 @@ public class QuadroPlanejamentoListaResponse {
             response.setDisciplinaId(quadro.getDisciplina().getId());
         }
         if (quadro.getContato() != null) {
-            response.setContatoId(quadro.getContato().getId());
-        }
+            response.setContatoId(quadro.getContato().getIdContato());
+                }
         if (quadro.getGrupo() != null) {
             response.setGrupoId(quadro.getGrupo().getId());
         }

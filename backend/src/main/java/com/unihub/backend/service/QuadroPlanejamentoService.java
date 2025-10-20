@@ -27,8 +27,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.unihub.backend.dto.planejamento.TarefaDto; 
 import java.time.format.DateTimeFormatter;
-import com.unihub.backend.repository.ContatoRepository; 
-import com.unihub.backend.model.Contato;            
 import java.util.Collections;
 
 import java.time.Instant;
@@ -107,7 +105,7 @@ public class QuadroPlanejamentoService {
             quadro.setDisciplina(disciplina);
         }
         if (dto.getContatoId() != null) {
-            Contato contato = contatoRepository.findById(dto.getContatoId())
+            Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, dto.getContatoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
             quadro.setContato(contato);
         }
@@ -157,7 +155,8 @@ public class QuadroPlanejamentoService {
         }
 
         if (dto.getContatoId() != null) {
-            Contato contato = contatoRepository.findById(dto.getContatoId()).orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
+            Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, dto.getContatoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
             existente.setContato(contato);
             existente.setGrupo(null); // Garante exclusividade
         } else if (dto.getGrupoId() != null) {
@@ -548,8 +547,8 @@ public class QuadroPlanejamentoService {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
-    private Contato buscarContato(Long quadroId, Long contatoId, Long usuarioId) {
-        Contato contato = contatoRepository.findByIdAndOwnerId(contatoId, usuarioId)
+    private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
+        Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, usuarioContatoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
 
         buscarPorId(quadroId, usuarioId);
@@ -570,13 +569,11 @@ public class QuadroPlanejamentoService {
     @Transactional(readOnly = true)
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {
 
-        Long contatoId = usuarioId;
-
         LocalDate dataInicio = LocalDate.now();
         LocalDate dataFim = dataInicio.plusDays(15);
 
         List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
-                contatoId, // Passando o ID assumido
+                usuarioId, 
                 dataInicio,
                 dataFim
         );

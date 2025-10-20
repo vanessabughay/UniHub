@@ -153,7 +153,7 @@ public class TarefaPlanejamento {
 
     private void atualizarResponsaveisIds() {
         String idsConcatenados = responsaveis.stream()
-                .map(Contato::getId)
+                .map(Contato::getIdContato)
                 .filter(Objects::nonNull)
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
@@ -168,7 +168,7 @@ public class TarefaPlanejamento {
     @JsonProperty("responsaveisIds")
     public List<Long> getResponsaveisIds() {
         return responsaveis.stream()
-                .map(Contato::getId)
+                .map(Contato::getIdContato)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }

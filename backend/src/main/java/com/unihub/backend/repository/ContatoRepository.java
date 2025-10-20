@@ -17,6 +17,7 @@ public interface ContatoRepository extends JpaRepository<Contato, Long> {
 List<Contato> findByEmailIgnoreCaseAndPendenteTrue(String email);
 List<Contato> findByEmailIgnoreCase(String email);
 List<Contato> findByIdContato(Long idContato);
+Optional<Contato> findByOwnerIdAndIdContato(Long ownerId, Long idContato);
 
 Optional<Contato> findByOwnerIdAndEmailIgnoreCase(Long ownerId, String email);
 Optional<Contato> findByOwnerIdAndEmail(Long ownerId, String email);

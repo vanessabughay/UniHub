@@ -170,7 +170,10 @@ public class QuadroPlanejamento {
 
     @JsonProperty("contatoId")
     public Long getContatoId() {
-        return (contato != null) ? contato.getId() : null;
+        if (contato == null) {
+            return null;
+        }
+        return contato.getIdContato();
     }
 
     @JsonProperty("grupoId")
