@@ -98,6 +98,7 @@ dependencies {
 
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
 
     implementation(libs.androidx.navigation.compose)

@@ -61,4 +61,25 @@ open class AuthViewModel(
             )
         }
     }
+
+    open fun loginWithGoogle(context: Context, idToken: String) {
+        errorMessage = null
+        success = false
+        isLoading = true
+
+        viewModelScope.launch {
+            repository.loginWithGoogle(
+                context = context,
+                idToken = idToken,
+                onSuccess = {
+                    isLoading = false
+                    success = true
+                },
+                onError = { error ->
+                    isLoading = false
+                    errorMessage = error
+                }
+            )
+        }
+    }
 }

@@ -2,12 +2,13 @@ package com.example.unihub.data.repository
 
 import com.example.unihub.data.config.RetrofitClient
 import com.example.unihub.data.config.TokenManager
-import com.example.unihub.data.api.UniHubApi // Assume que esta é a sua interface de API
+import com.example.unihub.data.api.UniHubApi
 import com.example.unihub.data.api.model.LoginRequest
 import com.example.unihub.data.api.model.RegisterRequest
 import com.example.unihub.data.api.model.UpdateUsuarioRequest
 import com.example.unihub.data.api.model.SolicitarRedefinicaoSenhaRequest
 import com.example.unihub.data.api.model.RedefinirSenhaRequest
+import com.example.unihub.data.api.model.GoogleLoginRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
@@ -90,6 +91,33 @@ class AuthRepository(
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) { onError("Ocorreu um erro inesperado: ${e.message}") }
             }
+        }
+    }
+
+    suspend fun loginWithGoogle(
+        context: Context,
+        idToken: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        try {
+            val resp = api.loginWithGoogle(GoogleLoginRequest(idToken))
+            if (resp.isSuccessful) {
+                val body = resp.body()
+                if (body != null) {
+                    TokenManager.saveToken(
+                        context,
+                        value = body.token,
+                        nome = body.nomeUsuario,
+                        // o backend retorna email só no nativo; aqui pode ficar null
+                        email = null,
+                        usuarioId = body.usuarioId
+                    )
+                    onSuccess()
+                } else onError("Resposta vazia do servidor")
+            } else onError("Falha no login Google: ${resp.code()}")
+        } catch (e: Exception) {
+            onError("Erro de rede: ${e.message}")
         }
     }
 

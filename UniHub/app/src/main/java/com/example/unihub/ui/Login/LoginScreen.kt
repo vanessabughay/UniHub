@@ -1,6 +1,7 @@
 package com.example.unihub.ui.Login // Pacote adaptado para o UniHub
 
 import android.widget.Toast
+import com.example.unihub.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,6 +26,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.example.unihub.Screen
 import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
@@ -116,6 +122,11 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 👉 ADICIONE O BOTÃO GOOGLE AQUI
+                    GoogleLoginButton(viewModel)
                 }
             }
 
@@ -151,6 +162,47 @@ fun LoginScreen(
                 }
             )
         }
+
+
+    }
+}
+
+@Composable
+fun GoogleLoginButton(viewModel: AuthViewModel) {
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken.isNullOrBlank()) {
+                Toast.makeText(context, "Não foi possível obter o ID Token", Toast.LENGTH_SHORT).show()
+                return@rememberLauncherForActivityResult
+            }
+            viewModel.loginWithGoogle(context, idToken)
+        } catch (e: ApiException) {
+            Toast.makeText(context, "Falha no Google Sign-In: ${e.statusCode}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun startGoogleSignIn() {
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(context.getString(R.string.server_client_id))
+            .requestEmail()
+            .build()
+        val client = GoogleSignIn.getClient(context, gso)
+        launcher.launch(client.signInIntent)
+    }
+
+    Button(
+        onClick = { startGoogleSignIn() },
+        enabled = !viewModel.isLoading,
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Text("Continuar com Google")
     }
 }
 
@@ -158,22 +210,21 @@ fun LoginScreen(
 @Preview(showBackground = true, widthDp = 360, heightDp = 640)
 @Composable
 private fun Preview_LoginScreen() {
-    MaterialTheme {
-        LoginScreen(
-            navController = NavController(LocalContext.current),
-            viewModel = object : AuthViewModel() {
-                // CORRETO: use 'remember' para cada estado mutável
-                override var email by remember { mutableStateOf("exemplo@email.com") }
-                override var password by remember { mutableStateOf("senha123") }
-                override var isLoading by remember { mutableStateOf(false) }
-                override var errorMessage by remember { mutableStateOf<String?>(null) }
-                override var success by remember { mutableStateOf(false) }
+    val nav = androidx.navigation.compose.rememberNavController()
 
-                // Sobrescreva as funções para que elas não façam nada no preview
-                override fun loginUser(context: Context) {
-                    this.isLoading = true
-                }
-            }
-        )
+    val fakeVm = object : AuthViewModel() {
+        override var email: String = "exemplo@email.com"
+        override var password: String = "senha123"
+        override var isLoading: Boolean = false
+        override var errorMessage: String? = null
+        override var success: Boolean = false
+        override fun loginUser(context: Context) { /* no-op */ }
+    }
+
+    MaterialTheme {
+        LoginScreen(navController = nav, viewModel = fakeVm)
     }
 }
+
+
+
