@@ -415,17 +415,14 @@ fun GrupoItemExpansivel(
                                     contatoEncontrado?.nome?.trim()?.takeIf { it.isNotEmpty() }
                                 }
 
-                                val isUsuarioLogado = when {
-                                    usuarioLogadoId != null -> {
-                                        val idContato = contato.idContato
-                                        val idIntegrante = contato.id
-                                        (idContato != null && idContato == usuarioLogadoId) ||
-                                                (idIntegrante != null && idIntegrante == usuarioLogadoId)
-                                    }
-                                    emailUsuarioLogadoNormalizado != null ->
-                                        emailNormalizado == emailUsuarioLogadoNormalizado
-                                    else -> false
-                                }
+                                val isUsuarioLogado = (
+                                        usuarioLogadoId != null &&
+                                                contato.idContato != null &&
+                                                contato.idContato == usuarioLogadoId
+                                        ) || (
+                                        emailUsuarioLogadoNormalizado != null &&
+                                                emailNormalizado == emailUsuarioLogadoNormalizado
+                                        )
 
                                 val textoBase = when {
                                     isUsuarioLogado && nomeUsuarioLogado != null -> nomeUsuarioLogado
@@ -436,10 +433,9 @@ fun GrupoItemExpansivel(
                                 }
 
                                 val isAdministrador = when {
-                                    grupo.ownerId != null && (
-                                            (contato.idContato != null && contato.idContato == grupo.ownerId) ||
-                                                    (contato.id != null && contato.id == grupo.ownerId)
-                                            ) -> true
+                                    grupo.ownerId != null &&
+                                            contato.idContato != null &&
+                                            contato.idContato == grupo.ownerId -> true
                                     contato.id != null && contato.id == grupo.adminContatoId -> true
                                     else -> false
                                 }
