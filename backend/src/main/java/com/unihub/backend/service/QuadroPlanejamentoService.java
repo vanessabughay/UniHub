@@ -36,6 +36,7 @@ import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -105,8 +106,7 @@ public class QuadroPlanejamentoService {
             quadro.setDisciplina(disciplina);
         }
         if (dto.getContatoId() != null) {
-            Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, dto.getContatoId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
+                        Contato contato = obterContatoDoUsuario(usuarioId, dto.getContatoId());
             quadro.setContato(contato);
         }
         if (dto.getGrupoId() != null) {
@@ -155,8 +155,7 @@ public class QuadroPlanejamentoService {
         }
 
         if (dto.getContatoId() != null) {
-            Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, dto.getContatoId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
+            Contato contato = obterContatoDoUsuario(usuarioId, dto.getContatoId());
             existente.setContato(contato);
             existente.setGrupo(null); // Garante exclusividade
         } else if (dto.getGrupoId() != null) {
@@ -548,12 +547,9 @@ public class QuadroPlanejamentoService {
     }
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
-        Contato contato = contatoRepository.findByOwnerIdAndIdContato(usuarioId, usuarioContatoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
-
         buscarPorId(quadroId, usuarioId);
 
-        return contato;
+        return obterContatoDoUsuario(usuarioId, usuarioContatoId);
     }
 
     private LinkedHashSet<Contato> buscarResponsaveis(Long quadroId, List<Long> responsavelIds, Long usuarioId) {
@@ -565,6 +561,13 @@ public class QuadroPlanejamentoService {
                 .map(id -> buscarContato(quadroId, id, usuarioId))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
+
+    private Contato obterContatoDoUsuario(Long usuarioId, Long chaveContato) {
+        return contatoRepository.findByOwnerIdAndIdContato(usuarioId, chaveContato)
+                .or(() -> contatoRepository.findByIdAndOwnerId(chaveContato, usuarioId))
+                .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
+    }
+
 
     @Transactional(readOnly = true)
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {

@@ -49,7 +49,7 @@ public class QuadroPlanejamento {
     private Disciplina disciplina;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contato_id")
+    @JoinColumn(name = "contato_id", referencedColumnName = "id_contato")
     private Contato contato;
 
     @ManyToOne(fetch = FetchType.LAZY)
