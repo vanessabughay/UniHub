@@ -60,6 +60,7 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.repository.ContatoResumo
 
 //Cores
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
@@ -79,7 +80,7 @@ fun ListarGrupoScreen(
     val gruposState by viewModel.grupos.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
-    val emailsContatos by viewModel.emailsContatos.collectAsState()
+    val contatosDoUsuario by viewModel.contatosDoUsuario.collectAsState()
 
     var grupoExpandidoId by remember { mutableStateOf<Long?>(null) }
     var showConfirmDeleteDialog by remember { mutableStateOf(false) } // MODIFICADO: Nome simplificado
@@ -275,7 +276,7 @@ fun ListarGrupoScreen(
                                         showConfirmDeleteDialog = true
                                     },
                                     usuarioLogadoId = usuarioLogadoId,
-                                    emailsContatosUsuario = emailsContatos
+                                    contatosDoUsuario = contatosDoUsuario
                                 )
                             }
                         }
@@ -295,7 +296,7 @@ fun GrupoItemExpansivel(
     onEditarClick: () -> Unit,
     onExcluirClick: () -> Unit,
     usuarioLogadoId: Long?,
-    emailsContatosUsuario: Set<String>
+    contatosDoUsuario: List<ContatoResumo>
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -367,23 +368,52 @@ fun GrupoItemExpansivel(
                                 modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
                             )
                         } else {
-                            membrosOrdenados.forEach { contato ->
-                                val nomeDisponivel = contato.nome?.trim()?.takeIf { it.isNotEmpty() }
+                            val usuarioEhOwner = usuarioLogadoId != null && usuarioLogadoId == grupo.ownerId
+                            val contatosDisponiveis = if (usuarioEhOwner && usuarioLogadoId != null) {
+                                contatosDoUsuario.filter { it.ownerId == usuarioLogadoId }
+                            } else {
+                                emptyList()
+                            }
+
+                            val contatosPorEmail = contatosDisponiveis
+                                .mapNotNull { contatoResumo ->
+                                    contatoResumo.email.trim().takeIf { it.isNotEmpty() }
+                                        ?.lowercase()
+                                        ?.let { it to contatoResumo }
+                                }
+                                .toMap()
+
+                            val contatosPorId = contatosDisponiveis.associateBy { it.id }
+                            val membrosExibidos = linkedSetOf<String>()
+
+                            membrosOrdenados.forEachIndexed { index, contato ->
                                 val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
                                 val emailNormalizado = emailDisponivel?.lowercase()
-                                val isContatoDoUsuario = when {
-                                    usuarioLogadoId != null && contato.ownerId != null && contato.ownerId == usuarioLogadoId -> true
-                                    usuarioLogadoId != null && contato.idContato != null && contato.idContato == usuarioLogadoId -> true
-                                    emailNormalizado != null && emailsContatosUsuario.contains(emailNormalizado) -> true
-                                    else -> false
+
+                                val chaveUnica = contato.idContato?.let { "idContato:$it" }
+                                    ?: emailNormalizado?.let { "email:$it" }
+                                    ?: contato.id?.let { "id:$it" }
+                                    ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()?.let { "nome:$it" }
+                                    ?: "indice:$index"
+
+                                if (!membrosExibidos.add(chaveUnica)) {
+                                    return@forEachIndexed
                                 }
-                                val nomeContato = when {
-                                    isContatoDoUsuario && nomeDisponivel != null -> nomeDisponivel
-                                    !isContatoDoUsuario && emailDisponivel != null -> emailDisponivel
-                                    nomeDisponivel != null -> nomeDisponivel
-                                    emailDisponivel != null -> emailDisponivel
-                                    else -> "Sem nome"
+
+                                val nomeContato = if (usuarioEhOwner) {
+                                    val contatoEncontradoPorId = contato.id?.let { contatosPorId[it] }
+                                    val contatoEncontrado = contatoEncontradoPorId
+                                        ?: emailNormalizado?.let { contatosPorEmail[it] }
+                                    contatoEncontrado?.nome?.trim()?.takeIf { it.isNotEmpty() }
+                                } else {
+                                    null
                                 }
+
+                                val textoBase = nomeContato
+                                    ?: emailDisponivel
+                                    ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }
+                                    ?: "Sem identificação"
+
                                 val isAdministrador = when {
                                     grupo.ownerId != null && (
                                             (contato.idContato != null && contato.idContato == grupo.ownerId) ||
@@ -398,7 +428,7 @@ fun GrupoItemExpansivel(
                                     ""
                                 }
                                 Text(
-                                    text = "- $nomeContato$rotuloAdministrador",
+                                    text = "- $textoBase$rotuloAdministrador",
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(bottom = 2.dp)
                                 )

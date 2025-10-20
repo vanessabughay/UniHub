@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoRepository
+import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.GrupoRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,8 +32,8 @@ class ListarGrupoViewModel(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    private val _emailsContatos = MutableStateFlow<Set<String>>(emptySet())
-    val emailsContatos: StateFlow<Set<String>> = _emailsContatos.asStateFlow()
+    private val _contatosDoUsuario = MutableStateFlow<List<ContatoResumo>>(emptyList())
+    val contatosDoUsuario: StateFlow<List<ContatoResumo>> = _contatosDoUsuario.asStateFlow()
 
     init {
         loadGrupo()
@@ -82,18 +83,13 @@ class ListarGrupoViewModel(
         viewModelScope.launch {
             contatoRepository.getContatoResumo()
                 .map { contatosDoRepositorio ->
-                    contatosDoRepositorio
-                        .filterNot { it.pendente }
-                        .mapNotNull { contato ->
-                            contato.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
-                        }
-                        .toSet()
+                    contatosDoRepositorio.filterNot { it.pendente }
                 }
                 .catch {
-                    _emailsContatos.value = emptySet()
+                    _contatosDoUsuario.value = emptyList()
                 }
-                .collect { emailsNormalizados ->
-                    _emailsContatos.value = emailsNormalizados
+                .collect { contatosFiltrados ->
+                    _contatosDoUsuario.value = contatosFiltrados
                 }
         }
     }

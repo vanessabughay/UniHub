@@ -13,7 +13,8 @@ data class ContatoResumo(
     val id: Long,
     val nome: String,
     val email: String,
-    val pendente: Boolean
+    val pendente: Boolean,
+    val ownerId: Long?
 )
 
 
