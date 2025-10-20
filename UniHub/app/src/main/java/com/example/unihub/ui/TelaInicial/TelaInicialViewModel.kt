@@ -50,7 +50,8 @@ data class Tarefa(
 /* ====== ViewModel ====== */
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 class TelaInicialViewModel(
-    private val avaliacaoRepository: AvaliacaoRepository
+    private val avaliacaoRepository: AvaliacaoRepository,
+    private val tarefaRepository: TarefaRepository
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(criarEstadoInicial())
@@ -165,9 +166,9 @@ class TelaInicialViewModel(
             tarefas = emptyList(),
             opcoesMenu = listOf(
                 "Perfil", "Disciplinas", "Serviço de nuvem", "Calendário", "Contatos",
-                "Grupos", "Projetos", "Configurar notificações", "Atividades"
+                "Grupos", "Quadros", "Configurar notificações", "Atividades"
             ),
-            atalhosRapidos = listOf("Projetos", "Calendário", "Disciplinas", "Avaliações")
+            atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações")
         )
     }
 

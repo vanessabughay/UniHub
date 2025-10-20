@@ -25,6 +25,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.unihub.backend.dto.planejamento.TarefaDto; 
+import java.time.format.DateTimeFormatter;
+import com.unihub.backend.repository.ContatoRepository; 
+import com.unihub.backend.model.Contato;            
+import java.util.Collections;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -559,5 +565,43 @@ public class QuadroPlanejamentoService {
         return responsavelIds.stream()
                 .map(id -> buscarContato(quadroId, id, usuarioId))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TarefaDto> getProximasTarefas(Long usuarioId) {
+
+        Long contatoId = usuarioId;
+
+        LocalDate dataInicio = LocalDate.now();
+        LocalDate dataFim = dataInicio.plusDays(15);
+
+        List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
+                contatoId, // Passando o ID assumido
+                dataInicio,
+                dataFim
+        );
+
+        return tarefas.stream()
+                .map(this::mapEntidadeParaDto)
+                .collect(Collectors.toList());
+    }
+
+    private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
+        String dataPrazoFormatada = null;
+        if (tarefa.getDataPrazo() != null) {
+            dataPrazoFormatada = tarefa.getDataPrazo().format(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+
+        String nomeQuadro = "Sem quadro";
+        if (tarefa.getColuna() != null && tarefa.getColuna().getQuadro() != null) {
+             // CORREÇÃO APLICADA AQUI
+            nomeQuadro = tarefa.getColuna().getQuadro().getTitulo();
+        }
+
+        return new TarefaDto(
+                tarefa.getTitulo(),
+                dataPrazoFormatada,
+                nomeQuadro
+        );
     }
 }

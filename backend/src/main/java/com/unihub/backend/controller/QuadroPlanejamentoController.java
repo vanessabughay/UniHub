@@ -3,6 +3,7 @@ package com.unihub.backend.controller;
 //  novo DTO
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
 
+import com.unihub.backend.dto.planejamento.TarefaDto; 
 import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
@@ -25,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.ResponseEntity;
 import java.util.List;
 
 @RestController
@@ -97,6 +98,13 @@ public class QuadroPlanejamentoController {
                                                   @PathVariable Long colunaId,
                                                   @AuthenticationPrincipal Long usuarioId) {
         return service.listarTarefas(id, colunaId, usuarioId);
+    }
+
+    //
+    @GetMapping("/tarefas/proximas")
+    public ResponseEntity<List<TarefaDto>> getProximasTarefas(@AuthenticationPrincipal Long usuarioId) {
+        List<TarefaDto> tarefas = service.getProximasTarefas(usuarioId);
+        return ResponseEntity.ok(tarefas);
     }
 
     @GetMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}")

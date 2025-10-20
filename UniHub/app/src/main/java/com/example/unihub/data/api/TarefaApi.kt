@@ -8,6 +8,8 @@ import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
+import com.example.unihub.data.dto.TarefaDto
+
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -86,4 +88,7 @@ interface TarefaApi {
         @Path("tarefaId") tarefaId: String,
         @Body request: ComentarioNotificacaoRequestDto
     ): ComentarioPreferenciaResponse
+
+    @GET("quadros-planejamento/tarefas/proximas")
+    suspend fun getProximasTarefas(): List<TarefaDto>
 }
