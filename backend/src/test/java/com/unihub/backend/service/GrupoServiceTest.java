@@ -6,6 +6,9 @@ import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.GrupoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,6 +23,7 @@ import java.util.Optional;
 import jakarta.persistence.EntityNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -27,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +49,11 @@ class GrupoServiceTest {
 
     @InjectMocks
     private GrupoService grupoService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(usuarioRepository.findByEmailIgnoreCase(anyString())).thenReturn(Optional.empty());
+    }
 
     @Test
     void listarTodasDefineUsuarioComoAdministradorQuandoContatoPresente() {
@@ -215,5 +225,132 @@ class GrupoServiceTest {
 
         assertEquals("Grupo removido por não possuir membros ativos.", exception.getMessage());
         verify(grupoRepository).delete(grupoExistente);
+    }
+@Test
+    void excluirTransfereGrupoParaNovoOwnerQuandoHaMembrosAtivos() {
+        Long ownerId = 10L;
+        Long novoOwnerId = 20L;
+
+        Usuario usuarioOwner = new Usuario();
+        usuarioOwner.setId(ownerId);
+        usuarioOwner.setEmail("dono@teste.com");
+
+        Usuario usuarioNovoOwner = new Usuario();
+        usuarioNovoOwner.setId(novoOwnerId);
+        usuarioNovoOwner.setEmail("novo@teste.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(101L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail("dono@teste.com");
+        contatoOwner.setPendente(Boolean.FALSE);
+        contatoOwner.setIdContato(ownerId);
+
+        Contato contatoNovoAdmin = new Contato();
+        contatoNovoAdmin.setId(202L);
+        contatoNovoAdmin.setOwnerId(ownerId);
+        contatoNovoAdmin.setEmail("novo@teste.com");
+        contatoNovoAdmin.setPendente(Boolean.FALSE);
+        contatoNovoAdmin.setIdContato(novoOwnerId);
+
+        Grupo grupo = new Grupo();
+        grupo.setId(300L);
+        grupo.setNome("Grupo Teste");
+        grupo.setOwnerId(ownerId);
+        grupo.addMembro(contatoOwner);
+        grupo.addMembro(contatoNovoAdmin);
+        grupo.setAdminContatoId(contatoOwner.getId());
+
+        when(grupoRepository.findByIdAndOwnerId(grupo.getId(), ownerId)).thenReturn(Optional.of(grupo));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuarioOwner));
+        when(usuarioRepository.findById(novoOwnerId)).thenReturn(Optional.of(usuarioNovoOwner));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        grupoService.excluir(grupo.getId(), ownerId);
+
+        verify(grupoRepository, never()).delete(any(Grupo.class));
+        verify(grupoRepository).save(grupo);
+        assertEquals(novoOwnerId, grupo.getOwnerId());
+        assertEquals(contatoNovoAdmin.getId(), grupo.getAdminContatoId());
+        assertFalse(grupo.getMembros().contains(contatoOwner));
+    }
+
+    @Test
+    void excluirTransfereGrupoQuandoNovoAdministradorTemApenasEmailAssociado() {
+        Long ownerId = 12L;
+        Long novoOwnerId = 22L;
+
+        Usuario usuarioOwner = new Usuario();
+        usuarioOwner.setId(ownerId);
+        usuarioOwner.setEmail("owner-email@teste.com");
+
+        Usuario usuarioNovoOwner = new Usuario();
+        usuarioNovoOwner.setId(novoOwnerId);
+        usuarioNovoOwner.setEmail("novo-email@teste.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(121L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail("owner-email@teste.com");
+        contatoOwner.setPendente(Boolean.FALSE);
+        contatoOwner.setIdContato(ownerId);
+
+        Contato contatoNovoAdmin = new Contato();
+        contatoNovoAdmin.setId(222L);
+        contatoNovoAdmin.setOwnerId(ownerId);
+        contatoNovoAdmin.setEmail("novo-email@teste.com");
+        contatoNovoAdmin.setPendente(Boolean.FALSE);
+
+        Grupo grupo = new Grupo();
+        grupo.setId(333L);
+        grupo.setNome("Grupo Email");
+        grupo.setOwnerId(ownerId);
+        grupo.addMembro(contatoOwner);
+        grupo.addMembro(contatoNovoAdmin);
+        grupo.setAdminContatoId(contatoOwner.getId());
+
+        when(grupoRepository.findByIdAndOwnerId(grupo.getId(), ownerId)).thenReturn(Optional.of(grupo));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuarioOwner));
+        when(usuarioRepository.findByEmailIgnoreCase("novo-email@teste.com")).thenReturn(Optional.of(usuarioNovoOwner));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        grupoService.excluir(grupo.getId(), ownerId);
+
+        verify(grupoRepository, never()).delete(any(Grupo.class));
+        verify(grupoRepository).save(grupo);
+        assertEquals(novoOwnerId, grupo.getOwnerId());
+        assertEquals(contatoNovoAdmin.getId(), grupo.getAdminContatoId());
+        assertEquals(novoOwnerId, contatoNovoAdmin.getIdContato());
+        assertFalse(grupo.getMembros().contains(contatoOwner));
+    }
+
+    @Test
+    void excluirRemoveGrupoQuandoNaoHaOutroMembroAtivo() {
+        Long ownerId = 11L;
+
+        Usuario usuarioOwner = new Usuario();
+        usuarioOwner.setId(ownerId);
+        usuarioOwner.setEmail("dono2@teste.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(111L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail("dono2@teste.com");
+        contatoOwner.setPendente(Boolean.FALSE);
+        contatoOwner.setIdContato(ownerId);
+
+        Grupo grupo = new Grupo();
+        grupo.setId(400L);
+        grupo.setNome("Grupo Sem Membros");
+        grupo.setOwnerId(ownerId);
+        grupo.addMembro(contatoOwner);
+
+        when(grupoRepository.findByIdAndOwnerId(grupo.getId(), ownerId)).thenReturn(Optional.of(grupo));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(usuarioOwner));
+
+        grupoService.excluir(grupo.getId(), ownerId);
+
+        verify(grupoRepository).delete(grupo);
+        verify(grupoRepository, never()).save(any(Grupo.class));
     }
 }

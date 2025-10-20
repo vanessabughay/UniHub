@@ -139,10 +139,36 @@ public class GrupoService {
     @Transactional
     public void excluir(Long id, Long usuarioId) {
         Long ownerId = requireUsuario(usuarioId);
-        if (!grupoRepository.existsByIdAndOwnerId(id, ownerId)) {
-            throw new EntityNotFoundException("Grupo não encontrado com ID: " + id + " para exclusão.");
+        Grupo grupo = grupoRepository.findByIdAndOwnerId(id, ownerId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Grupo não encontrado com ID: " + id + " para exclusão."));
+
+        Contato contatoDoOwner = localizarContatoDoOwner(grupo);
+        if (contatoDoOwner != null) {
+            grupo.removeMembro(contatoDoOwner);
         }
-        grupoRepository.deleteById(id);
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+
+        membros.removeIf(Objects::isNull);
+
+        if (membros.isEmpty()) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+
+        Contato novoAdministrador = definirAdminContato(grupo, null, null, true);
+        if (novoAdministrador == null || !atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+        
+        definirAdminContato(grupo, novoAdministrador, novoAdministrador, false);
+        grupoRepository.save(grupo);
     }
 
     @Transactional(readOnly = true)
@@ -282,9 +308,11 @@ public class GrupoService {
             candidato = localizarContatoPorId(membros, contatoDoUsuario.getId());
         }
 
-        if (candidato != null && !representaOwner(candidato, ownerId, ownerEmail)
-                && (!permitirTransferencia || candidato.getIdContato() == null)) {
-            candidato = null;
+       if (candidato != null && !representaOwner(candidato, ownerId, ownerEmail)) {
+            boolean podeTransferir = permitirTransferencia && localizarUsuarioDoContato(candidato).isPresent();
+            if (!podeTransferir) {
+                candidato = null;
+            }
         }
 
         if (candidato == null) {
@@ -298,7 +326,7 @@ public class GrupoService {
         if (candidato == null && permitirTransferencia) {
             candidato = membros.stream()
                     .filter(Objects::nonNull)
-                     .filter(contato -> contato.getIdContato() != null)
+                    .filter(contato -> localizarUsuarioDoContato(contato).isPresent())
                     .findFirst()
                     .orElse(null);
         }
@@ -411,20 +439,43 @@ public class GrupoService {
             return false;
         }
 
-        Long novoOwnerId = administrador.getIdContato();
+                Optional<Usuario> usuarioNovoOwner = localizarUsuarioDoContato(administrador);
+        if (usuarioNovoOwner.isEmpty()) {
+            return false;
+        }
+
+        Long novoOwnerId = usuarioNovoOwner.get().getId();
         if (novoOwnerId == null) {
             return false;
         }
 
-        if (Objects.equals(grupo.getOwnerId(), novoOwnerId)) {
-            return false;
+        boolean ownerAlterado = !Objects.equals(grupo.getOwnerId(), novoOwnerId);
+        grupo.setOwnerId(novoOwnerId);
+        if (!Objects.equals(administrador.getIdContato(), novoOwnerId)) {
+            administrador.setIdContato(novoOwnerId);
+        }
+        return ownerAlterado;
+    }
+
+    private Optional<Usuario> localizarUsuarioDoContato(Contato contato) {
+        if (contato == null) {
+            return Optional.empty();
         }
 
-        usuarioRepository.findById(novoOwnerId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário administrador não encontrado com ID: " + novoOwnerId));
+        Long contatoUsuarioId = contato.getIdContato();
+        if (contatoUsuarioId != null) {
+            Optional<Usuario> porId = usuarioRepository.findById(contatoUsuarioId);
+            if (porId.isPresent()) {
+                return porId;
+            }
+        }
 
-        grupo.setOwnerId(novoOwnerId);
-        return true;
+        String email = contato.getEmail();
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+
+        return usuarioRepository.findByEmailIgnoreCase(email);
     }
 
 
