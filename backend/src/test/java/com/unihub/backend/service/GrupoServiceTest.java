@@ -20,6 +20,7 @@ import java.util.Optional;
 import jakarta.persistence.EntityNotFoundException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
@@ -118,7 +119,7 @@ class GrupoServiceTest {
 
         List<Grupo> resultado = grupoService.listarTodas(ownerId);
 
-        assertEquals(membroA.getId(), resultado.get(0).getAdminContatoId());
+        assertNull(resultado.get(0).getAdminContatoId());
     }
 
 

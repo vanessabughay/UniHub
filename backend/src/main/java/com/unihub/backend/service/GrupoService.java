@@ -53,7 +53,7 @@ public class GrupoService {
                 Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                     ? contatoProprio
                     : localizarContatoDoOwner(grupo);
-                                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
         });
         return new ArrayList<>(gruposVisiveis.values());
     }
@@ -75,7 +75,7 @@ public class GrupoService {
         Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                 ? buscarContatoDoUsuario(ownerId).orElse(null)
                 : localizarContatoDoOwner(grupo);
-                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
         return grupo;
     }
 
@@ -88,10 +88,10 @@ public class GrupoService {
         Contato contatoAdministrador = garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId, true);
         grupo.getMembros().clear();
         grupo.getMembros().addAll(membrosGerenciados);
-        Contato administrador = definirAdminContato(grupo, contatoAdministrador, contatoAdministrador);
+        Contato administrador = definirAdminContato(grupo, contatoAdministrador, contatoAdministrador, false);
         boolean ownerAlterado = atualizarOwnerPorAdmin(grupo, administrador);
         Grupo grupoSalvo = grupoRepository.save(grupo);
-        Contato administradorSalvo = definirAdminContato(grupoSalvo, contatoAdministrador, contatoAdministrador);
+        Contato administradorSalvo = definirAdminContato(grupoSalvo, contatoAdministrador, contatoAdministrador, false);
         if (atualizarOwnerPorAdmin(grupoSalvo, administradorSalvo) && !ownerAlterado) {
             grupoSalvo = grupoRepository.save(grupoSalvo);
         }
@@ -126,10 +126,10 @@ public class GrupoService {
                 ? contatoAdministradorPreferencial
                 : buscarContatoDoUsuario(ownerId).orElse(null);
 
-        Contato administrador = definirAdminContato(grupoExistente, contatoAdministradorPreferencial, contatoDoUsuario);
+        Contato administrador = definirAdminContato(grupoExistente, contatoAdministradorPreferencial, contatoDoUsuario, true);
         boolean ownerAlterado = atualizarOwnerPorAdmin(grupoExistente, administrador);
         Grupo grupoAtualizado = grupoRepository.save(grupoExistente);
-        Contato administradorAtualizado = definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial, contatoDoUsuario);
+        Contato administradorAtualizado = definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial, contatoDoUsuario, true);
         if (atualizarOwnerPorAdmin(grupoAtualizado, administradorAtualizado) && !ownerAlterado) {
             grupoAtualizado = grupoRepository.save(grupoAtualizado);
         }
@@ -164,7 +164,7 @@ public class GrupoService {
             Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                     ? contatoProprio
                     : localizarContatoDoOwner(grupo);
-                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin);
+                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
         });
 
         return new ArrayList<>(gruposVisiveis.values());
@@ -251,7 +251,7 @@ public class GrupoService {
         return jaPresente ? contatoDoUsuario : null;
     }
 
-    private Contato definirAdminContato(Grupo grupo, Contato contatoPreferencial, Contato contatoDoUsuario) {
+    private Contato definirAdminContato(Grupo grupo, Contato contatoPreferencial, Contato contatoDoUsuario, boolean permitirTransferencia) {
         if (grupo == null) {
             return null;
         }
@@ -262,39 +262,76 @@ public class GrupoService {
             return null;
         }
 
-        Long candidato = null;
+        Long ownerId = grupo.getOwnerId();
+        if (ownerId == null) {
+            grupo.setAdminContatoId(null);
+            return null;
+        }
+
+        String ownerEmail = usuarioRepository.findById(ownerId)
+                .map(Usuario::getEmail)
+                .orElse(null);
+
+        Contato candidato = null;
 
         if (contatoPreferencial != null && contatoPreferencial.getId() != null
                 && isContatoNoGrupo(membros, contatoPreferencial.getId())) {
-            candidato = contatoPreferencial.getId();
+            candidato = localizarContatoPorId(membros, contatoPreferencial.getId());
         } else if (contatoDoUsuario != null && contatoDoUsuario.getId() != null
                 && isContatoNoGrupo(membros, contatoDoUsuario.getId())) {
-            candidato = contatoDoUsuario.getId();
-        } else if (grupo.getAdminContatoId() != null && isContatoNoGrupo(membros, grupo.getAdminContatoId())) {
-            candidato = grupo.getAdminContatoId();
+            candidato = localizarContatoPorId(membros, contatoDoUsuario.getId());
+        }
+
+        if (candidato != null && !representaOwner(candidato, ownerId, ownerEmail)
+                && (!permitirTransferencia || candidato.getIdContato() == null)) {
+            candidato = null;
         }
 
         if (candidato == null) {
             candidato = membros.stream()
                     .filter(Objects::nonNull)
-                    .map(Contato::getId)
-                    .filter(Objects::nonNull)
-                    .min(Comparator.naturalOrder())
+                    .filter(contato -> representaOwner(contato, ownerId, ownerEmail))
+                    .findFirst()
                     .orElse(null);
         }
 
-        grupo.setAdminContatoId(candidato);
+        if (candidato == null && permitirTransferencia) {
+            candidato = membros.stream()
+                    .filter(Objects::nonNull)
+                     .filter(contato -> contato.getIdContato() != null)
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        grupo.setAdminContatoId(candidato != null ? candidato.getId() : null);
 
         if (candidato == null) {
             return null;
         }
 
-        Long candidatoFinal = candidato;
+        return candidato;
+    }
+
+    private Contato localizarContatoPorId(List<Contato> membros, Long contatoId) {
+        if (contatoId == null) {
+            return null;
+        }
         return membros.stream()
                 .filter(Objects::nonNull)
-                .filter(contato -> candidatoFinal.equals(contato.getId()))
+                .filter(contato -> contatoId.equals(contato.getId()))
                 .findFirst()
                 .orElse(null);
+    }
+
+    private boolean representaOwner(Contato contato, Long ownerId, String ownerEmail) {
+        if (contato == null || ownerId == null) {
+            return false;
+        }
+        if (ownerId.equals(contato.getIdContato())) {
+            return true;
+        }
+        return ownerEmail != null && !ownerEmail.isBlank()
+                && ownerEmail.equalsIgnoreCase(contato.getEmail());
     }
 
     private boolean isContatoNoGrupo(List<Contato> membros, Long contatoId) {
