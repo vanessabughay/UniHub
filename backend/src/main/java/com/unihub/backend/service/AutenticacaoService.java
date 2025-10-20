@@ -21,29 +21,42 @@ public class AutenticacaoService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private Map<String, Long> tokens = new ConcurrentHashMap<>();
+    // Armazena token -> usuarioId (STATeless de verdade exigiria JWT; aqui mantém seu fluxo atual)
+    private final Map<String, Long> tokens = new ConcurrentHashMap<>();
 
     public Usuario registrar(Usuario usuario) {
         Optional<Usuario> existente = repository.findByEmail(usuario.getEmail());
         if (existente.isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
-         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
+        // Se for cadastro nativo, senha vem preenchida; se for social, não chame este método.
+        usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         return repository.save(usuario);
     }
 
     public LoginResponse login(String email, String senha) {
         Optional<Usuario> usuarioOpt = repository.findByEmail(email);
         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
-            String token = UUID.randomUUID().toString();
             Usuario usuario = usuarioOpt.get();
-            tokens.put(token, usuario.getId());
+            String token = gerarToken(usuario.getId()); // <- usa o novo método
             return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getId());
         }
         return null;
     }
-    
+
+    /** NOVO: usado pelo GoogleAuthService */
+    public String gerarToken(Long usuarioId) {
+        String token = UUID.randomUUID().toString();
+        tokens.put(token, usuarioId);
+        return token;
+    }
+
     public Long getUsuarioIdPorToken(String token) {
         return tokens.get(token);
+    }
+
+    /** (Opcional) invalidar token, caso queira logout */
+    public void invalidarToken(String token) {
+        tokens.remove(token);
     }
 }
