@@ -70,7 +70,7 @@ fun CabecalhoAlternativo(
             text = titulo,
             modifier = Modifier.align(Alignment.Center),
             style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = 25.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.SemiBold,
             )
         )

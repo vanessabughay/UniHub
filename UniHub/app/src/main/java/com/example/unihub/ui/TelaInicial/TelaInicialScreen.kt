@@ -49,6 +49,8 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 
 
+
+
 /* ====== Paleta de cores (View) ====== */
 private object CoresApp {
     val Fundo = Color(0xFFF6F7F8)
@@ -87,7 +89,7 @@ fun TelaInicial(
     LaunchedEffect(Unit) {
         viewModel.eventoNavegacao.collect { destino ->
             when (destino.lowercase()) {
-                "projetos" -> navController.navigate("lista_quadros")
+                "quadros" -> navController.navigate("lista_quadros")
                 "calendário" -> navController.navigate("calendario")
                 "disciplinas" -> navController.navigate("lista_disciplinas")
                 "avaliações" -> navController.navigate("lista_avaliacao")
@@ -561,7 +563,7 @@ private fun ItemMenu(texto: String, icone: ImageVector, onClick: () -> Unit) {
 }
 
 private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercase()) {
-    "projetos" -> Outlined.Groups
+    "quadros" -> Outlined.Groups
     "calendário" -> Outlined.CalendarMonth
     "disciplinas" -> Icons.AutoMirrored.Outlined.MenuBook
     "avaliações" -> Outlined.RateReview

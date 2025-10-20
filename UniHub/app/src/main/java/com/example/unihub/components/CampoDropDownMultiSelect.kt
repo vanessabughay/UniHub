@@ -66,12 +66,6 @@ fun CampoDropdownMultiSelect(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color.White, shape)
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
-                shape = shape
-            )
             .padding(horizontal = 16.dp, vertical = 16.dp)
     ) {
         Row(

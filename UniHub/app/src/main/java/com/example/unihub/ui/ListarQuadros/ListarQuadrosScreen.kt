@@ -25,14 +25,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.unihub.components.CampoBusca
-import com.example.unihub.components.Header
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.unihub.Screen
-
+import com.example.unihub.components.CabecalhoAlternativo
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -119,10 +118,12 @@ fun ListarQuadrosScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
-            Header(
+            CabecalhoAlternativo(
                 titulo = "Meus Quadros",
                 onVoltar = { navController.popBackStack() }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             SearchSection(
                 searchQuery = searchQuery,

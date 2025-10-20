@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.AvaliacaoRepository
+import com.example.unihub.data.repository.TarefaRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -16,6 +17,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import com.example.unihub.data.model.Avaliacao as AvaliacaoReal
+import com.example.unihub.data.dto.TarefaDto
 
 /* Modelos locais */
 data class Usuario(val nome: String)
@@ -59,12 +61,27 @@ class TelaInicialViewModel(
 
     init {
         carregarAvaliacoesReais()
+        carregarTarefasReais()
+    }
+
+    private fun carregarTarefasReais() {
+        viewModelScope.launch {
+            try {
+                val tarefasReais = tarefaRepository.getProximasTarefas()
+                val tarefasMapeadas = tarefasReais.mapNotNull { mapTarefaDtoToLocal(it) }
+                _estado.update { it.copy(tarefas = tarefasMapeadas) }
+                filtrarAvaliacoesEValidarTarefas()
+            } catch (e: Exception) {
+                _estado.update { it.copy(tarefas = emptyList()) }
+            }
+        }
     }
 
 
-    /** Força o recarregamento das avaliações do repositório. */
+    /** Força o recarregamento dos dados. */
     fun refreshData() {
         carregarAvaliacoesReais()
+        carregarTarefasReais()
     }
 
 
@@ -95,7 +112,6 @@ class TelaInicialViewModel(
         val avaliacoesFiltradas = _estado.value.avaliacoes.mapNotNull { avaliacao ->
             try {
                 val dataAvaliacao = LocalDate.parse("${avaliacao.dataCurta}/$anoAtual", formatter)
-                // Verifica se está entre hoje (inclusive) e o limite (inclusive)
                 if (!dataAvaliacao.isBefore(dataAtual) && !dataAvaliacao.isAfter(dataLimite)) {
                     avaliacao to dataAvaliacao
                 } else {
@@ -107,16 +123,19 @@ class TelaInicialViewModel(
         }.sortedBy { it.second }
             .map { it.first }
 
-        // Mantém a lógica original para tarefas fakes
-        val tarefasFiltradas = _estado.value.tarefas.filter { tarefa ->
+        val tarefasFiltradas = _estado.value.tarefas.mapNotNull { tarefa ->
             try {
-                val dataComAno = "${tarefa.dataCurta}/$anoAtual"
-                val dataTarefa = LocalDate.parse(dataComAno, DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-                !dataTarefa.isBefore(dataAtual) && (dataTarefa.isBefore(dataLimite) || dataTarefa.isEqual(dataLimite))
+                val dataTarefa = LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter)
+                if (!dataTarefa.isBefore(dataAtual) && !dataTarefa.isAfter(dataLimite)) {
+                    tarefa to dataTarefa
+                } else {
+                    null
+                }
             } catch (e: Exception) {
-                false
+                null
             }
-        }.sortedBy { LocalDate.parse(it.dataCurta + "/$anoAtual", formatter) }
+        }.sortedBy { it.second }
+            .map { it.first }
 
         _estado.update {
             it.copy(
@@ -143,10 +162,7 @@ class TelaInicialViewModel(
             usuario = Usuario(nome = TokenManager.nomeUsuario ?: ""),
             menuAberto = false,
             avaliacoes = emptyList(),
-            tarefas = listOf( // Mantém fakes
-                Tarefa("Sexta", "28/08", "Fazer projeto Unihub", "Implementar o menu lateral."),
-                Tarefa("Domingo", "31/08", "Revisar matéria", "Revisão para a prova de Design de UI.")
-            ),
+            tarefas = emptyList(),
             opcoesMenu = listOf(
                 "Perfil", "Disciplinas", "Serviço de nuvem", "Calendário", "Contatos",
                 "Grupos", "Projetos", "Configurar notificações", "Atividades"
@@ -155,7 +171,7 @@ class TelaInicialViewModel(
         )
     }
 
-    /** Carrega as avaliações reais do repositório */
+    /** Carrega as avaliacoes reais do repositório */
     private fun carregarAvaliacoesReais() {
         viewModelScope.launch {
             try {
@@ -182,6 +198,20 @@ class TelaInicialViewModel(
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
             titulo = real.tipoAvaliacao?.takeIf { it.isNotBlank() } ?: (real.descricao ?: "Avaliação"),
             descricao = real.disciplina?.nome ?: ""
+        )
+    }
+
+    /** Converte o modelo TarefaDto para o modelo Tarefa local */
+    private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
+        val data = parseToLocalDate(real.dataPrazo) ?: return null
+        val localePtBr = Locale("pt", "BR")
+
+        return Tarefa(
+            diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
+                .replaceFirstChar { it.titlecase(localePtBr) },
+            dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
+            titulo = real.titulo,
+            descricao = real.nomeQuadro
         )
     }
 

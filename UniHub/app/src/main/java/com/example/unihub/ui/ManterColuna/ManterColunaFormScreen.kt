@@ -15,10 +15,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.unihub.components.BotoesFormulario
+import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoCombobox
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
-import com.example.unihub.components.Header
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Coluna
 import com.example.unihub.data.repository.ColunaRepository
@@ -80,13 +80,14 @@ fun ColunaFormScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 50.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(start = 24.dp, end = 24.dp, bottom = 50.dp)
         ) {
-            Header(
+            CabecalhoAlternativo(
                 titulo = if (isEditing) "Editar Coluna" else "Cadastrar Coluna",
                 onVoltar = { navController.popBackStack() }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             CampoFormulario(
                 label = "Título",
@@ -101,6 +102,8 @@ fun ColunaFormScreen(
             } else {
                 Status.values().toList()
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             CampoCombobox(
                 label = "Status",

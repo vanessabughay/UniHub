@@ -44,7 +44,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.components.formatDateToLocale
-
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.example.unihub.components.CabecalhoAlternativo
 
 data class OpcaoQuadro(
     val title: String,
@@ -174,6 +178,8 @@ private fun VisualizarQuadroContent(
         .filter { it.status == Status.CONCLUIDA }
         .sortedBy { it.ordem }
 
+    val scrollState = rememberScrollState()
+
 
 
     Scaffold(
@@ -203,8 +209,9 @@ private fun VisualizarQuadroContent(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp)
+                .verticalScroll(scrollState)
         ) {
-            HeaderSection(
+            CabecalhoAlternativo(
                 titulo = uiState.quadro?.nome ?: "Carregando...",
                 onVoltar = onVoltar,
             )
@@ -239,7 +246,7 @@ private fun VisualizarQuadroContent(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.padding(top = 50.dp))
             } else {
-                Column(modifier = Modifier.weight(1f)) {
+                Column {
                     if (colunasAtivas.isNotEmpty()) {
                         TituloDeSecao(
                             titulo = "Colunas em andamento",
@@ -292,6 +299,8 @@ private fun VisualizarQuadroContent(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
         }
@@ -449,7 +458,7 @@ private fun TarefasSection(
     onEditTarefa: (String) -> Unit,
     onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -498,6 +507,7 @@ private fun TarefaItem(
     onEditTarefa: (String) -> Unit,
     onTarefaStatusChange: (tarefa: Tarefa, isChecked: Boolean) -> Unit
 ) {
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -510,50 +520,28 @@ private fun TarefaItem(
             checked = tarefa.status == Status.CONCLUIDA,
             onCheckedChange = { isChecked ->
                 onTarefaStatusChange(tarefa, isChecked)
-            }
+            },
+            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.tertiary)
         )
-        Text(
-            text = tarefa.titulo,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                textDecoration = if (tarefa.status == Status.CONCLUIDA) TextDecoration.LineThrough else null
-            ),
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = formatarPrazo(tarefa.prazo),
-            style = MaterialTheme.typography.bodySmall,
-            color = contentColor.copy(alpha = 0.8f)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-    }
-}
 
-@Composable
-private fun HeaderSection(titulo: String, onVoltar: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp)
-    ) {
-        // Ícone de voltar
-        IconButton(
-            onClick = onVoltar,
-            modifier = Modifier.align(Alignment.CenterStart)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Voltar",
-                modifier = Modifier.size(28.dp)
+            Text(
+                text = tarefa.titulo,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    textDecoration = if (tarefa.status == Status.CONCLUIDA) TextDecoration.LineThrough else null
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = formatarPrazo(tarefa.prazo),
+                style = MaterialTheme.typography.bodySmall,
+                color = contentColor.copy(alpha = 0.8f)
             )
         }
-        Text(
-            text = titulo,
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
-            ),
-            modifier = Modifier.align(Alignment.Center)
-        )
+        Spacer(modifier = Modifier.width(8.dp)) // Espaço no final
     }
 }
