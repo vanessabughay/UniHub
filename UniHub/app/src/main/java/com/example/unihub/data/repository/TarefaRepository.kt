@@ -11,6 +11,7 @@ import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import java.time.Instant
 import java.time.ZoneId
+import com.example.unihub.data.dto.TarefaDto
 
 open class TarefaRepository(private val apiService: TarefaApi) {
 
@@ -83,6 +84,10 @@ open class TarefaRepository(private val apiService: TarefaApi) {
             tarefaId,
             ComentarioNotificacaoRequestDto(receberNotificacoes)
         )
+    }
+
+    open suspend fun getProximasTarefas(): List<TarefaDto> {
+        return apiService.getProximasTarefas()
     }
 
 

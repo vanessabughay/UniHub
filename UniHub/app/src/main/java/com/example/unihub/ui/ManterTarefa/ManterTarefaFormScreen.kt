@@ -35,7 +35,7 @@ import com.example.unihub.components.CampoCombobox
 import com.example.unihub.components.CampoDropdownMultiSelect
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
-import com.example.unihub.components.Header
+
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.ComentarioPreferenciaResponse
@@ -48,8 +48,6 @@ import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.Grupobackend
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
-
-
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.data.repository._quadrobackend
 import com.example.unihub.data.api.TarefaApi
@@ -61,6 +59,7 @@ import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 import java.util.Calendar
 import java.util.Locale
+import com.example.unihub.components.CabecalhoAlternativo
 
 
 private fun getDefaultPrazoForUI(): Long {
@@ -199,14 +198,15 @@ LaunchedEffect(quadroId) {
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
+                .padding(start = 24.dp, end = 24.dp, bottom = 16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Header(
+            CabecalhoAlternativo(
                 titulo = if (isEditing) "Editar tarefa" else "Cadastrar tarefa",
                 onVoltar = { navController.popBackStack() }
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             CampoFormulario(
                 label = "Título",
@@ -214,6 +214,14 @@ LaunchedEffect(quadroId) {
                 onValueChange = { titulo = it },
                 singleLine = true
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
+            ){
             CampoDropdownMultiSelect(
                 label = "Responsável",
                 options = responsaveisDisponiveis,
@@ -221,13 +229,22 @@ LaunchedEffect(quadroId) {
                 onSelectionChange = tarefaViewModel::atualizarResponsaveisSelecionados,
                 placeholder = if (responsaveisDisponiveis.isEmpty()) "Nenhum membro disponível" else "Selecione os responsáveis",
                 enabled = responsaveisDisponiveis.isNotEmpty()
-            )
+            )}
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
+            ){
             CampoData(
                 label = "Prazo",
                 value = formatDateToLocale(prazo, locale),
                 onClick = showDatePicker
-            )
+            )}
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             CampoFormulario(
                 label = "Descrição",
@@ -235,6 +252,7 @@ LaunchedEffect(quadroId) {
                 onValueChange = { descricao = it })
 
             if (isEditing) {
+                Spacer(modifier = Modifier.height(16.dp))
                 CampoCombobox(
                     label = "Estado",
                     options = Status.values().toList(),
@@ -247,13 +265,15 @@ LaunchedEffect(quadroId) {
                     placeholder = "Selecione o estado"
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFD9F6DF))
+                        colors = CardDefaults.cardColors(containerColor = Color(0xE9CFE5D0))
                     ) {
                         Column(
                             modifier = Modifier
@@ -340,9 +360,7 @@ LaunchedEffect(quadroId) {
                                             modifier = Modifier.fillMaxWidth(),
                                             shape = RoundedCornerShape(12.dp),
                                             colors = CardDefaults.cardColors(
-                                                containerColor = Color(
-                                                    0xFFD9F6DF
-                                                )
+                                                containerColor = Color(0xFFF1F8F1)
                                             ),
                                             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                         ) {
@@ -479,7 +497,7 @@ LaunchedEffect(quadroId) {
                                                     Text(
                                                         text = dataTexto,
                                                         style = MaterialTheme.typography.bodySmall,
-                                                        color = Color.Gray,
+                                                        color = Color.Black.copy(alpha = 0.7f),
                                                         fontSize = 12.sp
                                                     )
                                                 }
@@ -601,198 +619,4 @@ private enum class TarefaFormAction {
     CREATE,
     UPDATE,
     DELETE
-}
-
-
-
-
-
-
-
-
-
-class FakeTarefaRepository : TarefaRepository(object : TarefaApi {
-    override suspend fun getTarefa(quadroId: String, colunaId: String, tarefaId: String): Tarefa {
-        // Retorna um objeto de tarefa mockado para a prévia
-        return Tarefa(
-            id = tarefaId,
-            descricao = "Esta é uma descrição de exemplo.",
-            status = Status.INICIADA,
-            prazo = System.currentTimeMillis() + 86400000,
-            dataInicio = System.currentTimeMillis(),
-            responsaveisIds = listOf(1L)
-        )
-    }
-
-    override suspend fun createTarefa(
-        quadroId: String,
-        colunaId: String,
-        tarefa: com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
-    ) {
-        // Nada a ser feito aqui para o mock
-    }
-
-    override suspend fun updateTarefa(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String,
-        tarefa: com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
-    ): Tarefa {
-        val status = tarefa.status?.let { Status.valueOf(it) } ?: Status.INICIADA
-        return Tarefa(
-            id = tarefaId,
-            titulo = tarefa.titulo ?: "",
-            descricao = tarefa.descricao,
-            status = status,
-            prazo = tarefa.prazo ?: System.currentTimeMillis(),
-            dataInicio = tarefa.dataInicio ?: System.currentTimeMillis(),
-            dataFim = tarefa.dataFim,
-            responsaveisIds = tarefa.responsavelIds
-        )
-    }
-
-    override suspend fun deleteTarefa(quadroId: String, colunaId: String, tarefaId: String) {
-        // Nada a ser feito aqui
-    }
-
-    override suspend fun getComentarios(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String
-    ): ComentariosResponse {
-        return ComentariosResponse(
-            comentarios = emptyList(),
-            receberNotificacoes = true
-        )
-    }
-
-    override suspend fun createComentario(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String,
-        comentario: com.example.unihub.data.dto.ComentarioRequestDto
-    ) = Comentario(
-        id = "1",
-        conteudo = comentario.conteudo,
-        autorId = 1L,
-        autorNome = "Usuário",
-        isAutor = true,
-        dataCriacao = System.currentTimeMillis(),
-        dataAtualizacao = System.currentTimeMillis()
-    )
-
-    override suspend fun updateComentario(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String,
-        comentarioId: String,
-        comentario: com.example.unihub.data.dto.ComentarioRequestDto
-    ) = Comentario(
-        id = comentarioId,
-        conteudo = comentario.conteudo,
-        autorId = 1L,
-        autorNome = "Usuário",
-        isAutor = true,
-        dataCriacao = System.currentTimeMillis(),
-        dataAtualizacao = System.currentTimeMillis()
-    )
-
-    override suspend fun deleteComentario(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String,
-        comentarioId: String
-    ) {
-        // Nada para remover no mock
-    }
-
-    override suspend fun updateComentarioPreference(
-        quadroId: String,
-        colunaId: String,
-        tarefaId: String,
-        request: com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
-    ) = ComentarioPreferenciaResponse(request.receberNotificacoes)
-}) {
-    // Essa classe pode ficar vazia, já que a lógica de mock está na interface.
-}
-
-// Uma fábrica de ViewModel falsa para o preview, que injeta o repositório falso.
-class FakeTarefaFormViewModelFactory : ViewModelProvider.Factory {
-    override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(TarefaFormViewModel::class.java)) {
-            val tarefaRepository = FakeTarefaRepository()
-            val quadroRepository = QuadroRepository(object : _quadrobackend {
-                override suspend fun getQuadrosApi(): List<Quadro> = emptyList()
-                override suspend fun getQuadroByIdApi(id: String): Quadro? =
-                    Quadro(id = id, nome = "Quadro Preview", grupoId = 1L)
-                override suspend fun addQuadroApi(quadro: Quadro) {}
-                override suspend fun updateQuadroApi(id: Long, quadro: Quadro): Boolean = true
-                override suspend fun deleteQuadroApi(id: Long): Boolean = true
-            })
-
-            val grupoRepository = GrupoRepository(object : Grupobackend {
-                override suspend fun getGrupoApi(): List<Grupo> = emptyList()
-                override suspend fun getGrupoByIdApi(id: String): Grupo? = Grupo(
-                    id = id.toLong(),
-                    nome = "Grupo Preview",
-                    membros = listOf(
-                        Contato(id = 1L, nome = "Ana", email = "ana@example.com", pendente = false),
-                        Contato(id = 2L, nome = "Bruno", email = "bruno@example.com", pendente = false),
-                        Contato(id = 3L, nome = "Carla", email = "carla@example.com", pendente = false)
-                    ),
-                    adminContatoId = 1L
-                )
-
-                override suspend fun addGrupoApi(grupo: Grupo) {}
-                override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
-                override suspend fun deleteGrupoApi(id: Long): Boolean = true
-            })
-
-            val contatoRepository = ContatoRepository(object : Contatobackend {
-                override suspend fun getContatoResumoApi(): List<ContatoResumo> = emptyList()
-                override suspend fun getContatoByIdApi(id: String): Contato? =
-                    Contato(id = id.toLong(), nome = "Contato $id", email = "contato$id@example.com", pendente = false)
-                override suspend fun addContatoApi(contato: Contato) {}
-                override suspend fun updateContatoApi(id: Long, contato: Contato): Boolean = true
-                override suspend fun deleteContatoApi(id: Long): Boolean = true
-                override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> = emptyList()
-                override suspend fun acceptInvitation(id: Long) { /* no-op para preview */ }
-                override suspend fun rejectInvitation(id: Long) { /* no-op para preview */ }
-            })
-
-            @Suppress("UNCHECKED_CAST")
-            return TarefaFormViewModel(
-                repository = tarefaRepository,
-                quadroRepository = quadroRepository,
-                grupoRepository = grupoRepository,
-                contatoRepository = contatoRepository
-            ) as T
-        }
-        throw IllegalArgumentException("Classe de ViewModel desconhecida")
-    }
-}
-
-// As suas funções de pré-visualização.
-@Preview(showBackground = true)
-@Composable
-fun TarefaFormScreenPreview() {
-    TarefaFormScreen(
-        navController = rememberNavController(),
-        quadroId = "id-do-quadro-exemplo",
-        colunaId = "id-da-coluna-exemplo",
-        tarefaId = null,
-        viewModelFactory = FakeTarefaFormViewModelFactory()
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TarefaFormScreenEditingPreview() {
-    TarefaFormScreen(
-        navController = rememberNavController(),
-        quadroId = "id-do-quadro-exemplo",
-        colunaId = "id-da-coluna-exemplo",
-        tarefaId = "id-da-tarefa-exemplo",
-        viewModelFactory = FakeTarefaFormViewModelFactory()
-    )
 }

@@ -28,6 +28,8 @@ import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.model.Grupo
@@ -42,6 +44,8 @@ import com.example.unihub.Screen
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 import java.util.Locale
+import com.example.unihub.components.CampoBuscaJanela
+import com.example.unihub.components.CabecalhoAlternativo
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -94,10 +98,9 @@ fun QuadroFormScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 50.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            modifier = Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, bottom = 50.dp),
         ) {
-            Header(
+            CabecalhoAlternativo(
                 titulo = if (isEditing) "Editar Quadro" else "Cadastrar Quadro",
                 onVoltar = { navController.popBackStack() }
             )
@@ -105,12 +108,15 @@ fun QuadroFormScreen(
             if (uiState.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             } else {
+                Spacer(modifier = Modifier.height(16.dp))
                 CampoFormulario(
                     label = "Nome",
                     value = uiState.nome,
                     onValueChange = viewModel::onNomeChange,
                     singleLine = true
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 CampoCombobox(
                     label = "Disciplina (Opcional)",
@@ -120,14 +126,17 @@ fun QuadroFormScreen(
                     optionToDisplayedString = { it.nome ?: "..." }
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Integrante/Grupo (Opcional)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurface)
                     if (uiState.integranteSelecionado == null) {
                         Button(
                             onClick = viewModel::onSelectionDialogShow,
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(),
-                            border = ButtonDefaults.outlinedButtonBorder
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF28A745)
+                            )
                         ) { Text("Selecionar Integrante") }
                     } else {
                         InputChip(
@@ -146,6 +155,8 @@ fun QuadroFormScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
                 CampoCombobox(
                     label = "Estado",
                     options = Estado.values().toList(),
@@ -154,11 +165,18 @@ fun QuadroFormScreen(
                     optionToDisplayedString = { it.name.lowercase().replaceFirstChar { c -> c.uppercase() } }
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
+                ){
                 CampoData(
                     label = "Prazo (Data de Fim)",
                     value = formatDateToLocale(uiState.prazo, locale),
                     onClick = showDatePicker
-                )
+                )}
 
                 Spacer(modifier = Modifier.weight(1f))
 
@@ -170,6 +188,7 @@ fun QuadroFormScreen(
         }
     }
 }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SelecaoIntegranteDialog(
@@ -181,11 +200,34 @@ private fun SelecaoIntegranteDialog(
     var tabIndex by remember { mutableStateOf(0) }
     val tabs = listOf("Contatos", "Grupos")
 
+    // --- NOVO: Estado para a busca ---
+    var searchQuery by remember { mutableStateOf("") }
+
+    // --- NOVO: Lógica de filtro ---
+    val filteredContatos = remember(contatos, searchQuery) {
+        contatos.filter {
+            it.nome?.contains(searchQuery, ignoreCase = true) ?: false
+        }
+    }
+    val filteredGrupos = remember(grupos, searchQuery) {
+        grupos.filter {
+            it.nome?.contains(searchQuery, ignoreCase = true) ?: false
+        }
+    }
+
     AlertDialog(
         onDismissRequest = onDismissRequest,
         title = { Text("Selecionar Integrante") },
         text = {
             Column {
+                // campo de busca agora
+                CampoBuscaJanela(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = "Buscar por nome...",
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                )
+
                 TabRow(selectedTabIndex = tabIndex) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
@@ -197,20 +239,26 @@ private fun SelecaoIntegranteDialog(
                 }
                 LazyColumn(modifier = Modifier.heightIn(max = 300.dp).fillMaxWidth()) {
                     if (tabIndex == 0) { // Aba de Contatos
-                        items(contatos) { contato ->
-                            // --- CORREÇÃO FINAL AQUI ---
+                        // --- USA A LISTA FILTRADA ---
+                        if (filteredContatos.isEmpty()) {
+                            item { Text("Nenhum contato encontrado.", modifier = Modifier.padding(16.dp)) }
+                        }
+                        items(filteredContatos) { contato ->
                             ListItem(
-                                headlineContent = { Text(contato.nome ?: "") }, // DE: headlineText
+                                headlineContent = { Text(contato.nome ?: "") },
                                 modifier = Modifier.clickable {
                                     onIntegranteSelected(ContatoIntegranteUi(contato.id, contato.nome))
                                 }
                             )
                         }
                     } else { // Aba de Grupos
-                        items(grupos) { grupo ->
-                            // --- CORREÇÃO FINAL AQUI ---
+                        // --- USA A LISTA FILTRADA ---
+                        if (filteredGrupos.isEmpty()) {
+                            item { Text("Nenhum grupo encontrado.", modifier = Modifier.padding(16.dp)) }
+                        }
+                        items(filteredGrupos) { grupo ->
                             ListItem(
-                                headlineContent = { Text(grupo.nome ?: "") }, // DE: headlineText
+                                headlineContent = { Text(grupo.nome ?: "") },
                                 modifier = Modifier.clickable {
                                     onIntegranteSelected(GrupoIntegranteUi(grupo.id, grupo.nome))
                                 }
