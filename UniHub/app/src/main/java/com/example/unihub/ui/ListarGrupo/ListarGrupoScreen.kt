@@ -385,6 +385,15 @@ fun GrupoItemExpansivel(
                             val contatosPorId = contatosDisponiveis.associateBy { it.id }
                             val membrosExibidos = linkedSetOf<String>()
 
+                            val nomeUsuarioLogado = TokenManager.nomeUsuario
+                                ?.trim()
+                                ?.takeIf { it.isNotEmpty() }
+                            val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario
+                                ?.trim()
+                                ?.takeIf { it.isNotEmpty() }
+                                ?.lowercase()
+
+
                             membrosOrdenados.forEachIndexed { index, contato ->
                                 val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
                                 val emailNormalizado = emailDisponivel?.lowercase()
@@ -404,13 +413,27 @@ fun GrupoItemExpansivel(
                                     val contatoEncontrado = contatoEncontradoPorId
                                         ?: emailNormalizado?.let { contatosPorEmail[it] }
                                     contatoEncontrado?.nome?.trim()?.takeIf { it.isNotEmpty() }
-                                
                                 }
 
-                                val textoBase = nomeContato
-                                    ?: emailDisponivel
-                                    ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }
-                                    ?: "Sem identificação"
+                                val isUsuarioLogado = when {
+                                    usuarioLogadoId != null -> {
+                                        val idContato = contato.idContato
+                                        val idIntegrante = contato.id
+                                        (idContato != null && idContato == usuarioLogadoId) ||
+                                                (idIntegrante != null && idIntegrante == usuarioLogadoId)
+                                    }
+                                    emailUsuarioLogadoNormalizado != null ->
+                                        emailNormalizado == emailUsuarioLogadoNormalizado
+                                    else -> false
+                                }
+
+                                val textoBase = when {
+                                    isUsuarioLogado && nomeUsuarioLogado != null -> nomeUsuarioLogado
+                                    nomeContato != null -> nomeContato
+                                    emailDisponivel != null -> emailDisponivel
+                                    else -> contato.nome?.trim()?.takeIf { it.isNotEmpty() }
+                                        ?: "Sem identificação"
+                                }
 
                                 val isAdministrador = when {
                                     grupo.ownerId != null && (
