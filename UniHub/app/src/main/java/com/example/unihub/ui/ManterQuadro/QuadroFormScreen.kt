@@ -28,6 +28,8 @@ import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,7 @@ fun QuadroFormScreen(
     val formResult by viewModel.formResult.collectAsState()
     val context = LocalContext.current
     val isEditing = quadroId != null
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(key1 = Unit) {
         viewModel.carregarDados(quadroId)
@@ -99,8 +102,11 @@ fun QuadroFormScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(start = 24.dp, end = 24.dp, bottom = 50.dp),
-        ) {
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(start = 24.dp, end = 24.dp, bottom = 50.dp),
+            ) {
             CabecalhoAlternativo(
                 titulo = if (isEditing) "Editar Quadro" else "Cadastrar Quadro",
                 onVoltar = { navController.popBackStack() }
@@ -183,8 +189,8 @@ fun QuadroFormScreen(
                     onClick = showDatePicker
                 )}
 
-                Spacer(modifier = Modifier.weight(1f))
-
+                Spacer(modifier = Modifier.height(24.dp))
+                
                 BotoesFormulario(
                     onConfirm = viewModel::salvarOuAtualizarQuadro,
                     onDelete = if (isEditing) { { viewModel.excluirQuadro(quadroId!!) } } else null
