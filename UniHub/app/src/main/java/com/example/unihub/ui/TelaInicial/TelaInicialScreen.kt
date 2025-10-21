@@ -46,6 +46,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.config.TokenManager
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 
 
@@ -114,10 +116,14 @@ fun TelaInicial(
         onAlternarSecaoTarefas = { viewModel.alternarSecaoTarefas() },
         onLogout = {
             TokenManager.clearToken(context)
-            viewModel.fecharMenu()
-            navController.navigate("login") {
-                popUpTo(0) { inclusive = true }
-                launchSingleTop = true
+            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+            val client = GoogleSignIn.getClient(context, gso)
+            client.signOut().addOnCompleteListener {
+                viewModel.fecharMenu()
+                navController.navigate("login") {
+                    popUpTo(0) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     )
