@@ -3,6 +3,7 @@ package com.example.unihub.ui.ManterTarefa
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.model.Comentario
+import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.repository.ContatoRepository
@@ -78,7 +79,11 @@ class TarefaFormViewModel(
             try {
                 val tarefaCarregada = repository.getTarefa(quadroId, colunaId, tarefaId)
                 _tarefaState.value = tarefaCarregada
-                _responsaveisSelecionados.value = tarefaCarregada.responsaveisIds.toSet()
+                val idsResponsaveis = tarefaCarregada.responsaveisIds
+                _responsaveisSelecionados.value = idsResponsaveis.toSet()
+                if (idsResponsaveis.isNotEmpty()) {
+                    carregarResponsaveis(quadroId, idsResponsaveis)
+                }
             } catch (e: Exception) {
                 _formResult.value = TarefaFormResult.Error(e.message ?: "Erro ao carregar tarefa.")
             } finally {
@@ -274,29 +279,53 @@ class TarefaFormViewModel(
         _comentarioResultado.value = null
     }
 
-    fun carregarResponsaveis(quadroId: String) {
+    fun carregarResponsaveis(quadroId: String, responsavelIds: List<Long> = emptyList()) {
         viewModelScope.launch {
             try {
                 val quadro = quadroRepository.getQuadroById(quadroId)
                 val opcoes = mutableListOf<ResponsavelOption>()
+                val idsSemDados = responsavelIds.toMutableSet()
+
 
                 quadro?.contatoId?.let { contatoId ->
-                    contatoRepository.fetchContatoById(contatoId)?.let { contato ->
-                        val id = contato.id
-                        val nome = contato.nome
-                        if (id != null && !nome.isNullOrBlank()) {
-                            opcoes.add(ResponsavelOption(id, nome))
-                        }
+                    val responsavel = runCatching { contatoRepository.fetchContatoById(contatoId) }
+                        .getOrNull()
+                        .toResponsavelOption()
+                    if (responsavel != null) {
+                        opcoes.add(responsavel)
+                        idsSemDados.remove(responsavel.id)
                     }
                 }
 
                 quadro?.grupoId?.let { grupoId ->
                     grupoRepository.fetchGrupoById(grupoId)?.membros?.forEach { membro ->
-                        val id = membro.id
-                        val nome = membro.nome
-                        if (id != null && !nome.isNullOrBlank()) {
-                            opcoes.add(ResponsavelOption(id, nome))
+                        membro.toResponsavelOption()?.let {
+                            opcoes.add(it)
+                            idsSemDados.remove(it.id)
                         }
+                    }
+                }
+
+                responsavelIds.forEach { responsavelId ->
+                    if (opcoes.none { it.id == responsavelId }) {
+                        val responsavel = runCatching { contatoRepository.fetchContatoById(responsavelId) }
+                            .getOrNull()
+                            .toResponsavelOption()
+                        if (responsavel != null) {
+                            opcoes.add(responsavel)
+                            idsSemDados.remove(responsavel.id)
+                        }
+                    }
+                }
+
+                if (idsSemDados.isNotEmpty()) {
+                    idsSemDados.forEach { id ->
+                        opcoes.add(
+                            ResponsavelOption(
+                                id = id,
+                                nome = "Responsável #$id"
+                            )
+                        )
                     }
                 }
 
@@ -305,12 +334,29 @@ class TarefaFormViewModel(
                     .sortedBy { it.nome.lowercase(Locale.getDefault()) }
 
                 _responsaveisDisponiveis.value = unicosOrdenados
-                _responsaveisSelecionados.update { selecionados ->
-                    selecionados.filter { id -> unicosOrdenados.any { it.id == id } }.toSet()
+                val idsSelecionados = if (responsavelIds.isNotEmpty()) {
+                    responsavelIds.toSet()
+                } else {
+                    _responsaveisSelecionados.value
                 }
+                _responsaveisSelecionados.value = idsSelecionados
+                    .filter { id -> unicosOrdenados.any { it.id == id } }
+                    .toSet()
             } catch (e: Exception) {
                 _responsaveisDisponiveis.value = emptyList()
             }
+        }
+    }
+
+    private fun Contato?.toResponsavelOption(): ResponsavelOption? {
+        if (this == null) return null
+        val idResponsavel = this.id ?: this.idContato
+        val nomeResponsavel = this.nome?.takeIf { it.isNotBlank() }
+            ?: this.email?.takeIf { it.isNotBlank() }
+        return if (idResponsavel != null && nomeResponsavel != null) {
+            ResponsavelOption(idResponsavel, nomeResponsavel)
+        } else {
+            null
         }
     }
 
