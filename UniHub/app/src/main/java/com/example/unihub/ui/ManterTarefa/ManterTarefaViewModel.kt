@@ -2,6 +2,7 @@ package com.example.unihub.ui.ManterTarefa
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Status
@@ -283,9 +284,19 @@ class TarefaFormViewModel(
         viewModelScope.launch {
             try {
                 val quadro = quadroRepository.getQuadroById(quadroId)
+                val grupo = quadro?.grupoId?.let { grupoId ->
+                    runCatching { grupoRepository.fetchGrupoById(grupoId) }.getOrNull()
+                }
+                val membrosGrupo = grupo?.membros.orEmpty()
                 val opcoes = mutableListOf<ResponsavelOption>()
                 val idsSemDados = responsavelIds.toMutableSet()
 
+
+                val responsavelQuadro = criarResponsavelDoQuadro(quadro?.donoId, membrosGrupo)
+                if (responsavelQuadro != null) {
+                    opcoes.add(responsavelQuadro)
+                    idsSemDados.remove(responsavelQuadro.id)
+                }
 
                 quadro?.contatoId?.let { contatoId ->
                     val responsavel = runCatching { contatoRepository.fetchContatoById(contatoId) }
@@ -297,14 +308,13 @@ class TarefaFormViewModel(
                     }
                 }
 
-                quadro?.grupoId?.let { grupoId ->
-                    grupoRepository.fetchGrupoById(grupoId)?.membros?.forEach { membro ->
-                        membro.toResponsavelOption()?.let {
-                            opcoes.add(it)
-                            idsSemDados.remove(it.id)
+                membrosGrupo.forEach { membro ->
+                    membro.toResponsavelOption()?.let { option ->
+                        opcoes.add(option)
+                        idsSemDados.remove(option.id)
                         }
                     }
-                }
+                
 
                 responsavelIds.forEach { responsavelId ->
                     if (opcoes.none { it.id == responsavelId }) {
@@ -347,12 +357,46 @@ class TarefaFormViewModel(
             }
         }
     }
+private suspend fun criarResponsavelDoQuadro(
+    ownerId: Long?,
+    membrosGrupo: List<Contato>
+): ResponsavelOption? {
+    val usuarioId = ownerId ?: TokenManager.usuarioId ?: return null
+
+    val nomeDoToken = TokenManager.nomeUsuario
+        ?.takeIf { it.isNotBlank() && usuarioId == TokenManager.usuarioId }
+
+    val nomeDoGrupo = membrosGrupo.firstNotNullOfOrNull { membro ->
+        val membroId = membro.idContato ?: membro.ownerId ?: membro.id
+        if (membroId == usuarioId) {
+            membro.nome?.takeIf { it.isNotBlank() }
+                ?: membro.email?.takeIf { it.isNotBlank() }
+        } else {
+            null
+        }
+    }
+
+    val nomeDoContato = if (nomeDoToken == null && nomeDoGrupo == null) {
+        runCatching { contatoRepository.fetchContatoById(usuarioId) }
+            .getOrNull()
+            ?.let { contato ->
+                contato.nome?.takeIf { it.isNotBlank() }
+                    ?: contato.email?.takeIf { it.isNotBlank() }
+            }
+    } else {
+        null
+    }
+
+    val nome = nomeDoToken ?: nomeDoGrupo ?: nomeDoContato ?: "Usuário #$usuarioId"
+    return ResponsavelOption(usuarioId, nome)
+}
 
     private fun Contato?.toResponsavelOption(): ResponsavelOption? {
         if (this == null) return null
-        val idResponsavel = this.id ?: this.idContato
+        val idResponsavel = this.idContato ?: this.ownerId ?: this.id
         val nomeResponsavel = this.nome?.takeIf { it.isNotBlank() }
             ?: this.email?.takeIf { it.isNotBlank() }
+            ?: this.ownerId?.let { "Usuário #$it" }
         return if (idResponsavel != null && nomeResponsavel != null) {
             ResponsavelOption(idResponsavel, nomeResponsavel)
         } else {
