@@ -94,8 +94,9 @@ class QuadroFormViewModel(
             } catch (e: Exception) {
                 _uiState.update {
                     val nomeUsuario = TokenManager.nomeUsuario?.takeIf { it.isNotBlank() } ?: "Você"
+                    val participantesFallback = "$nomeUsuario (Administrador do quadro)"
                     val integrantesFallback = if (it.integrantesDoQuadro.participantes.isEmpty() && it.integrantesDoQuadro.grupo == null) {
-                        IntegrantesDoQuadroUi(participantes = listOf("$nomeUsuario (eu)"))
+                        IntegrantesDoQuadroUi(participantes = listOf(participantesFallback))
                     } else {
                         it.integrantesDoQuadro
                     }
@@ -138,8 +139,11 @@ class QuadroFormViewModel(
         contatosDisponiveis: List<ContatoResumoUi>
     ): IntegrantesDoQuadroUi {
         val participantes = mutableListOf<String>()
-        val nomeUsuario = TokenManager.nomeUsuario?.takeIf { it.isNotBlank() } ?: "Você"
-        participantes += "$nomeUsuario (eu)"
+        val usuarioId = TokenManager.usuarioId
+        val nomeUsuario = TokenManager.nomeUsuario?.takeIf { it.isNotBlank() }
+
+        val ownerId = quadroOriginal?.donoId ?: usuarioId
+        var ownerNameFromGrupo: String? = null
 
         val contatoId = when (integranteSelecionado) {
             is ContatoIntegranteUi -> integranteSelecionado.id
@@ -181,6 +185,21 @@ class QuadroFormViewModel(
                 }
             }.orEmpty()
 
+            if (ownerId != null) {
+                ownerNameFromGrupo = grupo?.membros?.firstNotNullOfOrNull { membro ->
+                    val idsAssociados = listOfNotNull(membro.id, membro.idContato, membro.ownerId)
+                    if (ownerId in idsAssociados) {
+                        membro.nome?.takeIf { it.isNotBlank() }
+                            ?: membro.email?.takeIf { it.isNotBlank() }
+                            ?: membro.id?.let { "Integrante #$it" }
+                            ?: "Integrante"
+                    } else {
+                        null
+                    }
+                }
+            }
+
+
             val membros = when {
                 membrosFormatados.isNotEmpty() -> membrosFormatados
                 grupo != null -> listOf("Nenhum integrante neste grupo.")
@@ -194,6 +213,38 @@ class QuadroFormViewModel(
                     ?: "Grupo #$id",
                 membros = membros
             )
+        }
+
+        if (ownerId != null) {
+            val ownerNomeBase = when {
+                ownerId == usuarioId && !nomeUsuario.isNullOrBlank() -> nomeUsuario
+                else -> null
+            }
+
+            val ownerNome = ownerNomeBase
+                ?: contatosDisponiveis.firstOrNull { it.id == ownerId }?.nome?.takeIf { !it.isNullOrBlank() }
+                ?: runCatching { contatoRepository.fetchContatoById(ownerId)?.nome }
+                    .getOrNull()
+                    ?.takeIf { !it.isNullOrBlank() }
+                ?: ownerNameFromGrupo
+                ?: "Usuário #$ownerId"
+
+            val ownerRotulo = buildString {
+                append(ownerNome)
+                append(" (Administrador do quadro)")
+                if (ownerId == usuarioId) {
+                    append(" (eu)")
+                }
+            }
+            participantes.add(0, ownerRotulo)
+        } else {
+            val nomeExibicao = nomeUsuario ?: "Você"
+            participantes.add(0, "$nomeExibicao (Administrador do quadro)")
+        }
+
+        if (usuarioId != null && ownerId != null && usuarioId != ownerId) {
+            val nomeExibicao = nomeUsuario ?: "Você"
+            participantes += "$nomeExibicao (eu)"
         }
 
         return IntegrantesDoQuadroUi(
