@@ -27,6 +27,10 @@ import androidx.navigation.compose.rememberNavController
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.model.Estado
+import com.example.unihub.data.model.Contato
+import com.example.unihub.data.model.Grupo
+import com.example.unihub.data.repository.GrupoRepository
+import com.example.unihub.data.repository.Grupobackend
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
@@ -308,13 +312,42 @@ private fun previewQuadroRepositoryListar() = QuadroRepository(object : _quadrob
     override suspend fun deleteQuadroApi(id: Long): Boolean = true
 })
 
+private fun previewGrupoRepositoryListar() = GrupoRepository(object : Grupobackend {
+    override suspend fun getGrupoApi(): List<Grupo> = emptyList()
+
+    override suspend fun getGrupoByIdApi(id: String): Grupo? = Grupo(
+        id = id.toLongOrNull(),
+        nome = "Grupo $id",
+        membros = listOf(
+            Contato(
+                id = 1L,
+                nome = "Membro",
+                email = "membro@example.com",
+                pendente = false,
+                idContato = 1L,
+                ownerId = 1L
+            )
+        ),
+        adminContatoId = 1L,
+        ownerId = 1L
+    )
+
+    override suspend fun addGrupoApi(grupo: Grupo) {}
+
+    override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
+
+    override suspend fun deleteGrupoApi(id: Long): Boolean = true
+})
 
 class FakeListarQuadrosViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(ListarQuadrosViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             // Instancia o ViewModel com o repositório falso
-            return ListarQuadrosViewModel(previewQuadroRepositoryListar()) as T
+            return ListarQuadrosViewModel(
+                previewQuadroRepositoryListar(),
+                previewGrupoRepositoryListar()
+            ) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }

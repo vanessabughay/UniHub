@@ -2,10 +2,11 @@ package com.example.unihub.ui.ListarQuadros
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.repository.QuadroRepository
-import com.example.unihub.data.model.Quadro
-import kotlinx.coroutines.flow.MutableStateFlow
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.model.Quadro
+import com.example.unihub.data.repository.GrupoRepository
+import com.example.unihub.data.repository.QuadroRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -19,7 +20,8 @@ data class ListarQuadrosUiState(
 )
 
 class ListarQuadrosViewModel(
-    private val repository: QuadroRepository
+    private val quadroRepository: QuadroRepository,
+    private val grupoRepository: GrupoRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ListarQuadrosUiState())
@@ -31,16 +33,8 @@ class ListarQuadrosViewModel(
         _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
             try {
-                val quadrosCarregados = repository.getQuadros()
-                val usuarioId = TokenManager.usuarioId
-                val quadrosDoUsuario = if (usuarioId != null &&
-                    quadrosCarregados.any { it.donoId != null }) {
-                    quadrosCarregados.filter { it.donoId == usuarioId }
-                } else {
-                    // Quando o backend já filtra por autenticação (ou não envia o campo donoId),
-                    // mantemos a lista retornada para garantir que os quadros do usuário sejam exibidos.
-                    quadrosCarregados
-                }
+                val quadrosCarregados = quadroRepository.getQuadros()
+                val quadrosDoUsuario = filtrarQuadrosPorAcesso(quadrosCarregados)
                 allQuadros = quadrosDoUsuario // Salva a lista completa
                 _uiState.update {
                     it.copy(
@@ -50,6 +44,32 @@ class ListarQuadrosViewModel(
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Erro ao carregar quadros.") }
+            }
+        }
+    }
+
+
+    private suspend fun filtrarQuadrosPorAcesso(quadros: List<Quadro>): List<Quadro> {
+        val usuarioId = TokenManager.usuarioId ?: return quadros
+        val acessoPorGrupo = mutableMapOf<Long, Boolean>()
+
+        return quadros.filter { quadro ->
+            when {
+                quadro.donoId == usuarioId -> true
+                quadro.contatoId == usuarioId -> true
+                else -> {
+                    val grupoId = quadro.grupoId ?: return@filter false
+                    val temAcesso = acessoPorGrupo[grupoId] ?: run {
+                        val grupo = grupoRepository.fetchGrupoById(grupoId)
+                        val possuiAcesso = grupo?.membros.orEmpty().any { membro ->
+                            val idsAssociados = listOfNotNull(membro.idContato, membro.ownerId, membro.id)
+                            usuarioId in idsAssociados
+                        }
+                        acessoPorGrupo[grupoId] = possuiAcesso
+                        possuiAcesso
+                    }
+                    temAcesso
+                }
             }
         }
     }

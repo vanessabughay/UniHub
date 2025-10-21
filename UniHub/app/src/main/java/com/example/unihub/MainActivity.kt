@@ -46,6 +46,8 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
 import com.example.unihub.data.apiBackend.ApiQuadroBackend
+import com.example.unihub.data.apiBackend.ApiGrupoBackend
+import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
@@ -53,14 +55,12 @@ import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroScreen
 import com.example.unihub.ui.VisualizarQuadro.VisualizarQuadroViewModelFactory
 import com.example.unihub.data.apiBackend.ApiColunaBackend
 import com.example.unihub.data.apiBackend.ApiContatoBackend
-import com.example.unihub.data.apiBackend.ApiGrupoBackend
 import com.example.unihub.data.apiBackend.ApiTarefaBackend
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.AvaliacaoRepository
 import com.example.unihub.data.repository.CategoriaRepository
 import com.example.unihub.data.repository.ColunaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
-import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.ui.Anotacoes.AnotacoesView
@@ -503,7 +503,11 @@ class MainActivity : ComponentActivity() {
                     // LISTAR QUADROS
                     composable(Screen.ListarQuadros.route) {
                         val quadroRepository = QuadroRepository(ApiQuadroBackend())
-                        val viewModelFactory = ListarQuadrosViewModelFactory(quadroRepository)
+                        val grupoRepository = GrupoRepository(ApiGrupoBackend())
+                        val viewModelFactory = ListarQuadrosViewModelFactory(
+                            quadroRepository,
+                            grupoRepository
+                        )
 
                         ListarQuadrosScreen(
                             navController = navController,
