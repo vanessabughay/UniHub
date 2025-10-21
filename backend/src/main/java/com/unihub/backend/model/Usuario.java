@@ -1,8 +1,10 @@
 package com.unihub.backend.model;
 
 import jakarta.persistence.*;
+import java.util.Date;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.unihub.backend.model.enums.AuthProvider;
 
 import java.util.ArrayList;
 
@@ -18,9 +20,24 @@ public class Usuario {
 
     private String nomeUsuario;
 
+    @Column(nullable = false)
     private String email;
 
     private String senha;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthProvider provider = AuthProvider.LOCAL;
+
+    private String providerId;
+
+    private String pictureUrl;
+
+    private Boolean emailVerified = false;
+
+    @Temporal(TemporalType.TIMESTAMP)
+    private java.util.Date lastLoginAt;
+
 
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("usuario-disciplinas")
@@ -77,6 +94,47 @@ public class Usuario {
     public void setSenha(String senha) {
         this.senha = senha;
     }
+
+    public AuthProvider getProvider() {
+    return provider;
+    }
+
+    public void setProvider(AuthProvider provider) {
+        this.provider = provider;
+    }
+
+    public String getProviderId() {
+        return providerId;
+    }
+
+    public void setProviderId(String providerId) {
+        this.providerId = providerId;
+    }
+
+    public String getPictureUrl() {
+        return pictureUrl;
+    }
+
+    public void setPictureUrl(String pictureUrl) {
+        this.pictureUrl = pictureUrl;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public Date getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(Date lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+}
+
 
     public List<Disciplina> getDisciplinas() { return disciplinas; }
     public void setDisciplinas(List<Disciplina> disciplinas) { this.disciplinas = disciplinas; }

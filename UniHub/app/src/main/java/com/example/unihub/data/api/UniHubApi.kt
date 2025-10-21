@@ -6,6 +6,7 @@ import com.example.unihub.data.api.model.RegisterRequest
 import com.example.unihub.data.api.model.UpdateUsuarioRequest
 import com.example.unihub.data.api.model.SolicitarRedefinicaoSenhaRequest
 import com.example.unihub.data.api.model.RedefinirSenhaRequest
+import com.example.unihub.data.api.model.GoogleLoginRequest
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
@@ -32,4 +33,8 @@ interface UniHubApi {
 
     @POST("/api/auth/reset-password")
     suspend fun redefinirSenha(@Body body: RedefinirSenhaRequest): Response<Void>
+
+    @POST("api/auth/google")
+    suspend fun loginWithGoogle(@Body request: GoogleLoginRequest): Response<AuthResponse>
+
 }
