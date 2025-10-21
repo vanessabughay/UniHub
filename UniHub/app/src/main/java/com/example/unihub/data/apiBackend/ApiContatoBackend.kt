@@ -15,8 +15,11 @@ class ApiContatoBackend : Contatobackend {
 
     override suspend fun getContatoResumoApi(): List<ContatoResumo> {
         return api.list().map {
+            val contatoId = it.idContato ?: it.id
+            requireNotNull(contatoId) { "Contato sem identificador disponível" }
+
             ContatoResumo(
-                id = it.id!!,
+                id = contatoId,
                 nome = it.nome!!,
                 email = it.email!!,
                 pendente = it.pendente,
@@ -26,7 +29,10 @@ class ApiContatoBackend : Contatobackend {
     }
 
     override suspend fun getContatoByIdApi(id: String): Contato? {
-        return api.get(id.toLong())
+        val contatoId = id.toLongOrNull() ?: return null
+
+        return api.list().firstOrNull { it.idContato == contatoId }
+            ?: api.get(contatoId)
     }
 
     override suspend fun addContatoApi(contato: Contato) {
@@ -45,8 +51,10 @@ class ApiContatoBackend : Contatobackend {
 
     override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> {
         return api.listPendentes(email).map {
+            val contatoId = it.idContato ?: it.id
+            requireNotNull(contatoId) { "Convite sem identificador disponível" }
             ContatoResumo(
-                id = it.id!!,
+                id = contatoId,
                 nome = it.nome!!,
                 email = it.email!!,
                 pendente = it.pendente,

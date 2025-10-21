@@ -2,10 +2,9 @@ package com.example.unihub.ui.ManterGrupo
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
-import androidx.compose.ui.text.toLowerCase
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.model.Contato
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.GrupoRepository
@@ -17,8 +16,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.update
-import kotlin.text.lowercase
-import kotlin.text.mapNotNull
 
 data class ManterGrupoUiState(
     val nome: String = "",
@@ -97,24 +94,32 @@ class ManterGrupoViewModel(
         viewModelScope.launch {
             try {
                 val idsMembrosParaSalvar = _idMembrosSelecionados.value.toList()
+                val usuarioLogadoId = TokenManager.usuarioId
+                    ?: throw IllegalStateException("Não foi possível identificar o usuário autenticado. Faça login novamente.")
 
-                // 1. Filtra 'todosOsContatosDisponiveis' para obter os ContatoResumoUi selecionados
-                val resumosDosMembrosSelecionados = _uiState.value.todosOsContatosDisponiveis
-                    .filter { contatoResumo -> idsMembrosParaSalvar.contains(contatoResumo.id) }
+                val membrosValidados = idsMembrosParaSalvar.map { contatoId ->
+                    val contatoCompleto = contatoRepository.fetchContatoById(contatoId)
+                        ?: throw IllegalArgumentException("Não foi possível localizar o contato selecionado (ID $contatoId).")
 
-                // 2. Mapeia os ContatoResumoUi para objetos Contato completos
-                val membrosCompletosParaSalvar = resumosDosMembrosSelecionados.map { resumo ->
-                    Contato(
-                        id = resumo.id,
-                        nome = resumo.nome,
-                        email = resumo.email
-                      )
+                    val pertenceAoUsuario = contatoCompleto.ownerId == null || contatoCompleto.ownerId == usuarioLogadoId
+
+                    if (!pertenceAoUsuario) {
+                        val identificador = contatoCompleto.nome ?: contatoCompleto.email ?: "ID $contatoId"
+                        throw IllegalArgumentException("O contato $identificador não pertence à sua agenda.")
+                    }
+
+                    if (contatoCompleto.pendente) {
+                        val identificador = contatoCompleto.nome ?: contatoCompleto.email ?: "ID $contatoId"
+                        throw IllegalArgumentException("O contato $identificador ainda está pendente e não pode ser adicionado ao grupo.")
+                    }
+
+                    contatoCompleto
                 }
 
-                val novoGrupo = Grupo(nome = nome, membros = membrosCompletosParaSalvar)
+                val novoGrupo = Grupo(nome = nome, membros = membrosValidados)
 
-                val grupoAdicionado = grupoRepository.addGrupo(novoGrupo) // Supondo que addGrupo retorne o grupo ou um booleano
-                _uiState.update { it.copy(sucesso = true, isLoading = false) } // Ajuste 'sucesso' baseado no retorno de addGrupo
+                grupoRepository.addGrupo(novoGrupo)
+                _uiState.update { it.copy(sucesso = true, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(erro = e.message, isLoading = false, sucesso = false) }
             }
@@ -134,13 +139,29 @@ class ManterGrupoViewModel(
         _uiState.update { it.copy(isLoading = true, erro = null, isExclusao = false) }
         viewModelScope.launch {
             try {
-                //  Obter a lista atual de IDs de membros selecionados.
                 val idsMembrosParaSalvar = _idMembrosSelecionados.value.toList()
-                val membrosParaSalvar = _uiState.value.todosOsContatosDisponiveis
-                    .filter { idsMembrosParaSalvar.contains(it.id) }
-                    .map { Contato(id=it.id, nome=it.nome, email=it.email /* ajuste outros campos */) } // Ajuste a conversão
+                val usuarioLogadoId = TokenManager.usuarioId
+                    ?: throw IllegalStateException("Não foi possível identificar o usuário autenticado. Faça login novamente.")
+                val membrosValidados = idsMembrosParaSalvar.map { contatoId ->
+                    val contatoCompleto = contatoRepository.fetchContatoById(contatoId)
+                        ?: throw IllegalArgumentException("Não foi possível localizar o contato selecionado (ID $contatoId).")
 
-                val grupoAtualizado = Grupo(id = longId, nome = nome, membros = membrosParaSalvar)
+                    val pertenceAoUsuario = contatoCompleto.ownerId == null || contatoCompleto.ownerId == usuarioLogadoId
+
+                    if (!pertenceAoUsuario) {
+                        val identificador = contatoCompleto.nome ?: contatoCompleto.email ?: "ID $contatoId"
+                        throw IllegalArgumentException("O contato $identificador não pertence à sua agenda.")
+                    }
+
+                    if (contatoCompleto.pendente) {
+                        val identificador = contatoCompleto.nome ?: contatoCompleto.email ?: "ID $contatoId"
+                        throw IllegalArgumentException("O contato $identificador ainda está pendente e não pode ser adicionado ao grupo.")
+                    }
+
+                    contatoCompleto
+                }
+
+                val grupoAtualizado = Grupo(id = longId, nome = nome, membros = membrosValidados)
                 val result = grupoRepository.updateGrupo(grupoAtualizado)
                 _uiState.update { it.copy(sucesso = result, isLoading = false) }
                 if (!result) {
@@ -173,10 +194,23 @@ class ManterGrupoViewModel(
     fun loadAllAvailableContatos() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAllContatos = true, errorLoadingAllContatos = null) }
+            val usuarioLogadoId = TokenManager.usuarioId
+            if (usuarioLogadoId == null) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingAllContatos = false,
+                        errorLoadingAllContatos = "Não foi possível identificar o usuário autenticado. Faça login novamente."
+                    )
+                }
+                return@launch
+            }
             contatoRepository.getContatoResumo() // usa o ContatoRepository injetado
                 .map { listaDeModelosContato -> // listaDeModelosContato é List<com.example.unihub.data.model.Contato>
                     listaDeModelosContato
                         .filter { !it.pendente }
+                        .filter { modeloContato ->
+                            modeloContato.ownerId == null || modeloContato.ownerId == usuarioLogadoId
+                        }
                         .mapNotNull { modeloContato -> // modeloContato é com.example.unihub.data.model.Contato
                             // Se id, nome, ou email forem essenciais e puderem ser nulos, decida como tratar.
                             // Aqui, estamos usando o operador elvis (?:) para fornecer padrões ou pular o item.
@@ -206,6 +240,10 @@ class ManterGrupoViewModel(
                     }
                 }
                 .collect { contatosParaUi ->
+                    val idsValidos = contatosParaUi.map { it.id }.toSet()
+                    _idMembrosSelecionados.update { idsSelecionados ->
+                        idsSelecionados.filter { idsValidos.contains(it) }.toSet()
+                    }
                     _uiState.update {
                         it.copy(
                             todosOsContatosDisponiveis = contatosParaUi,
