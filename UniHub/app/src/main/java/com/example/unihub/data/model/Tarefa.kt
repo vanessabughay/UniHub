@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit
 import com.example.unihub.data.util.FlexibleLongAdapter
 import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
+import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
 
 // Função auxiliar para obter o timestamp de hoje (início do dia) como padrão
@@ -24,6 +25,7 @@ data class Tarefa(
     val titulo: String = "",
     val descricao: String? = null,
     val status: Status = Status.INICIADA,
+    @SerializedName("responsavelIds")
     val responsaveisIds: List<Long> = emptyList(),
     @JsonAdapter(FlexibleLongAdapter::class)
     val prazo: Long = getDefaultPrazo(), // PRAZO AGORA É NÃO-NULLABLE e tem um padrão
