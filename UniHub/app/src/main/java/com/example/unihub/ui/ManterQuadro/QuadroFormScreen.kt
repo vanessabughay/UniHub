@@ -145,10 +145,39 @@ fun QuadroFormScreen(
                             )
                         ) { Text("Selecionar Integrante") }
                     } else {
+                        val integranteSelecionado = uiState.integranteSelecionado
                         InputChip(
                             selected = true,
                             onClick = viewModel::onSelectionDialogShow,
-                            label = { Text(uiState.integranteSelecionado?.nome ?: "...") },
+                            label = {
+                                if (integranteSelecionado is GrupoIntegranteUi) {
+                                    val grupoDetalhes = uiState.integrantesDoQuadro.grupo
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        Text(
+                                            grupoDetalhes?.nome ?: integranteSelecionado.nome ?: "...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        val membrosDoGrupo = grupoDetalhes?.membros.orEmpty()
+                                        membrosDoGrupo.forEach { membro ->
+                                            Text(
+                                                text = membro,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        if (membrosDoGrupo.isEmpty()) {
+                                            Text(
+                                                text = "Nenhum integrante neste grupo.",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Text(integranteSelecionado?.nome ?: "...")
+                                }
+                            },
                             trailingIcon = {
                                 Icon(
                                     imageVector = Icons.Default.Close,
