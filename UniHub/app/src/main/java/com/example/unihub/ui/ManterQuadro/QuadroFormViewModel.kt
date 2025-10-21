@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Estado
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.data.repository.ContatoRepository
@@ -69,6 +70,12 @@ class QuadroFormViewModel(
                     grupos.find { it.id == idGrupoProcurado }?.let { GrupoIntegranteUi(it.id, it.nome) }
                 } else { null }
 
+                val integrantesDoQuadro = buildIntegrantesDoQuadro(
+                    integranteSelecionado = integranteSel,
+                    quadroOriginal = quadro,
+                    contatosDisponiveis = contatos
+                )
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -80,11 +87,24 @@ class QuadroFormViewModel(
                         estado = quadro?.estado ?: Estado.ATIVO,
                         prazo = quadro?.dataFim ?: System.currentTimeMillis(),
                         disciplinaSelecionada = disciplinaSel,
-                        integranteSelecionado = integranteSel
+                        integranteSelecionado = integranteSel,
+                        integrantesDoQuadro = integrantesDoQuadro
                     )
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isLoading = false, error = "Falha ao carregar dados: ${e.message}") }
+                _uiState.update {
+                    val nomeUsuario = TokenManager.nomeUsuario?.takeIf { it.isNotBlank() } ?: "Você"
+                    val integrantesFallback = if (it.integrantesDoQuadro.participantes.isEmpty() && it.integrantesDoQuadro.grupo == null) {
+                        IntegrantesDoQuadroUi(participantes = listOf("$nomeUsuario (eu)"))
+                    } else {
+                        it.integrantesDoQuadro
+                    }
+                    it.copy(
+                        isLoading = false,
+                        error = "Falha ao carregar dados: ${e.message}",
+                        integrantesDoQuadro = integrantesFallback
+                    )
+                }
             }
         }
     }
@@ -93,9 +113,94 @@ class QuadroFormViewModel(
     fun onEstadoChange(estado: Estado) { _uiState.update { it.copy(estado = estado) } }
     fun onPrazoChange(prazo: Long) { _uiState.update { it.copy(prazo = prazo) } }
     fun onDisciplinaSelecionada(disciplina: DisciplinaResumoUi?) { _uiState.update { it.copy(disciplinaSelecionada = disciplina) } }
-    fun onIntegranteSelecionado(integrante: IntegranteUi?) { _uiState.update { it.copy(integranteSelecionado = integrante, isSelectionDialogVisible = false) } }
+    fun onIntegranteSelecionado(integrante: IntegranteUi?) {
+        viewModelScope.launch {
+            val integrantesDoQuadro = buildIntegrantesDoQuadro(
+                integranteSelecionado = integrante,
+                quadroOriginal = _uiState.value.quadroSendoEditado,
+                contatosDisponiveis = _uiState.value.contatosDisponiveis
+            )
+            _uiState.update {
+                it.copy(
+                    integranteSelecionado = integrante,
+                    isSelectionDialogVisible = false,
+                    integrantesDoQuadro = integrantesDoQuadro
+                )
+            }
+        }
+    }
     fun onSelectionDialogShow() { _uiState.update { it.copy(isSelectionDialogVisible = true) } }
     fun onSelectionDialogDismiss() { _uiState.update { it.copy(isSelectionDialogVisible = false) } }
+
+    private suspend fun buildIntegrantesDoQuadro(
+        integranteSelecionado: IntegranteUi?,
+        quadroOriginal: Quadro?,
+        contatosDisponiveis: List<ContatoResumoUi>
+    ): IntegrantesDoQuadroUi {
+        val participantes = mutableListOf<String>()
+        val nomeUsuario = TokenManager.nomeUsuario?.takeIf { it.isNotBlank() } ?: "Você"
+        participantes += "$nomeUsuario (eu)"
+
+        val contatoId = when (integranteSelecionado) {
+            is ContatoIntegranteUi -> integranteSelecionado.id
+            else -> quadroOriginal?.contatoId
+        }
+
+        val contatoNome = when (integranteSelecionado) {
+            is ContatoIntegranteUi -> integranteSelecionado.nome
+            else -> null
+        } ?: contatoId?.let { id ->
+            contatosDisponiveis.firstOrNull { it.id == id }?.nome ?: runCatching {
+                contatoRepository.fetchContatoById(id)?.nome
+            }.getOrNull()
+        }
+
+        if (!contatoNome.isNullOrBlank()) {
+            participantes += contatoNome
+        }
+
+        val grupoId = when (integranteSelecionado) {
+            is GrupoIntegranteUi -> integranteSelecionado.id
+            else -> quadroOriginal?.grupoId
+        }
+
+        val grupoDetalhes = grupoId?.let { id ->
+            val grupoResult = runCatching { grupoRepository.fetchGrupoById(id) }
+            val grupo = grupoResult.getOrNull()
+            val usuarioId = TokenManager.usuarioId
+            val membrosFormatados = grupo?.membros?.map { membro ->
+                val nomeBase = membro.nome?.takeIf { it.isNotBlank() }
+                    ?: membro.email?.takeIf { it.isNotBlank() }
+                    ?: membro.id?.let { "Integrante #$it" }
+                    ?: "Integrante"
+                val idsAssociados = listOfNotNull(membro.id, membro.idContato, membro.ownerId)
+                if (usuarioId != null && usuarioId in idsAssociados) {
+                    "$nomeBase (eu)"
+                } else {
+                    nomeBase
+                }
+            }.orEmpty()
+
+            val membros = when {
+                membrosFormatados.isNotEmpty() -> membrosFormatados
+                grupo != null -> listOf("Nenhum integrante neste grupo.")
+                grupoResult.isFailure -> listOf("Não foi possível carregar os integrantes do grupo.")
+                else -> emptyList()
+            }
+
+            GrupoDetalhesUi(
+                nome = (integranteSelecionado as? GrupoIntegranteUi)?.nome
+                    ?: grupo?.nome
+                    ?: "Grupo #$id",
+                membros = membros
+            )
+        }
+
+        return IntegrantesDoQuadroUi(
+            participantes = participantes.distinct(),
+            grupo = grupoDetalhes
+        )
+    }
 
     fun salvarOuAtualizarQuadro() {
         viewModelScope.launch {

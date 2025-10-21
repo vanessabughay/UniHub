@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Disciplina
 import com.example.unihub.data.model.Grupo
@@ -157,6 +158,10 @@ fun QuadroFormScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                IntegrantesDoQuadroSection(uiState.integrantesDoQuadro)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 CampoCombobox(
                     label = "Estado",
                     options = Estado.values().toList(),
@@ -276,7 +281,52 @@ private fun SelecaoIntegranteDialog(
     )
 }
 
+@Composable
+private fun IntegrantesDoQuadroSection(integrantes: IntegrantesDoQuadroUi) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = "Integrantes do quadro",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
 
+        if (integrantes.participantes.isEmpty() && integrantes.grupo == null) {
+            Text(
+                text = "Carregando integrantes...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            integrantes.participantes.forEach { participante ->
+                Text(
+                    text = participante,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            integrantes.grupo?.let { grupo ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = grupo.nome,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                grupo.membros.forEach { membro ->
+                    Text(
+                        text = "• $membro",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
+            }
+        }
+    }
+}
 
 
 

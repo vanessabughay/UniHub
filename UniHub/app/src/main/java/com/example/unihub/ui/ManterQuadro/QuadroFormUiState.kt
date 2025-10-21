@@ -7,6 +7,15 @@ data class DisciplinaResumoUi(val id: Long?, val nome: String?)
 data class ContatoResumoUi(val id: Long?, val nome: String?)
 data class GrupoResumoUi(val id: Long?, val nome: String?)
 
+data class GrupoDetalhesUi(
+    val nome: String,
+    val membros: List<String>
+)
+
+data class IntegrantesDoQuadroUi(
+    val participantes: List<String> = emptyList(),
+    val grupo: GrupoDetalhesUi? = null
+)
 
 sealed interface IntegranteUi {
     val id: Long?
@@ -24,6 +33,7 @@ data class QuadroFormUiState(
     val disciplinasDisponiveis: List<DisciplinaResumoUi> = emptyList(),
     val contatosDisponiveis: List<ContatoResumoUi> = emptyList(),
     val gruposDisponiveis: List<GrupoResumoUi> = emptyList(),
+    val integrantesDoQuadro: IntegrantesDoQuadroUi = IntegrantesDoQuadroUi(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val quadroSendoEditado: Quadro? = null,
