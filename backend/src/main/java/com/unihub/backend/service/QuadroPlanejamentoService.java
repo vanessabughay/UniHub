@@ -36,6 +36,7 @@ import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -547,9 +548,9 @@ public class QuadroPlanejamentoService {
     }
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
-        buscarPorId(quadroId, usuarioId);
+        QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
 
-        return obterContatoDoUsuario(usuarioId, usuarioContatoId);
+        return obterContatoDoUsuario(quadro, usuarioId, usuarioContatoId);
     }
 
     private LinkedHashSet<Contato> buscarResponsaveis(Long quadroId, List<Long> responsavelIds, Long usuarioId) {
@@ -563,9 +564,45 @@ public class QuadroPlanejamentoService {
     }
 
     private Contato obterContatoDoUsuario(Long usuarioId, Long chaveContato) {
+        return obterContatoDoUsuario(null, usuarioId, chaveContato);
+    }
+
+    private Contato obterContatoDoUsuario(QuadroPlanejamento quadro, Long usuarioId, Long chaveContato) {
         return contatoRepository.findByOwnerIdAndIdContato(usuarioId, chaveContato)
                 .or(() -> contatoRepository.findByIdAndOwnerId(chaveContato, usuarioId))
+                .or(() -> localizarContatoEmQuadro(quadro, chaveContato))
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
+    }
+
+    private Optional<Contato> localizarContatoEmQuadro(QuadroPlanejamento quadro, Long chaveContato) {
+        if (quadro == null || chaveContato == null) {
+            return Optional.empty();
+        }
+
+        Contato contatoQuadro = quadro.getContato();
+        if (isContatoCorrespondente(contatoQuadro, chaveContato)) {
+            return Optional.of(contatoQuadro);
+        }
+
+        Grupo grupo = quadro.getGrupo();
+        if (grupo != null) {
+            List<Contato> membros = grupo.getMembros();
+            if (membros != null) {
+                return membros.stream()
+                        .filter(Objects::nonNull)
+                        .filter(contato -> isContatoCorrespondente(contato, chaveContato))
+                        .findFirst();
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    private boolean isContatoCorrespondente(Contato contato, Long chaveContato) {
+        if (contato == null || chaveContato == null) {
+            return false;
+        }
+        return chaveContato.equals(contato.getIdContato()) || chaveContato.equals(contato.getId());
     }
 
 
