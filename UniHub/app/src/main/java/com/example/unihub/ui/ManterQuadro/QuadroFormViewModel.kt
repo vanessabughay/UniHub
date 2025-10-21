@@ -173,17 +173,11 @@ class QuadroFormViewModel(
             val grupo = grupoResult.getOrNull()
             val usuarioId = TokenManager.usuarioId
             val membrosFormatados = grupo?.membros?.map { membro ->
-                val nomeBase = membro.nome?.takeIf { it.isNotBlank() }
+                membro.nome?.takeIf { it.isNotBlank() }
                     ?: membro.email?.takeIf { it.isNotBlank() }
                     ?: membro.id?.let { "Integrante #$it" }
                     ?: "Integrante"
-                val idsAssociados = listOfNotNull(membro.id, membro.idContato, membro.ownerId)
-                if (usuarioId != null && usuarioId in idsAssociados) {
-                    "$nomeBase (eu)"
-                } else {
-                    nomeBase
-                }
-            }.orEmpty()
+                }.orEmpty()
 
             if (ownerId != null) {
                 ownerNameFromGrupo = grupo?.membros?.firstNotNullOfOrNull { membro ->
@@ -232,19 +226,11 @@ class QuadroFormViewModel(
             val ownerRotulo = buildString {
                 append(ownerNome)
                 append(" (Administrador do quadro)")
-                if (ownerId == usuarioId) {
-                    append(" (eu)")
-                }
             }
             participantes.add(0, ownerRotulo)
         } else {
             val nomeExibicao = nomeUsuario ?: "Você"
             participantes.add(0, "$nomeExibicao (Administrador do quadro)")
-        }
-
-        if (usuarioId != null && ownerId != null && usuarioId != ownerId) {
-            val nomeExibicao = nomeUsuario ?: "Você"
-            participantes += "$nomeExibicao (eu)"
         }
 
         return IntegrantesDoQuadroUi(
