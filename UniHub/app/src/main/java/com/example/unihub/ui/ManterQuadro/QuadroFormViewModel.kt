@@ -172,12 +172,15 @@ class QuadroFormViewModel(
             val grupoResult = runCatching { grupoRepository.fetchGrupoById(id) }
             val grupo = grupoResult.getOrNull()
             val usuarioId = TokenManager.usuarioId
-            val membrosFormatados = grupo?.membros?.map { membro ->
-                membro.nome?.takeIf { it.isNotBlank() }
-                    ?: membro.email?.takeIf { it.isNotBlank() }
-                    ?: membro.id?.let { "Integrante #$it" }
-                    ?: "Integrante"
-                }.orEmpty()
+            val membrosFormatados = grupo?.membros
+                ?.map { membro ->
+                    membro.nome?.takeIf { it.isNotBlank() }
+                        ?: membro.email?.takeIf { it.isNotBlank() }
+                        ?: membro.id?.let { "Integrante #$it" }
+                        ?: "Integrante"
+                }
+                ?.distinct()
+                .orEmpty()
 
             if (ownerId != null) {
                 ownerNameFromGrupo = grupo?.membros?.firstNotNullOfOrNull { membro ->
