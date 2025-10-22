@@ -580,4 +580,67 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
     "configurar notificações" -> Outlined.Settings
     "atividades" -> Outlined.Assignment
     else -> Outlined.Circle
+
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Tela Inicial")
+@Composable
+private fun TelaInicialViewPreview() {
+    MaterialTheme {
+        TelaInicialView(
+            estado = EstadoTelaInicial(
+                usuario = Usuario(nome = "Maria Silva"),
+                avaliacoes = listOf(
+                    Avaliacao(
+                        diaSemana = "Segunda",
+                        dataCurta = "12/08",
+                        titulo = "Prova de Cálculo",
+                        descricao = "Cálculo I"
+                    ),
+                    Avaliacao(
+                        diaSemana = "Quarta",
+                        dataCurta = "14/08",
+                        titulo = "Trabalho de Física",
+                        descricao = "Laboratório"
+                    )
+                ),
+                tarefas = listOf(
+                    Tarefa(
+                        diaSemana = "Sexta",
+                        dataCurta = "16/08",
+                        titulo = "Entregar relatório",
+                        descricao = "Projeto Integrador"
+                    ),
+                    Tarefa(
+                        diaSemana = "Domingo",
+                        dataCurta = "18/08",
+                        titulo = "Revisar notas",
+                        descricao = "Planejamento semanal"
+                    )
+                ),
+                opcoesMenu = listOf(
+                    "Perfil",
+                    "Disciplinas",
+                    "Serviço de nuvem",
+                    "Calendário",
+                    "Contatos",
+                    "Grupos",
+                    "Quadros",
+                    "Configurar notificações",
+                    "Atividades"
+                ),
+                atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações"),
+                secaoAvaliacoesAberta = true,
+                secaoTarefasAberta = true
+            ),
+            onAbrirMenu = {},
+            onFecharMenu = {},
+            onAlternarMenu = {},
+            onClicarAtalho = {},
+            onClicarOpcaoMenu = {},
+            onAlternarSecaoAvaliacoes = {},
+            onAlternarSecaoTarefas = {},
+            onLogout = {}
+        )
+    }
 }
