@@ -820,7 +820,7 @@ class MainActivity : ComponentActivity() {
                             token = token,
                             navController = navController
                         )
-
+                    }
                 }
             }
         }
@@ -834,36 +834,32 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-        private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {
-            val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID)
-            if (disciplinaId.isNullOrBlank()) {
-                return
+    private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {
+        val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID) ?: return
+
+        if (TokenManager.token.isNullOrBlank()) {
+            return
         }
 
-            if (TokenManager.token.isNullOrBlank()) {
-                return
-            }
-
-            val target = intent.getStringExtra(EXTRA_TARGET_SCREEN)
-            val route = if (target == TARGET_SCREEN_REGISTRAR_AUSENCIA) {
-                Screen.ManterAusencia.createRoute(disciplinaId, null)
-            } else {
-                Screen.VisualizarDisciplina.createRoute(disciplinaId)
-            }
-
-            navController.navigate(route) {
-                launchSingleTop = true
-            }
-
-            intent.removeExtra(EXTRA_TARGET_DISCIPLINA_ID)
-            intent.removeExtra(EXTRA_TARGET_SCREEN)
+        val route = if (intent.getStringExtra(EXTRA_TARGET_SCREEN) == TARGET_SCREEN_REGISTRAR_AUSENCIA) {
+            Screen.ManterAusencia.createRoute(disciplinaId, null)
+        } else {
+            Screen.VisualizarDisciplina.createRoute(disciplinaId)
         }
 
-        companion object {
-            const val EXTRA_TARGET_DISCIPLINA_ID = "extra_target_disciplina_id"
-            const val EXTRA_TARGET_SCREEN = "extra_target_screen"
-            const val TARGET_SCREEN_VISUALIZAR_DISCIPLINA = "visualizar_disciplina"
-            const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
+        navController.navigate(route) {
+            launchSingleTop = true
+        }
+
+        intent.removeExtra(EXTRA_TARGET_DISCIPLINA_ID)
+        intent.removeExtra(EXTRA_TARGET_SCREEN)
+    }
+
+    companion object {
+        const val EXTRA_TARGET_DISCIPLINA_ID = "extra_target_disciplina_id"
+        const val EXTRA_TARGET_SCREEN = "extra_target_screen"
+        const val TARGET_SCREEN_VISUALIZAR_DISCIPLINA = "visualizar_disciplina"
+        const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
     }
 }
 
