@@ -21,6 +21,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val disciplinaNome = intent.getStringExtra(EXTRA_DISCIPLINA_NOME) ?: return
         val dia = intent.getStringExtra(EXTRA_AULA_DIA).orEmpty()
         val inicio = intent.getIntExtra(EXTRA_AULA_INICIO, -1)
+        val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
 
         createChannel(context)
 
@@ -75,6 +76,18 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             )
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+
+
+        if (requestCode != -1) {
+            val nextTrigger = AttendanceNotificationScheduler.computeTriggerMillis(dia, inicio)
+            if (nextTrigger != null) {
+                val nextIntent = Intent(context, AttendanceNotificationReceiver::class.java).apply {
+                    putExtras(intent)
+                }
+                AttendanceNotificationScheduler(context)
+                    .scheduleExactAlarm(requestCode, nextTrigger, nextIntent)
+            }
+        }
     }
 
     private fun createChannel(context: Context) {
@@ -110,6 +123,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
         const val EXTRA_AULA_DIA = "extra_aula_dia"
         const val EXTRA_AULA_INICIO = "extra_aula_inicio"
+        const val EXTRA_REQUEST_CODE = "extra_request_code"
 
         private const val CHANNEL_ID = "attendance_reminders"
     }

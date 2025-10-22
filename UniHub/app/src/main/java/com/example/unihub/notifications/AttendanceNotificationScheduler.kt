@@ -56,21 +56,10 @@ class AttendanceNotificationScheduler(private val context: Context) {
                     putExtra(AttendanceNotificationReceiver.EXTRA_DISCIPLINA_NOME, disciplina.nome)
                     putExtra(AttendanceNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
                     putExtra(AttendanceNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
+                    putExtra(AttendanceNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
                 }
 
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context,
-                    requestCode,
-                    intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
-                )
-
-                manager.setRepeating(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMillis,
-                    AlarmManager.INTERVAL_DAY * 7,
-                    pendingIntent
-                )
+                scheduleExactAlarm(requestCode, triggerAtMillis, intent)
             }
         }
 
@@ -92,35 +81,43 @@ class AttendanceNotificationScheduler(private val context: Context) {
     }
 
     private fun computeNextTriggerMillis(horario: HorarioAula): Long? {
-        val dayOfWeek = mapDayOfWeek(horario.diaDaSemana) ?: return null
-        val startMinutes = horario.horarioInicio
-        if (startMinutes < 0) return null
-
-        val now = ZonedDateTime.now()
-        var scheduled = now.with(TemporalAdjusters.nextOrSame(dayOfWeek))
-            .withHour(startMinutes / 60)
-            .withMinute(startMinutes % 60)
-            .withSecond(0)
-            .withNano(0)
-
-        if (scheduled.isBefore(now)) {
-            scheduled = scheduled.plusWeeks(1)
-        }
-
-        return scheduled.toInstant().toEpochMilli()
+        return computeTriggerMillis(horario.diaDaSemana, horario.horarioInicio)
     }
 
-    private fun mapDayOfWeek(label: String): DayOfWeek? {
-        val normalized = label.trim().lowercase(Locale.getDefault())
-        return when (normalized) {
-            "segunda-feira" -> DayOfWeek.MONDAY
-            "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
-            "quarta-feira" -> DayOfWeek.WEDNESDAY
-            "quinta-feira" -> DayOfWeek.THURSDAY
-            "sexta-feira" -> DayOfWeek.FRIDAY
-            "sábado", "sabado" -> DayOfWeek.SATURDAY
-            "domingo" -> DayOfWeek.SUNDAY
-            else -> null
+    fun scheduleExactAlarm(requestCode: Int, triggerAtMillis: Long, intent: Intent) {
+        val manager = alarmManager ?: return
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
+        )
+
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                manager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT -> {
+                manager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
+
+            else -> {
+                manager.set(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerAtMillis,
+                    pendingIntent
+                )
+            }
         }
     }
 
@@ -129,18 +126,53 @@ class AttendanceNotificationScheduler(private val context: Context) {
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
 
-    @Suppress("DEPRECATION")
-    private fun immutableFlag(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_IMMUTABLE
-        } else {
-            0
-        }
-    }
-
     companion object {
         private const val PREFS_NAME = "attendance_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
+
+        internal fun computeTriggerMillis(
+            dayLabel: String,
+            startMinutes: Int,
+            now: ZonedDateTime = ZonedDateTime.now()
+        ): Long? {
+            val dayOfWeek = mapDayOfWeek(dayLabel) ?: return null
+            if (startMinutes < 0) return null
+
+            var scheduled = now.with(TemporalAdjusters.nextOrSame(dayOfWeek))
+                .withHour(startMinutes / 60)
+                .withMinute(startMinutes % 60)
+                .withSecond(0)
+                .withNano(0)
+
+            if (scheduled.isBefore(now)) {
+                scheduled = scheduled.plusWeeks(1)
+            }
+
+            return scheduled.toInstant().toEpochMilli()
+        }
+
+        private fun mapDayOfWeek(label: String): DayOfWeek? {
+            val normalized = label.trim().lowercase(Locale.getDefault())
+            return when (normalized) {
+                "segunda-feira" -> DayOfWeek.MONDAY
+                "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
+                "quarta-feira" -> DayOfWeek.WEDNESDAY
+                "quinta-feira" -> DayOfWeek.THURSDAY
+                "sexta-feira" -> DayOfWeek.FRIDAY
+                "sábado", "sabado" -> DayOfWeek.SATURDAY
+                "domingo" -> DayOfWeek.SUNDAY
+                else -> null
+            }
+        }
+
+        @Suppress("DEPRECATION")
+        internal fun immutableFlag(): Int {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_IMMUTABLE
+            } else {
+                0
+            }
+        }
 
         @VisibleForTesting
         fun clearPreferences(context: Context) {
