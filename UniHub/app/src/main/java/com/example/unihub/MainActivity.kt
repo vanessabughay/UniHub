@@ -830,7 +830,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         navigationIntentFlow.value = intent
-        
+
     }
 
     private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {

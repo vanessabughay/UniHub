@@ -103,7 +103,7 @@ class AttendanceNotificationScheduler(private val context: Context) {
             .withSecond(0)
             .withNano(0)
 
-        if (!scheduled.isAfter(now)) {
+        if (scheduled.isBefore(now)) {
             scheduled = scheduled.plusWeeks(1)
         }
 
