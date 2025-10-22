@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 
@@ -32,6 +33,17 @@ fun NotificacoesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    NotificacoesScreenContent(
+        uiState = uiState,
+        onVoltar = onVoltar
+    )
+}
+
+@Composable
+private fun NotificacoesScreenContent(
+    uiState: NotificacoesUiState,
+    onVoltar: () -> Unit
+) {
     Scaffold(
         topBar = {
             CabecalhoAlternativo(
@@ -110,5 +122,35 @@ private fun NotificacaoCard(notificacao: NotificacaoUiModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "Histórico de notificações"
+)
+@Composable
+fun NotificacoesScreenPreview() {
+    MaterialTheme {
+        NotificacoesScreenContent(
+            uiState = NotificacoesUiState(
+                notificacoes = listOf(
+                    NotificacaoUiModel(
+                        id = 1,
+                        titulo = "Comentário em tarefa",
+                        descricao = "Ana deixou um novo comentário na tarefa de Pesquisa de Mercado.",
+                        dataHora = "12/05/2024 às 14:37"
+                    ),
+                    NotificacaoUiModel(
+                        id = 2,
+                        titulo = "Prazo de avaliação",
+                        descricao = "A avaliação de Álgebra Linear vence amanhã às 10h.",
+                        dataHora = "11/05/2024 às 18:00"
+                    )
+                )
+            ),
+            onVoltar = {}
+        )
     }
 }
