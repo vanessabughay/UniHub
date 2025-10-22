@@ -826,12 +826,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        intent?.let {
-            setIntent(it)
-            navigationIntentFlow.value = it
-        }
+        setIntent(intent)
+        navigationIntentFlow.value = intent
+        
     }
 
     private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {
