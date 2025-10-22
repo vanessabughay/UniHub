@@ -1,4 +1,4 @@
-package com.example.unihub.ui.Notificacoes
+package com.example.unihub.ui.HistoricoNotificacoes
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -6,36 +6,36 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-data class NotificacaoUiModel(
+data class HistoricoNotificacaoUiModel(
     val id: Long,
     val titulo: String,
     val descricao: String,
     val dataHora: String
 )
 
-data class NotificacoesUiState(
+data class HistoricoNotificacoesUiState(
     val isLoading: Boolean = false,
-    val notificacoes: List<NotificacaoUiModel> = emptyList()
+    val notificacoes: List<HistoricoNotificacaoUiModel> = emptyList()
 )
 
-class NotificacoesViewModel : ViewModel() {
+class HistoricoNotificacoesViewModel : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NotificacoesUiState(isLoading = true))
-    val uiState: StateFlow<NotificacoesUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(HistoricoNotificacoesUiState(isLoading = true))
+    val uiState: StateFlow<HistoricoNotificacoesUiState> = _uiState.asStateFlow()
 
     init {
-        carregarNotificacoes()
+        carregarHistoricoNotificacoes()
     }
 
-    private fun carregarNotificacoes() {
+    private fun carregarHistoricoNotificacoes() {
         val notificacoesFicticias = listOf(
-            NotificacaoUiModel(
+            HistoricoNotificacaoUiModel(
                 id = 1,
                 titulo = "Comentário em tarefa",
                 descricao = "Ana deixou um novo comentário na tarefa de Pesquisa de Mercado.",
                 dataHora = "12/05/2024 às 14:37"
             ),
-            NotificacaoUiModel(
+            HistoricoNotificacaoUiModel(
                 id = 2,
                 titulo = "Prazo de avaliação",
                 descricao = "A avaliação de Álgebra Linear vence amanhã às 10h.",

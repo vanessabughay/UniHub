@@ -1,4 +1,4 @@
-package com.example.unihub.ui.Notificacoes
+package com.example.unihub.ui.HistoricoNotificacoes
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,27 +27,27 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 
 @Composable
-fun NotificacoesScreen(
+fun HistoricoNotificacoesScreen(
     onVoltar: () -> Unit,
-    viewModel: NotificacoesViewModel = viewModel(factory = NotificacoesViewModelFactory)
+    viewModel: HistoricoNotificacoesViewModel = viewModel(factory = HistoricoNotificacoesViewModelFactory)
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    NotificacoesScreenContent(
+    HistoricoNotificacoesScreenContent(
         uiState = uiState,
         onVoltar = onVoltar
     )
 }
 
 @Composable
-private fun NotificacoesScreenContent(
-    uiState: NotificacoesUiState,
+private fun HistoricoNotificacoesScreenContent(
+    uiState: HistoricoNotificacoesUiState,
     onVoltar: () -> Unit
 ) {
     Scaffold(
         topBar = {
             CabecalhoAlternativo(
-                titulo = "Notificações",
+                titulo = "Histórico de Notificações",
                 onVoltar = onVoltar
             )
         }
@@ -88,7 +88,7 @@ private fun NotificacoesScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(uiState.notificacoes) { notificacao ->
-                        NotificacaoCard(notificacao = notificacao)
+                        HistoricoNotificacaoCard(notificacao = notificacao)
                     }
                 }
             }
@@ -97,7 +97,7 @@ private fun NotificacoesScreenContent(
 }
 
 @Composable
-private fun NotificacaoCard(notificacao: NotificacaoUiModel) {
+private fun HistoricoNotificacaoCard(notificacao: HistoricoNotificacaoUiModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -131,18 +131,18 @@ private fun NotificacaoCard(notificacao: NotificacaoUiModel) {
     name = "Histórico de notificações"
 )
 @Composable
-fun NotificacoesScreenPreview() {
+fun HistoricoNotificacoesScreenPreview() {
     MaterialTheme {
-        NotificacoesScreenContent(
-            uiState = NotificacoesUiState(
+        HistoricoNotificacoesScreenContent(
+            uiState = HistoricoNotificacoesUiState(
                 notificacoes = listOf(
-                    NotificacaoUiModel(
+                    HistoricoNotificacaoUiModel(
                         id = 1,
                         titulo = "Comentário em tarefa",
                         descricao = "Ana deixou um novo comentário na tarefa de Pesquisa de Mercado.",
                         dataHora = "12/05/2024 às 14:37"
                     ),
-                    NotificacaoUiModel(
+                    HistoricoNotificacaoUiModel(
                         id = 2,
                         titulo = "Prazo de avaliação",
                         descricao = "A avaliação de Álgebra Linear vence amanhã às 10h.",
