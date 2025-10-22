@@ -1,7 +1,11 @@
 package com.example.unihub.ui.ListarDisciplinas
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,9 +22,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
+import com.example.unihub.notifications.AttendanceNotificationScheduler
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
@@ -36,6 +42,40 @@ fun ListarDisciplinasScreen(
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
+    val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
+
+    val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { }
+    } else {
+        null
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    LaunchedEffect(disciplinasState) {
+        val schedules = disciplinasState.map {
+            AttendanceNotificationScheduler.DisciplineScheduleInfo(
+                id = it.id,
+                nome = it.nome,
+                receberNotificacoes = it.receberNotificacoes,
+                horariosAulas = it.horariosAulas
+            )
+        }
+        scheduler.scheduleNotifications(schedules)
+    }
 
     LaunchedEffect(Unit) {
         viewModel.loadDisciplinas()
@@ -169,6 +209,15 @@ fun DisciplinaItem(
                         fontSize = 14.sp,
                         lineHeight = 20.sp,
                         color = Color.Gray
+                    )
+                }
+
+                if (!disciplina.receberNotificacoes) {
+                    Text(
+                        text = "Notificações desativadas para esta disciplina",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }

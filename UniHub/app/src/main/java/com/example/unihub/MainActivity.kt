@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.compose.ui.platform.LocalContext
@@ -23,6 +24,7 @@ import android.content.Intent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.unihub.data.apiBackend.ApiAvaliacaoBackend
+import androidx.compose.runtime.getValue
 
 
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
@@ -81,6 +83,7 @@ import com.example.unihub.ui.TelaEsqueciSenha.TelaEsqueciSenha
 import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory
+import kotlinx.coroutines.flow.MutableStateFlow
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -184,6 +187,7 @@ sealed class Screen(val route: String) {
 class MainActivity : ComponentActivity() {
 
     private lateinit var navController: NavHostController
+    private val navigationIntentFlow = MutableStateFlow<Intent?>(null)
 
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -192,7 +196,7 @@ class MainActivity : ComponentActivity() {
         // TokenManager.clearToken(applicationContext)
         TokenManager.loadToken(applicationContext)
 
-        val startIntent = intent
+        navigationIntentFlow.value = intent
 
         setContent {
             navController = rememberNavController()
@@ -201,8 +205,14 @@ class MainActivity : ComponentActivity() {
             else
                 Screen.TelaInicial.route
 
-            LaunchedEffect(Unit) {
-                navController.handleDeepLink(startIntent)
+            val navIntent by navigationIntentFlow.collectAsState()
+
+            LaunchedEffect(navIntent) {
+                navIntent?.let { pendingIntent ->
+                    navController.handleDeepLink(pendingIntent)
+                    handleNotificationIntent(pendingIntent, navController)
+                    navigationIntentFlow.value = null
+                }
             }
 
             Surface(
@@ -810,18 +820,50 @@ class MainActivity : ComponentActivity() {
                             token = token,
                             navController = navController
                         )
-                    }
+
                 }
             }
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
+    override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        setIntent(intent)
-        if (::navController.isInitialized) {
-            navController.handleDeepLink(intent)
+        intent?.let {
+            setIntent(it)
+            navigationIntentFlow.value = it
         }
+    }
+
+        private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {
+            val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID)
+            if (disciplinaId.isNullOrBlank()) {
+                return
+        }
+
+            if (TokenManager.token.isNullOrBlank()) {
+                return
+            }
+
+            val target = intent.getStringExtra(EXTRA_TARGET_SCREEN)
+            val route = if (target == TARGET_SCREEN_REGISTRAR_AUSENCIA) {
+                Screen.ManterAusencia.createRoute(disciplinaId, null)
+            } else {
+                Screen.VisualizarDisciplina.createRoute(disciplinaId)
+            }
+
+            navController.navigate(route) {
+                launchSingleTop = true
+            }
+
+            intent.removeExtra(EXTRA_TARGET_DISCIPLINA_ID)
+            intent.removeExtra(EXTRA_TARGET_SCREEN)
+        }
+
+        companion object {
+            const val EXTRA_TARGET_DISCIPLINA_ID = "extra_target_disciplina_id"
+            const val EXTRA_TARGET_SCREEN = "extra_target_screen"
+            const val TARGET_SCREEN_VISUALIZAR_DISCIPLINA = "visualizar_disciplina"
+            const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
     }
 }
 

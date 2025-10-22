@@ -323,9 +323,9 @@ private fun SelecaoIntegranteDialog(
 
 // --- 1. DADOS FALSOS (MOCK DATA) ---
 private val MOCK_DISCIPLINAS = listOf(
-    DisciplinaResumo(id = 1, codigo = "CI068", nome = "Programação Orientada a Objetos"),
-    DisciplinaResumo(id = 2, codigo = "CI062", nome = "Técnicas de Programação"),
-    DisciplinaResumo(id = 3, codigo = "CE003", nome = "Estatística II")
+    DisciplinaResumo(id = 1, codigo = "CI068", nome = "Programação Orientada a Objetos", receberNotificacoes = true),
+    DisciplinaResumo(id = 2, codigo = "CI062", nome = "Técnicas de Programação", receberNotificacoes = true),
+    DisciplinaResumo(id = 3, codigo = "CE003", nome = "Estatística II", receberNotificacoes = true)
 )
 private val MOCK_CONTATOS = listOf(
     ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com", pendente = false, ownerId = 1L),
