@@ -36,6 +36,11 @@ class AttendanceNotificationScheduler(private val context: Context) {
             preferences.getStringSet(KEY_REQUEST_CODES, emptySet()).orEmpty()
         cancelStored(manager, storedRequestCodes)
 
+        if (!canScheduleExactAlarms(manager)) {
+            preferences.edit().remove(KEY_REQUEST_CODES).apply()
+            return
+        }
+
         val newRequestCodes = mutableSetOf<String>()
 
         val baseIntent = Intent(context, AttendanceNotificationReceiver::class.java)
@@ -94,6 +99,10 @@ class AttendanceNotificationScheduler(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
         )
 
+        if (!canScheduleExactAlarms(manager)) {
+            return
+        }
+
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
                 manager.setExactAndAllowWhileIdle(
@@ -125,6 +134,15 @@ class AttendanceNotificationScheduler(private val context: Context) {
         val raw = Objects.hash(id, index, horario.diaDaSemana, horario.horarioInicio)
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
+
+    private fun canScheduleExactAlarms(manager: AlarmManager): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            manager.canScheduleExactAlarms()
+        } else {
+            true
+        }
+    }
+
 
     companion object {
         private const val PREFS_NAME = "attendance_notification_prefs"
