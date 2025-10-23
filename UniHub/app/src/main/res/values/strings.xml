@@ -3,4 +3,11 @@
     <string name="server_client_id">314323090083-t8vq1e591n8tcrcmu53f0b8ieb39piqt.apps.googleusercontent.com</string>
     <string name="attendance_channel_name">Lembretes de presença</string>
     <string name="attendance_channel_description">Notificações para registrar presença ou ausência nas aulas.</string>
+    <string name="attendance_notification_prompt">Registre sua presença ou ausência.</string>
+    <string name="attendance_notification_schedule_format">%1$s às %2$s</string>
+    <string name="attendance_notification_time_only_format">Horário: %1$s</string>
+    <string name="attendance_notification_schedule_unknown">Horário não informado</string>
+    <string name="attendance_notification_absence_with_limit">Faltas: %1$d de %2$d permitidas.</string>
+    <string name="attendance_notification_absence_without_limit">Faltas registradas: %1$d.</string>
+    <string name="attendance_notification_absence_only_limit">Máximo permitido: %1$d faltas.</string>
 </resources>

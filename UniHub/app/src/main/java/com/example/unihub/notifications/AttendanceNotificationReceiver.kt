@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -24,6 +25,10 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val dia = intent.getStringExtra(EXTRA_AULA_DIA).orEmpty()
         val inicio = intent.getIntExtra(EXTRA_AULA_INICIO, -1)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
+        val totalAusencias = intent.getIntExtra(EXTRA_TOTAL_AUSENCIAS, NO_VALUE)
+            .takeIf { it >= 0 }
+        val limiteAusencias = intent.getIntExtra(EXTRA_AUSENCIAS_MAX, NO_AUSENCIA_LIMIT)
+            .takeIf { it >= 0 }
 
         createChannel(context)
 
@@ -66,18 +71,24 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         }
 
         val formattedTime = formatMinutes(inicio)
-        val contentText = if (formattedTime.isNotEmpty()) {
-            "${dia.ifBlank { "Sua aula" }} às $formattedTime. Registre sua presença ou ausência."
-        } else {
-            "Registre se esteve presente ou ausente nesta aula."
-        }
+        val scheduleText = buildScheduleText(context, dia, formattedTime)
+        val absenceInfoText = buildAbsenceInfoText(context, totalAusencias, limiteAusencias)
+        val promptText = context.getString(R.string.attendance_notification_prompt)
 
         val locale = Locale("pt", "BR")
         val notificationTitle = "${disciplinaNome.uppercase(locale)}"
+        val summaryText = buildSummaryText(scheduleText, absenceInfoText)
 
         val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
             setTextViewText(R.id.notification_title, notificationTitle)
-            setTextViewText(R.id.notification_message, contentText)
+            setTextViewText(R.id.notification_message, promptText)
+            setTextViewText(R.id.notification_time, scheduleText)
+            if (absenceInfoText.isNotEmpty()) {
+                setTextViewText(R.id.notification_absence_info, absenceInfoText)
+                setViewVisibility(R.id.notification_absence_info, View.VISIBLE)
+            } else {
+                setViewVisibility(R.id.notification_absence_info, View.GONE)
+            }
             setOnClickPendingIntent(R.id.notification_root, visualizarPendingIntent)
             setOnClickPendingIntent(R.id.notification_button_presence, presencaPendingIntent)
             setOnClickPendingIntent(R.id.notification_button_absence, ausenciaPendingIntent)
@@ -86,13 +97,17 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(notificationTitle)
-            .setContentText(contentText)
+            .setContentText(summaryText.ifBlank { promptText })
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(visualizarPendingIntent)
             .setCustomContentView(contentView)
             .setCustomBigContentView(contentView)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+
+        if (absenceInfoText.isNotEmpty()) {
+            builder.setSubText(absenceInfoText)
+        }
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
 
@@ -129,6 +144,60 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         return String.format("%02d:%02d", hours, minutes)
     }
 
+    private fun buildScheduleText(context: Context, dayLabel: String, formattedTime: String): String {
+        val locale = Locale("pt", "BR")
+        val normalizedDay = dayLabel.trim()
+            .takeIf { it.isNotEmpty() }
+            ?.lowercase(locale)
+            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+
+        return when {
+            normalizedDay != null && formattedTime.isNotEmpty() ->
+                context.getString(R.string.attendance_notification_schedule_format, normalizedDay, formattedTime)
+
+            normalizedDay != null -> normalizedDay
+            formattedTime.isNotEmpty() ->
+                context.getString(R.string.attendance_notification_time_only_format, formattedTime)
+            else -> context.getString(R.string.attendance_notification_schedule_unknown)
+        }
+    }
+
+    private fun buildAbsenceInfoText(
+        context: Context,
+        totalAusencias: Int?,
+        limiteAusencias: Int?
+    ): String {
+        return when {
+            totalAusencias != null && limiteAusencias != null ->
+                context.getString(
+                    R.string.attendance_notification_absence_with_limit,
+                    totalAusencias,
+                    limiteAusencias
+                )
+
+            totalAusencias != null ->
+                context.getString(
+                    R.string.attendance_notification_absence_without_limit,
+                    totalAusencias
+                )
+
+            limiteAusencias != null ->
+                context.getString(
+                    R.string.attendance_notification_absence_only_limit,
+                    limiteAusencias
+                )
+
+            else -> ""
+        }
+    }
+
+    private fun buildSummaryText(scheduleText: String, absenceInfoText: String): String {
+        return listOf(scheduleText, absenceInfoText)
+            .filter { it.isNotBlank() }
+            .joinToString(" • ")
+    }
+
+
     private fun immutableFlag(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_IMMUTABLE
@@ -143,6 +212,11 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         const val EXTRA_AULA_DIA = "extra_aula_dia"
         const val EXTRA_AULA_INICIO = "extra_aula_inicio"
         const val EXTRA_REQUEST_CODE = "extra_request_code"
+        const val EXTRA_TOTAL_AUSENCIAS = "extra_total_ausencias"
+        const val EXTRA_AUSENCIAS_MAX = "extra_ausencias_max"
+
+        const val NO_AUSENCIA_LIMIT = -1
+        private const val NO_VALUE = -1
 
         private const val CHANNEL_ID = "attendance_reminders"
     }

@@ -20,7 +20,9 @@ class AttendanceNotificationScheduler(private val context: Context) {
         val id: Long,
         val nome: String,
         val receberNotificacoes: Boolean,
-        val horariosAulas: List<HorarioAula>
+        val horariosAulas: List<HorarioAula>,
+        val totalAusencias: Int,
+        val ausenciasPermitidas: Int?
     )
 
     private val alarmManager: AlarmManager? =
@@ -62,6 +64,11 @@ class AttendanceNotificationScheduler(private val context: Context) {
                     putExtra(AttendanceNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
                     putExtra(AttendanceNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
                     putExtra(AttendanceNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+                    putExtra(AttendanceNotificationReceiver.EXTRA_TOTAL_AUSENCIAS, disciplina.totalAusencias)
+                    putExtra(
+                        AttendanceNotificationReceiver.EXTRA_AUSENCIAS_MAX,
+                        disciplina.ausenciasPermitidas ?: AttendanceNotificationReceiver.NO_AUSENCIA_LIMIT
+                    )
                 }
 
                 scheduleExactAlarm(requestCode, triggerAtMillis, intent)

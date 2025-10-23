@@ -71,7 +71,9 @@ fun ListarDisciplinasScreen(
                 id = it.id,
                 nome = it.nome,
                 receberNotificacoes = it.receberNotificacoes,
-                horariosAulas = it.horariosAulas
+                horariosAulas = it.horariosAulas,
+                totalAusencias = it.totalAusencias,
+                ausenciasPermitidas = it.ausenciasPermitidas
             )
         }
         scheduler.scheduleNotifications(schedules)

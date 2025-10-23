@@ -27,7 +27,9 @@ class ApiDisciplinaBackend : _disciplinabackend {
                 codigo = d.codigo,
                 nome = d.nome.orEmpty(),
                 aulas = d.aulas,
-                receberNotificacoes = d.receberNotificacoes
+                receberNotificacoes = d.receberNotificacoes,
+                totalAusencias = d.ausencias?.size ?: 0,
+                ausenciasPermitidas = d.ausenciasPermitidas
             )
         }
     }

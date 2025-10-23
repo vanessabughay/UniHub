@@ -50,6 +50,16 @@
         android:textColor="#444444"
         android:textSize="14sp" />
 
+    <TextView
+        android:id="@+id/notification_absence_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="#2E7D32"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

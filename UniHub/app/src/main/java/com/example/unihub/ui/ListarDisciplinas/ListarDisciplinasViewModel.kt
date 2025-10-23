@@ -17,7 +17,9 @@ data class DisciplinaResumoUi(
     val codigo: String,
     val nome: String,
     val horariosAulas: List<HorarioAula>,
-    val receberNotificacoes: Boolean
+    val receberNotificacoes: Boolean,
+    val totalAusencias: Int,
+    val ausenciasPermitidas: Int?
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -49,7 +51,9 @@ class ListarDisciplinasViewModel(
                             codigo = disciplina.codigo ?: "",
                             nome = disciplina.nome,
                             horariosAulas = disciplina.aulas,
-                            receberNotificacoes = disciplina.receberNotificacoes
+                            receberNotificacoes = disciplina.receberNotificacoes,
+                            totalAusencias = disciplina.totalAusencias,
+                            ausenciasPermitidas = disciplina.ausenciasPermitidas
                         )
                     }
                     _disciplinas.value = uiDisciplinas
