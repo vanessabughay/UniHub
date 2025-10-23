@@ -15,22 +15,19 @@
 
         <TextView
             android:id="@+id/notification_app_title"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="CONTROLE UNIVERSITÁRIO"
             android:textAllCaps="true"
             android:textColor="#666666"
             android:textSize="12sp" />
 
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
         <TextView
             android:id="@+id/notification_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:gravity="top"
             android:text="agora"
             android:textColor="#666666"
             android:textSize="11sp" />
@@ -67,6 +64,7 @@
             android:layout_marginEnd="6dp"
             android:layout_weight="1"
             android:background="@drawable/notification_button_presence"
+            android:clickable="true"
             android:gravity="center"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
@@ -83,6 +81,7 @@
             android:layout_marginStart="6dp"
             android:layout_weight="1"
             android:background="@drawable/notification_button_absence"
+            android:clickable="true"
             android:gravity="center"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
