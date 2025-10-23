@@ -98,6 +98,7 @@ fun TelaInicial(
                 "perfil" -> navController.navigate("manter_conta")
                 "contatos" -> navController.navigate("lista_contato")
                 "grupos" -> navController.navigate("lista_grupo")
+                "notificacoes" -> navController.navigate("historico_notificacoes")
                 // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 //"configurar notificações" -> navController.navigate("configurar_notificacoes")
                 //"atividades" -> navController.navigate("atividades")
@@ -116,6 +117,7 @@ fun TelaInicial(
         onClicarOpcaoMenu = { viewModel.aoClicarOpcaoMenu(it) },
         onAlternarSecaoAvaliacoes = { viewModel.alternarSecaoAvaliacoes() },
         onAlternarSecaoTarefas = { viewModel.alternarSecaoTarefas() },
+        onAbrirHistoricoNotificacoes = {viewModel.abrirHistoricoNotificacoes()},
         onLogout = {
             TokenManager.clearToken(context)
             val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
@@ -141,6 +143,7 @@ fun TelaInicialView(
     onClicarOpcaoMenu: (String) -> Unit,
     onAlternarSecaoAvaliacoes: () -> Unit,
     onAlternarSecaoTarefas: () -> Unit,
+    onAbrirHistoricoNotificacoes: () -> Unit,
     onLogout: () -> Unit
 ) {
     Box(
@@ -157,7 +160,8 @@ fun TelaInicialView(
             onClicarAtalho = onClicarAtalho,
             onFecharMenu = onFecharMenu,
             onAlternarMenu = onAlternarMenu,
-            onClicarOpcaoMenu = onClicarOpcaoMenu
+            onClicarOpcaoMenu = onClicarOpcaoMenu,
+            onAbrirHistoricoNotificacoes = onAbrirHistoricoNotificacoes
         )
 
 
@@ -211,14 +215,16 @@ private fun ConteudoPrincipal(
     onAlternarSecaoTarefas: () -> Unit,
     onFecharMenu: () -> Unit,
     onAlternarMenu: () -> Unit,
-    onClicarOpcaoMenu: (String) -> Unit
+    onClicarOpcaoMenu: (String) -> Unit,
+    onAbrirHistoricoNotificacoes: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         CabecalhoPerfil(
             nome = estado.usuario.nome,
             atalhos = estado.atalhosRapidos,
             onAbrirMenu = onAbrirMenu,
-            onClicarAtalho = onClicarAtalho
+            onClicarAtalho = onClicarAtalho,
+            onAbrirHistoricoNotificacoes = onAbrirHistoricoNotificacoes
         )
         ConteudoAbaixoDoTopo(
             estado = estado,
@@ -234,7 +240,8 @@ private fun CabecalhoPerfil(
     nome: String,
     atalhos: List<String>,
     onAbrirMenu: () -> Unit,
-    onClicarAtalho: (String) -> Unit
+    onClicarAtalho: (String) -> Unit,
+    onAbrirHistoricoNotificacoes: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -277,7 +284,7 @@ private fun CabecalhoPerfil(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                IconButton(onClick = { /* notificações */ }) {
+                IconButton(onClick = onAbrirHistoricoNotificacoes) {
                     Icon(
                         Outlined.Notifications,
                         contentDescription = "Notificações",
@@ -640,6 +647,7 @@ private fun TelaInicialViewPreview() {
             onClicarOpcaoMenu = {},
             onAlternarSecaoAvaliacoes = {},
             onAlternarSecaoTarefas = {},
+            onAbrirHistoricoNotificacoes = {},
             onLogout = {}
         )
     }

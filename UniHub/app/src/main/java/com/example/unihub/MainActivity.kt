@@ -69,6 +69,7 @@ import com.example.unihub.ui.Anotacoes.AnotacoesView
 import com.example.unihub.ui.Calendario.CalendarioRoute
 import com.example.unihub.ui.Calendario.CalendarioViewModel
 import com.example.unihub.ui.Calendario.CalendarioViewModelFactory
+import com.example.unihub.ui.HistoricoNotificacoes.HistoricoNotificacoesScreen
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModel
 import com.example.unihub.ui.ManterAusencia.ManterAusenciaViewModelFactory
 import com.example.unihub.data.repository.InstituicaoRepositoryProvider
@@ -90,6 +91,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object TelaInicial : Screen("tela_inicial")
+    object HistoricoNotificacoes : Screen("historico_notificacoes")
 
     object ListarDisciplinas : Screen("lista_disciplinas")
 
@@ -760,6 +762,11 @@ class MainActivity : ComponentActivity() {
                     // TELA INICIAL
                     composable(Screen.TelaInicial.route) {
                         TelaInicial(navController = navController)
+                    }
+
+                    // HISTÓRICO DE NOTIFICAÇÕES
+                    composable(Screen.HistoricoNotificacoes.route) {
+                        HistoricoNotificacoesScreen(onVoltar = { navController.popBackStack() })
                     }
 
                     // ANOTAÇÕES

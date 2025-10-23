@@ -103,6 +103,12 @@ class TelaInicialViewModel(
         }
     }
 
+    fun abrirHistoricoNotificacoes() {
+        viewModelScope.launch {
+            _eventoNavegacao.emit("historico_notificacoes")
+        }
+    }
+
 
     fun filtrarAvaliacoesEValidarTarefas() {
         val dataAtual = LocalDate.now()
