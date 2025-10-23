@@ -18,19 +18,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.data.repository.NotificationHistoryRepository
 
 @Composable
 fun HistoricoNotificacoesScreen(
-    onVoltar: () -> Unit,
-    viewModel: HistoricoNotificacoesViewModel = viewModel(factory = HistoricoNotificacoesViewModelFactory)
+    onVoltar: () -> Unit
 ) {
+    val context = LocalContext.current
+    val factory = remember(context) {
+        HistoricoNotificacoesViewModelFactory(
+            NotificationHistoryRepository.getInstance(context.applicationContext)
+        )
+    }
+    val viewModel: HistoricoNotificacoesViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
 
     HistoricoNotificacoesScreenContent(
@@ -137,13 +146,13 @@ fun HistoricoNotificacoesScreenPreview() {
             uiState = HistoricoNotificacoesUiState(
                 notificacoes = listOf(
                     HistoricoNotificacaoUiModel(
-                        id = 1,
+                        id = 1L,
                         titulo = "Comentário em tarefa",
                         descricao = "Ana deixou um novo comentário na tarefa de Pesquisa de Mercado.",
                         dataHora = "12/05/2024 às 14:37"
                     ),
                     HistoricoNotificacaoUiModel(
-                        id = 2,
+                        id = 2L,
                         titulo = "Prazo de avaliação",
                         descricao = "A avaliação de Álgebra Linear vence amanhã às 10h.",
                         dataHora = "11/05/2024 às 18:00"

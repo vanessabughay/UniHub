@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
+import com.example.unihub.data.repository.NotificationHistoryRepository
 import kotlin.math.abs
 import java.util.Locale
 
@@ -78,6 +79,9 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val locale = Locale("pt", "BR")
         val notificationTitle = "${disciplinaNome.uppercase(locale)}"
         val summaryText = buildSummaryText(scheduleText, absenceInfoText)
+        val historyMessage = listOf(promptText, summaryText.takeIf { it.isNotBlank() })
+            .filterNotNull()
+            .joinToString("\n")
 
         val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
             setTextViewText(R.id.notification_title, notificationTitle)
@@ -110,6 +114,13 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         }
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+
+        NotificationHistoryRepository.getInstance(context.applicationContext)
+            .logNotification(
+                title = notificationTitle,
+                message = historyMessage,
+                timestampMillis = System.currentTimeMillis()
+            )
 
 
         if (requestCode != -1) {
