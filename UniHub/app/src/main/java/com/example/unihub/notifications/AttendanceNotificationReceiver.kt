@@ -73,7 +73,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         }
 
         val locale = Locale("pt", "BR")
-        val notificationTitle = "AULA: ${disciplinaNome.uppercase(locale)}"
+        val notificationTitle = "${disciplinaNome.uppercase(locale)}"
 
         val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
             setTextViewText(R.id.notification_title, notificationTitle)
