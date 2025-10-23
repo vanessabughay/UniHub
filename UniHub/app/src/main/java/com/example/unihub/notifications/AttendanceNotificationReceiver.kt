@@ -13,6 +13,8 @@ import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
 import kotlin.math.abs
+import android.widget.RemoteViews
+import java.util.Locale
 
 class AttendanceNotificationReceiver : BroadcastReceiver() {
 
@@ -55,6 +57,14 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             )
         }
 
+        val presencaPendingIntent = TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(visualizarIntent)
+            getPendingIntent(
+                notificationId + 2,
+                PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
+            )
+        }
+
         val formattedTime = formatMinutes(inicio)
         val contentText = if (formattedTime.isNotEmpty()) {
             "${dia.ifBlank { "Sua aula" }} às $formattedTime. Registre sua presença ou ausência."
@@ -62,18 +72,27 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             "Registre se esteve presente ou ausente nesta aula."
         }
 
+        val locale = Locale("pt", "BR")
+        val notificationTitle = "AULA: ${disciplinaNome.uppercase(locale)}"
+
+        val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
+            setTextViewText(R.id.notification_title, notificationTitle)
+            setTextViewText(R.id.notification_message, contentText)
+            setOnClickPendingIntent(R.id.notification_root, visualizarPendingIntent)
+            setOnClickPendingIntent(R.id.notification_button_presence, presencaPendingIntent)
+            setOnClickPendingIntent(R.id.notification_button_absence, ausenciaPendingIntent)
+        }
+
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Hora da aula de $disciplinaNome")
+            .setContentTitle(notificationTitle)
             .setContentText(contentText)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(visualizarPendingIntent)
-            .addAction(
-                R.drawable.ic_launcher_foreground,
-                "Marcar ausência",
-                ausenciaPendingIntent
-            )
+            .setCustomContentView(contentView)
+            .setCustomBigContentView(contentView)
+            .setStyle(NotificationCompat.DecoratedCustomViewStyle())
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
 
