@@ -154,10 +154,11 @@ class EvaluationNotificationScheduler(private val context: Context) {
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
-            if (zonedDateTime.isBefore(now)) {
+            val reminderDateTime = zonedDateTime.minusHours(24)
+            if (reminderDateTime.isBefore(now)) {
                 return null
             }
-            return zonedDateTime.toInstant().toEpochMilli()
+            return reminderDateTime.toInstant().toEpochMilli()
         }
 
         internal fun parseDateTime(
