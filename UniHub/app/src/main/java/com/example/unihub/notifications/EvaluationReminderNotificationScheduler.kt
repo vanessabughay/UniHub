@@ -162,7 +162,7 @@ class EvaluationNotificationScheduler(private val context: Context) {
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
             val reminderDateTime = zonedDateTime.minus(toReminderDuration(prioridade))
-            if (reminderDateTime.isBefore(now)) {
+            if (!reminderDateTime.isAfter(now)) {
                 return null
             }
             return reminderDateTime.toInstant().toEpochMilli()
@@ -170,7 +170,7 @@ class EvaluationNotificationScheduler(private val context: Context) {
 
         private fun toReminderDuration(prioridade: Prioridade?): Duration {
             return when (prioridade) {
-                Prioridade.MUITO_BAIXA -> Duration.ofHours(1)
+                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
                 Prioridade.BAIXA -> Duration.ofHours(12)
                 Prioridade.MEDIA -> Duration.ofHours(48)
                 Prioridade.ALTA -> Duration.ofDays(5)
