@@ -175,7 +175,7 @@ class EvaluationNotificationScheduler(private val context: Context) {
                 Prioridade.MEDIA -> Duration.ofHours(48)
                 Prioridade.ALTA -> Duration.ofDays(5)
                 Prioridade.MUITO_ALTA -> Duration.ofDays(7)
-                null -> Duration.ofHours(24)
+                null -> Duration.ofHours(48)
             }
         }
 
