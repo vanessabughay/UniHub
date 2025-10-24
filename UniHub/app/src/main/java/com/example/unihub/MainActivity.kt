@@ -841,13 +841,32 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleNotificationIntent(intent: Intent, navController: NavHostController) {
-        val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID) ?: return
-
         if (TokenManager.token.isNullOrBlank()) {
             return
         }
 
-        val route = if (intent.getStringExtra(EXTRA_TARGET_SCREEN) == TARGET_SCREEN_REGISTRAR_AUSENCIA) {
+        val targetScreen = intent.getStringExtra(EXTRA_TARGET_SCREEN)
+        val avaliacaoId = intent.getStringExtra(EXTRA_TARGET_AVALIACAO_ID)
+        if (!avaliacaoId.isNullOrBlank()) {
+            val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID)
+            val route = Screen.ManterAvaliacao.createRoute(
+                id = avaliacaoId,
+                disciplinaId = disciplinaId
+            )
+
+            navController.navigate(route) {
+                launchSingleTop = true
+            }
+
+            intent.removeExtra(EXTRA_TARGET_AVALIACAO_ID)
+            intent.removeExtra(EXTRA_TARGET_DISCIPLINA_ID)
+            intent.removeExtra(EXTRA_TARGET_SCREEN)
+            return
+        }
+
+        val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID) ?: return
+
+        val route = if (targetScreen == TARGET_SCREEN_REGISTRAR_AUSENCIA) {
             Screen.ManterAusencia.createRoute(disciplinaId, null)
         } else {
             Screen.VisualizarDisciplina.createRoute(disciplinaId)
@@ -863,9 +882,11 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_TARGET_DISCIPLINA_ID = "extra_target_disciplina_id"
+        const val EXTRA_TARGET_AVALIACAO_ID = "extra_target_avaliacao_id"
         const val EXTRA_TARGET_SCREEN = "extra_target_screen"
         const val TARGET_SCREEN_VISUALIZAR_DISCIPLINA = "visualizar_disciplina"
         const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
+        const val TARGET_SCREEN_VISUALIZAR_AVALIACAO = "visualizar_avaliacao"
     }
 }
 

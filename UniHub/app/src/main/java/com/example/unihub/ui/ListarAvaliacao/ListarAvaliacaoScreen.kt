@@ -1,7 +1,11 @@
 package com.example.unihub.ui.ListarAvaliacao
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresExtension
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
@@ -50,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -63,6 +68,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
+import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
 import androidx.compose.material3.HorizontalDivider
@@ -113,6 +119,43 @@ fun ListarAvaliacaoScreen(
     val avaliacoesState by viewModel.avaliacoes.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+
+    val scheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+    val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { }
+    } else {
+        null
+    }
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    LaunchedEffect(avaliacoesState) {
+        val infos = avaliacoesState.mapNotNull { avaliacao ->
+            val id = avaliacao.id ?: return@mapNotNull null
+            EvaluationNotificationScheduler.EvaluationInfo(
+                id = id,
+                descricao = avaliacao.descricao,
+                disciplinaId = avaliacao.disciplina?.id,
+                disciplinaNome = avaliacao.disciplina?.nome,
+                dataHoraIso = avaliacao.dataEntrega,
+                prioridade = avaliacao.prioridade,
+                receberNotificacoes = avaliacao.receberNotificacoes
+            )
+        }
+        scheduler.scheduleNotifications(infos)
+    }
 
     var showConfirmDeleteDialog by remember { mutableStateOf(false) }
     var avaliacaoParaExcluir by remember { mutableStateOf<Avaliacao?>(null) }

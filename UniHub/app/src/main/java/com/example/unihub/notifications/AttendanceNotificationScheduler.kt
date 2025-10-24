@@ -8,6 +8,7 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.example.unihub.data.model.HorarioAula
 import java.time.DayOfWeek
+import java.text.Normalizer
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
@@ -176,8 +177,11 @@ class AttendanceNotificationScheduler(private val context: Context) {
             return scheduled.toInstant().toEpochMilli()
         }
 
-        private fun mapDayOfWeek(label: String): DayOfWeek? {
-            val normalized = label.trim().lowercase(Locale.getDefault())
+        private fun mapDayOfWeek(label: String): DayOfWeek? = mapDayOfWeekInternal(label)
+
+        @VisibleForTesting
+        internal fun mapDayOfWeekInternal(label: String): DayOfWeek? {
+            val normalized = normalizeDayLabel(label)
             return when (normalized) {
                 "segunda-feira" -> DayOfWeek.MONDAY
                 "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
@@ -188,6 +192,14 @@ class AttendanceNotificationScheduler(private val context: Context) {
                 "domingo" -> DayOfWeek.SUNDAY
                 else -> null
             }
+        }
+
+        @VisibleForTesting
+        internal fun normalizeDayLabel(label: String): String {
+            val trimmed = label.trim().lowercase(Locale.getDefault())
+            val withoutDiacritics = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
+                .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            return withoutDiacritics.replace("[^a-z]".toRegex(), "")
         }
 
         @Suppress("DEPRECATION")
