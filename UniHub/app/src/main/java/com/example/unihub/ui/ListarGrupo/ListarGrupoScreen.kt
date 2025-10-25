@@ -60,6 +60,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoResumo
 
@@ -389,15 +390,38 @@ fun GrupoItemExpansivel(
                         val membrosOrdenados = grupo.membros
                             .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
 
+                        val membrosParaExibir = if (membrosOrdenados.isNotEmpty()) {
+                            membrosOrdenados
+                        } else {
+                            val ownerId = grupo.ownerId
+                            val nomeAdministrador = TokenManager.nomeUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                                ?: TokenManager.emailUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                                ?: ownerId?.let { "Usuário #$it" }
+                            if (ownerId != null && nomeAdministrador != null) {
+                                listOf(
+                                    Contato(
+                                        id = grupo.adminContatoId ?: ownerId,
+                                        nome = nomeAdministrador,
+                                        email = TokenManager.emailUsuario,
+                                        pendente = false,
+                                        idContato = ownerId,
+                                        ownerId = ownerId
+                                    )
+                                )
+                            } else {
+                                emptyList()
+                            }
+                        }
+
                         var acaoGrupo = GrupoAcao.SAIR
                         var iconeAcao = Icons.Filled.Logout
                         var descricaoAcao = "Sair do Grupo"
 
-                        if (membrosOrdenados.isEmpty()) {
+                        if (membrosParaExibir.isEmpty()) {
                             Text(
                                 "Nenhum integrante neste grupo.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
                             )
                         } else {
                             val contatosDisponiveis = if (usuarioLogadoId != null) {
@@ -428,7 +452,7 @@ fun GrupoItemExpansivel(
                                 ?.lowercase()
 
 
-                            membrosOrdenados.forEachIndexed { index, contato ->
+                            membrosParaExibir.forEachIndexed { index, contato ->
                                 val emailDisponivel =
                                     contato.email?.trim()?.takeIf { it.isNotEmpty() }
                                 val emailNormalizado = emailDisponivel?.lowercase()

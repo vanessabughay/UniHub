@@ -23,6 +23,7 @@ data class ManterGrupoUiState(
     val nome: String = "",
     val grupoIdAtual: String? = null,
     val membrosDoGrupo: List<ContatoResumoUi> = emptyList(),
+    val adminContatoId: Long? = null,
     val isLoading: Boolean = false,
     val erro: String? = null,
     val sucesso: Boolean = false,
@@ -68,17 +69,33 @@ class ManterGrupoViewModel(
                             _uiState.update {
                                 it.copy(
                                     nome = grupo.nome ?: "",
+                                    adminContatoId = grupo.adminContatoId,
                                     isLoading = false
                                 )
                             }
-                            val idsDosMembrosDoGrupo = grupo.membros.mapNotNull { membro -> membro.id }.toSet()
+                            val idsDosMembrosDoGrupo = grupo.membros
+                                .mapNotNull { membro -> membro.idContato ?: membro.id }
+                                .toSet()
+
                             _idMembrosSelecionados.value = idsDosMembrosDoGrupo
                         } else {
-                            _uiState.update { it.copy(erro = "Grupo não encontrado", isLoading = false) }
+                            _uiState.update {
+                                it.copy(
+                                    erro = "Grupo não encontrado",
+                                    adminContatoId = null,
+                                    isLoading = false
+                                )
+                            }
                         }
                     }
                 } catch (e: Exception) {
-                    _uiState.update { it.copy(erro = e.message, isLoading = false) }
+                    _uiState.update {
+                        it.copy(
+                            erro = "ID de Grupo inválido",
+                            grupoIdAtual = null,
+                            adminContatoId = null
+                        )
+                    }
                 }
             }
         } else {
@@ -118,7 +135,11 @@ class ManterGrupoViewModel(
                     contatoCompleto
                 }
 
-                val novoGrupo = Grupo(nome = nome, membros = membrosValidados)
+                val novoGrupo = Grupo(
+                    nome = nome,
+                    membros = membrosValidados,
+                    ownerId = usuarioLogadoId
+                )
 
                 grupoRepository.addGrupo(novoGrupo)
                 _uiState.update { it.copy(sucesso = true, isLoading = false) }
@@ -163,7 +184,12 @@ class ManterGrupoViewModel(
                     contatoCompleto
                 }
 
-                val grupoAtualizado = Grupo(id = longId, nome = nome, membros = membrosValidados)
+                val grupoAtualizado = Grupo(
+                    id = longId,
+                    nome = nome,
+                    membros = membrosValidados,
+                    ownerId = usuarioLogadoId
+                )
                 val result = grupoRepository.updateGrupo(grupoAtualizado)
                 _uiState.update { it.copy(sucesso = result, isLoading = false) }
                 if (!result) {

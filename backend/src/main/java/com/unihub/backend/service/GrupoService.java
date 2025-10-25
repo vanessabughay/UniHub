@@ -50,12 +50,17 @@ public class GrupoService {
                     .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
         }
 
+        String emailUsuario = usuarioRepository.findById(ownerId)
+                .map(Usuario::getEmail)
+                .orElse(null);
+
         gruposVisiveis.values().forEach(grupo -> {
                 Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                     ? contatoProprio
                     : localizarContatoDoOwner(grupo);
-                                definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
+            definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
         });
+        gruposVisiveis.values().removeIf(grupo -> !participaDoGrupo(grupo, ownerId, emailUsuario));
         return new ArrayList<>(gruposVisiveis.values());
     }
 
@@ -77,6 +82,11 @@ public class GrupoService {
                 ? buscarContatoDoUsuario(ownerId).orElse(null)
                 : localizarContatoDoOwner(grupo);
                 definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
+        if (!participaDoGrupo(grupo, ownerId, usuarioRepository.findById(ownerId)
+                .map(Usuario::getEmail)
+                .orElse(null))) {
+            throw new EntityNotFoundException("Grupo não encontrado com ID: " + id);
+        }
         return grupo;
     }
 
@@ -203,9 +213,12 @@ public class GrupoService {
 
         if (removeu) {
             Long usuarioRemovidoId = usuario.getId();
+            String emailUsuario = usuario.getEmail();
             grupo.getMembros().removeIf(contato -> contato != null
-                    && usuarioRemovidoId != null
-                    && Objects.equals(usuarioRemovidoId, contato.getIdContato()));
+                    && ((usuarioRemovidoId != null
+                    && Objects.equals(usuarioRemovidoId, contato.getIdContato()))
+                    || (emailUsuario != null && !emailUsuario.isBlank()
+                    && emailUsuario.equalsIgnoreCase(contato.getEmail()))));
         }
 
         List<Contato> membros = grupo.getMembros();
@@ -255,13 +268,18 @@ public class GrupoService {
                     .forEach(grupo -> gruposVisiveis.put(grupo.getId(), grupo));
         }
 
+        String emailUsuario = usuarioRepository.findById(ownerId)
+                .map(Usuario::getEmail)
+                .orElse(null);
+
+
         gruposVisiveis.values().forEach(grupo -> {
             Contato preferenciaAdmin = Objects.equals(grupo.getOwnerId(), ownerId)
                     ? contatoProprio
                     : localizarContatoDoOwner(grupo);
                 definirAdminContato(grupo, preferenciaAdmin, preferenciaAdmin, false);
         });
-
+        gruposVisiveis.values().removeIf(grupo -> !participaDoGrupo(grupo, ownerId, emailUsuario));
         return new ArrayList<>(gruposVisiveis.values());
     }
 
@@ -324,6 +342,26 @@ public class GrupoService {
         return false;
     }
 
+    private boolean participaDoGrupo(Grupo grupo, Long usuarioId, String emailUsuario) {
+        if (grupo == null || usuarioId == null) {
+            return false;
+        }
+
+        if (Objects.equals(grupo.getOwnerId(), usuarioId)) {
+            return true;
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            return false;
+        }
+
+        return membros.stream()
+                .filter(Objects::nonNull)
+                .anyMatch(contato -> Objects.equals(usuarioId, contato.getIdContato())
+                        || (emailUsuario != null && !emailUsuario.isBlank()
+                        && emailUsuario.equalsIgnoreCase(contato.getEmail())));
+    }
 
     private Set<Long> buscarIdsDeContatosDoUsuario(Long usuarioId) {
         Set<Long> ids = new HashSet<>();

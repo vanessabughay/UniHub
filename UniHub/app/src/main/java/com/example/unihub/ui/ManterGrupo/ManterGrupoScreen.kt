@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Person // Ícone para membro
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
+import com.example.unihub.data.config.TokenManager
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
 val DeleteButtonErrorColor = Color(0xFFB00020) // Uma cor de erro típica para o botão excluir
@@ -76,6 +77,25 @@ fun ManterGrupoScreen(
     var showAddMembrosDialog by remember { mutableStateOf(false) }
     var showRemoveMembrosDialog by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+
+    val adminEmailPadrao = TokenManager.emailUsuario?.trim()?.lowercase()
+    val adminContato = uiState.membrosDoGrupo.firstOrNull { membro ->
+        val emailNormalizado = membro.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+        when {
+            uiState.adminContatoId != null && membro.id == uiState.adminContatoId -> true
+            adminEmailPadrao != null && emailNormalizado == adminEmailPadrao -> true
+            else -> false
+        }
+    }
+    val adminEmailNormalizado = adminContato?.email?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+        ?: adminEmailPadrao
+    val membrosRemoviveis = uiState.membrosDoGrupo.filterNot { membro ->
+        val emailNormalizado = membro.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+        val coincideId = uiState.adminContatoId != null && membro.id == uiState.adminContatoId
+        val coincideContato = adminContato?.id == membro.id
+        val coincideEmail = adminEmailNormalizado != null && emailNormalizado == adminEmailNormalizado
+        coincideId || coincideContato || coincideEmail
+    }
 
     // Efeitos (mantidos como estão)
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
@@ -154,7 +174,7 @@ fun ManterGrupoScreen(
             SelecaoContatosDialog(
                 titulo = "Remover Contatos do Grupo",
                 // Mostra apenas os membros atuais para remoção
-                contatosDisponiveis = uiState.membrosDoGrupo,
+                contatosDisponiveis = membrosRemoviveis,
                 idsContatosJaSelecionados = emptySet(), // Não aplicável aqui, pois todos são selecionáveis para remoção
                 onDismissRequest = { showRemoveMembrosDialog = false },
                 onConfirmarSelecao = { idsSelecionadosParaRemover ->
@@ -233,18 +253,39 @@ fun ManterGrupoScreen(
                     )
 
                     // Exibição dos membros atuais (opcional)
-                    if (uiState.membrosDoGrupo.isNotEmpty()) {
+                    val nomeAdministrador = adminContato?.nome?.takeIf { it.isNotBlank() }
+                        ?: TokenManager.nomeUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: adminContato?.email?.takeIf { it.isNotBlank() }
+                        ?: TokenManager.emailUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: TokenManager.usuarioId?.let { "Usuário #$it" }
+                        ?: "Administrador"
 
-                        //Text("Membros Atuais:", style = MaterialTheme.typography.labelMedium)
+                    val membrosFormatados = buildList {
+                        add("- $nomeAdministrador (administrador do Grupo)")
+                        membrosRemoviveis.forEach { membro ->
+                            val nomeAjustado = membro.nome.takeIf { it.isNotBlank() }
+                                ?: membro.email.trim().takeIf { it.isNotEmpty() }
+                                ?: "Membro"
+                            add("- $nomeAjustado")
+                        }
+                    }
 
-                        uiState.membrosDoGrupo.take(5).forEach { membro -> // Mostra até 5 para não poluir
+                    if (membrosFormatados.isNotEmpty()) {
+                        membrosFormatados.take(5).forEach { descricao ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Person, contentDescription = "Membro", modifier = Modifier.padding(end = 8.dp))
-                                Text(membro.nome, style = MaterialTheme.typography.bodyMedium)
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Membro",
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text(descricao, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
-                        if (uiState.membrosDoGrupo.size > 5) {
-                            Text("... e mais ${uiState.membrosDoGrupo.size - 5}", style = MaterialTheme.typography.bodySmall)
+                        if (membrosFormatados.size > 5) {
+                            Text(
+                                "... e mais ${membrosFormatados.size - 5}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                         Spacer(Modifier.height(8.dp))
                     } else {
