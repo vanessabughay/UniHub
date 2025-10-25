@@ -55,6 +55,14 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
         criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
         criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
+
+        criarUsuarioSeNaoExistir("A","a@a.com","000000");
+        criarUsuarioSeNaoExistir("B","b@b.com","000000");
+        criarUsuarioSeNaoExistir("C","c@c.com","000000");
+        criarUsuarioSeNaoExistir("D","d@d.com","000000");
+
+
+
         criarUsuarioSeNaoExistir("Carla Mendes", "carla.mendes@email.com", "carlamendes");
         criarUsuarioSeNaoExistir("Daniel Souza", "daniel.souza@email.com", "danielsouza");
         criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa.ferreira@email.com", "elisaferreira");

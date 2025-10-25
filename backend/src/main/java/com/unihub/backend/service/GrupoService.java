@@ -438,6 +438,7 @@ public class GrupoService {
             candidato = membros.stream()
                     .filter(Objects::nonNull)
                     .filter(contato -> representaOwner(contato, ownerId, ownerEmail))
+                    .sorted(contatoPrioridadeComparator())
                     .findFirst()
                     .orElse(null);
         }
@@ -446,6 +447,7 @@ public class GrupoService {
             candidato = membros.stream()
                     .filter(Objects::nonNull)
                     .filter(contato -> localizarUsuarioDoContato(contato).isPresent())
+                    .sorted(contatoPrioridadeComparator())
                     .findFirst()
                     .orElse(null);
         }
@@ -467,6 +469,7 @@ public class GrupoService {
         return grupo.getMembros().stream()
                 .filter(Objects::nonNull)
                 .filter(contato -> localizarUsuarioDoContato(contato).isPresent())
+                .sorted(contatoPrioridadeComparator())
                 .findFirst()
                 .orElse(null);
     }
@@ -500,6 +503,29 @@ public class GrupoService {
         return membros.stream()
                 .filter(Objects::nonNull)
                 .anyMatch(contato -> contatoId.equals(contato.getId()));
+    }
+
+    private Comparator<Contato> contatoPrioridadeComparator() {
+        return Comparator
+                .comparingLong(this::prioridadePorUsuario)
+                .thenComparingLong(this::prioridadePorRegistro)
+                .thenComparing(contato -> contato.getNome() != null ? contato.getNome().toLowerCase() : "");
+    }
+
+    private long prioridadePorUsuario(Contato contato) {
+        if (contato == null) {
+            return Long.MAX_VALUE;
+        }
+        Long idContato = contato.getIdContato();
+        return idContato != null ? idContato : Long.MAX_VALUE;
+    }
+
+    private long prioridadePorRegistro(Contato contato) {
+        if (contato == null) {
+            return Long.MAX_VALUE;
+        }
+        Long id = contato.getId();
+        return id != null ? id : Long.MAX_VALUE;
     }
 
     private Contato localizarContatoDoOwner(Grupo grupo) {
