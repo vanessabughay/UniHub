@@ -9,6 +9,8 @@ import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
+import java.io.IOException
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -174,19 +176,52 @@ class ManterGrupoViewModel(
     }
 
     fun deleteGrupo(id: String) {
-
-            _uiState.value = _uiState.value.copy(isLoading = true, erro = null, isExclusao = true)
-            viewModelScope.launch {
-                try {
-                    val result = grupoRepository.deleteGrupo(id) // deleteGrupo retorna Boolean
-                    _uiState.value = _uiState.value.copy(sucesso = result, isLoading = false)
-                    if (!result) {
-                        _uiState.value = _uiState.value.copy(erro = "Falha ao excluir o Grupo.")
-                    }
-                } catch (e: Exception) {
-                    _uiState.value = _uiState.value.copy(erro = e.message, isLoading = false, sucesso = false)
+        _uiState.value = _uiState.value.copy(isLoading = true, erro = null, isExclusao = true)
+        viewModelScope.launch {
+            try {
+                val result = grupoRepository.deleteGrupo(id)
+                if (result) {
+                    _uiState.value = _uiState.value.copy(sucesso = true, isLoading = false)
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        sucesso = false,
+                        isLoading = false,
+                        erro = "Falha ao excluir o Grupo no servidor."
+                    )
                 }
+            } catch (e: IllegalStateException) {
+                _uiState.value = _uiState.value.copy(
+                    erro = e.message
+                        ?: "Não foi possível sair do grupo. Verifique se há outro membro com acesso.",
+                    isLoading = false,
+                    sucesso = false
+                )
+            } catch (e: IllegalArgumentException) {
+                _uiState.value = _uiState.value.copy(
+                    erro = e.message ?: "ID de Grupo inválido.",
+                    isLoading = false,
+                    sucesso = false
+                )
+            } catch (e: IOException) {
+                _uiState.value = _uiState.value.copy(
+                    erro = "Falha de rede ao excluir o Grupo: ${e.message}",
+                    isLoading = false,
+                    sucesso = false
+                )
+            } catch (e: HttpException) {
+                _uiState.value = _uiState.value.copy(
+                    erro = "Erro do servidor (${e.code()}) ao excluir o Grupo.",
+                    isLoading = false,
+                    sucesso = false
+                )
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    erro = e.message ?: "Erro inesperado ao excluir o Grupo.",
+                    isLoading = false,
+                    sucesso = false
+                )
             }
+        }
     }
 
     // Função para carregar todos os contatos disponíveis (mantida do seu código)

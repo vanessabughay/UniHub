@@ -161,12 +161,14 @@ public class GrupoService {
             return;
         }
 
-        Contato novoAdministrador = definirAdminContato(grupo, null, null, true);
-        if (novoAdministrador == null || !atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
-            grupoRepository.delete(grupo);
-            return;
+        Contato novoAdministrador = selecionarNovoOwner(grupo);
+        if (novoAdministrador == null) {
+            throw new IllegalStateException("Não foi possível transferir a propriedade do grupo para outro membro.");
         }
-        
+
+        if (!atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
+            throw new IllegalStateException("Não foi possível definir um novo proprietário para o grupo.");
+        }
         definirAdminContato(grupo, novoAdministrador, novoAdministrador, false);
         grupoRepository.save(grupo);
     }
@@ -338,6 +340,18 @@ public class GrupoService {
         }
 
         return candidato;
+    }
+
+    private Contato selecionarNovoOwner(Grupo grupo) {
+        if (grupo == null || grupo.getMembros() == null) {
+            return null;
+        }
+
+        return grupo.getMembros().stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> localizarUsuarioDoContato(contato).isPresent())
+                .findFirst()
+                .orElse(null);
     }
 
     private Contato localizarContatoPorId(List<Contato> membros, Long contatoId) {
