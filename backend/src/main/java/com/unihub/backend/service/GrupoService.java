@@ -200,6 +200,14 @@ public class GrupoService {
             throw new EntityNotFoundException("Usuário não pertence ao grupo informado.");
         }
 
+
+        if (removeu) {
+            Long usuarioRemovidoId = usuario.getId();
+            grupo.getMembros().removeIf(contato -> contato != null
+                    && usuarioRemovidoId != null
+                    && Objects.equals(usuarioRemovidoId, contato.getIdContato()));
+        }
+
         List<Contato> membros = grupo.getMembros();
         if (membros == null || membros.isEmpty()) {
             if (ehOwner) {
@@ -283,9 +291,11 @@ public class GrupoService {
 
         boolean removeu = false;
         Iterator<Contato> iterator = membros.iterator();
+        Long usuarioId = usuario.getId();
         while (iterator.hasNext()) {
             Contato membro = iterator.next();
-            if (representaUsuario(membro, usuario)) {
+            if (representaUsuario(membro, usuario)
+                    || (usuarioId != null && membro != null && usuarioId.equals(membro.getIdContato()))) {
                 iterator.remove();
                 removeu = true;
             }
@@ -528,6 +538,7 @@ public class GrupoService {
         return id != null ? id : Long.MAX_VALUE;
     }
 
+
     private Contato localizarContatoDoOwner(Grupo grupo) {
         if (grupo == null || grupo.getMembros() == null || grupo.getOwnerId() == null) {
             return null;
@@ -596,12 +607,11 @@ public class GrupoService {
             return false;
         }
 
-                Optional<Usuario> usuarioNovoOwner = localizarUsuarioDoContato(administrador);
-        if (usuarioNovoOwner.isEmpty()) {
-            return false;
-        }
+        Optional<Usuario> usuarioNovoOwner = localizarUsuarioDoContato(administrador);
 
-        Long novoOwnerId = usuarioNovoOwner.get().getId();
+        Long novoOwnerId = usuarioNovoOwner.map(Usuario::getId)
+                .orElseGet(administrador::getIdContato);
+
         if (novoOwnerId == null) {
             return false;
         }
