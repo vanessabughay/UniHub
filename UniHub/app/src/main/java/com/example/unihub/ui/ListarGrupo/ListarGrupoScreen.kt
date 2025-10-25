@@ -168,9 +168,24 @@ fun ListarGrupoScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteGrupo(grupoAtual.id!!.toString()) { sucesso ->
-                            if (sucesso) {
-                                Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                        val grupoId = grupoAtual.id?.toString()
+                        if (grupoId != null) {
+                            when (acaoAtual) {
+                                GrupoAcao.EXCLUIR -> {
+                                    viewModel.deleteGrupo(grupoId) { sucesso ->
+                                        if (sucesso) {
+                                            Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+
+                                GrupoAcao.SAIR -> {
+                                    viewModel.leaveGrupo(grupoId) { sucesso ->
+                                        if (sucesso) {
+                                            Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
                         }
                         showConfirmActionDialog = false
