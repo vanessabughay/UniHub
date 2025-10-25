@@ -71,7 +71,9 @@ class ManterGrupoViewModel(
                                     isLoading = false
                                 )
                             }
-                            val idsDosMembrosDoGrupo = grupo.membros.mapNotNull { membro -> membro.id }.toSet()
+                            val idsDosMembrosDoGrupo = grupo.membros
+                                .mapNotNull { membro -> membro.idContato ?: membro.id }
+                                .toSet()
                             _idMembrosSelecionados.value = idsDosMembrosDoGrupo
                         } else {
                             _uiState.update { it.copy(erro = "Grupo não encontrado", isLoading = false) }
