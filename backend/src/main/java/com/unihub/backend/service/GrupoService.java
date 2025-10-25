@@ -187,10 +187,11 @@ public class GrupoService {
     @Transactional
     public void sairDoGrupo(Long id, Long usuarioId) {
         Long usuarioAutenticado = requireUsuario(usuarioId);
-        Grupo grupo = buscarGrupoParticipante(id, usuarioAutenticado);
+
 
         Usuario usuario = usuarioRepository.findById(usuarioAutenticado)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + usuarioAutenticado));
+        Grupo grupo = buscarGrupoParticipante(id, usuario);
 
         boolean ehOwner = Objects.equals(grupo.getOwnerId(), usuarioAutenticado);
         if (grupo.getMembros() == null) {
@@ -283,18 +284,38 @@ public class GrupoService {
         return new ArrayList<>(gruposVisiveis.values());
     }
 
-    private Grupo buscarGrupoParticipante(Long grupoId, Long usuarioId) {
-        Optional<Grupo> grupoOptional = grupoRepository.findByIdAndOwnerId(grupoId, usuarioId);
+    private Grupo buscarGrupoParticipante(Long grupoId, Usuario usuario) {
+        if (usuario == null) {
+            throw new IllegalArgumentException("Usuário autenticado é obrigatório");
+        }
 
-        if (grupoOptional.isEmpty()) {
-            Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(usuarioId);
-            if (!idsContatosAssociados.isEmpty()) {
-                grupoOptional = grupoRepository.findDistinctByIdAndMembros_IdContatoIn(grupoId, idsContatosAssociados);
+        Grupo grupo = grupoRepository.findById(grupoId)
+                .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + grupoId));
+
+        Long usuarioId = usuario.getId();
+        if (Objects.equals(grupo.getOwnerId(), usuarioId)) {
+            return grupo;
+        }
+
+        String emailUsuario = usuario.getEmail();
+        boolean participa = participaDoGrupo(grupo, usuarioId, emailUsuario);
+
+        if (!participa && grupo.getMembros() != null && !grupo.getMembros().isEmpty()) {
+            Set<Long> registrosAssociados = buscarIdsDeRegistrosContatoDoUsuario(usuario);
+            if (!registrosAssociados.isEmpty()) {
+                participa = grupo.getMembros().stream()
+                        .filter(Objects::nonNull)
+                        .map(Contato::getId)
+                        .filter(Objects::nonNull)
+                        .anyMatch(registrosAssociados::contains);
             }
         }
 
-        return grupoOptional
-                .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + grupoId));
+        if (!participa) {
+            throw new EntityNotFoundException("Grupo não encontrado com ID: " + grupoId);
+        }
+
+        return grupo;
     }
 
     private boolean removerUsuarioDosMembros(Grupo grupo, Usuario usuario) {
@@ -309,11 +330,10 @@ public class GrupoService {
 
         boolean removeu = false;
         Iterator<Contato> iterator = membros.iterator();
-        Long usuarioId = usuario.getId();
+        Set<Long> registrosAssociados = buscarIdsDeRegistrosContatoDoUsuario(usuario);
         while (iterator.hasNext()) {
             Contato membro = iterator.next();
-            if (representaUsuario(membro, usuario)
-                    || (usuarioId != null && membro != null && usuarioId.equals(membro.getIdContato()))) {
+            if (representaUsuario(membro, usuario, registrosAssociados)) {
                 iterator.remove();
                 removeu = true;
             }
@@ -321,9 +341,13 @@ public class GrupoService {
         return removeu;
     }
 
-    private boolean representaUsuario(Contato contato, Usuario usuario) {
+    private boolean representaUsuario(Contato contato, Usuario usuario, Set<Long> registrosAssociados) {
         if (contato == null || usuario == null) {
             return false;
+        }
+
+        if (registrosAssociados != null && contato.getId() != null && registrosAssociados.contains(contato.getId())) {
+            return true;
         }
 
         Long usuarioId = usuario.getId();
@@ -340,6 +364,31 @@ public class GrupoService {
         }
 
         return false;
+    }
+
+    private Set<Long> buscarIdsDeRegistrosContatoDoUsuario(Usuario usuario) {
+        Set<Long> ids = new HashSet<>();
+        if (usuario == null) {
+            return ids;
+        }
+
+        Long usuarioId = usuario.getId();
+        if (usuarioId != null) {
+            contatoRepository.findByIdContato(usuarioId).stream()
+                    .map(Contato::getId)
+                    .filter(Objects::nonNull)
+                    .forEach(ids::add);
+        }
+
+        String email = usuario.getEmail();
+        if (email != null && !email.isBlank()) {
+            contatoRepository.findByEmailIgnoreCase(email).stream()
+                    .map(Contato::getId)
+                    .filter(Objects::nonNull)
+                    .forEach(ids::add);
+        }
+
+        return ids;
     }
 
     private boolean participaDoGrupo(Grupo grupo, Long usuarioId, String emailUsuario) {
