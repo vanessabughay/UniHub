@@ -718,8 +718,13 @@ public class GrupoService {
 
         Set<String> identificadores = new HashSet<>();
 
-        if (grupo.getOwnerId() != null) {
-            identificadores.add("owner:" + grupo.getOwnerId());
+        Long ownerId = grupo.getOwnerId();
+        String ownerEmail = null;
+        if (ownerId != null) {
+            identificadores.add("usuario:" + ownerId);
+            ownerEmail = usuarioRepository.findById(ownerId)
+                    .map(Usuario::getEmail)
+                    .orElse(null);
         }
 
         List<Contato> membros = grupo.getMembros();
@@ -737,6 +742,11 @@ public class GrupoService {
 
                 String email = contato.getEmail();
                 if (email != null && !email.isBlank()) {
+                    if (ownerId != null && ownerEmail != null
+                            && ownerEmail.equalsIgnoreCase(email)) {
+                        identificadores.add("usuario:" + ownerId);
+                        continue;
+                    }
                     identificadores.add("email:" + email.toLowerCase());
                     continue;
                 }
