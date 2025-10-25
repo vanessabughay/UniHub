@@ -571,6 +571,8 @@ public class QuadroPlanejamentoService {
         return contatoRepository.findByOwnerIdAndIdContato(usuarioId, chaveContato)
                 .or(() -> contatoRepository.findByIdAndOwnerId(chaveContato, usuarioId))
                 .or(() -> localizarContatoEmQuadro(quadro, chaveContato))
+                .or(() -> localizarContatoDoDonoDoQuadro(quadro, chaveContato))
+                .or(() -> localizarContatoDoProprioUsuario(usuarioId, chaveContato))
                 .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado"));
     }
 
@@ -602,7 +604,85 @@ public class QuadroPlanejamentoService {
         if (contato == null || chaveContato == null) {
             return false;
         }
-        return chaveContato.equals(contato.getIdContato()) || chaveContato.equals(contato.getId());
+        if (chaveContato.equals(contato.getIdContato()) || chaveContato.equals(contato.getId())) {
+            return true;
+        }
+        return contato.getIdContato() == null && chaveContato.equals(contato.getOwnerId());
+    }
+
+    private Optional<Contato> localizarContatoDoDonoDoQuadro(QuadroPlanejamento quadro, Long chaveContato) {
+        if (quadro == null || chaveContato == null) {
+            return Optional.empty();
+        }
+
+        Usuario dono = quadro.getUsuario();
+        if (dono == null || dono.getId() == null || !Objects.equals(dono.getId(), chaveContato)) {
+            return Optional.empty();
+        }
+
+        Contato contatoQuadro = quadro.getContato();
+        if (isContatoCorrespondente(contatoQuadro, chaveContato)) {
+            return Optional.of(contatoQuadro);
+        }
+
+        Grupo grupo = quadro.getGrupo();
+        if (grupo != null && grupo.getMembros() != null) {
+            Optional<Contato> contatoGrupo = grupo.getMembros().stream()
+                    .filter(Objects::nonNull)
+                    .filter(contato -> isContatoCorrespondente(contato, chaveContato))
+                    .findFirst();
+            if (contatoGrupo.isPresent()) {
+                return contatoGrupo;
+            }
+        }
+
+        return contatoRepository.findByIdContato(chaveContato).stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> Objects.equals(contato.getOwnerId(), dono.getId()))
+                .filter(contato -> isContatoCorrespondente(contato, chaveContato))
+                .findFirst();
+    }
+
+    private Optional<Contato> localizarContatoDoProprioUsuario(Long usuarioId, Long chaveContato) {
+        if (usuarioId == null || chaveContato == null || !Objects.equals(usuarioId, chaveContato)) {
+            return Optional.empty();
+        }
+
+        Optional<Contato> contatoExistente = contatoRepository.findByOwnerIdAndIdContato(usuarioId, chaveContato);
+        if (contatoExistente.isPresent()) {
+            return contatoExistente;
+        }
+
+        Optional<Usuario> usuarioOptional = usuarioRepository.findById(usuarioId);
+        if (usuarioOptional.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Usuario usuario = usuarioOptional.get();
+        String email = usuario.getEmail();
+        if (email != null && !email.isBlank()) {
+            Optional<Contato> contatoPorEmail = contatoRepository.findByOwnerIdAndEmailIgnoreCase(usuarioId, email);
+            if (contatoPorEmail.isPresent()) {
+                Contato contato = contatoPorEmail.get();
+                if (!Objects.equals(contato.getIdContato(), chaveContato)) {
+                    contato.setIdContato(chaveContato);
+                    contatoRepository.save(contato);
+                }
+                return Optional.of(contato);
+            }
+        }
+
+        Contato novoContato = new Contato();
+        novoContato.setOwnerId(usuarioId);
+        novoContato.setIdContato(usuarioId);
+        novoContato.setNome(usuario.getNomeUsuario());
+        novoContato.setEmail(email);
+        novoContato.setPendente(false);
+        LocalDateTime agora = LocalDateTime.now();
+        novoContato.setDataSolicitacao(agora);
+        novoContato.setDataConfirmacao(agora);
+
+        return Optional.of(contatoRepository.save(novoContato));
     }
 
 
