@@ -154,34 +154,13 @@ public class GrupoService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Grupo não encontrado com ID: " + id + " para exclusão."));
 
-        Contato contatoDoOwner = localizarContatoDoOwner(grupo);
-        if (contatoDoOwner != null) {
-            grupo.removeMembro(contatoDoOwner);
+        int totalParticipantes = contarParticipantes(grupo);
+        if (totalParticipantes > 1) {
+            throw new IllegalStateException("O grupo ainda possui outros integrantes ativos.");
         }
 
-        List<Contato> membros = grupo.getMembros();
-        if (membros == null || membros.isEmpty()) {
-            grupoRepository.delete(grupo);
-            return;
-        }
 
-        membros.removeIf(Objects::isNull);
-
-        if (membros.isEmpty()) {
-            grupoRepository.delete(grupo);
-            return;
-        }
-
-        Contato novoAdministrador = selecionarNovoOwner(grupo);
-        if (novoAdministrador == null) {
-            throw new IllegalStateException("Não foi possível transferir a propriedade do grupo para outro membro.");
-        }
-
-        if (!atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
-            throw new IllegalStateException("Não foi possível definir um novo proprietário para o grupo.");
-        }
-        definirAdminContato(grupo, novoAdministrador, novoAdministrador, false);
-        grupoRepository.save(grupo);
+        grupoRepository.delete(grupo);
     }
 
     @Transactional
@@ -732,6 +711,45 @@ public class GrupoService {
         return usuarioRepository.findByEmailIgnoreCase(email);
     }
 
+    private int contarParticipantes(Grupo grupo) {
+        if (grupo == null) {
+            return 0;
+        }
+
+        Set<String> identificadores = new HashSet<>();
+
+        if (grupo.getOwnerId() != null) {
+            identificadores.add("owner:" + grupo.getOwnerId());
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros != null) {
+            for (Contato contato : membros) {
+                if (contato == null) {
+                    continue;
+                }
+
+                Long idContato = contato.getIdContato();
+                if (idContato != null) {
+                    identificadores.add("usuario:" + idContato);
+                    continue;
+                }
+
+                String email = contato.getEmail();
+                if (email != null && !email.isBlank()) {
+                    identificadores.add("email:" + email.toLowerCase());
+                    continue;
+                }
+
+                Long id = contato.getId();
+                if (id != null) {
+                    identificadores.add("contato:" + id);
+                }
+            }
+        }
+
+        return identificadores.size();
+    }
 
     private Contato obterOuCriarContatoDoUsuario(Long ownerId) {
         Usuario usuario = usuarioRepository.findById(ownerId)

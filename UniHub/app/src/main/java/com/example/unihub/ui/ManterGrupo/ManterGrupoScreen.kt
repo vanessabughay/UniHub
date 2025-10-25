@@ -368,7 +368,7 @@ fun ManterGrupoScreen(
                     )
                 }
 
-                if (grupoId != null) { // Botão Excluir Grupo (somente em modo de edição)
+                if (grupoId != null && uiState.podeExcluirGrupo) { // Botão Excluir Grupo (somente em modo de edição e quando permitido)
                     Button(
                         onClick = { showDeleteDialog = true },
                         enabled = !isSaving, // desativa enquanto salva

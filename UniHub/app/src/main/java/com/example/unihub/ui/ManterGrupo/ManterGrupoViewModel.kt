@@ -28,6 +28,7 @@ data class ManterGrupoUiState(
     val erro: String? = null,
     val sucesso: Boolean = false,
     val isExclusao: Boolean = false, // Para controlar o fluxo após exclusão
+    val podeExcluirGrupo: Boolean = false,
     val todosOsContatosDisponiveis: List<ContatoResumoUi> = emptyList(),
     val isLoadingAllContatos: Boolean = false,
     val errorLoadingAllContatos: String? = null
@@ -60,17 +61,26 @@ class ManterGrupoViewModel(
     fun loadGrupo(id: String) {
         val longId = id.toLongOrNull()
         if (longId != null) {
-            _uiState.value = _uiState.value.copy(isLoading = true, erro = null)
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                erro = null,
+                grupoIdAtual = id,
+                podeExcluirGrupo = false
+            )
             viewModelScope.launch {
                 try {
                   // e que Grupo tem uma propriedade 'membros' (List<Contato> ou List<Long>).
                     grupoRepository.getGrupoById(longId).collect { grupo ->
                         if (grupo != null) {
+                            val usuarioLogadoId = TokenManager.usuarioId
+                            val podeExcluir = calcularPodeExcluirGrupo(grupo, usuarioLogadoId)
                             _uiState.update {
                                 it.copy(
                                     nome = grupo.nome ?: "",
                                     adminContatoId = grupo.adminContatoId,
-                                    isLoading = false
+                                    isLoading = false,
+                                    podeExcluirGrupo = podeExcluir,
+                                    grupoIdAtual = id
                                 )
                             }
                             val idsDosMembrosDoGrupo = grupo.membros
@@ -83,7 +93,9 @@ class ManterGrupoViewModel(
                                 it.copy(
                                     erro = "Grupo não encontrado",
                                     adminContatoId = null,
-                                    isLoading = false
+                                    isLoading = false,
+                                    podeExcluirGrupo = false,
+                                    grupoIdAtual = null
                                 )
                             }
                         }
@@ -93,13 +105,20 @@ class ManterGrupoViewModel(
                         it.copy(
                             erro = "ID de Grupo inválido",
                             grupoIdAtual = null,
-                            adminContatoId = null
+                            adminContatoId = null,
+                            podeExcluirGrupo = false
                         )
                     }
                 }
             }
         } else {
-            _uiState.update { it.copy(erro = "ID de Grupo inválido", grupoIdAtual = null) }
+            _uiState.update {
+                it.copy(
+                    erro = "ID de Grupo inválido",
+                    grupoIdAtual = null,
+                    podeExcluirGrupo = false
+                )
+            }
         }
     }
 
@@ -313,6 +332,32 @@ class ManterGrupoViewModel(
                     }
                 }
         }
+    }
+
+    private fun calcularPodeExcluirGrupo(grupo: Grupo, usuarioLogadoId: Long?): Boolean {
+        val ownerId = grupo.ownerId
+        if (usuarioLogadoId == null || ownerId == null || usuarioLogadoId != ownerId) {
+            return false
+        }
+
+        val identificadores = mutableSetOf<String>()
+        grupo.membros.forEach { membro ->
+            val idContato = membro.idContato
+            val emailNormalizado = membro.email
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
+                ?.lowercase()
+            val id = membro.id
+
+            when {
+                idContato != null -> identificadores.add("usuario:$idContato")
+                emailNormalizado != null -> identificadores.add("email:$emailNormalizado")
+                id != null -> identificadores.add("contato:$id")
+            }
+        }
+
+        identificadores.add("usuario:$ownerId")
+        return identificadores.size <= 1
     }
 
     //  para manipular a seleção de membros

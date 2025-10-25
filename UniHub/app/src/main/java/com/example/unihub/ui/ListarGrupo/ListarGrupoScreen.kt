@@ -429,7 +429,7 @@ fun GrupoItemExpansivel(
                             } else {
                                 emptyList()
                             }
-
+                            val isUsuarioLogadoAdmin = usuarioLogadoId != null && grupo.ownerId == usuarioLogadoId
                             val contatosPorEmail = contatosDisponiveis
                                 .mapNotNull { contatoResumo ->
                                     contatoResumo.email.trim().takeIf { it.isNotEmpty() }
@@ -519,7 +519,7 @@ fun GrupoItemExpansivel(
                                 )
                             }
                             val podeExcluirGrupo =
-                                usuarioLogadoEstaNoGrupo && totalMembrosExibidos <= 1
+                                isUsuarioLogadoAdmin && usuarioLogadoEstaNoGrupo && totalMembrosExibidos <= 1
                             acaoGrupo = if (podeExcluirGrupo) GrupoAcao.EXCLUIR else GrupoAcao.SAIR
                             if (acaoGrupo == GrupoAcao.EXCLUIR) {
                                 iconeAcao = Icons.Filled.Delete
