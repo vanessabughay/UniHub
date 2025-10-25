@@ -101,6 +101,25 @@ public class GrupoController {
         }
     }
 
+    @DeleteMapping("/{id}/sair")
+    public ResponseEntity<?> sairDoGrupo(@PathVariable Long id, @AuthenticationPrincipal Long usuarioId) {
+        if (usuarioId == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        try {
+            grupoService.sairDoGrupo(id, usuarioId);
+            return ResponseEntity.noContent().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalStateException e) {
+            String mensagem = e.getMessage();
+            if (mensagem == null || mensagem.isBlank()) {
+                mensagem = "Não foi possível concluir a saída do grupo.";
+            }
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(mensagem);
+        }
+    }
+
     @GetMapping("/pesquisa")
     public ResponseEntity<List<Grupo>> buscarPorNome(@RequestParam String nome,
                                                      @AuthenticationPrincipal Long usuarioId) {
