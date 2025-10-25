@@ -46,7 +46,14 @@ class QuadroFormViewModel(
                         .getContatoResumo()
                         .first()
                         .filter { !it.pendente }
-                        .map { ContatoResumoUi(it.id, it.nome) }
+                        .map {
+                            ContatoResumoUi(
+                                id = it.id,
+                                nome = it.nome,
+                                email = it.email,
+                                ownerId = it.ownerId
+                            )
+                        }
                 }
                 val gruposAsync = async { grupoRepository.getGrupo().first().map { GrupoResumoUi(it.id, it.nome) } }
 
@@ -171,37 +178,114 @@ class QuadroFormViewModel(
         val grupoDetalhes = grupoId?.let { id ->
             val grupoResult = runCatching { grupoRepository.fetchGrupoById(id) }
             val grupo = grupoResult.getOrNull()
-            val usuarioId = TokenManager.usuarioId
-            val membrosFormatados = grupo?.membros
-                ?.map { membro ->
-                    membro.nome?.takeIf { it.isNotBlank() }
-                        ?: membro.email?.takeIf { it.isNotBlank() }
-                        ?: membro.id?.let { "Integrante #$it" }
-                        ?: "Integrante"
-                }
-                ?.distinct()
-                .orEmpty()
+            val membros = if (grupo != null) {
+                val membrosOrdenados = grupo.membros
+                    .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
 
-            if (ownerId != null) {
-                ownerNameFromGrupo = grupo?.membros?.firstNotNullOfOrNull { membro ->
-                    val idsAssociados = listOfNotNull(membro.id, membro.idContato, membro.ownerId)
-                    if (ownerId in idsAssociados) {
-                        membro.nome?.takeIf { it.isNotBlank() }
-                            ?: membro.email?.takeIf { it.isNotBlank() }
-                            ?: membro.id?.let { "Integrante #$it" }
-                            ?: "Integrante"
-                    } else {
-                        null
+                val usuarioLogadoId = TokenManager.usuarioId
+                val nomeUsuarioLogado = TokenManager.nomeUsuario
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.lowercase()
+
+                val contatosDoUsuario = if (usuarioLogadoId != null) {
+                    contatosDisponiveis.filter { resumo ->
+                        resumo.ownerId == usuarioLogadoId
                     }
+                } else {
+                    emptyList()
                 }
-            }
+                val contatosPorEmail = contatosDoUsuario
+                    .mapNotNull { resumo ->
+                        resumo.email
+                            ?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.lowercase()
+                            ?.let { it to resumo }
+                    }
+                    .toMap()
+
+                val contatosPorIdContato = contatosDoUsuario
+                    .mapNotNull { resumo -> resumo.id?.let { it to resumo } }
+                    .toMap()
+
+                val membrosExibidos = linkedSetOf<String>()
+                val membrosFormatados = mutableListOf<String>()
+
+                membrosOrdenados.forEachIndexed { index, contato ->
+                    val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
+                    val emailNormalizado = emailDisponivel?.lowercase()
+
+                    val chaveUnica = contato.idContato?.let { "idContato:$it" }
+                        ?: emailNormalizado?.let { "email:$it" }
+                        ?: contato.id?.let { "id:$it" }
+                        ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+                            ?.let { "nome:$it" }
+                        ?: "indice:$index"
+
+                    if (!membrosExibidos.add(chaveUnica)) {
+                        return@forEachIndexed
+                    }
+
+                    val contatoResumoAssociado = contato.idContato?.let { contatosPorIdContato[it] }
+                        ?: emailNormalizado?.let { contatosPorEmail[it] }
+
+                    val nomeContato = contatoResumoAssociado?.nome
+                        ?.trim()
+                        ?.takeIf { it.isNotEmpty() }
+
+                    val emailContato = contatoResumoAssociado?.email
+                        ?.trim()
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: emailDisponivel
+
+                    val isUsuarioLogado = (
+                            usuarioLogadoId != null &&
+                                    contato.idContato != null &&
+                                    contato.idContato == usuarioLogadoId
+                            ) || (
+                            emailUsuarioLogadoNormalizado != null &&
+                                    emailNormalizado == emailUsuarioLogadoNormalizado
+                            )
+
+                    val textoBase = when {
+                        isUsuarioLogado && nomeUsuarioLogado != null -> nomeUsuarioLogado
+                        nomeContato != null -> nomeContato
+                        emailContato != null -> emailContato
+                        else -> contato.nome?.trim()?.takeIf { it.isNotEmpty() }
+                            ?: "Sem identificação"
+                    }
+
+                    val isAdministrador = grupo.ownerId != null &&
+                            contato.idContato != null &&
+                            contato.idContato == grupo.ownerId
+
+                    if (isAdministrador && ownerNameFromGrupo == null) {
+                        ownerNameFromGrupo = textoBase
+                    }
+
+                    val rotuloAdministrador = if (isAdministrador) {
+                        " (Administrador do Grupo)"
+                    } else {
+                        ""
+                    }
+
+                    membrosFormatados += "- $textoBase$rotuloAdministrador"
+                }
 
 
-            val membros = when {
-                membrosFormatados.isNotEmpty() -> membrosFormatados
-                grupo != null -> listOf("Nenhum integrante neste grupo.")
-                grupoResult.isFailure -> listOf("Não foi possível carregar os integrantes do grupo.")
-                else -> emptyList()
+
+                when {
+                    membrosFormatados.isNotEmpty() -> membrosFormatados
+                    else -> listOf("Nenhum integrante neste grupo.")
+                }
+            } else if (grupoResult.isFailure) {
+                listOf("Não foi possível carregar os integrantes do grupo.")
+            } else {
+                emptyList()
             }
 
             GrupoDetalhesUi(
