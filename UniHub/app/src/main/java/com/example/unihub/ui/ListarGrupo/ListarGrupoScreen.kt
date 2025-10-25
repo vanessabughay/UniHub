@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.KeyboardArrowDown // NOVO
 import androidx.compose.material.icons.filled.KeyboardArrowUp // NOVO
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -65,6 +66,10 @@ import com.example.unihub.data.repository.ContatoResumo
 //Cores
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
 
+enum class GrupoAcao {
+    SAIR,
+    EXCLUIR
+}
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
@@ -83,8 +88,9 @@ fun ListarGrupoScreen(
     val contatosDoUsuario by viewModel.contatosDoUsuario.collectAsState()
 
     var grupoExpandidoId by remember { mutableStateOf<Long?>(null) }
-    var showConfirmDeleteDialog by remember { mutableStateOf(false) } // MODIFICADO: Nome simplificado
-    var grupoParaExcluir by remember { mutableStateOf<Grupo?>(null) } // MODIFICADO: Usaremos este
+    var showConfirmActionDialog by remember { mutableStateOf(false) }
+    var grupoSelecionado by remember { mutableStateOf<Grupo?>(null) }
+    var acaoGrupoSelecionada by remember { mutableStateOf<GrupoAcao?>(null) }
 
     var searchQuery by remember { mutableStateOf("") }
 
@@ -128,34 +134,55 @@ fun ListarGrupoScreen(
         }
     }
 
-    // Diálogo de Confirmação de Exclusão (agora usando showConfirmDeleteDialog e grupoParaExcluir)
-    if (showConfirmDeleteDialog && grupoParaExcluir != null) {
-        val grupoParaExcluirAtual = grupoParaExcluir!! // Sabemos que não é nulo aqui
+    // Diálogo de confirmação para as ações de sair ou excluir o grupo
+    if (showConfirmActionDialog && grupoSelecionado != null && acaoGrupoSelecionada != null) {
+        val grupoAtual = grupoSelecionado!!
+        val acaoAtual = acaoGrupoSelecionada!!
+        val tituloDialogo: String
+        val mensagemDialogo: String
+        val rotuloConfirmacao: String
+        val mensagemSucesso: String
+        when (acaoAtual) {
+            GrupoAcao.EXCLUIR -> {
+                tituloDialogo = "Confirmar Exclusão"
+                mensagemDialogo = "Deseja realmente excluir o grupo \"${grupoAtual.nome}\"?"
+                rotuloConfirmacao = "Excluir"
+                mensagemSucesso = "Grupo excluído!"
+            }
+            GrupoAcao.SAIR -> {
+                tituloDialogo = "Confirmar Saída"
+                mensagemDialogo = "Deseja realmente sair do grupo \"${grupoAtual.nome}\"?"
+                rotuloConfirmacao = "Sair"
+                mensagemSucesso = "Você saiu do grupo!"
+            }
+        }
         AlertDialog(
             onDismissRequest = {
-                showConfirmDeleteDialog = false
-                grupoParaExcluir = null // Limpa ao fechar
+                showConfirmActionDialog = false
+                grupoSelecionado = null
+                acaoGrupoSelecionada = null
             },
-            title = { Text("Confirmar Exclusão") },
-            text = { Text("Deseja realmente excluir o grupo \"${grupoParaExcluirAtual.nome}\"?") },
+            title = { Text(tituloDialogo) },
+            text = { Text(mensagemDialogo) },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        // grupoParaExcluirAtual.id é não nulo porque vem de um item filtrado
-                        viewModel.deleteGrupo(grupoParaExcluirAtual.id!!.toString()) { sucesso ->
+                        viewModel.deleteGrupo(grupoAtual.id!!.toString()) { sucesso ->
                             if (sucesso) {
-                                Toast.makeText(context, "Grupo excluído!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
                             }
                         }
-                        showConfirmDeleteDialog = false
-                        grupoParaExcluir = null
+                        showConfirmActionDialog = false
+                        grupoSelecionado = null
+                        acaoGrupoSelecionada = null
                     }
-                ) { Text("Excluir", color = MaterialTheme.colorScheme.error) }
+                ) { Text(rotuloConfirmacao, color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    showConfirmDeleteDialog = false
-                    grupoParaExcluir = null
+                    showConfirmActionDialog = false
+                    grupoSelecionado = null
+                    acaoGrupoSelecionada = null
                 }) { Text("Cancelar") }
             }
         )
@@ -270,10 +297,11 @@ fun ListarGrupoScreen(
                                         // grupo.id é não nulo aqui
                                         onNavigateToManterGrupo(grupo.id!!.toString())
                                     },
-                                    onExcluirClick = {
-                                        grupoExpandidoId = null // Recolhe ao tentar excluir
-                                        grupoParaExcluir = grupo
-                                        showConfirmDeleteDialog = true
+                                    onAcaoClick = { acao ->
+                                        grupoExpandidoId = null
+                                        grupoSelecionado = grupo
+                                        acaoGrupoSelecionada = acao
+                                        showConfirmActionDialog = true
                                     },
                                     usuarioLogadoId = usuarioLogadoId,
                                     contatosDoUsuario = contatosDoUsuario
@@ -294,7 +322,7 @@ fun GrupoItemExpansivel(
     isExpanded: Boolean,
     onHeaderClick: () -> Unit,
     onEditarClick: () -> Unit,
-    onExcluirClick: () -> Unit,
+    onAcaoClick: (GrupoAcao) -> Unit,
     usuarioLogadoId: Long?,
     contatosDoUsuario: List<ContatoResumo>
 ) {
@@ -361,6 +389,10 @@ fun GrupoItemExpansivel(
                         val membrosOrdenados = grupo.membros
                             .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
 
+                        var acaoGrupo = GrupoAcao.SAIR
+                        var iconeAcao = Icons.Filled.Logout
+                        var descricaoAcao = "Sair do Grupo"
+
                         if (membrosOrdenados.isEmpty()) {
                             Text(
                                 "Nenhum integrante neste grupo.",
@@ -384,6 +416,8 @@ fun GrupoItemExpansivel(
 
                             val contatosPorIdContato = contatosDisponiveis.associateBy { it.id }
                             val membrosExibidos = linkedSetOf<String>()
+                            var usuarioLogadoEstaNoGrupo = false
+                            var totalMembrosExibidos = 0
 
                             val nomeUsuarioLogado = TokenManager.nomeUsuario
                                 ?.trim()
@@ -395,18 +429,22 @@ fun GrupoItemExpansivel(
 
 
                             membrosOrdenados.forEachIndexed { index, contato ->
-                                val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
+                                val emailDisponivel =
+                                    contato.email?.trim()?.takeIf { it.isNotEmpty() }
                                 val emailNormalizado = emailDisponivel?.lowercase()
 
                                 val chaveUnica = contato.idContato?.let { "idContato:$it" }
                                     ?: emailNormalizado?.let { "email:$it" }
                                     ?: contato.id?.let { "id:$it" }
-                                    ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()?.let { "nome:$it" }
+                                    ?: contato.nome?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+                                        ?.let { "nome:$it" }
                                     ?: "indice:$index"
 
                                 if (!membrosExibidos.add(chaveUnica)) {
                                     return@forEachIndexed
                                 }
+
+                                totalMembrosExibidos += 1
 
                                 val contatoResumoAssociado = contato.idContato?.let { contatoId ->
                                     contatosPorIdContato[contatoId]
@@ -430,6 +468,10 @@ fun GrupoItemExpansivel(
                                                 emailNormalizado == emailUsuarioLogadoNormalizado
                                         )
 
+                                if (isUsuarioLogado) {
+                                    usuarioLogadoEstaNoGrupo = true
+                                }
+
                                 val textoBase = when {
                                     isUsuarioLogado && nomeUsuarioLogado != null -> nomeUsuarioLogado
                                     nomeContato != null -> nomeContato
@@ -452,34 +494,42 @@ fun GrupoItemExpansivel(
                                     modifier = Modifier.padding(bottom = 2.dp)
                                 )
                             }
-                        }
-                    }
-
-
-                    Spacer(modifier = Modifier.height(24.dp)) // Aumentar o espaço antes dos botões
-
-                    // Botões de Ação (Editar e Excluir)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween // Para separar os ícones
-                    ) {
-                        // Botão Excluir (esquerda)
-                        IconButton(onClick = onExcluirClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "Excluir Grupo",
-                                tint = MaterialTheme.colorScheme.error
-                            )
+                            val podeExcluirGrupo =
+                                usuarioLogadoEstaNoGrupo && totalMembrosExibidos <= 1
+                            acaoGrupo = if (podeExcluirGrupo) GrupoAcao.EXCLUIR else GrupoAcao.SAIR
+                            if (acaoGrupo == GrupoAcao.EXCLUIR) {
+                                iconeAcao = Icons.Filled.Delete
+                                descricaoAcao = "Excluir Grupo"
+                            }
                         }
 
-                        // Botão Editar (direita)
-                        IconButton(onClick = onEditarClick) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "Editar Grupo",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+
+
+                        Spacer(modifier = Modifier.height(24.dp)) // Aumentar o espaço antes dos botões
+
+                        // Botões de Ação (Editar e sair/Excluir)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween // Para separar os ícones
+                        ) {
+                            // Botão Sair/Excluir (esquerda)
+                            IconButton(onClick = { onAcaoClick(acaoGrupo) }) {
+                                Icon(
+                                    imageVector = iconeAcao,
+                                    contentDescription = descricaoAcao,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+
+                            // Botão Editar (direita)
+                            IconButton(onClick = onEditarClick) {
+                                Icon(
+                                    imageVector = Icons.Filled.Edit,
+                                    contentDescription = "Editar Grupo",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
                 }
@@ -487,3 +537,4 @@ fun GrupoItemExpansivel(
         }
     }
 }
+
