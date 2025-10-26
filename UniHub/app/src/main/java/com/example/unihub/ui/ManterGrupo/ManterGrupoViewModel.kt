@@ -30,6 +30,7 @@ data class ManterGrupoUiState(
     val isExclusao: Boolean = false, // Para controlar o fluxo após exclusão
     val podeExcluirGrupo: Boolean = false,
     val todosOsContatosDisponiveis: List<ContatoResumoUi> = emptyList(),
+    val membrosOriginaisDoGrupo: List<ContatoResumoUi> = emptyList(),
     val isLoadingAllContatos: Boolean = false,
     val errorLoadingAllContatos: String? = null
 
@@ -50,8 +51,12 @@ class ManterGrupoViewModel(
         loadAllAvailableContatos()
         viewModelScope.launch {
             _idMembrosSelecionados.collect { idsAtuais ->
-                val membrosAtualizados = _uiState.value.todosOsContatosDisponiveis
-                    .filter { contato -> idsAtuais.contains(contato.id) }
+                val estadoAtual = _uiState.value
+                val contatosDisponiveisPorId = estadoAtual.todosOsContatosDisponiveis.associateBy { it.id }
+                val membrosOriginaisPorId = estadoAtual.membrosOriginaisDoGrupo.associateBy { it.id }
+                val membrosAtualizados = idsAtuais.mapNotNull { id ->
+                    contatosDisponiveisPorId[id] ?: membrosOriginaisPorId[id]
+                }
                 _uiState.update { it.copy(membrosDoGrupo = membrosAtualizados) }
             }
         }
@@ -74,13 +79,30 @@ class ManterGrupoViewModel(
                         if (grupo != null) {
                             val usuarioLogadoId = TokenManager.usuarioId
                             val podeExcluir = calcularPodeExcluirGrupo(grupo, usuarioLogadoId)
+                            val membrosDoGrupoServidor = grupo.membros.mapNotNull { membro ->
+                                val identificador = membro.idContato ?: membro.id
+                                if (identificador != null) {
+                                    val nome = membro.nome ?: membro.email ?: "Integrante $identificador"
+                                    val email = membro.email ?: membro.nome ?: "Email não informado"
+                                    ContatoResumoUi(
+                                        id = identificador,
+                                        nome = nome,
+                                        email = email,
+                                        pendente = membro.pendente
+                                    )
+                                } else {
+                                    null
+                                }
+                            }
                             _uiState.update {
                                 it.copy(
                                     nome = grupo.nome ?: "",
                                     adminContatoId = grupo.adminContatoId,
                                     isLoading = false,
                                     podeExcluirGrupo = podeExcluir,
-                                    grupoIdAtual = id
+                                    grupoIdAtual = id,
+                                    membrosDoGrupo = membrosDoGrupoServidor,
+                                    membrosOriginaisDoGrupo = membrosDoGrupoServidor
                                 )
                             }
                             val idsDosMembrosDoGrupo = grupo.membros
@@ -95,7 +117,9 @@ class ManterGrupoViewModel(
                                     adminContatoId = null,
                                     isLoading = false,
                                     podeExcluirGrupo = false,
-                                    grupoIdAtual = null
+                                    grupoIdAtual = null,
+                                    membrosDoGrupo = emptyList(),
+                                    membrosOriginaisDoGrupo = emptyList()
                                 )
                             }
                         }
@@ -106,7 +130,9 @@ class ManterGrupoViewModel(
                             erro = "ID de Grupo inválido",
                             grupoIdAtual = null,
                             adminContatoId = null,
-                            podeExcluirGrupo = false
+                            podeExcluirGrupo = false,
+                            membrosDoGrupo = emptyList(),
+                            membrosOriginaisDoGrupo = emptyList()
                         )
                     }
                 }
@@ -116,7 +142,9 @@ class ManterGrupoViewModel(
                 it.copy(
                     erro = "ID de Grupo inválido",
                     grupoIdAtual = null,
-                    podeExcluirGrupo = false
+                    podeExcluirGrupo = false,
+                    membrosDoGrupo = emptyList(),
+                    membrosOriginaisDoGrupo = emptyList()
                 )
             }
         }
@@ -321,8 +349,9 @@ class ManterGrupoViewModel(
                 }
                 .collect { contatosParaUi ->
                     val idsValidos = contatosParaUi.map { it.id }.toSet()
+                    val idsOriginais = _uiState.value.membrosOriginaisDoGrupo.map { it.id }.toSet()
                     _idMembrosSelecionados.update { idsSelecionados ->
-                        idsSelecionados.filter { idsValidos.contains(it) }.toSet()
+                        idsSelecionados.filter { idsValidos.contains(it) || idsOriginais.contains(it) }.toSet()
                     }
                     _uiState.update {
                         it.copy(

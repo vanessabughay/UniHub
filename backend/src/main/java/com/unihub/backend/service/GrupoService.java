@@ -14,11 +14,13 @@ import com.unihub.backend.repository.UsuarioRepository;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -111,8 +113,9 @@ public class GrupoService {
 
     @Transactional
     public Grupo atualizarGrupo(Long id, Grupo grupoDetalhesRequest, Long usuarioId) {
-        Long ownerId = requireUsuario(usuarioId);
-        Grupo grupoExistente = buscarPorId(id, ownerId);
+        Long solicitanteId = requireUsuario(usuarioId);
+        Grupo grupoExistente = buscarPorId(id, solicitanteId);
+        Long ownerIdDoGrupo = grupoExistente.getOwnerId();
 
         if (grupoDetalhesRequest.getNome() != null) {
             grupoExistente.setNome(grupoDetalhesRequest.getNome());
@@ -121,26 +124,34 @@ public class GrupoService {
         // Lógica para atualizar a lista de membros
         Contato contatoAdministradorPreferencial;
         if (grupoDetalhesRequest.getMembros() != null) {
-            List<Contato> novosMembros = carregarMembrosValidos(grupoDetalhesRequest.getMembros(), ownerId);
-            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(novosMembros, ownerId, false);
+            List<Contato> novosMembros = carregarMembrosValidos(grupoDetalhesRequest.getMembros(), ownerIdDoGrupo);
+            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(novosMembros, ownerIdDoGrupo, false);
             grupoExistente.getMembros().clear();
             grupoExistente.getMembros().addAll(novosMembros);
         } else {
-            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(grupoExistente.getMembros(), ownerId, false);
+            contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(grupoExistente.getMembros(), ownerIdDoGrupo, false);
         }
         if (grupoExistente.getMembros().isEmpty()) {
             grupoRepository.delete(grupoExistente);
             throw new EntityNotFoundException("Grupo removido por não possuir membros ativos.");
         }
 
-        Contato contatoDoUsuario = contatoAdministradorPreferencial != null
+        Contato contatoPreferencial = contatoAdministradorPreferencial != null
                 ? contatoAdministradorPreferencial
-                : buscarContatoDoUsuario(ownerId).orElse(null);
+                : Optional.ofNullable(localizarContatoDoOwner(grupoExistente))
+                .orElseGet(() -> buscarContatoDoUsuario(ownerIdDoGrupo).orElse(null));
 
-        Contato administrador = definirAdminContato(grupoExistente, contatoAdministradorPreferencial, contatoDoUsuario, true);
+        Contato contatoDoSolicitante = localizarContatoDoUsuarioNoGrupo(grupoExistente, solicitanteId)
+                .orElse(contatoPreferencial);
+
+        Contato administrador = definirAdminContato(grupoExistente, contatoPreferencial, contatoDoSolicitante, true);
         boolean ownerAlterado = atualizarOwnerPorAdmin(grupoExistente, administrador);
         Grupo grupoAtualizado = grupoRepository.save(grupoExistente);
-        Contato administradorAtualizado = definirAdminContato(grupoAtualizado, contatoAdministradorPreferencial, contatoDoUsuario, true);
+        Contato contatoPreferencialAtualizado = Optional.ofNullable(localizarContatoDoOwner(grupoAtualizado))
+                .orElse(contatoPreferencial);
+        Contato contatoDoSolicitanteAtualizado = localizarContatoDoUsuarioNoGrupo(grupoAtualizado, solicitanteId)
+                .orElse(contatoPreferencialAtualizado);
+        Contato administradorAtualizado = definirAdminContato(grupoAtualizado, contatoPreferencialAtualizado, contatoDoSolicitanteAtualizado, true);
         if (atualizarOwnerPorAdmin(grupoAtualizado, administradorAtualizado) && !ownerAlterado) {
             grupoAtualizado = grupoRepository.save(grupoAtualizado);
         }
@@ -424,22 +435,87 @@ public class GrupoService {
             return new ArrayList<>();
         }
 
+        Set<Long> idsInformados = new HashSet<>();
+        Set<Long> idsContatoInformados = new HashSet<>();
+        Set<String> emailsInformados = new HashSet<>();
 
-        List<Long> ids = membros.stream()
-                .map(Contato::getId)
-                .toList();
-
-        if (ids.stream().anyMatch(Objects::isNull)) {
-            throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a um grupo.");
+        for (Contato membro : membros) {
+            if (membro == null) {
+                continue;
+            }
+            if (membro.getId() != null) {
+                idsInformados.add(membro.getId());
+            }
+            if (membro.getIdContato() != null) {
+                idsContatoInformados.add(membro.getIdContato());
+            }
+            String email = membro.getEmail();
+            if (email != null && !email.isBlank()) {
+                emailsInformados.add(email.trim());
+            }
         }
 
-        List<Contato> encontrados = contatoRepository.findByOwnerIdAndIdIn(ownerId, ids);
-        Set<Long> encontradosIds = new HashSet<>(encontrados.stream().map(Contato::getId).toList());
-        if (encontradosIds.size() != new HashSet<>(ids).size()) {
-            throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+        Map<Long, Contato> contatosPorId = new HashMap<>();
+        if (!idsInformados.isEmpty()) {
+            contatoRepository.findByOwnerIdAndIdIn(ownerId, new ArrayList<>(idsInformados))
+                    .forEach(contato -> contatosPorId.put(contato.getId(), contato));
         }
 
-        return new ArrayList<>(encontrados);
+        Map<Long, Contato> contatosPorIdContato = new HashMap<>();
+        for (Long idContato : idsContatoInformados) {
+            contatoRepository.findByOwnerIdAndIdContato(ownerId, idContato)
+                    .ifPresent(contato -> contatosPorIdContato.put(idContato, contato));
+        }
+
+        Map<String, Contato> contatosPorEmail = new HashMap<>();
+        for (String email : emailsInformados) {
+            contatoRepository.findByOwnerIdAndEmailIgnoreCase(ownerId, email)
+                    .ifPresent(contato -> contatosPorEmail.put(email.toLowerCase(Locale.ROOT), contato));
+        }
+
+        List<Contato> membrosResolvidos = new ArrayList<>();
+        Set<Long> idsAdicionados = new HashSet<>();
+
+        for (Contato membro : membros) {
+            if (membro == null) {
+                continue;
+            }
+
+            Contato encontrado = null;
+
+            Long id = membro.getId();
+            if (id != null) {
+                encontrado = contatosPorId.get(id);
+            }
+
+            if (encontrado == null) {
+                Long idContato = membro.getIdContato();
+                if (idContato != null) {
+                    encontrado = contatosPorIdContato.get(idContato);
+                }
+            }
+
+            if (encontrado == null) {
+                String email = membro.getEmail();
+                if (email != null && !email.isBlank()) {
+                    encontrado = contatosPorEmail.get(email.trim().toLowerCase(Locale.ROOT));
+                }
+            }
+
+            if (encontrado == null) {
+                throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+            }
+
+            if (encontrado.getId() == null) {
+                throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a um grupo.");
+            }
+
+            if (idsAdicionados.add(encontrado.getId())) {
+                membrosResolvidos.add(encontrado);
+            }
+        }
+
+        return membrosResolvidos;
     }
 
     private Contato garantirContatoDoUsuarioNoGrupo(List<Contato> membros, Long ownerId, boolean forcarInclusao) {
@@ -548,6 +624,29 @@ public class GrupoService {
                 .sorted(contatoPrioridadeComparator())
                 .findFirst()
                 .orElse(null);
+    }
+
+    private Optional<Contato> localizarContatoDoUsuarioNoGrupo(Grupo grupo, Long usuarioId) {
+        if (grupo == null || usuarioId == null) {
+            return Optional.empty();
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Usuario usuario = usuarioRepository.findById(usuarioId).orElse(null);
+        if (usuario == null) {
+            return Optional.empty();
+        }
+
+        Set<Long> registrosAssociados = buscarIdsDeRegistrosContatoDoUsuario(usuario);
+
+        return membros.stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> representaUsuario(contato, usuario, registrosAssociados))
+                .findFirst();
     }
 
     private Contato localizarContatoPorId(List<Contato> membros, Long contatoId) {
