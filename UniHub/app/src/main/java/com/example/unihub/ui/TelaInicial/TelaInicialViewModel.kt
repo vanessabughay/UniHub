@@ -171,8 +171,8 @@ class TelaInicialViewModel(
             avaliacoes = emptyList(),
             tarefas = emptyList(),
             opcoesMenu = listOf(
-                "Perfil", "Disciplinas", "Serviço de nuvem", "Calendário", "Contatos",
-                "Grupos", "Quadros", "Configurar notificações", "Atividades"
+                "Perfil", "Disciplinas", "Calendário", "Contatos",
+                "Grupos", "Quadros", "Configurar notificações"
             ),
             atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações")
         )

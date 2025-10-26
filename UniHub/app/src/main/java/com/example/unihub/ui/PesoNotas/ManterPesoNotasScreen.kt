@@ -157,13 +157,11 @@ fun ManterPesoNotasScreen(
 
             CabecalhoAlternativo(
                 titulo = buildString {
-                    append("Notas - ")
-                    if (nomeDisciplina.isNotBlank()) {
-                        append(nomeDisciplina)
-                    }
+                    append("Notas")
                 },
                 onVoltar = onVoltar
             )
+            Spacer(Modifier.height(16.dp))
         }
     ) { padding ->
         Column(

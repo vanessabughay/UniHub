@@ -99,9 +99,7 @@ fun TelaInicial(
                 "contatos" -> navController.navigate("lista_contato")
                 "grupos" -> navController.navigate("lista_grupo")
                 "historico_notificacoes" -> navController.navigate("historico_notificacoes")
-                // "serviço de nuvem" -> navController.navigate("servico_nuvem")
                 //"configurar notificações" -> navController.navigate("configurar_notificacoes")
-                //"atividades" -> navController.navigate("atividades")
                 else -> {}
             }
         }
@@ -581,11 +579,9 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
     "disciplinas" -> Icons.AutoMirrored.Outlined.MenuBook
     "avaliações" -> Outlined.RateReview
     "perfil" -> Outlined.Person
-    "serviço de nuvem" -> Outlined.CloudQueue
     "contatos" -> Outlined.Contacts
     "grupos" -> Outlined.Groups
     "configurar notificações" -> Outlined.Settings
-    "atividades" -> Outlined.Assignment
     else -> Outlined.Circle
 
 }
@@ -628,13 +624,11 @@ private fun TelaInicialViewPreview() {
                 opcoesMenu = listOf(
                     "Perfil",
                     "Disciplinas",
-                    "Serviço de nuvem",
                     "Calendário",
                     "Contatos",
                     "Grupos",
                     "Quadros",
-                    "Configurar notificações",
-                    "Atividades"
+                    "Configurar notificações"
                 ),
                 atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações"),
                 secaoAvaliacoesAberta = true,

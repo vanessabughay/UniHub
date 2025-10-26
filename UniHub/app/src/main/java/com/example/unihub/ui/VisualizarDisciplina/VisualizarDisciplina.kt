@@ -10,7 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Notes
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -19,25 +21,52 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Ausencia
 import com.example.unihub.data.model.Avaliacao
-import com.example.unihub.ui.ListarAvaliacao.DisciplinaGrupoCard
+import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoViewModel
 import com.example.unihub.ui.ListarAvaliacao.ListarAvaliacaoViewModelFactory
 import java.time.format.DateTimeFormatter
 import com.example.unihub.ui.Shared.NotaCampo
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 
-// Cores dos cards e botões
-private val AvaliacoesCardColor = Color(0xFFE0E1F8)       // igual ao da lista de avaliações
-private val AusenciasCardColor  = Color(0xFFF3E4F8)       // fundo do card de ausências
-private val AusenciasBtnColor   = Color(0xFFE1C2F0)       // um pouco mais escura que o card
-private val PesoNotasColor      = Color(0xFFD8ECDF)       // fundo do card de peso das notas
-private val PesoNotasBtnColor = Color(0xFFBED0C4)       // fundo do card de peso das notas
+private val AvaliacoesCardColor = Color(0xFFE0E1F8)
+private val AusenciasCardColor = Color(0xFFF3E4F8)
+private val AusenciasBtnColor = Color(0xFFE1C2F0)
+private val PesoNotasColor = Color(0xFFD8ECDF)
+private val PesoNotasBtnColor = Color(0xFFBED0C4)
+private val LilasButton = Color(0xFF9799FF)
+
+private fun formatarDataHora(iso: String?): String {
+    if (iso.isNullOrBlank()) return ""
+    val padrõesLdt = listOf(
+        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    )
+    for (fmt in padrõesLdt) {
+        try {
+            val ldt = LocalDateTime.parse(iso, fmt)
+            return ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy (HH:mm)"))
+        } catch (_: Exception) { }
+    }
+    return try {
+        val ld = LocalDate.parse(iso)
+        ld.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    } catch (_: Exception) {
+        iso
+    }
+}
+
 
 data class OpcaoDisciplina(
     val title: String,
@@ -72,7 +101,7 @@ fun AusenciasCard(
     ausencias: List<Ausencia>,
     ausenciasPermitidas: Int?,
     onToggle: () -> Unit,
-    onAdd: () -> Unit,                   // botão de rodapé
+    onAdd: () -> Unit,
     onItemClick: (Ausencia) -> Unit
 ) {
     Card(
@@ -81,7 +110,6 @@ fun AusenciasCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Cabeçalho — "+" apenas expande/retrai
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -94,7 +122,10 @@ fun AusenciasCard(
                 Text(text = "Ausências", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onToggle) {
-                    Icon(Icons.Default.Add, contentDescription = "Expandir Ausências")
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = "Expandir Ausências"
+                    )
                 }
             }
 
@@ -126,7 +157,6 @@ fun AusenciasCard(
                     )
                 }
 
-                // Botão de rodapé: ADICIONAR AUSÊNCIA
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -148,10 +178,64 @@ fun AusenciasCard(
     }
 }
 
+
+@Composable
+private fun AvaliacaoItem(
+    avaliacao: Avaliacao,
+    onExcluir: (Avaliacao) -> Unit,
+    onEditarNotaClick: (Avaliacao) -> Unit,
+    onEditarAvaliacao: (Avaliacao) -> Unit,
+    onToggleConcluida: (Avaliacao, Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEditarAvaliacao(avaliacao) }
+            .padding(vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Checkbox(
+            checked = avaliacao.estado == EstadoAvaliacao.CONCLUIDA,
+            onCheckedChange = { marcado -> onToggleConcluida(avaliacao, marcado) }
+        )
+
+        Column(Modifier.weight(1f)) {
+            Text(avaliacao.descricao ?: "[sem descrição]")
+            val dataFmt = formatarDataHora(avaliacao.dataEntrega)
+            val subtitulo = buildString {
+                avaliacao.tipoAvaliacao?.let { append(it) }
+                if (dataFmt.isNotBlank()) {
+                    if (isNotEmpty()) append(" • ")
+                    append(dataFmt)
+                }
+            }
+            if (subtitulo.isNotBlank()) {
+                Text(
+                    text = subtitulo,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            TextButton(onClick = { onEditarNotaClick(avaliacao) }) {
+                Text(
+                    if (avaliacao.nota != null) "Nota: ${NotaCampo.formatListValue(avaliacao.nota)}" else "Definir nota"
+                )
+            }
+        }
+
+        IconButton(onClick = { onExcluir(avaliacao) }) {
+            Icon(Icons.Filled.Delete, contentDescription = "Excluir")
+        }
+    }
+}
+
+
 @Composable
 fun AvaliacoesCard(
     expanded: Boolean,
-    disciplinaNome: String,
     avaliacoes: List<Avaliacao>,
     onToggle: () -> Unit,
     onAddAvaliacaoParaDisciplina: () -> Unit,
@@ -167,7 +251,6 @@ fun AvaliacoesCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column {
-            // Cabeçalho — "+" apenas expande/retrai
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -180,7 +263,10 @@ fun AvaliacoesCard(
                 Text(text = "Avaliações", style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(onClick = onToggle) {
-                    Icon(Icons.Default.Add, contentDescription = "Expandir Avaliações")
+                    Icon(
+                        imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = "Expandir Avaliações"
+                    )
                 }
             }
 
@@ -196,7 +282,6 @@ fun AvaliacoesCard(
                         text = "Nenhuma avaliação cadastrada para esta disciplina.",
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                     )
-                    // Rodapé com botão "Adicionar avaliação" mesmo sem itens
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -208,17 +293,80 @@ fun AvaliacoesCard(
                         }
                     }
                 } else {
-                    // Reuso da UI da lista (com botão "Adicionar avaliação")
-                    DisciplinaGrupoCard(
-                        nome = disciplinaNome,
-                        podeAdicionar = true,
-                        avaliacoes = avaliacoes.sortedBy { it.descricao ?: "" },
-                        onAddClick = onAddAvaliacaoParaDisciplina,   // << navegação direta
-                        onAvaliacaoClick = onEditarAvaliacao,
-                        onExcluirClick = onExcluir,
-                        onToggleConcluida = onToggleConcluida,
-                        onEditarNotaClick = onEditarNotaClick
-                    )
+                    val (avaliacoesConcluidas, avaliacoesPendentes) = avaliacoes
+                        .partition { it.estado == EstadoAvaliacao.CONCLUIDA }
+                        .let { (concluidas, pendentes) ->
+                            concluidas.sortedBy { it.descricao ?: "" } to pendentes.sortedBy { it.descricao ?: "" }
+                        }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 10.dp, horizontal = 12.dp)
+                    ) {
+
+                        Text(
+                            text = "Pendentes:",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+
+                        if (avaliacoesPendentes.isEmpty()) {
+                            Text(
+                                "Nenhuma avaliação pendente.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
+                            )
+                        } else {
+                            avaliacoesPendentes.forEach { av ->
+                                AvaliacaoItem(
+                                    avaliacao = av,
+                                    onExcluir = onExcluir,
+                                    onEditarNotaClick = onEditarNotaClick,
+                                    onEditarAvaliacao = onEditarAvaliacao,
+                                    onToggleConcluida = onToggleConcluida
+                                )
+                            }
+                        }
+
+                        if (avaliacoesConcluidas.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "Concluídas:",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+
+                            avaliacoesConcluidas.forEach { av ->
+                                AvaliacaoItem(
+                                    avaliacao = av,
+                                    onExcluir = onExcluir,
+                                    onEditarNotaClick = onEditarNotaClick,
+                                    onEditarAvaliacao = onEditarAvaliacao,
+                                    onToggleConcluida = onToggleConcluida
+                                )
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(
+                                onClick = onAddAvaliacaoParaDisciplina,
+                                colors = ButtonDefaults.textButtonColors(
+                                    containerColor = LilasButton,
+                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                )
+                            ) { Text("Adicionar avaliação") }
+                        }
+                    }
                 }
             }
         }
@@ -246,7 +394,6 @@ fun VisualizarDisciplinaScreen(
     val ausencias by viewModel.ausencias.collectAsStateWithLifecycle()
     var expandAusencias by remember { mutableStateOf(false) }
 
-    // Avaliações (reutilizando a ViewModel da lista)
     var expandAvaliacoes by remember { mutableStateOf(false) }
     val avaliacoesVM: ListarAvaliacaoViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
         factory = ListarAvaliacaoViewModelFactory
@@ -255,11 +402,12 @@ fun VisualizarDisciplinaScreen(
     val isLoadingAval by avaliacoesVM.isLoading.collectAsState()
     val errorAval by avaliacoesVM.errorMessage.collectAsState()
 
-    // Diálogos de avaliação
     var showConfirmDeleteDialog by remember { mutableStateOf(false) }
     var avaliacaoParaExcluir by remember { mutableStateOf<Avaliacao?>(null) }
+
     var avaliacaoParaConcluir by remember { mutableStateOf<Avaliacao?>(null) }
     var avaliacaoParaReativar by remember { mutableStateOf<Avaliacao?>(null) }
+
     var notaDialogAvaliacao by remember { mutableStateOf<Avaliacao?>(null) }
     var notaTemp by remember { mutableStateOf("") }
 
@@ -289,7 +437,7 @@ fun VisualizarDisciplinaScreen(
                 onNavigateToEdit(disc.id.toString())
             },
 
-            OpcaoDisciplina("Peso das Notas", Icons.Outlined.StarOutline, PesoNotasColor) {
+            OpcaoDisciplina("Notas", Icons.Outlined.StarOutline, PesoNotasColor) {
                 disc.id?.let { onNavigateToPesoNotas(it.toString()) }
             },
 
@@ -298,7 +446,6 @@ fun VisualizarDisciplinaScreen(
             }
         )
 
-        // === Diálogo: Excluir avaliação
         if (showConfirmDeleteDialog && avaliacaoParaExcluir != null) {
             val av = avaliacaoParaExcluir!!
             AlertDialog(
@@ -322,7 +469,6 @@ fun VisualizarDisciplinaScreen(
             )
         }
 
-        // === Diálogo: Concluir/Reativar
         avaliacaoParaConcluir?.let { av ->
             AlertDialog(
                 onDismissRequest = { avaliacaoParaConcluir = null },
@@ -356,7 +502,7 @@ fun VisualizarDisciplinaScreen(
             )
         }
 
-        // === Diálogo: Nota
+
         notaDialogAvaliacao?.let { av ->
             AlertDialog(
                 onDismissRequest = { notaDialogAvaliacao = null },
@@ -416,7 +562,7 @@ fun VisualizarDisciplinaScreen(
                         ausencias = ausencias,
                         ausenciasPermitidas = disc.ausenciasPermitidas,
                         onToggle = { expandAusencias = !expandAusencias },
-                        onAdd = { onNavigateToAusencias(disc.id.toString(), null) },   // botão de rodapé
+                        onAdd = { onNavigateToAusencias(disc.id.toString(), null) },
                         onItemClick = { aus -> onNavigateToAusencias(disc.id.toString(), aus.id?.toString()) }
                     )
                 }
@@ -424,7 +570,6 @@ fun VisualizarDisciplinaScreen(
                     AvaliacoesCard(
                         expanded = expandAvaliacoes,
                         onToggle = { expandAvaliacoes = !expandAvaliacoes },
-                        disciplinaNome = disc.nome.orEmpty(),
                         avaliacoes = avaliacoesDaDisciplina,
                         onAddAvaliacaoParaDisciplina = {
                             onNavigateToAddAvaliacaoParaDisciplina(disc.id.toString())

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -79,14 +80,14 @@ import com.example.unihub.ui.Shared.NotaCampo
 
 
 val CardDefaultBackgroundColor = Color(0xFFD4D4E8)
-val LilasCard = Color(0xFFE0E1F8)        // fundo do card (lilás claro)
-val LilasButton = Color(0xFF9799FF)      // botões dentro do card
+val LilasCard = Color(0xFFE0E1F8)
+val LilasButton = Color(0xFF9799FF)
 
 private fun formatarDataHora(iso: String?): String {
     if (iso.isNullOrBlank()) return ""
     val padrõesLdt = listOf(
-        DateTimeFormatter.ISO_LOCAL_DATE_TIME,                    // yyyy-MM-dd'T'HH:mm:ss
-        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),        // sem segundos
+        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     )
@@ -166,9 +167,6 @@ fun ListarAvaliacaoScreen(
 
     var searchQuery by remember { mutableStateOf("") }
 
-    // NOTAS digitadas (somente UI por enquanto)
-    //val notasDigitadas = remember { mutableStateMapOf<Long, String>() }
-
     LaunchedEffect(errorMessage) {
         errorMessage?.let { message ->
             Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -208,7 +206,6 @@ fun ListarAvaliacaoScreen(
         }
     }
 
-    // Diálogo: Excluir
     if (showConfirmDeleteDialog && avaliacaoParaExcluir != null) {
         val av = avaliacaoParaExcluir!!
         AlertDialog(
@@ -238,7 +235,6 @@ fun ListarAvaliacaoScreen(
         )
     }
 
-    // Diálogo: Concluir
     if (avaliacaoParaConcluir != null) {
         val av = avaliacaoParaConcluir!!
         AlertDialog(
@@ -259,7 +255,6 @@ fun ListarAvaliacaoScreen(
         )
     }
 
-    // Diálogo: Reativar
     if (avaliacaoParaReativar != null) {
         val av = avaliacaoParaReativar!!
         AlertDialog(
@@ -280,7 +275,6 @@ fun ListarAvaliacaoScreen(
         )
     }
 
-    // ====== Diálogo: Nota ======
     var notaDialogAvaliacao by remember { mutableStateOf<Avaliacao?>(null) }
     var notaTemp by remember { mutableStateOf("") }
 
@@ -307,11 +301,10 @@ fun ListarAvaliacaoScreen(
                 TextButton(
                     onClick = {
                         if (isButtonEnabled) {
-                            isButtonEnabled = false // desabilita o botão
+                            isButtonEnabled = false
 
                             val valor = NotaCampo.toDouble(notaTemp)
                             viewModel.updateNota(av, valor) { ok ->
-                                // Quando o backend responder, reabilita o botão
                                 isButtonEnabled = true
 
                                 if (ok) {
@@ -323,7 +316,7 @@ fun ListarAvaliacaoScreen(
                             }
                         }
                     },
-                    enabled = isButtonEnabled // 🔐 controla se pode clicar
+                    enabled = isButtonEnabled
                 ) {
                     Text(if (isButtonEnabled) "SALVAR" else "Salvando...")
                 }
@@ -344,8 +337,9 @@ fun ListarAvaliacaoScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddAvaliacaoGeral,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = LilasButton,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Avaliação")
             }
@@ -401,14 +395,12 @@ fun ListarAvaliacaoScreen(
                             )
                         }
 
-                        // AGRUPA por disciplina
                         val gruposPorDisciplina = remember(avaliacoesFiltrados) {
                             avaliacoesFiltrados.groupBy { it.disciplina?.id ?: -1L }
                                 .toList()
                                 .sortedBy { (_, lista) -> (lista.firstOrNull()?.disciplina?.nome ?: "\uFFFF").lowercase() }
                         }
 
-                        // Vai para "Concluídas" somente se TODAS as avaliações do grupo estiverem CONCLUIDAS
                         val gruposAndamento = remember(gruposPorDisciplina) {
                             gruposPorDisciplina.filter { (_, lista) -> lista.any { it.estado != EstadoAvaliacao.CONCLUIDA } }
                         }
@@ -424,7 +416,6 @@ fun ListarAvaliacaoScreen(
                             verticalArrangement = Arrangement.spacedBy(16.dp),
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            // Seção: Em andamento
                             item {
                                 SecaoExpansivel(titulo = "Em andamento") {
                                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -466,7 +457,6 @@ fun ListarAvaliacaoScreen(
                                 }
                             }
 
-                            // Seção: Concluídas
                             item {
                                 SecaoExpansivel(titulo = "Concluídas", inicialExpandida = true) {
                                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -527,11 +517,15 @@ fun SecaoExpansivel(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable { expanded = !expanded }
-                .padding(vertical = 8.dp),
+                .padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(titulo, style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = titulo,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
             Icon(
                 imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = null
@@ -540,11 +534,6 @@ fun SecaoExpansivel(
         AnimatedVisibility(visible = expanded) {
             Column { content() }
         }
-        HorizontalDivider(
-            modifier = Modifier.padding(top = 8.dp),
-            thickness = DividerDefaults.Thickness,
-            color = DividerDefaults.color
-        )
     }
 }
 
@@ -559,7 +548,7 @@ fun DisciplinaGrupoCard(
     onToggleConcluida: (Avaliacao, Boolean) -> Unit,
     onEditarNotaClick: (Avaliacao) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(true) } // começa expandido
+    var expanded by remember { mutableStateOf(true) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -571,7 +560,6 @@ fun DisciplinaGrupoCard(
                 .fillMaxWidth()
                 .padding(vertical = 10.dp, horizontal = 12.dp)
         ) {
-            // Cabeçalho da disciplina
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -597,12 +585,6 @@ fun DisciplinaGrupoCard(
                         .fillMaxWidth()
                         .padding(top = 8.dp)
                 ) {
-                    Text(
-                        "Concluída?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
-                    )
 
                     if (avaliacoes.isEmpty()) {
                         Text(
@@ -616,16 +598,15 @@ fun DisciplinaGrupoCard(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clickable { onAvaliacaoClick(av) }
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Checkbox concluída
                                 Checkbox(
                                     checked = av.estado == EstadoAvaliacao.CONCLUIDA,
                                     onCheckedChange = { marcado -> onToggleConcluida(av, marcado) }
                                 )
 
-                                // Conteúdo (sem clique para editar)
                                 Column(Modifier.weight(1f)) {
                                     Text(av.descricao ?: "[sem descrição]")
                                     val dataFmt = formatarDataHora(av.dataEntrega)
@@ -645,7 +626,6 @@ fun DisciplinaGrupoCard(
                                     }
                                 }
 
-                                // Botão de NOTA (abre dialog)
                                 Column(horizontalAlignment = Alignment.End) {
                                     TextButton(onClick = { onEditarNotaClick(av) }) {
                                         Text(
@@ -654,12 +634,8 @@ fun DisciplinaGrupoCard(
                                     }
                                 }
 
-                                // Ações
                                 IconButton(onClick = { onExcluirClick(av) }) {
                                     Icon(Icons.Filled.Delete, contentDescription = "Excluir")
-                                }
-                                IconButton(onClick = { onAvaliacaoClick(av) }) {
-                                    Icon(Icons.Filled.Edit, contentDescription = "Editar")
                                 }
                             }
                         }
@@ -676,7 +652,7 @@ fun DisciplinaGrupoCard(
                                 onClick = onAddClick,
                                 colors = ButtonDefaults.textButtonColors(
                                     containerColor = LilasButton,
-                                    contentColor = MaterialTheme.colorScheme.onSurface
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
                                 )
                             ) { Text("Adicionar avaliação") }
                         }
@@ -686,5 +662,3 @@ fun DisciplinaGrupoCard(
         }
     }
 }
-
-

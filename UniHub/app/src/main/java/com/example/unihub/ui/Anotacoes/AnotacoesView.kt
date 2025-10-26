@@ -30,11 +30,11 @@ import androidx.compose.runtime.remember
 import com.example.unihub.components.CabecalhoAlternativo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.unihub.components.CampoBusca
 
-// Paleta semelhante ao mock
-private val Beige = Color(0xFFF5E9DB)
-private val BeigeContainer = Color(0xFFF0E0CB)
-private val OnBeige = Color(0xFF2E2A25)
+private val Beige = Color(0xFFF8F0E7)
+private val BeigeContainer = Color(0x2FE1C4A1)
+private val OnBeige = Color(0xFF38332E)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,25 +43,33 @@ fun AnotacoesView(
     onVoltar: () -> Unit,
 ) {
 
-    // Instancia o repositório e o ViewModel
     val repository = remember { AnotacoesRepository() }
     val vm: AnotacoesViewModel = viewModel(
         factory = AnotacoesViewModelFactory(disciplinaId, repository)
     )
 
-    // Observa o estado das anotações
     val anotacoes by vm.anotacoes.collectAsState()
     var anotacaoParaExcluir by remember { mutableStateOf<Anotacao?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredAnotacoes = remember(anotacoes, searchQuery) {
+        if (searchQuery.isBlank()) {
+            anotacoes
+        } else {
+            anotacoes.filter {
+                it.expandida ||
+                        it.titulo.contains(searchQuery, ignoreCase = true) ||
+                        it.conteudo.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
-
-                CabecalhoAlternativo(
-
-                    titulo = "Minhas anotações",
-                    onVoltar = onVoltar
-                )
-
+            CabecalhoAlternativo(
+                titulo = "Minhas anotações",
+                onVoltar = onVoltar
+            )
         },
         bottomBar = {
             Box(
@@ -85,25 +93,40 @@ fun AnotacoesView(
             }
         }
     ) { paddingValues ->
-        LazyColumn(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(anotacoes, key = { it.id }) { a ->
-                AnotacaoCard(
-                    anotacao = a,
-                    onToggle = { vm.alternarExpandida(a.id) },
-                    onDelete = { anotacaoParaExcluir = a },
-                    onDraftTitleChange = { vm.alterarRascunhoTitulo(a.id, it) },
-                    onDraftContentChange = { vm.alterarRascunhoConteudo(a.id, it) },
-                    onCancel = { vm.cancelar(a.id) },
-                    onSave = { vm.salvar(a.id) }
-                )
+            CampoBusca(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = "Buscar anotações...",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp, top = 8.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredAnotacoes, key = { it.id }) { a ->
+                    AnotacaoCard(
+                        anotacao = a,
+                        onToggle = { vm.alternarExpandida(a.id) },
+                        onDelete = { anotacaoParaExcluir = a },
+                        onDraftTitleChange = { vm.alterarRascunhoTitulo(a.id, it) },
+                        onDraftContentChange = { vm.alterarRascunhoConteudo(a.id, it) },
+                        onCancel = { vm.cancelar(a.id) },
+                        onSave = { vm.salvar(a.id) }
+                    )
+                }
+                item { Spacer(Modifier.height(72.dp)) }
             }
-            item { Spacer(Modifier.height(72.dp)) }
         }
 
         anotacaoParaExcluir?.let { selecionada ->
@@ -155,47 +178,52 @@ private fun AnotacaoCard(
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
 
-            // Cabeçalho do card
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
             ) {
-                // Placeholder do ícone (caixinha bege)
-                /*Box(
-                    modifier = Modifier
-                        .size(width = 36.dp, height = 28.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(BeigeContainer),
-                    contentAlignment = Alignment.Center
-                ) {}*/
 
                 Spacer(Modifier.width(12.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onToggle() }
-                        .padding(vertical = 8.dp)
-                ) {
-                    Text(
-                        text = anotacao.titulo,
-                        color = OnBeige,
-                        style = MaterialTheme.typography.titleMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
+                if (anotacao.expandida) {
+                    OutlinedTextField(
+                        value = anotacao.rascunhoTitulo,
+                        onValueChange = onDraftTitleChange,
+                        label = { Text("Nome da anotação") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 4.dp),
+                        shape = RoundedCornerShape(12.dp)
                     )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable { onToggle() }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = anotacao.titulo,
+                            color = OnBeige,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
+
+                Spacer(Modifier.width(8.dp))
 
                 IconButton(onClick = onDelete) {
                     Icon(Icons.Default.Delete, tint = Color(0xC3000000), contentDescription = "Excluir")
                 }
             }
 
-            // Área expandida de edição
             AnimatedVisibility(visible = anotacao.expandida) {
                 Column(
                     modifier = Modifier
@@ -204,17 +232,6 @@ private fun AnotacaoCard(
                         .background(BeigeContainer)
                         .padding(12.dp)
                 ) {
-                    OutlinedTextField(
-                        value = anotacao.rascunhoTitulo,
-                        onValueChange = onDraftTitleChange,
-                        label = { Text("Nome da anotação") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    Spacer(Modifier.height(12.dp))
-
                     OutlinedTextField(
                         value = anotacao.rascunhoConteudo,
                         onValueChange = onDraftContentChange,
@@ -257,9 +274,8 @@ private fun AnotacaoCard(
                             },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(
-                                    0xFF2E2A25
-                                )
+                                containerColor = Color(0xFFCBB297),
+                                contentColor = Color(0xFFFFFFFF)
                             )
                         ) {
                             Text("Salvar")

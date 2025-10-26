@@ -33,7 +33,7 @@ fun CampoDisciplina(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = FormCardColor)
     ) {
         Column(

@@ -172,7 +172,7 @@ fun ManterAvaliacaoScreen(
             // Card para os DADOS DA AVALIAÇÃO
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
@@ -416,7 +416,7 @@ fun ManterAvaliacaoScreen(
             if (uiState.modalidade == Modalidade.EM_GRUPO) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
@@ -451,7 +451,7 @@ fun ManterAvaliacaoScreen(
                             Button(
                                 onClick = { showAddIntegrantesDialog = true },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(12.dp)
                             ) {
                                 Icon(Icons.Filled.AddCircle, contentDescription = "Adicionar", modifier = Modifier.padding(end = 4.dp))
                                 Text("Adicionar")
@@ -459,7 +459,7 @@ fun ManterAvaliacaoScreen(
                             Button(
                                 onClick = { showRemoveIntegrantesDialog = true },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer
@@ -501,7 +501,7 @@ fun ManterAvaliacaoScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -521,7 +521,7 @@ fun ManterAvaliacaoScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f),
                             contentColor = DeleteButtonErrorColor

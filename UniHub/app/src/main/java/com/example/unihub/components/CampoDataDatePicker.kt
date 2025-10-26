@@ -21,7 +21,7 @@ fun showLocalizedDatePicker(
     val configuration = Configuration(context.resources.configuration)
     configuration.setLocale(locale)
 
-    val localizedContext = ContextThemeWrapper(context, R.style.Theme_UniHub).apply {
+    val localizedContext = ContextThemeWrapper(context, R.style.PickerTheme_Neutral).apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             applyOverrideConfiguration(configuration)
         }
