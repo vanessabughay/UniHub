@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional; // Importante p
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 
-
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -97,7 +97,7 @@ public class GrupoService {
         Long ownerId = requireUsuario(usuarioId);
         grupo.setId(null);
         grupo.setOwnerId(ownerId);
-        List<Contato> membrosGerenciados = carregarMembrosValidos(grupo.getMembros(), ownerId);
+        List<Contato> membrosGerenciados = carregarMembrosValidos(grupo.getMembros(), ownerId, ownerId);
         Contato contatoAdministrador = garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId, true);
         grupo.getMembros().clear();
         grupo.getMembros().addAll(membrosGerenciados);
@@ -124,7 +124,8 @@ public class GrupoService {
         // Lógica para atualizar a lista de membros
         Contato contatoAdministradorPreferencial;
         if (grupoDetalhesRequest.getMembros() != null) {
-            List<Contato> novosMembros = carregarMembrosValidos(grupoDetalhesRequest.getMembros(), ownerIdDoGrupo);
+            List<Contato> novosMembros = carregarMembrosValidos(
+                    grupoDetalhesRequest.getMembros(), ownerIdDoGrupo, solicitanteId);
             contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(novosMembros, ownerIdDoGrupo, false);
             grupoExistente.getMembros().clear();
             grupoExistente.getMembros().addAll(novosMembros);
@@ -430,7 +431,7 @@ public class GrupoService {
         return ids;
     }
 
-    private List<Contato> carregarMembrosValidos(List<Contato> membros, Long ownerId) {
+    private List<Contato> carregarMembrosValidos(List<Contato> membros, Long ownerId, Long solicitanteId) {
         if (membros == null || membros.isEmpty()) {
             return new ArrayList<>();
         }
@@ -488,22 +489,34 @@ public class GrupoService {
                 encontrado = contatosPorId.get(id);
             }
 
+            Long idContato = membro.getIdContato();
+            if (encontrado == null && idContato != null) {
+                encontrado = contatosPorIdContato.get(idContato);
+            }
+
+            String emailNormalizado = normalizarEmail(membro.getEmail());
+            if (encontrado == null && emailNormalizado != null) {
+                encontrado = contatosPorEmail.get(emailNormalizado);
+            }
+
             if (encontrado == null) {
-                Long idContato = membro.getIdContato();
-                if (idContato != null) {
-                    encontrado = contatosPorIdContato.get(idContato);
+                encontrado = criarContatoParaOwnerSeNecessario(ownerId, solicitanteId, membro);
+                if (encontrado != null) {
+                    if (encontrado.getId() != null) {
+                        contatosPorId.put(encontrado.getId(), encontrado);
+                    }
+                    if (encontrado.getIdContato() != null) {
+                        contatosPorIdContato.put(encontrado.getIdContato(), encontrado);
+                    }
+                    String emailCriado = normalizarEmail(encontrado.getEmail());
+                    if (emailCriado != null) {
+                        contatosPorEmail.put(emailCriado, encontrado);
+                    }
                 }
             }
 
             if (encontrado == null) {
-                String email = membro.getEmail();
-                if (email != null && !email.isBlank()) {
-                    encontrado = contatosPorEmail.get(email.trim().toLowerCase(Locale.ROOT));
-                }
-            }
-
-            if (encontrado == null) {
-                throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+                throw new EntityNotFoundException("Alguns contatos informados não puderam ser associados ao grupo.");
             }
 
             if (encontrado.getId() == null) {
@@ -516,6 +529,97 @@ public class GrupoService {
         }
 
         return membrosResolvidos;
+    }
+
+    private String normalizarEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        String trimmed = email.trim();
+        return trimmed.isBlank() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private Contato criarContatoParaOwnerSeNecessario(Long ownerId, Long solicitanteId, Contato membro) {
+        if (ownerId == null || membro == null) {
+            return null;
+        }
+
+        Long idContato = membro.getIdContato();
+        if (idContato != null) {
+            Optional<Contato> existentePorIdContato = contatoRepository.findByOwnerIdAndIdContato(ownerId, idContato);
+            if (existentePorIdContato.isPresent()) {
+                return existentePorIdContato.get();
+            }
+        }
+
+        String emailNormalizado = normalizarEmail(membro.getEmail());
+        if (emailNormalizado != null) {
+            Optional<Contato> existentePorEmail = contatoRepository.findByOwnerIdAndEmailIgnoreCase(ownerId, emailNormalizado);
+            if (existentePorEmail.isPresent()) {
+                return existentePorEmail.get();
+            }
+        }
+
+        Contato referencia = null;
+        if (membro.getId() != null) {
+            referencia = contatoRepository.findById(membro.getId()).orElse(null);
+        }
+
+        if (referencia == null && solicitanteId != null && !Objects.equals(ownerId, solicitanteId)) {
+            if (membro.getId() != null) {
+                referencia = contatoRepository.findByIdAndOwnerId(membro.getId(), solicitanteId).orElse(null);
+            }
+            if (referencia == null && idContato != null) {
+                referencia = contatoRepository.findByOwnerIdAndIdContato(solicitanteId, idContato).orElse(null);
+            }
+        }
+
+        String nome = membro.getNome();
+        String email = membro.getEmail();
+        Long idContatoFinal = idContato;
+
+        if (referencia != null) {
+            if (nome == null || nome.isBlank()) {
+                nome = referencia.getNome();
+            }
+            if (email == null || email.isBlank()) {
+                email = referencia.getEmail();
+            }
+            if (idContatoFinal == null) {
+                idContatoFinal = referencia.getIdContato();
+            }
+        }
+
+        if (idContatoFinal != null) {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findById(idContatoFinal);
+            if (usuarioOptional.isPresent()) {
+                Usuario usuario = usuarioOptional.get();
+                if (nome == null || nome.isBlank()) {
+                    nome = usuario.getNomeUsuario();
+                }
+                if (email == null || email.isBlank()) {
+                    email = usuario.getEmail();
+                }
+            }
+        }
+
+        if (email == null || email.isBlank()) {
+            email = referencia != null ? referencia.getEmail() : null;
+        }
+
+        if ((nome == null || nome.isBlank()) && (email == null || email.isBlank())) {
+            return null;
+        }
+
+        Contato novoContato = new Contato();
+        novoContato.setOwnerId(ownerId);
+        novoContato.setNome(nome != null && !nome.isBlank() ? nome : email);
+        novoContato.setEmail(email);
+        novoContato.setIdContato(idContatoFinal);
+        novoContato.setPendente(Boolean.FALSE);
+        novoContato.setDataSolicitacao(LocalDateTime.now());
+        novoContato.setDataConfirmacao(LocalDateTime.now());
+        return contatoRepository.save(novoContato);
     }
 
     private Contato garantirContatoDoUsuarioNoGrupo(List<Contato> membros, Long ownerId, boolean forcarInclusao) {
