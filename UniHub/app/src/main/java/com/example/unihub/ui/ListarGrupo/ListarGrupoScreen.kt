@@ -522,11 +522,15 @@ fun GrupoItemExpansivel(
                                 val isAdministrador = grupo.ownerId != null &&
                                         contato.idContato != null &&
                                         contato.idContato == grupo.ownerId
+
                                 val rotuloAdministrador = if (isAdministrador) {
                                     " (Administrador do Grupo)"
                                 } else {
                                     ""
                                 }
+
+
+
                                 Text(
                                     text = "- $textoBase$rotuloAdministrador",
                                     style = MaterialTheme.typography.bodyMedium,
