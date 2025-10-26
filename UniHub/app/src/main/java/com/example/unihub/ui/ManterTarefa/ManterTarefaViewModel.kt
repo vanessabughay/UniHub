@@ -312,8 +312,8 @@ class TarefaFormViewModel(
                     membro.toResponsavelOption()?.let { option ->
                         opcoes.add(option)
                         idsSemDados.remove(option.id)
-                        }
                     }
+                }
                 
 
                 responsavelIds.forEach { responsavelId ->
@@ -357,53 +357,63 @@ class TarefaFormViewModel(
             }
         }
     }
-private suspend fun criarResponsavelDoQuadro(
-    ownerId: Long?,
-    membrosGrupo: List<Contato>
-): ResponsavelOption? {
-    val usuarioId = ownerId ?: TokenManager.usuarioId ?: return null
 
-    val nomeDoToken = TokenManager.nomeUsuario
-        ?.takeIf { it.isNotBlank() && usuarioId == TokenManager.usuarioId }
+    private suspend fun criarResponsavelDoQuadro(
+        ownerId: Long?,
+        membrosGrupo: List<Contato>
+    ): ResponsavelOption? {
+        val usuarioId = ownerId ?: TokenManager.usuarioId ?: return null
 
-    val nomeDoGrupo = membrosGrupo.firstNotNullOfOrNull { membro ->
-        val membroId = membro.idContato ?: membro.ownerId ?: membro.id
-        if (membroId == usuarioId) {
-            membro.nome?.takeIf { it.isNotBlank() }
-                ?: membro.email?.takeIf { it.isNotBlank() }
+        val nomeDoToken = TokenManager.nomeUsuario
+            ?.takeIf { it.isNotBlank() && usuarioId == TokenManager.usuarioId }
+
+        val nomeDoGrupo = membrosGrupo.firstNotNullOfOrNull { membro ->
+            val membroId = membro.idContato ?: membro.ownerId ?: membro.id
+            if (membroId == usuarioId) {
+                membro.nomeParaResponsavel()
+            } else {
+                null
+            }
+        }
+
+        val nomeDoContato = if (nomeDoToken == null && nomeDoGrupo == null) {
+            runCatching { contatoRepository.fetchContatoById(usuarioId) }
+                .getOrNull()
+                ?.nomeParaResponsavel()
         } else {
             null
         }
+
+
+        val nome = nomeDoToken ?: nomeDoGrupo ?: nomeDoContato ?: "Usuário #$usuarioId"
+        return ResponsavelOption(usuarioId, nome)
     }
+        private fun Contato?.toResponsavelOption(): ResponsavelOption? {
+            val contato = this ?: return null
+            val idResponsavel = contato.idContato ?: contato.ownerId ?: contato.id
+            val nomeResponsavel = contato.nomeParaResponsavel()
+                ?: idResponsavel?.let { "Responsável #$it" }
 
-    val nomeDoContato = if (nomeDoToken == null && nomeDoGrupo == null) {
-        runCatching { contatoRepository.fetchContatoById(usuarioId) }
-            .getOrNull()
-            ?.let { contato ->
-                contato.nome?.takeIf { it.isNotBlank() }
-                    ?: contato.email?.takeIf { it.isNotBlank() }
-            }
-    } else {
-        null
-    }
-
-    val nome = nomeDoToken ?: nomeDoGrupo ?: nomeDoContato ?: "Usuário #$usuarioId"
-    return ResponsavelOption(usuarioId, nome)
-}
-
-    private fun Contato?.toResponsavelOption(): ResponsavelOption? {
-        if (this == null) return null
-        val idResponsavel = this.idContato ?: this.ownerId ?: this.id
-        val nomeResponsavel = this.nome?.takeIf { it.isNotBlank() }
-            ?: this.email?.takeIf { it.isNotBlank() }
-            ?: this.ownerId?.let { "Usuário #$it" }
-        return if (idResponsavel != null && nomeResponsavel != null) {
+            return if (idResponsavel != null && nomeResponsavel != null) {
             ResponsavelOption(idResponsavel, nomeResponsavel)
         } else {
             null
         }
     }
 
+    private fun Contato.nomeParaResponsavel(): String? {
+        val usuarioLogadoId = TokenManager.usuarioId
+        val nomeNormalizado = nome?.trim()?.takeIf { it.isNotEmpty() }
+        val emailNormalizado = email?.trim()?.takeIf { it.isNotEmpty() }
+        val ehContatoDoUsuario = usuarioLogadoId != null && ownerId == usuarioLogadoId
+
+        return if (ehContatoDoUsuario) {
+            nomeNormalizado ?: emailNormalizado
+        } else {
+            emailNormalizado ?: nomeNormalizado
+        }
+    }
+    
     fun atualizarResponsaveisSelecionados(ids: Set<Long>) {
         _responsaveisSelecionados.value = ids
     }
