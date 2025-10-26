@@ -55,6 +55,14 @@ public class DataInitializer {
         criarUsuarioSeNaoExistir("Victoria", "victoria@email.com", "victoria");
         criarUsuarioSeNaoExistir("Rafaella", "rafaella@email.com", "rafaella");
         criarUsuarioSeNaoExistir("Paulo", "paulo@email.com", "pauloo");
+
+        criarUsuarioSeNaoExistir("A","a@a.com","000000");
+        criarUsuarioSeNaoExistir("B","b@b.com","000000");
+        criarUsuarioSeNaoExistir("C","c@c.com","000000");
+        criarUsuarioSeNaoExistir("D","d@d.com","000000");
+
+
+
         criarUsuarioSeNaoExistir("Carla Mendes", "carla.mendes@email.com", "carlamendes");
         criarUsuarioSeNaoExistir("Daniel Souza", "daniel.souza@email.com", "danielsouza");
         criarUsuarioSeNaoExistir("Elisa Ferreira", "elisa.ferreira@email.com", "elisaferreira");
@@ -159,6 +167,7 @@ public class DataInitializer {
                 "clayton@ufpr.br", "WhatsApp", "(41)99999-9999", "B0", true, true,
                 new HorarioAula[]{criarHorarioAula("quarta-feira", "229", 1140, 1360)});
 
+        /*
         Contato anaSilva = criarContatoSeNaoExistir(usuario, "Ana Silva-pend", "ana.silva@email.com", "(41)90000-0001", true);
         Contato brunoCosta = criarContatoSeNaoExistir(usuario, "Bruno Costa-pend", "bruno.costa@email.com", "(41)90000-0002", true);
         Contato carlaMendes = criarContatoSeNaoExistir(usuario, "Carla Mendes-pend", "carla.mendes@email.com", "(41)90000-0003", true);
@@ -174,7 +183,7 @@ public class DataInitializer {
         Contato marianaDias = criarContatoSeNaoExistir(usuario, "Mariana Dias", "mariana.dias@email.com", "(41)90000-0013", false);
         Contato nicolasTeixeira = criarContatoSeNaoExistir(usuario, "Nicolas Teixeira", "nicolas.teixeira@email.com", "(41)90000-0014", false);
         Contato oliviaBarbosa = criarContatoSeNaoExistir(usuario, "Olívia Barbosa", "olivia.barbosa@email.com", "(41)90000-0015", false);
-
+*/
         /*
         criarGrupoSeNaoExistir(usuario, "Família", List.of(anaSilva, brunoCosta, carlaMendes, danielSouza, elisaFerreira));
         criarGrupoSeNaoExistir(usuario, "Equipe de Projeto", List.of(felipeOliveira, gabrielaSantos, heitorLima,

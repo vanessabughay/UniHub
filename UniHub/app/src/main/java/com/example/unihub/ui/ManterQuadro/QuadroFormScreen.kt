@@ -386,6 +386,7 @@ private fun createFakeGrupoRepository() = GrupoRepository(object : Grupobackend 
     override suspend fun addGrupoApi(grupo: Grupo) {} // Implementação vazia
     override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
     override suspend fun deleteGrupoApi(id: Long): Boolean = true
+    override suspend fun leaveGrupoApi(id: Long): Boolean = true
 })
 
 private fun createFakeQuadroRepository() = QuadroRepository(object : _quadrobackend {

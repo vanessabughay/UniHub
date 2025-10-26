@@ -26,11 +26,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 
@@ -352,5 +354,78 @@ class GrupoServiceTest {
 
         verify(grupoRepository).delete(grupo);
         verify(grupoRepository, never()).save(any(Grupo.class));
+    }
+    @Test
+    void sairDoGrupoReatribuiAdministradorAteUltimoMembro() {
+        Long grupoId = 900L;
+        Long joaoId = 200L;
+        Long pedroId = 100L;
+        Long pauloId = 400L;
+
+        Usuario usuarioJoao = new Usuario();
+        usuarioJoao.setId(joaoId);
+        usuarioJoao.setEmail("joao@example.com");
+
+        Usuario usuarioPedro = new Usuario();
+        usuarioPedro.setId(pedroId);
+        usuarioPedro.setEmail("pedro@example.com");
+
+        Usuario usuarioPaulo = new Usuario();
+        usuarioPaulo.setId(pauloId);
+        usuarioPaulo.setEmail("paulo@example.com");
+
+        Contato contatoJoao = new Contato();
+        contatoJoao.setId(1L);
+        contatoJoao.setOwnerId(joaoId);
+        contatoJoao.setEmail("joao@example.com");
+        contatoJoao.setIdContato(joaoId);
+
+        Contato contatoPedro = new Contato();
+        contatoPedro.setId(2L);
+        contatoPedro.setOwnerId(joaoId);
+        contatoPedro.setEmail("pedro@example.com");
+        contatoPedro.setIdContato(pedroId);
+
+        Contato contatoPaulo = new Contato();
+        contatoPaulo.setId(3L);
+        contatoPaulo.setOwnerId(joaoId);
+        contatoPaulo.setEmail("paulo@example.com");
+        contatoPaulo.setIdContato(pauloId);
+
+        Grupo grupo = new Grupo();
+        grupo.setId(grupoId);
+        grupo.setNome("grupo A");
+        grupo.setOwnerId(joaoId);
+        grupo.addMembro(contatoJoao);
+        grupo.addMembro(contatoPedro);
+        grupo.addMembro(contatoPaulo);
+        grupo.setAdminContatoId(contatoJoao.getId());
+
+        when(grupoRepository.findByIdAndOwnerId(grupoId, joaoId)).thenReturn(Optional.of(grupo));
+        when(grupoRepository.findByIdAndOwnerId(grupoId, pedroId)).thenReturn(Optional.of(grupo));
+        when(grupoRepository.findByIdAndOwnerId(grupoId, pauloId)).thenReturn(Optional.of(grupo));
+        when(usuarioRepository.findById(joaoId)).thenReturn(Optional.of(usuarioJoao));
+        when(usuarioRepository.findById(pedroId)).thenReturn(Optional.of(usuarioPedro));
+        when(usuarioRepository.findById(pauloId)).thenReturn(Optional.of(usuarioPaulo));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        grupoService.sairDoGrupo(grupoId, joaoId);
+
+        assertEquals(pedroId, grupo.getOwnerId());
+        assertEquals(contatoPedro.getId(), grupo.getAdminContatoId());
+        assertFalse(grupo.getMembros().contains(contatoJoao));
+
+        grupoService.sairDoGrupo(grupoId, pedroId);
+
+        assertEquals(pauloId, grupo.getOwnerId());
+        assertEquals(contatoPaulo.getId(), grupo.getAdminContatoId());
+        assertFalse(grupo.getMembros().contains(contatoPedro));
+        assertTrue(grupo.getMembros().contains(contatoPaulo));
+
+        grupoService.sairDoGrupo(grupoId, pauloId);
+
+        assertTrue(grupo.getMembros().isEmpty());
+        verify(grupoRepository).delete(grupo);
+        verify(grupoRepository, times(2)).save(grupo);
     }
 }

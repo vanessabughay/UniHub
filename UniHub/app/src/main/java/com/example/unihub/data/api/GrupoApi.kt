@@ -25,21 +25,7 @@ interface GrupoApi {
     @DELETE("api/grupos/{id}") // Corresponde a @DeleteMapping("/{id}")
     suspend fun delete(@Path("id") id: Long): Response<Void>
 
-    /*
-    @GET("grupo")
-    suspend fun list(): List<Grupo>
+    @DELETE("api/grupos/{id}/sair")
+    suspend fun leave(@Path("id") id: Long): Response<Void>
 
-    @GET("grupo/{id}")
-    suspend fun get(@Path("id") id: Long): Grupo
-
-    @POST("grupo")
-    suspend fun add(@Body grupo: Grupo): Grupo
-
-    @PUT("grupo/{id}")
-    suspend fun update(@Path("id") id: Long, @Body grupo: Grupo): Grupo
-
-    @DELETE("grupo/{id}")
-    suspend fun delete(@Path("id") id: Long)
-
-     */
 }

@@ -130,5 +130,27 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
         }
     }
+    override suspend fun leaveGrupoApi(id: Long): Boolean {
+        try {
+            val response = api.leave(id)
+            if (response.isSuccessful) {
+                return true
+            }
+            val errorMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+            Log.w(
+                "ApiGrupoBackend",
+                "Falha ao sair do grupo $id: ${response.code()} - ${response.message()}${errorMessage?.let { ": $it" } ?: ""}"
+            )
+            throw HttpException(response)
+        } catch (e: HttpException) {
+            throw e
+        } catch (e: IOException) {
+            Log.e("ApiGrupoBackend", "IOException ao sair do grupo $id", e)
+            throw e
+        } catch (e: Exception) {
+            Log.e("ApiGrupoBackend", "Exceção inesperada ao sair do grupo $id", e)
+            throw IOException("Erro ao sair do grupo $id: ${e.message}", e)
+        }
+    }
 }
 
