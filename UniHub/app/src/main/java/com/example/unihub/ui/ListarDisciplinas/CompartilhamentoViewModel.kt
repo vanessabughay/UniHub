@@ -59,7 +59,10 @@ class CompartilhamentoViewModel(
             try {
                 _contatos.value = repository.listarContatos(usuarioId)
             } catch (e: Exception) {
-                _erro.value = e.message ?: "Erro ao carregar contatos"
+                _erro.value = when (e) {
+                    is IllegalStateException -> e.message ?: "Sessão expirada. Faça login novamente."
+                    else -> e.message ?: "Erro ao carregar contatos"
+                }
             } finally {
                 _isCarregandoContatos.value = false
             }
@@ -108,6 +111,7 @@ class CompartilhamentoViewModel(
                         401, 403 -> "Acesso negado. Faça login novamente."
                         else -> e.message()
                     }
+                    is IllegalStateException -> e.message ?: "Sessão expirada. Faça login novamente."
                     else -> e.message ?: "Erro ao compartilhar disciplina"
                 }
             } finally {
@@ -124,7 +128,10 @@ class CompartilhamentoViewModel(
                 carregarNotificacoes(usuarioId)
                 _statusMessage.value = "Convite aceito"
             } catch (e: Exception) {
-                _erro.value = e.message ?: "Erro ao aceitar convite"
+                _erro.value = when (e) {
+                    is IllegalStateException -> e.message ?: "Sessão expirada. Faça login novamente."
+                    else -> e.message ?: "Erro ao aceitar convite"
+                }
             } finally {
                 atualizarProcessamento(conviteId, false)
             }
@@ -139,7 +146,10 @@ class CompartilhamentoViewModel(
                 carregarNotificacoes(usuarioId)
                 _statusMessage.value = "Convite rejeitado"
             } catch (e: Exception) {
-                _erro.value = e.message ?: "Erro ao rejeitar convite"
+                _erro.value = when (e) {
+                    is IllegalStateException -> e.message ?: "Sessão expirada. Faça login novamente."
+                    else -> e.message ?: "Erro ao rejeitar convite"
+                }
             } finally {
                 atualizarProcessamento(conviteId, false)
             }
