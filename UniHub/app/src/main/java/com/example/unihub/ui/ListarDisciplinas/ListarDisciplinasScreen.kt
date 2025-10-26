@@ -7,10 +7,12 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresExtension
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
@@ -27,6 +29,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
+import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.model.UsuarioResumo
 import com.example.unihub.notifications.AttendanceNotificationScheduler
 
 // Cores definidas
@@ -45,6 +49,19 @@ fun ListarDisciplinasScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
+
+    val compartilhamentoViewModel: CompartilhamentoViewModel =
+        viewModel(factory = CompartilhamentoViewModelFactory)
+
+    val contatos by compartilhamentoViewModel.contatos.collectAsState()
+    val notificacoes by compartilhamentoViewModel.notificacoes.collectAsState()
+    val compartilhamentoErro by compartilhamentoViewModel.erro.collectAsState()
+    val compartilhamentoStatus by compartilhamentoViewModel.statusMessage.collectAsState()
+    val isCarregandoContatos by compartilhamentoViewModel.isCarregandoContatos.collectAsState()
+    val convitesEmProcessamento by compartilhamentoViewModel.convitesEmProcessamento.collectAsState()
+    val isCompartilhando by compartilhamentoViewModel.isCompartilhando.collectAsState()
+
+    var disciplinaParaCompartilhar by remember { mutableStateOf<DisciplinaResumoUi?>(null) }
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -81,13 +98,29 @@ fun ListarDisciplinasScreen(
     }
 
     LaunchedEffect(Unit) {
+        TokenManager.loadToken(context.applicationContext)
+        TokenManager.usuarioId?.let { compartilhamentoViewModel.carregarNotificacoes(it) }
         viewModel.loadDisciplinas()
     }
 
     var searchQuery by remember { mutableStateOf("") }
+    val usuarioId = TokenManager.usuarioId
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
+
+    compartilhamentoErro?.let { message ->
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        compartilhamentoViewModel.consumirErro()
+    }
+
+    compartilhamentoStatus?.let { message ->
+        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        if (message.contains("aceito", ignoreCase = true)) {
+            viewModel.loadDisciplinas()
+        }
+        compartilhamentoViewModel.consumirStatus()
     }
 
     val disciplinasFiltradas = if (searchQuery.isBlank()) {
@@ -133,6 +166,46 @@ fun ListarDisciplinasScreen(
                     .padding(16.dp)
             )
 
+            if (notificacoes.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "Convites Recebidos",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    notificacoes.forEach { notificacao ->
+                        val conviteId = notificacao.conviteId
+                        NotificacaoConviteCard(
+                            notificacao = notificacao,
+                            onAceitar = conviteId?.let {
+                                {
+                                    if (usuarioId != null) {
+                                        compartilhamentoViewModel.aceitarConvite(usuarioId, it)
+                                    } else {
+                                        Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            onRejeitar = conviteId?.let {
+                                {
+                                    if (usuarioId != null) {
+                                        compartilhamentoViewModel.rejeitarConvite(usuarioId, it)
+                                    } else {
+                                        Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            isProcessando = conviteId?.let { convitesEmProcessamento.contains(it) } == true
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -153,10 +226,39 @@ fun ListarDisciplinasScreen(
                                 "Compartilhar ${d.nome}",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            if (usuarioId != null) {
+                                disciplinaParaCompartilhar = d
+                                compartilhamentoViewModel.carregarContatos(usuarioId)
+                            } else {
+                                Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
+                            }
                         }
                     )
                 }
             }
+        }
+    }
+
+    disciplinaParaCompartilhar?.let { disciplinaSelecionada ->
+        if (usuarioId != null) {
+            CompartilharDisciplinaDialog(
+                disciplina = disciplinaSelecionada,
+                contatos = contatos,
+                isLoading = isCarregandoContatos,
+                isSending = isCompartilhando,
+                onDismiss = { disciplinaParaCompartilhar = null },
+                onConfirm = { contato, mensagem ->
+                    compartilhamentoViewModel.compartilharDisciplina(
+                        usuarioId,
+                        disciplinaSelecionada.id,
+                        contato.id,
+                        mensagem
+                    )
+                    disciplinaParaCompartilhar = null
+                }
+            )
+        } else {
+            disciplinaParaCompartilhar = null
         }
     }
 }
@@ -184,57 +286,179 @@ fun DisciplinaItem(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
+            @@ -216,25 +313,175 @@ fun DisciplinaItem(
+                color = Color.Gray
+            )
+    }
+
+    if (!disciplina.receberNotificacoes) {
+        Text(
+            text = "Notificações desativadas para esta disciplina",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 4.dp)
+        )
+    }
+}
+
+Spacer(modifier = Modifier.width(8.dp))
+IconButton(onClick = { onShareClicked(disciplina) }) {
+    Icon(
+        imageVector = Icons.Default.Share,
+        contentDescription = "Compartilhar Disciplina",
+        tint = Color.Black
+    )
+}
+}
+}
+}
+
+@Composable
+fun NotificacaoConviteCard(
+    notificacao: NotificacaoConviteUi,
+    onAceitar: (() -> Unit)?,
+    onRejeitar: (() -> Unit)?,
+    isProcessando: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = notificacao.mensagem,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            notificacao.criadaEm?.let { data ->
                 Text(
-                    text = "${disciplina.codigo} ${disciplina.nome}",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    text = data,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
-                if (disciplina.horariosAulas.isNotEmpty()) {
-                    disciplina.horariosAulas.forEach { horario ->
-                        val inicio = String.format(
-                            "%02d:%02d",
-                            horario.horarioInicio / 60, horario.horarioInicio % 60
-                        )
-                        val fim = String.format(
-                            "%02d:%02d",
-                            horario.horarioFim / 60, horario.horarioFim % 60
-                        )
-                        Text(
-                            text = "${horario.diaDaSemana} - Sala ${horario.sala} | Horário: $inicio - $fim",
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "Sem horário definido",
-                        fontSize = 14.sp,
-                        lineHeight = 20.sp,
-                        color = Color.Gray
-                    )
-                }
-
-                if (!disciplina.receberNotificacoes) {
-                    Text(
-                        text = "Notificações desativadas para esta disciplina",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                }
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = { onShareClicked(disciplina) }) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Compartilhar Disciplina",
-                    tint = Color.Black
-                )
+            if (onAceitar != null || onRejeitar != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isProcessando) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        if (onRejeitar != null) {
+                            TextButton(onClick = onRejeitar) {
+                                Text("Rejeitar")
+                            }
+                        }
+                        if (onAceitar != null) {
+                            TextButton(onClick = onAceitar) {
+                                Text("Aceitar")
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+fun CompartilharDisciplinaDialog(
+    disciplina: DisciplinaResumoUi,
+    contatos: List<UsuarioResumo>,
+    isLoading: Boolean,
+    isSending: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (UsuarioResumo, String?) -> Unit
+) {
+    var mensagem by remember { mutableStateOf("") }
+    var contatoSelecionadoId by remember { mutableStateOf<Long?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    contatos.firstOrNull { it.id == contatoSelecionadoId }?.let { selecionado ->
+                        onConfirm(selecionado, mensagem.takeIf { it.isNotBlank() })
+                    }
+                },
+                enabled = contatoSelecionadoId != null && !isLoading && !isSending
+            ) {
+                Text("Compartilhar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        },
+        title = { Text(text = "Compartilhar ${disciplina.nome}") },
+        text = {
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+
+                contatos.isEmpty() -> {
+                    Text("Você não possui contatos elegíveis para compartilhar esta disciplina.")
+                }
+
+                else -> {
+                    Column {
+                        LazyColumn(modifier = Modifier.heightIn(max = 240.dp)) {
+                            items(contatos) { contato ->
+                                val selecionado = contatoSelecionadoId == contato.id
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable { contatoSelecionadoId = contato.id },
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = selecionado,
+                                        onClick = { contatoSelecionadoId = contato.id }
+                                    )
+                                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                                        Text(
+                                            text = contato.nome,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            text = contato.email,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = mensagem,
+                            onValueChange = { mensagem = it },
+                            label = { Text("Mensagem (opcional)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = false
+                        )
+                    }
+                }
+            }
+        }
+    )
 }
