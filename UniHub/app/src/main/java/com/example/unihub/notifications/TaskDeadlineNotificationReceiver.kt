@@ -1,6 +1,5 @@
 package com.example.unihub.notifications
 
-import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -22,67 +21,81 @@ import java.util.Locale
 class TaskDeadlineNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val titulo = intent.getStringExtra(EXTRA_TAREFA_TITULO).orEmpty()
-        if (titulo.isBlank()) return
-
-        val prazoIso = intent.getStringExtra(EXTRA_TAREFA_PRAZO)
-        val nomeQuadro = intent.getStringExtra(EXTRA_TAREFA_QUADRO)
-        val identifier = intent.getStringExtra(EXTRA_IDENTIFIER).orEmpty()
+        val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L)
+        val disciplinaNome = intent.getStringExtra(EXTRA_DISCIPLINA_NOME) ?: return
+        val dia = intent.getStringExtra(EXTRA_AULA_DIA).orEmpty()
+        val inicio = intent.getIntExtra(EXTRA_AULA_INICIO, -1)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
+        val totalAusencias = intent.getIntExtra(EXTRA_TOTAL_AUSENCIAS, NO_VALUE)
+            .takeIf { it >= 0 }
+        val limiteAusencias = intent.getIntExtra(EXTRA_AUSENCIAS_MAX, NO_AUSENCIA_LIMIT)
+            .takeIf { it >= 0 }
 
         createChannel(context)
 
-        val notificationId = abs((identifier.ifEmpty { titulo } + (prazoIso ?: "")).hashCode())
+        val notificationId = abs((disciplinaId.toString() + inicio.toString()).hashCode())
 
-        val abrirIntent = Intent(context, MainActivity::class.java).apply {
+        val visualizarIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_TARGET_DISCIPLINA_ID, disciplinaId.toString())
+            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_DISCIPLINA)
         }
 
-        val abrirPendingIntent = TaskStackBuilder.create(context).run {
-            addNextIntentWithParentStack(abrirIntent)
+        val visualizarPendingIntent = TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(visualizarIntent)
             getPendingIntent(
                 notificationId,
-                PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
             )
         }
 
-        val promptText = context.getString(R.string.task_notification_prompt)
-        val deadlineText = TaskDeadlineNotificationScheduler.formatDeadlineForDisplay(context, prazoIso)
-        val quadroText = nomeQuadro?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.task_notification_board_format, it) }
-            .orEmpty()
+        val ausenciaIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_TARGET_DISCIPLINA_ID, disciplinaId.toString())
+            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_REGISTRAR_AUSENCIA)
+        }
+
+        val ausenciaPendingIntent = TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(ausenciaIntent)
+            getPendingIntent(
+                notificationId + 1,
+                PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
+            )
+        }
+
+        val presencaPendingIntent = TaskStackBuilder.create(context).run {
+            addNextIntentWithParentStack(visualizarIntent)
+            getPendingIntent(
+                notificationId + 2,
+                PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
+            )
+        }
+
+        val formattedTime = formatMinutes(inicio)
+        val scheduleText = buildScheduleText(context, dia, formattedTime)
+        val absenceInfoText = buildAbsenceInfoText(context, totalAusencias, limiteAusencias)
+        val promptText = context.getString(R.string.task_deadline_notification_prompt)
 
         val locale = Locale("pt", "BR")
-        val notificationTitle = titulo.uppercase(locale)
-        val summaryText = listOf(deadlineText, quadroText)
-            .filter { it.isNotBlank() }
-            .joinToString(" • ")
-        val historyMessage = listOf(promptText, deadlineText, quadroText.takeIf { it.isNotBlank() })
+        val notificationTitle = "${disciplinaNome.uppercase(locale)}"
+        val summaryText = buildSummaryText(scheduleText, absenceInfoText)
+        val historyMessage = listOf(promptText, summaryText.takeIf { it.isNotBlank() })
             .filterNotNull()
             .joinToString("\n")
 
-        val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
-            setTextViewText(R.id.notification_app_title, context.getString(R.string.task_notification_label))
+        val contentView = RemoteViews(context.packageName, R.layout.notification_task_deadline).apply {
             setTextViewText(R.id.notification_title, notificationTitle)
             setTextViewText(R.id.notification_message, promptText)
-            setTextViewText(R.id.notification_time, deadlineText)
-
-            if (quadroText.isNotEmpty()) {
-                setTextViewText(R.id.notification_absence_info, quadroText)
+            setTextViewText(R.id.notification_time, scheduleText)
+            if (absenceInfoText.isNotEmpty()) {
+                setTextViewText(R.id.notification_absence_info, absenceInfoText)
                 setViewVisibility(R.id.notification_absence_info, View.VISIBLE)
             } else {
                 setViewVisibility(R.id.notification_absence_info, View.GONE)
             }
-
-            setTextViewText(
-                R.id.notification_button_presence,
-                context.getString(R.string.task_notification_button_details)
-            )
-            setViewVisibility(R.id.notification_button_presence, View.VISIBLE)
-            setOnClickPendingIntent(R.id.notification_button_presence, abrirPendingIntent)
-
-            setViewVisibility(R.id.notification_button_absence, View.GONE)
-            setOnClickPendingIntent(R.id.notification_root, abrirPendingIntent)
+            setOnClickPendingIntent(R.id.notification_root, visualizarPendingIntent)
+            setOnClickPendingIntent(R.id.notification_button_presence, presencaPendingIntent)
+            setOnClickPendingIntent(R.id.notification_button_absence, ausenciaPendingIntent)
         }
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
@@ -91,10 +104,14 @@ class TaskDeadlineNotificationReceiver : BroadcastReceiver() {
             .setContentText(summaryText.ifBlank { promptText })
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(abrirPendingIntent)
+            .setContentIntent(visualizarPendingIntent)
             .setCustomContentView(contentView)
             .setCustomBigContentView(contentView)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
+
+        if (absenceInfoText.isNotEmpty()) {
+            builder.setSubText(absenceInfoText)
+        }
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
 
@@ -105,15 +122,16 @@ class TaskDeadlineNotificationReceiver : BroadcastReceiver() {
                 timestampMillis = System.currentTimeMillis()
             )
 
+
         if (requestCode != -1) {
-            val alarmManager = context.getSystemService(AlarmManager::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                requestCode,
-                intent,
-                PendingIntent.FLAG_NO_CREATE or AttendanceNotificationScheduler.immutableFlag()
-            )
-            pendingIntent?.let { alarmManager?.cancel(it) }
+            val nextTrigger = TaskDeadlineNotificationScheduler.computeTriggerMillis(dia, inicio)
+            if (nextTrigger != null) {
+                val nextIntent = Intent(context, TaskDeadlineNotificationReceiver::class.java).apply {
+                    putExtras(intent)
+                }
+                TaskDeadlineNotificationScheduler(context)
+                    .scheduleExactAlarm(requestCode, nextTrigger, nextIntent)
+            }
         }
     }
 
@@ -122,21 +140,95 @@ class TaskDeadlineNotificationReceiver : BroadcastReceiver() {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.task_channel_name),
+            context.getString(R.string.task_deadline_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = context.getString(R.string.task_channel_description)
+            description = context.getString(R.string.task_deadline_channel_description)
         }
         manager.createNotificationChannel(channel)
     }
 
-    companion object {
-        const val EXTRA_TAREFA_TITULO = "extra_tarefa_titulo"
-        const val EXTRA_TAREFA_PRAZO = "extra_tarefa_prazo"
-        const val EXTRA_TAREFA_QUADRO = "extra_tarefa_quadro"
-        const val EXTRA_IDENTIFIER = "extra_tarefa_identifier"
-        const val EXTRA_REQUEST_CODE = "extra_request_code"
+    private fun formatMinutes(totalMinutes: Int): String {
+        if (totalMinutes < 0) return ""
+        val hours = totalMinutes / 60
+        val minutes = totalMinutes % 60
+        return String.format("%02d:%02d", hours, minutes)
+    }
 
-        private const val CHANNEL_ID = "task_deadline_notifications"
+    private fun buildScheduleText(context: Context, dayLabel: String, formattedTime: String): String {
+        val locale = Locale("pt", "BR")
+        val normalizedDay = dayLabel.trim()
+            .takeIf { it.isNotEmpty() }
+            ?.lowercase(locale)
+            ?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+
+        return when {
+            normalizedDay != null && formattedTime.isNotEmpty() ->
+                context.getString(R.string.task_deadline_notification_schedule_format, normalizedDay, formattedTime)
+
+            normalizedDay != null -> normalizedDay
+            formattedTime.isNotEmpty() ->
+                context.getString(R.string.task_deadline_notification_time_only_format, formattedTime)
+            else -> context.getString(R.string.task_deadline_notification_schedule_unknown)
+        }
+    }
+
+    private fun buildAbsenceInfoText(
+        context: Context,
+        totalAusencias: Int?,
+        limiteAusencias: Int?
+    ): String {
+        return when {
+            totalAusencias != null && limiteAusencias != null ->
+                context.getString(
+                    R.string.task_deadline_notification_absence_with_limit,
+                    totalAusencias,
+                    limiteAusencias
+                )
+
+            totalAusencias != null ->
+                context.getString(
+                    R.string.task_deadline_notification_absence_without_limit,
+                    totalAusencias
+                )
+
+            limiteAusencias != null ->
+                context.getString(
+                    R.string.task_deadline_notification_absence_only_limit,
+                    limiteAusencias
+                )
+
+            else -> ""
+        }
+    }
+
+    private fun buildSummaryText(scheduleText: String, absenceInfoText: String): String {
+        return listOf(scheduleText, absenceInfoText)
+            .filter { it.isNotBlank() }
+            .joinToString(" • ")
+    }
+
+
+    private fun immutableFlag(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE
+        } else {
+            0
+        }
+    }
+
+    companion object {
+        const val EXTRA_DISCIPLINA_ID = "extra_disciplina_id"
+        const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
+        const val EXTRA_AULA_DIA = "extra_aula_dia"
+        const val EXTRA_AULA_INICIO = "extra_aula_inicio"
+        const val EXTRA_REQUEST_CODE = "extra_request_code"
+        const val EXTRA_TOTAL_AUSENCIAS = "extra_total_ausencias"
+        const val EXTRA_AUSENCIAS_MAX = "extra_ausencias_max"
+
+        const val NO_AUSENCIA_LIMIT = -1
+        private const val NO_VALUE = -1
+
+        private const val CHANNEL_ID = "task_deadline_reminders"
     }
 }

@@ -5,22 +5,25 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.ZoneId
+import androidx.annotation.VisibleForTesting
+import com.example.unihub.data.model.HorarioAula
+import java.time.DayOfWeek
+import java.text.Normalizer
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
+import java.util.Locale
 import java.util.Objects
 import kotlin.math.abs
 
 class TaskDeadlineNotificationScheduler(private val context: Context) {
 
-    data class TaskDeadlineInfo(
-        val identifier: String,
-        val titulo: String,
-        val prazoIso: String?,
-        val nomeQuadro: String?
+    data class DisciplineScheduleInfo(
+        val id: Long,
+        val nome: String,
+        val receberNotificacoes: Boolean,
+        val horariosAulas: List<HorarioAula>,
+        val totalAusencias: Int,
+        val ausenciasPermitidas: Int?
     )
 
     private val alarmManager: AlarmManager? =
@@ -29,7 +32,7 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
     private val preferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun scheduleNotifications(tarefas: List<TaskDeadlineInfo>) {
+    fun scheduleNotifications(disciplinas: List<DisciplineScheduleInfo>) {
         val manager = alarmManager ?: return
 
         val storedRequestCodes =
@@ -42,24 +45,35 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
         }
 
         val newRequestCodes = mutableSetOf<String>()
+
         val baseIntent = Intent(context, TaskDeadlineNotificationReceiver::class.java)
 
-        tarefas.forEach { tarefa ->
-            val triggerAtMillis = computeTriggerMillis(tarefa.prazoIso)
-                ?: return@forEach
-
-            val requestCode = buildRequestCode(tarefa.identifier, triggerAtMillis)
-            newRequestCodes.add(requestCode.toString())
-
-            val intent = Intent(baseIntent).apply {
-                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TAREFA_TITULO, tarefa.titulo)
-                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TAREFA_PRAZO, tarefa.prazoIso)
-                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TAREFA_QUADRO, tarefa.nomeQuadro)
-                putExtra(TaskDeadlineNotificationReceiver.EXTRA_IDENTIFIER, tarefa.identifier)
-                putExtra(TaskDeadlineNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+        disciplinas.forEach { disciplina ->
+            if (!disciplina.receberNotificacoes) {
+                return@forEach
             }
 
-            scheduleExactAlarm(requestCode, triggerAtMillis, intent)
+            disciplina.horariosAulas.forEachIndexed { index, horario ->
+                val triggerAtMillis = computeNextTriggerMillis(horario) ?: return@forEachIndexed
+
+                val requestCode = buildRequestCode(disciplina.id, index, horario)
+                newRequestCodes.add(requestCode.toString())
+
+                val intent = Intent(baseIntent).apply {
+                    putExtra(TaskDeadlineeNotificationReceiver.EXTRA_DISCIPLINA_ID, disciplina.id)
+                    putExtra(TaskDeadlineeNotificationReceiver.EXTRA_DISCIPLINA_NOME, disciplina.nome)
+                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
+                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
+                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_TOTAL_AUSENCIAS, disciplina.totalAusencias)
+                    putExtra(
+                        TaskDeadlineNotificationReceiver.EXTRA_AUSENCIAS_MAX,
+                        disciplina.ausenciasPermitidas ?: TaskDeadlineNotificationReceiver.NO_AUSENCIA_LIMIT
+                    )
+                }
+
+                scheduleExactAlarm(requestCode, triggerAtMillis, intent)
+            }
         }
 
         preferences.edit().putStringSet(KEY_REQUEST_CODES, newRequestCodes).apply()
@@ -77,6 +91,10 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
                 )
                 manager.cancel(pendingIntent)
             }
+    }
+
+    private fun computeNextTriggerMillis(horario: HorarioAula): Long? {
+        return computeTriggerMillis(horario.diaDaSemana, horario.horarioInicio)
     }
 
     fun scheduleExactAlarm(requestCode: Int, triggerAtMillis: Long, intent: Intent) {
@@ -120,8 +138,8 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
         }
     }
 
-    private fun buildRequestCode(identifier: String, triggerAtMillis: Long): Int {
-        val raw = Objects.hash(identifier, triggerAtMillis)
+    private fun buildRequestCode(id: Long, index: Int, horario: HorarioAula): Int {
+        val raw = Objects.hash(id, index, horario.diaDaSemana, horario.horarioInicio)
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
 
@@ -133,82 +151,72 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
         }
     }
 
+
     companion object {
         private const val PREFS_NAME = "task_deadline_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
-        private val LOCAL_DATE_TIME_FORMATTERS = listOf(
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-        )
 
         internal fun computeTriggerMillis(
-            deadlineIso: String?,
-            zoneId: ZoneId = ZoneId.systemDefault(),
-            now: ZonedDateTime = ZonedDateTime.now(zoneId)
+            dayLabel: String,
+            startMinutes: Int,
+            now: ZonedDateTime = ZonedDateTime.now()
         ): Long? {
-            val deadline = parseDeadline(deadlineIso, zoneId) ?: return null
-            if (!deadline.isAfter(now)) {
-                return null
+            val dayOfWeek = mapDayOfWeek(dayLabel) ?: return null
+            if (startMinutes < 0) return null
+
+            var scheduled = now.with(TemporalAdjusters.nextOrSame(dayOfWeek))
+                .withHour(startMinutes / 60)
+                .withMinute(startMinutes % 60)
+                .withSecond(0)
+                .withNano(0)
+
+            if (scheduled.isBefore(now)) {
+                scheduled = scheduled.plusWeeks(1)
             }
 
-            return deadline.toInstant().toEpochMilli()
+            return scheduled.toInstant().toEpochMilli()
         }
 
-        internal fun parseDeadline(
-            deadlineIso: String?,
-            zoneId: ZoneId = ZoneId.systemDefault()
-        ): ZonedDateTime? {
-            val trimmed = deadlineIso?.trim().orEmpty()
-            if (trimmed.isEmpty()) return null
+        private fun mapDayOfWeek(label: String): DayOfWeek? = mapDayOfWeekInternal(label)
 
-            runCatching { Instant.parse(trimmed) }.getOrNull()?.let {
-                return it.atZone(zoneId)
+        @VisibleForTesting
+        internal fun mapDayOfWeekInternal(label: String): DayOfWeek? {
+            val normalized = normalizeDayLabel(label)
+            return when (normalized) {
+                "segunda-feira" -> DayOfWeek.MONDAY
+                "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
+                "quarta-feira" -> DayOfWeek.WEDNESDAY
+                "quinta-feira" -> DayOfWeek.THURSDAY
+                "sexta-feira" -> DayOfWeek.FRIDAY
+                "sábado", "sabado" -> DayOfWeek.SATURDAY
+                "domingo" -> DayOfWeek.SUNDAY
+                else -> null
             }
-
-            runCatching { ZonedDateTime.parse(trimmed) }.getOrNull()?.let { return it }
-            runCatching { java.time.OffsetDateTime.parse(trimmed) }
-                .getOrNull()
-                ?.let { return it.atZoneSameInstant(zoneId) }
-
-            LOCAL_DATE_TIME_FORMATTERS.forEach { formatter ->
-                runCatching { LocalDateTime.parse(trimmed, formatter) }
-                    .getOrNull()
-                    ?.let { return it.atZone(zoneId) }
-            }
-
-            runCatching { LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE) }
-                .getOrNull()
-                ?.let {
-                    return it.atTime(23, 59).atZone(zoneId)
-                }
-
-            return null
         }
 
-        internal fun formatDeadlineForDisplay(
-            context: Context,
-            deadlineIso: String?
-        ): String {
-            val zoned = parseDeadline(deadlineIso) ?: return context.getString(
-                com.example.unihub.R.string.task_notification_deadline_unknown
-            )
-
-            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
-            return context.getString(
-                com.example.unihub.R.string.task_notification_deadline_format,
-                formatter.format(zoned)
-            )
+        @VisibleForTesting
+        internal fun normalizeDayLabel(label: String): String {
+            val trimmed = label.trim().lowercase(Locale.getDefault())
+            val withoutDiacritics = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
+                .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            return withoutDiacritics.replace("[^a-z]".toRegex(), "")
         }
 
         @Suppress("DEPRECATION")
-        private fun immutableFlag(): Int {
+        internal fun immutableFlag(): Int {
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 PendingIntent.FLAG_IMMUTABLE
             } else {
                 0
             }
+        }
+
+        @VisibleForTesting
+        fun clearPreferences(context: Context) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply()
         }
     }
 }
