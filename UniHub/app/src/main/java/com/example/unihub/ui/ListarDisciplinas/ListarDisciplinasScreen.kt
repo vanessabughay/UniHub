@@ -286,31 +286,81 @@ fun DisciplinaItem(
             modifier = Modifier
                 .padding(16.dp)
                 .fillMaxWidth(),
-            @@ -216,25 +313,175 @@ fun DisciplinaItem(
-                color = Color.Gray
-            )
-    }
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = disciplina.nome,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Código: ${disciplina.codigo}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
 
-    if (!disciplina.receberNotificacoes) {
-        Text(
-            text = "Notificações desativadas para esta disciplina",
-            fontSize = 12.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-    }
-}
+                if (disciplina.horariosAulas.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    disciplina.horariosAulas.take(2).forEach { horario ->
+                        Text(
+                            text = buildString {
+                                append(horario.diaDaSemana)
+                                append(" • ")
+                                append(formatHorario(horario.horarioInicio))
+                                append(" - ")
+                                append(formatHorario(horario.horarioFim))
+                                append(" • Sala ")
+                                append(horario.sala)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (disciplina.horariosAulas.size > 2) {
+                        Text(
+                            text = "+${disciplina.horariosAulas.size - 2} horários cadastrados",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-Spacer(modifier = Modifier.width(8.dp))
-IconButton(onClick = { onShareClicked(disciplina) }) {
-    Icon(
-        imageVector = Icons.Default.Share,
-        contentDescription = "Compartilhar Disciplina",
-        tint = Color.Black
-    )
-}
-}
-}
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Total de ausências: ${disciplina.totalAusencias}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                disciplina.ausenciasPermitidas?.let { limite ->
+                    Text(
+                        text = "Limite de ausências: $limite",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (!disciplina.receberNotificacoes) {
+                    Text(
+                        text = "Notificações desativadas para esta disciplina",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
+            IconButton(onClick = { onShareClicked(disciplina) }) {
+                Icon(
+                    imageVector = Icons.Default.Share,
+                    contentDescription = "Compartilhar Disciplina",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -461,4 +511,10 @@ fun CompartilharDisciplinaDialog(
             }
         }
     )
+}
+
+private fun formatHorario(horario: Int): String {
+    val horas = horario / 100
+    val minutos = horario % 100
+    return String.format("%02d:%02d", horas, minutos)
 }
