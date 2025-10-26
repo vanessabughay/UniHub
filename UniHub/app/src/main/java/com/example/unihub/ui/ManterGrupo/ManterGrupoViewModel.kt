@@ -24,6 +24,7 @@ data class ManterGrupoUiState(
     val grupoIdAtual: String? = null,
     val membrosDoGrupo: List<ContatoResumoUi> = emptyList(),
     val adminContatoId: Long? = null,
+    val ownerId: Long? = null,
     val isLoading: Boolean = false,
     val erro: String? = null,
     val sucesso: Boolean = false,
@@ -70,7 +71,8 @@ class ManterGrupoViewModel(
                 isLoading = true,
                 erro = null,
                 grupoIdAtual = id,
-                podeExcluirGrupo = false
+                podeExcluirGrupo = false,
+                ownerId = null
             )
             viewModelScope.launch {
                 try {
@@ -98,6 +100,7 @@ class ManterGrupoViewModel(
                                 it.copy(
                                     nome = grupo.nome ?: "",
                                     adminContatoId = grupo.adminContatoId,
+                                    ownerId = grupo.ownerId,
                                     isLoading = false,
                                     podeExcluirGrupo = podeExcluir,
                                     grupoIdAtual = id,
@@ -116,6 +119,7 @@ class ManterGrupoViewModel(
                                     erro = "Grupo não encontrado",
                                     adminContatoId = null,
                                     isLoading = false,
+                                    ownerId = null,
                                     podeExcluirGrupo = false,
                                     grupoIdAtual = null,
                                     membrosDoGrupo = emptyList(),
@@ -130,6 +134,7 @@ class ManterGrupoViewModel(
                             erro = "ID de Grupo inválido",
                             grupoIdAtual = null,
                             adminContatoId = null,
+                            ownerId = null,
                             podeExcluirGrupo = false,
                             membrosDoGrupo = emptyList(),
                             membrosOriginaisDoGrupo = emptyList()
@@ -142,6 +147,7 @@ class ManterGrupoViewModel(
                 it.copy(
                     erro = "ID de Grupo inválido",
                     grupoIdAtual = null,
+                    ownerId = null,
                     podeExcluirGrupo = false,
                     membrosDoGrupo = emptyList(),
                     membrosOriginaisDoGrupo = emptyList()
