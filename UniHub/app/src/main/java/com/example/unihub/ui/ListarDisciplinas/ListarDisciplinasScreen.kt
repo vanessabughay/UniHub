@@ -96,15 +96,18 @@ fun ListarDisciplinasScreen(
         }
         scheduler.scheduleNotifications(schedules)
     }
+    var searchQuery by remember { mutableStateOf("") }
+    var usuarioIdState by remember { mutableStateOf(TokenManager.usuarioId) }
 
     LaunchedEffect(Unit) {
         TokenManager.loadToken(context.applicationContext)
-        TokenManager.usuarioId?.let { compartilhamentoViewModel.carregarNotificacoes(it) }
+        val usuarioCarregado = TokenManager.usuarioId
+        usuarioIdState = usuarioCarregado
+        usuarioCarregado?.let { compartilhamentoViewModel.carregarNotificacoes(it) }
         viewModel.loadDisciplinas()
     }
 
-    var searchQuery by remember { mutableStateOf("") }
-    val usuarioId = TokenManager.usuarioId
+
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -183,6 +186,7 @@ fun ListarDisciplinasScreen(
                             notificacao = notificacao,
                             onAceitar = conviteId?.let {
                                 {
+                                    val usuarioId = usuarioIdState
                                     if (usuarioId != null) {
                                         compartilhamentoViewModel.aceitarConvite(usuarioId, it)
                                     } else {
@@ -192,6 +196,7 @@ fun ListarDisciplinasScreen(
                             },
                             onRejeitar = conviteId?.let {
                                 {
+                                    val usuarioId = usuarioIdState
                                     if (usuarioId != null) {
                                         compartilhamentoViewModel.rejeitarConvite(usuarioId, it)
                                     } else {
@@ -226,6 +231,7 @@ fun ListarDisciplinasScreen(
                                 "Compartilhar ${d.nome}",
                                 Toast.LENGTH_SHORT
                             ).show()
+                            val usuarioId = usuarioIdState
                             if (usuarioId != null) {
                                 disciplinaParaCompartilhar = d
                                 compartilhamentoViewModel.carregarContatos(usuarioId)
@@ -240,6 +246,7 @@ fun ListarDisciplinasScreen(
     }
 
     disciplinaParaCompartilhar?.let { disciplinaSelecionada ->
+        val usuarioId = usuarioIdState
         if (usuarioId != null) {
             CompartilharDisciplinaDialog(
                 disciplina = disciplinaSelecionada,

@@ -8,7 +8,6 @@ data class UsuarioResumo(
 
 data class CompartilharDisciplinaRequest(
     val disciplinaId: Long,
-    val remetenteId: Long,
     val destinatarioId: Long,
     val mensagem: String? = null
 )

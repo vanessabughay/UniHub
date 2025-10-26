@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 
 data class NotificacaoConviteUi(
     val id: Long,
@@ -86,19 +87,29 @@ class CompartilhamentoViewModel(
         mensagem: String?
     ) {
         if (_isCompartilhando.value) return
+        if (usuarioId == destinatarioId) {
+            _erro.value = "Você não pode compartilhar uma disciplina consigo mesmo"
+            return
+        }
         viewModelScope.launch {
             _isCompartilhando.value = true
             try {
                 val request = CompartilharDisciplinaRequest(
                     disciplinaId = disciplinaId,
-                    remetenteId = usuarioId,
                     destinatarioId = destinatarioId,
                     mensagem = mensagem?.takeIf { it.isNotBlank() }
                 )
                 repository.compartilhar(request)
                 _statusMessage.value = "Convite enviado com sucesso"
             } catch (e: Exception) {
-                _erro.value = e.message ?: "Erro ao compartilhar disciplina"
+                _erro.value = when (e) {
+                    is HttpException -> when (e.code()) {
+                        400 -> "Não foi possível compartilhar: verifique os dados e tente novamente"
+                        401, 403 -> "Acesso negado. Faça login novamente."
+                        else -> e.message()
+                    }
+                    else -> e.message ?: "Erro ao compartilhar disciplina"
+                }
             } finally {
                 _isCompartilhando.value = false
             }
