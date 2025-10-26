@@ -1,9 +1,19 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.UniHub" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+    <style name="PickerTheme_Neutral" parent="Theme.AppCompat.Light.Dialog">
+
+        <item name="colorAccent">#5B5B5B</item>
+
+        <item name="android:windowBackground">#212121</item>
+
+        <item name="android:textColorPrimary">@color/black</item>
+        <item name="android:textColorSecondary">@color/black</item>
+
+        <item name="android:textColor">@color/black</item>
+
+        <item name="colorPrimary">@color/black</item>
+
+        <item name="android:textColorPrimaryInverse">@color/white</item>
+
     </style>
 
-    <style name="Theme.UniHub" parent="Base.Theme.UniHub" />
 </resources>

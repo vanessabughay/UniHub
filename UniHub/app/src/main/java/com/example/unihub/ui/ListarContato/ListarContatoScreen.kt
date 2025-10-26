@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -192,7 +195,8 @@ fun ListarContatoScreen(
             FloatingActionButton(
                 onClick = onAddContato,
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+                contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Contato")
             }
@@ -222,6 +226,7 @@ fun ListarContatoScreen(
                         onClick = onNavigateToGrupos,
                         modifier = Modifier
                             .weight(1f),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = CardDefaultBackgroundColor,
                             contentColor = MaterialTheme.colorScheme.onSurface
@@ -257,6 +262,7 @@ fun ListarContatoScreen(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
 
                 when {
                     isLoading && contatosState.isEmpty() -> {
@@ -391,6 +397,7 @@ fun ContatoItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = CardDefaultBackgroundColor

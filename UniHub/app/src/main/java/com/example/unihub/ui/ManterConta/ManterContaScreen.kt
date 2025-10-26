@@ -34,8 +34,9 @@ import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.R
 import com.example.unihub.data.repository.InstituicaoRepository
 import androidx.compose.ui.platform.LocalContext
+import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.ui.Shared.NotaCampo
-
+import androidx.compose.foundation.BorderStroke
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,36 +76,28 @@ fun ManterContaScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Perfil") },
-                navigationIcon = {
-                    IconButton(onClick = onVoltar) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                    }
-                },
-
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFF2F2F2))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background (
+                color = Color(0xFFF2F2F2),
             )
-        }
-    ) { padding ->
+    ) {
+        CabecalhoAlternativo(titulo = "Perfil", onVoltar = onVoltar)
+
+        Spacer(Modifier.width(30.dp))
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .background (
-                    color = Color(0xFFF2F2F2),
-                )
-                .padding(padding)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+
         ) {
             Box(
                 modifier = Modifier
                     .size(96.dp)
-                    // .background(Color(0xFFB2DDF3), CircleShape)
                 ,
                 contentAlignment = Alignment.Center
             ) {
@@ -222,7 +215,9 @@ fun ManterContaScreen(
                     onClick = { onNavigateToManterInstituicao("", "", "") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp)
+                        .padding(top = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0x0D000000))
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(4.dp))
@@ -233,6 +228,8 @@ fun ManterContaScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0x0D000000)),
                     colors = CardDefaults.cardColors(containerColor = Color(0xA8C1D5E4))
                 ) {
                     Box(Modifier.fillMaxWidth()) {
@@ -277,12 +274,14 @@ fun ManterContaScreen(
                     Text("Deletar conta", color = Color.Red)
                 }
 
-                              }
+            }
 
             Button(
                 onClick = {
                     viewModel.salvar()
                 },
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color(0x0D000000)),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5AB9D6)),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -292,20 +291,4 @@ fun ManterContaScreen(
             }
         }
     }
-}
-
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true)
-@Composable
-fun ManterContaScreenPreview() {
-    val context = LocalContext.current
-    ManterContaScreen(
-        onVoltar = {},
-        onNavigateToManterInstituicao = { _, _, _ -> },
-        viewModel = ManterContaViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend(), context),
-            AuthRepository(),
-            context
-        )
-    )
 }

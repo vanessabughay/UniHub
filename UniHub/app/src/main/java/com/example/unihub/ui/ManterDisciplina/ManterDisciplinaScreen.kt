@@ -25,6 +25,10 @@ import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import java.time.ZoneId
 import java.time.Instant
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.sp
 import kotlin.math.floor
 import kotlin.math.max
@@ -33,17 +37,75 @@ import com.example.unihub.components.CampoHorario
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 
-
-
-
-val FormCardColor = Color(0x365AB9D6)
+val FormCardColor = Color(0xFFD9EDF6)
 val ButtonConfirmColor = Color(0xFF5AB9D6)
+
+
+private const val PERIOD_MASK_PATTERN = "####/#"
+private const val PHONE_MASK_PATTERN = "(##) #####-####"
+
+
+class MaskVisualTransformation(val mask: String, val maskChar: Char = '#') : VisualTransformation {
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        val cleanText = text.text
+        val maskedText = StringBuilder()
+        var textIndex = 0
+
+
+        mask.forEach { maskC ->
+            if (textIndex >= cleanText.length) {
+                return@forEach
+            }
+
+            if (maskC == maskChar) {
+
+                maskedText.append(cleanText[textIndex])
+                textIndex++
+            } else {
+                maskedText.append(maskC)
+            }
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                var transformed = 0
+                var original = 0
+                mask.forEach { maskC ->
+                    if (original >= offset) return transformed
+                    if (maskC == maskChar) {
+                        original++
+                    }
+                    transformed++
+                    if (transformed > maskedText.length) return transformed
+                }
+                return transformed
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                var original = 0
+                var transformed = 0
+                mask.forEach { maskC ->
+                    if (transformed >= offset) return original
+                    if (maskC == maskChar) {
+                        original++
+                    }
+                    transformed++
+                }
+                return original
+            }
+        }
+
+        return TransformedText(AnnotatedString(maskedText.toString()), offsetMapping)
+    }
+}
+
 
 data class AulaInfo(
     val id: Int = UUID.randomUUID().hashCode(),
     var dia: String = "Segunda-feira",
     var ensalamento: String = "",
-    var horarioInicio: Int = 0 ,
+    var horarioInicio: Int = 0,
     var horarioFim: Int = 0
 )
 
@@ -54,7 +116,8 @@ fun CampoDeTextoComTitulo(
     onValorChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     placeholder: String = "",
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None
 ) {
     Column(modifier) {
         Text(
@@ -69,7 +132,8 @@ fun CampoDeTextoComTitulo(
             placeholder = { Text(placeholder) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            keyboardOptions = keyboardOptions
+            keyboardOptions = keyboardOptions,
+            visualTransformation = visualTransformation
         )
     }
 }
@@ -82,7 +146,8 @@ fun CampoSelecaoDia(
     onDiaSelecionado: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val dias = listOf("Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo")
+    val dias =
+        listOf("Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo")
     var expandido by remember { mutableStateOf(false) }
 
     Column(modifier) {
@@ -180,15 +245,15 @@ fun ManterDisciplinaScreen(
 
     LaunchedEffect(disciplina.value) {
         disciplina.value?.let { d ->
-            codigo          = d.codigo.orEmpty()
-            nomeDisciplina  = d.nome.orEmpty()          // <- era o ponto do erro
-            nomeProfessor   = d.professor.orEmpty()
-            periodo         = d.periodo.orEmpty()
-            cargaHoraria    = (d.cargaHoraria ?: 0).toString()
-            qtdSemanas      = (d.qtdSemanas ?: 0).toString()
+            codigo = d.codigo.orEmpty()
+            nomeDisciplina = d.nome.orEmpty()
+            nomeProfessor = d.professor.orEmpty()
+            periodo = d.periodo.orEmpty()
+            cargaHoraria = (d.cargaHoraria ?: 0).toString()
+            qtdSemanas = (d.qtdSemanas ?: 0).toString()
 
-            val aulasList   = d.aulas.orEmpty()         // evita NPE se vier null
-            qtdAulasSemana  = aulasList.size.toString()
+            val aulasList = d.aulas.orEmpty()
+            qtdAulasSemana = aulasList.size.toString()
             aulas = aulasList.map {
                 AulaInfo(
                     dia = it.diaDaSemana,
@@ -210,13 +275,13 @@ fun ManterDisciplinaScreen(
                 ?.toEpochMilli()
                 ?: 0L
 
-            emailProfessor   = d.emailProfessor.orEmpty()
-            plataformas      = d.plataforma.orEmpty()
-            telefoneProfessor= d.telefoneProfessor.orEmpty()
-            salaProfessor    = d.salaProfessor.orEmpty()
+            emailProfessor = d.emailProfessor.orEmpty()
+            plataformas = d.plataforma.orEmpty()
+            telefoneProfessor = d.telefoneProfessor.orEmpty()
+            salaProfessor = d.salaProfessor.orEmpty()
             ausenciasPermitidas = d.ausenciasPermitidas?.toString() ?: ""
 
-            isAtiva = d.isAtiva  // se for Boolean?, use: (d.isAtiva ?: true)
+            isAtiva = d.isAtiva
         }
     }
 
@@ -254,9 +319,7 @@ fun ManterDisciplinaScreen(
                 Button(
                     onClick = {
                         if (!isSaving) {
-                            isSaving = true // 🔒 Desabilita o botão e mostra "Salvando..."
-
-                            val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                            isSaving = true
 
                             val inicio = Instant.ofEpochMilli(dataInicioSemestre)
                                 .atZone(ZoneId.systemDefault())
@@ -299,22 +362,20 @@ fun ManterDisciplinaScreen(
                             } else {
                                 viewModel.updateDisciplina(disciplina)
                             }
-
-                            // Ao recarregar a tela, o remember reinicia e reabilita automaticamente
                         }
                     },
-                    enabled = !isSaving, // Evita múltiplos cliques
+                    enabled = !isSaving,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
                 ) {
                     Text(
                         text = if (isSaving) "Salvando..." else "Confirmar",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = Color.White
                     )
                 }
             }
@@ -353,35 +414,95 @@ fun ManterDisciplinaScreen(
                 CampoDisciplina(title = "Informações Gerais") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoDeTextoComTitulo("Código da Disciplina", codigo, { codigo = it }, Modifier.weight(1f), placeholder = "DSXXX")
-                        CampoDeTextoComTitulo("Período", periodo, { periodo = it }, Modifier.weight(1f), placeholder = "20XX/X")
+
+                        CampoDeTextoComTitulo(
+                            titulo = "Período",
+                            valor = periodo,
+                            onValorChange = {
+                                val digitos = it.filter { c -> c.isDigit() }
+                                if (digitos.length <= 5) {
+                                    periodo = digitos
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "20XX/X",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            visualTransformation = MaskVisualTransformation(PERIOD_MASK_PATTERN)
+                        )
                     }
                     CampoDeTextoComTitulo("Nome da Disciplina", nomeDisciplina, { nomeDisciplina = it }, placeholder = "Disciplina X")
-                    CampoDeTextoComTitulo("Nome do Professor", nomeProfessor, { nomeProfessor = it}, placeholder = "Professor X")
+                    CampoDeTextoComTitulo("Nome do Professor", nomeProfessor, { nomeProfessor = it }, placeholder = "Professor X")
                 }
             }
 
             item {
                 CampoDisciplina(title = "Informações de Aula") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo("Carga Horária", cargaHoraria, { cargaHoraria = it }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        CampoDeTextoComTitulo("Aulas/Semana", qtdAulasSemana, { qtdAulasSemana = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        CampoDeTextoComTitulo("Semanas (Total)", qtdSemanas, { qtdSemanas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
-                        CampoDeTextoComTitulo("Limite de Ausências", ausenciasPermitidas,{ ausenciasPermitidas = it.filter { c -> c.isDigit() } }, Modifier.weight(1f), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+
+                        CampoDeTextoComTitulo(
+                            titulo = "Carga Horária",
+                            valor = cargaHoraria,
+                            onValorChange = { cargaHoraria = it.filter { c -> c.isDigit() } },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "Ex: 60",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        CampoDeTextoComTitulo(
+                            "Aulas/Semana",
+                            qtdAulasSemana,
+                            { qtdAulasSemana = it.filter { c -> c.isDigit() } },
+                            Modifier.weight(1f),
+                            placeholder = "Ex: 2",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        CampoDeTextoComTitulo(
+                            "Semanas (Total)",
+                            qtdSemanas,
+                            { qtdSemanas = it.filter { c -> c.isDigit() } },
+                            Modifier.weight(1f),
+                            placeholder = "Ex: 18",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        CampoDeTextoComTitulo(
+                            "Limite de Ausências",
+                            ausenciasPermitidas,
+                            { ausenciasPermitidas = it.filter { c -> c.isDigit() } },
+                            Modifier.weight(1f),
+                            placeholder = "Ex: 4",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
                     aulas.forEachIndexed { index, aula ->
                         CampoSelecaoDia(
                             diaSelecionado = aula.dia,
                             onDiaSelecionado = { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(dia = novoValor) } }
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            CampoDeTextoComTitulo("Ensalamento", aula.ensalamento, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(ensalamento = novoValor) } }, Modifier.weight(1f))
-                            CampoHorario("Início", aula.horarioInicio, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } }, Modifier.weight(1f))
-                            CampoHorario("Fim", aula.horarioFim, { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } }, Modifier.weight(1f))
+                            CampoDeTextoComTitulo(
+                                titulo = "Ensalamento",
+                                valor = aula.ensalamento,
+                                onValorChange = { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(ensalamento = novoValor) } },
+                                modifier = Modifier.weight(1f),
+                                placeholder = "Ex: B05"
+                            )
+                            CampoHorario(
+                                "Início",
+                                aula.horarioInicio,
+                                { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } },
+                                Modifier.weight(1f)
+                            )
+                            CampoHorario(
+                                "Fim",
+                                aula.horarioFim,
+                                { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } },
+                                Modifier.weight(1f)
+                            )
                         }
                         if (index < aulas.size - 1) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     }
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoData(
@@ -411,11 +532,42 @@ fun ManterDisciplinaScreen(
 
             item {
                 CampoDisciplina(title = "Informações do Professor") {
-                    CampoDeTextoComTitulo("E-mail", emailProfessor, { emailProfessor = it }, placeholder = "professor@exemplo.com")
-                    CampoDeTextoComTitulo("Plataformas utilizadas", plataformas, { plataformas = it })
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)){
-                        CampoDeTextoComTitulo("Telefone", telefoneProfessor, { telefoneProfessor = it }, Modifier.weight(1f))
-                        CampoDeTextoComTitulo("Sala do Professor", salaProfessor, { salaProfessor = it }, Modifier.weight(1f))
+                    CampoDeTextoComTitulo(
+                        titulo = "E-mail",
+                        valor = emailProfessor,
+                        onValorChange = { emailProfessor = it },
+                        placeholder = "professor@exemplo.com",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                    )
+
+                    CampoDeTextoComTitulo(
+                        titulo = "Plataformas utilizadas",
+                        valor = plataformas,
+                        onValorChange = { plataformas = it },
+                        placeholder = "Ex: Moodle, Teams"
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        CampoDeTextoComTitulo(
+                            titulo = "Telefone",
+                            valor = telefoneProfessor,
+                            onValorChange = {
+                                val digitos = it.filter { c -> c.isDigit() }
+                                if (digitos.length <= 11) {
+                                    telefoneProfessor = digitos
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "(XX) XXXXX-XXXX",
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                            visualTransformation = MaskVisualTransformation(PHONE_MASK_PATTERN)
+                        )
+                        CampoDeTextoComTitulo(
+                            titulo = "Sala do Professor",
+                            valor = salaProfessor,
+                            onValorChange = { salaProfessor = it },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "Ex: D20"
+                        )
                     }
                 }
             }
@@ -427,7 +579,11 @@ fun ManterDisciplinaScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = isAtiva, onCheckedChange = { isAtiva = it }, colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor))
+                    Switch(
+                        checked = isAtiva,
+                        onCheckedChange = { isAtiva = it },
+                        colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor)
+                    )
                 }
             }
 
@@ -444,15 +600,6 @@ fun ManterDisciplinaScreen(
                 }
 
             }
-
-
-
         }
     }
 }
-
-//@Preview(showBackground = true, widthDp = 380)
-//@Composable
-//fun ManterDisciplinaScreenPreview() {
-//   MaterialTheme { ManterDisciplinaScreen(disciplinaId = null, onVoltar = {}) }
-//}

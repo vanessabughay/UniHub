@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -33,6 +32,8 @@ import com.example.unihub.data.apiBackend.ApiInstituicaoBackend
 import com.example.unihub.data.repository.InstituicaoRepository
 import com.example.unihub.ui.Shared.NotaCampo
 import com.example.unihub.ui.Shared.PesoCampo
+import android.widget.Toast
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,6 +44,9 @@ fun ManterInstituicaoScreen(
     media: String = "",
     frequencia: String = "",
     viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory(LocalContext.current))) {
+
+    val context = LocalContext.current
+
     LaunchedEffect(nome, media, frequencia) {
         if (nome.isNotBlank()) {
             viewModel.nomeInstituicao = nome
@@ -50,226 +54,139 @@ fun ManterInstituicaoScreen(
             viewModel.onFrequenciaChange(frequencia)
         }
     }
+
     val sugestoes by remember { derivedStateOf { viewModel.sugestoes } }
-    val mostrarCadastrar by remember { derivedStateOf { viewModel.mostrarCadastrar } }
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .background(color = Color(0xFFFFFFFF))
+            .fillMaxSize()
+            .background(color = Color(0xFFF2F2F2))
     ) {
+        CabecalhoAlternativo(titulo = "Instituição", onVoltar = onVoltar)
+
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .background(color = Color(0xFFF2F2F2))
+                .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            CabecalhoAlternativo(titulo = "Instituição", onVoltar = onVoltar)
 
             Icon(
                 imageVector = Icons.Default.School,
                 contentDescription = null,
                 modifier = Modifier
                     .size(96.dp)
-                    .padding(top = 32.dp)
+                    .padding(top = 32.dp),
+                tint = Color(0xFF243C5B)
             )
 
-
-
-            Column(
-                modifier = Modifier
-                    .padding(top = 39.dp)
-                    .padding(bottom = 39.dp)
+            var expanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = expanded && sugestoes.isNotEmpty(),
+                onExpandedChange = { expanded = it && sugestoes.isNotEmpty() },
+                modifier = Modifier.padding(top = 24.dp)
             ) {
-                Text(
-                    "Nome da Instituição",
-                    color = Color(0xFF000000),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                OutlinedTextField(
+                    value = viewModel.nomeInstituicao,
+                    onValueChange = { viewModel.onNomeInstituicaoChange(it) },
+                    label = { Text("Nome da Instituição") },
                     modifier = Modifier
-                        .padding(top = 2.dp, bottom = 2.dp, start = 17.dp, end = 54.dp)
+                        .menuAnchor()
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xA8C1D5E4),
+                        unfocusedContainerColor = Color(0xA8C1D5E4),
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color(0x0D000000)
+                    ),
+                    singleLine = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded && sugestoes.isNotEmpty()) }
                 )
-                var expanded by remember { mutableStateOf(false) }
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it }
+
+                LaunchedEffect(sugestoes) { expanded = sugestoes.isNotEmpty() }
+                DropdownMenu(
+                    expanded = expanded && sugestoes.isNotEmpty(),
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier.exposedDropdownSize(true)
                 ) {
-                    OutlinedTextField(
-                        value = viewModel.nomeInstituicao,
-                        onValueChange = {
-                            viewModel.onNomeInstituicaoChange(it)
-                        },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .border(
-                                width = 1.dp,
-                                color = Color(0x0D000000),
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                            .clip(RoundedCornerShape(10.dp))
-                            .width(266.dp)
-                            .height(56.dp)
-                            .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
-                        colors = TextFieldDefaults.outlinedTextFieldColors(
-                            containerColor = Color.Transparent,
-                            focusedBorderColor = Color.Transparent,
-                            unfocusedBorderColor = Color.Transparent
-                        ),
-                        singleLine = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
-                    )
-                    LaunchedEffect(sugestoes) { expanded = sugestoes.isNotEmpty() }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        sugestoes.forEach { inst ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "${inst.nome} (média:${NotaCampo.formatListValue(inst.mediaAprovacao)} " +
-                                                "freq:${PesoCampo.formatListValue(inst.frequenciaMinima.toDouble())})"
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.onInstituicaoSelecionada(inst)
-                                    expanded = false
-                                },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                            )
-                        }
+                    sugestoes.forEach { inst ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "${inst.nome} (média:${NotaCampo.formatListValue(inst.mediaAprovacao)} " +
+                                            "freq:${PesoCampo.formatListValue(inst.frequenciaMinima.toDouble())}%)"
+                                )
+                            },
+                            onClick = {
+                                viewModel.onInstituicaoSelecionada(inst)
+                                expanded = false
+                            },
+                            contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                        )
                     }
                 }
             }
-            Row (
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    "Média de aprovação",
-                    color = Color(0xFF000000),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .padding(top = 2.dp, bottom = 2.dp, start = 0.dp, end = 26.dp)
-                )
-                Text(
-                    "Frequência mínima (%)",
-                    color = Color(0xFF000000),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .padding(vertical = 2.dp, horizontal = 20.dp)
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .padding(bottom = 320.dp),
 
+            Row (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 OutlinedTextField(
                     value = NotaCampo.formatFieldText(viewModel.media),
                     onValueChange = { viewModel.onMediaChange(it) },
+                    label = { Text("Média") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .padding(end = 10.dp)
-                        .border(
-                            width = 1.dp,
-                            color = Color(0x0D000000),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clip(RoundedCornerShape(10.dp))
-                        .width(128.dp)
-                        .height(56.dp)
-                        .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        containerColor = Color.Transparent,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xA8C1D5E4),
+                        unfocusedContainerColor = Color(0xA8C1D5E4),
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
+                        unfocusedBorderColor = Color(0x0D000000)
                     ),
                     singleLine = true
                 )
                 OutlinedTextField(
                     value = viewModel.frequencia,
                     onValueChange = { viewModel.onFrequenciaChange(it) },
+                    label = { Text("Frequência") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier
-                        .border(
-                            width = 1.dp,
-                            color = Color(0x0D000000),
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                        .clip(RoundedCornerShape(10.dp))
-                        .width(128.dp)
-                        .height(56.dp)
-                        .background(color = Color(0xA8C1D5E4), shape = RoundedCornerShape(10.dp)),
-                    colors = TextFieldDefaults.outlinedTextFieldColors(
-                        containerColor = Color.Transparent,
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color(0xA8C1D5E4),
+                        unfocusedContainerColor = Color(0xA8C1D5E4),
                         focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent
+                        unfocusedBorderColor = Color(0x0D000000)
                     ),
                     singleLine = true,
                     suffix = { Text("%") }
                 )
             }
-            OutlinedButton(
-                onClick = { viewModel.salvar(onVoltar) },
-                border = BorderStroke(0.dp, Color.Transparent),
-                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
-                contentPadding = PaddingValues(),
-                modifier = Modifier
-                    .padding(bottom = 13.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(color = Color(0xA878B4E1), shape = RoundedCornerShape(8.dp))
-                    .shadow(elevation = 2.dp, spotColor = Color(0x0D000000))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(vertical = 7.dp, horizontal = 31.dp)
-                ) {
-                    Text(
-                        "Salvar",
-                        color = Color(0xFF000000),
-                        fontSize = 16.sp,
 
-                    )
-                }
-            }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+            Button(
+                onClick = { viewModel.salvar(onVoltar) },
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, Color(0x0D000000)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5AB9D6)
+                ),
+                contentPadding = PaddingValues(vertical = 14.dp),
                 modifier = Modifier
-                    .padding(bottom = 4.dp, start = 2.dp, end = 2.dp)
                     .fillMaxWidth()
-                    .padding(vertical = 17.dp)
+                    .padding(vertical = 16.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .width(108.dp)
-                        .height(6.dp)
-                        .background(color = Color(0xFF000000), shape = RoundedCornerShape(100.dp))
-                ) {
-                }
+                Text(
+                    "Salvar",
+                    color = Color.White,
+                    fontSize = 16.sp
+                )
             }
         }
     }
 }
 
-@RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-@Preview(showBackground = true)
-@Composable
-fun ManterInstituicaoScreenPreview() {
-    val context = LocalContext.current
-    ManterInstituicaoScreen(
-        onVoltar = {},
-        viewModel = ManterInstituicaoViewModel(
-            InstituicaoRepository(ApiInstituicaoBackend(), context)
-        ),
-
-    )
-}

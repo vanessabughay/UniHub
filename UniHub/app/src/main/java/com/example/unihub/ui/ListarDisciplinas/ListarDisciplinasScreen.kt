@@ -10,6 +10,7 @@ import androidx.annotation.RequiresExtension
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
@@ -102,8 +103,9 @@ fun ListarDisciplinasScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onAddDisciplina,
-                containerColor = Color(0xFFEFEFEF),
-                contentColor = Color.Black
+                containerColor =  Color(0xFF5AB9D6),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
@@ -170,11 +172,12 @@ fun DisciplinaItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 4.dp),
         onClick = onViewDisciplina,
         colors = CardDefaults.cardColors(
             containerColor = CardBackgroundColor
         ),
+        shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(

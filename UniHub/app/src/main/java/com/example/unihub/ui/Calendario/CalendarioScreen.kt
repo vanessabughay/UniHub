@@ -283,7 +283,7 @@ private fun CalendarioListView(state: CalendarioUiState, onAvaliacaoClick: (Long
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             items(state.avaliacoesDoMes, key = { it.id!! }) { avaliacao ->
                 ItemAvaliacaoEmLista(avaliacao = avaliacao, onClick = { onAvaliacaoClick(avaliacao.id!!) })
@@ -513,7 +513,7 @@ private fun BotaoNovaAvaliacao(
     Button(
         onClick = onClick,
         modifier = modifier.height(44.dp),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
             contentColor = Color(0xFF111827)

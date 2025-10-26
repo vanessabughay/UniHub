@@ -193,7 +193,7 @@ private fun VisualizarQuadroContent(
                 Button(
                     onClick = { onNavigateToNovaColuna(quadroId) },
                     modifier = Modifier.fillMaxWidth(0.8f),
-                    shape = MaterialTheme.shapes.extraLarge,
+                    shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = colorScheme.tertiary,
                         contentColor = colorScheme.onTertiary

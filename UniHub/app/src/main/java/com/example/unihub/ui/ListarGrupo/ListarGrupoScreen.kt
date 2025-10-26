@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -172,7 +173,8 @@ fun ListarGrupoScreen(
             FloatingActionButton(
                 onClick = onAddGrupo,
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = RoundedCornerShape(12.dp)
 
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Grupo")
@@ -201,6 +203,7 @@ fun ListarGrupoScreen(
                     )
                     Button(
                         onClick = onNavigateToContatos,
+                        shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .weight(1f)
                     ) {
@@ -301,6 +304,7 @@ fun GrupoItemExpansivel(
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardDefaultBackgroundColor)
     ) {
         Column(
