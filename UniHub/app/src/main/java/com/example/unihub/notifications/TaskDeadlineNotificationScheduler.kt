@@ -149,15 +149,11 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val deadline = parseDeadline(deadlineIso, zoneId) ?: return null
-            val reminderTime = deadline.minusHours(2)
-
-            val chosen = when {
-                reminderTime.isAfter(now) -> reminderTime
-                deadline.isAfter(now) -> deadline
-                else -> return null
+            if (!deadline.isAfter(now)) {
+                return null
             }
 
-            return chosen.toInstant().toEpochMilli()
+            return deadline.toInstant().toEpochMilli()
         }
 
         internal fun parseDeadline(
