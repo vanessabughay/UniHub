@@ -77,6 +77,16 @@ class ContatoRepository(private val backend: Contatobackend) {
         }
     }
 
+    suspend fun fetchContatosResumo(): List<ContatoResumo> {
+        return try {
+            backend.getContatoResumoApi()
+        } catch (e: IOException) {
+            throw Exception("Erro de rede: ${e.message}")
+        } catch (e: HttpException) {
+            throw Exception("Erro do servidor: ${e.code()}")
+        }
+    }
+
     //ADD CONTATO
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun addContato(contato: Contato) {

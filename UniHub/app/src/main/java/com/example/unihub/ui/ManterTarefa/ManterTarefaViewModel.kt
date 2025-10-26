@@ -8,6 +8,7 @@ import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.repository.ContatoRepository
+import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository.TarefaRepository
@@ -283,59 +284,108 @@ class TarefaFormViewModel(
     fun carregarResponsaveis(quadroId: String, responsavelIds: List<Long> = emptyList()) {
         viewModelScope.launch {
             try {
+                val usuarioLogadoId = TokenManager.usuarioId
+                val nomeUsuarioLogado = TokenManager.nomeUsuario?.trimmedOrNull()
+                val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario
+                    ?.trimmedOrNull()
+                    ?.lowercase()
+
+                val contatosResumo = runCatching { contatoRepository.fetchContatosResumo() }
+                    .getOrElse { emptyList() }
+
+                val contatosDoUsuario = if (usuarioLogadoId != null) {
+                    contatosResumo.filter { it.ownerId == usuarioLogadoId }
+                } else {
+                    emptyList()
+                }
+
+                val contatosPorEmail = contatosDoUsuario
+                    .mapNotNull { resumo ->
+                        resumo.email.trimmedOrNull()?.lowercase()?.let { it to resumo }
+                    }
+                    .toMap()
+
+                val contatosPorIdContato = contatosDoUsuario.associateBy { it.id }
+
                 val quadro = quadroRepository.getQuadroById(quadroId)
                 val grupo = quadro?.grupoId?.let { grupoId ->
                     runCatching { grupoRepository.fetchGrupoById(grupoId) }.getOrNull()
                 }
-                val membrosGrupo = grupo?.membros.orEmpty()
+                val membrosOrdenados = grupo?.membros
+                    .orEmpty()
+                    .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
+
                 val opcoes = mutableListOf<ResponsavelOption>()
                 val idsSemDados = responsavelIds.toMutableSet()
+                val membrosExibidos = linkedSetOf<String>()
+                var indiceSequencial = 0
 
+                fun adicionarResponsavel(
+                    contato: Contato?,
+                    fallbackId: Long? = null,
+                    fallbackNome: String? = null,
+                    fallbackEmail: String? = null
+                ) {
+                    val resultado = construirResponsavelOption(
+                        contato = contato,
+                        index = indiceSequencial++,
+                        fallbackId = fallbackId,
+                        fallbackNome = fallbackNome,
+                        fallbackEmail = fallbackEmail,
+                        usuarioLogadoId = usuarioLogadoId,
+                        nomeUsuarioLogado = nomeUsuarioLogado,
+                        emailUsuarioLogadoNormalizado = emailUsuarioLogadoNormalizado,
+                        contatosPorIdContato = contatosPorIdContato,
+                        contatosPorEmail = contatosPorEmail
+                    ) ?: return
 
-                val responsavelQuadro = criarResponsavelDoQuadro(quadro?.donoId, membrosGrupo)
-                if (responsavelQuadro != null) {
-                    opcoes.add(responsavelQuadro)
-                    idsSemDados.remove(responsavelQuadro.id)
-                }
-
-                quadro?.contatoId?.let { contatoId ->
-                    val responsavel = runCatching { contatoRepository.fetchContatoById(contatoId) }
-                        .getOrNull()
-                        .toResponsavelOption()
-                    if (responsavel != null) {
-                        opcoes.add(responsavel)
-                        idsSemDados.remove(responsavel.id)
-                    }
-                }
-
-                membrosGrupo.forEach { membro ->
-                    membro.toResponsavelOption()?.let { option ->
+                    val (chave, option) = resultado
+                    if (membrosExibidos.add(chave)) {
                         opcoes.add(option)
                         idsSemDados.remove(option.id)
                     }
                 }
-                
+
+                val donoId = quadro?.donoId ?: usuarioLogadoId
+                if (donoId != null) {
+                    val contatoDoDono = runCatching { contatoRepository.fetchContatoById(donoId) }
+                        .getOrNull()
+                    adicionarResponsavel(
+                        contato = contatoDoDono,
+                        fallbackId = donoId,
+                        fallbackNome = if (donoId == usuarioLogadoId) nomeUsuarioLogado else null
+                    )
+                }
+
+                quadro?.contatoId?.let { contatoId ->
+                    val responsavelContato = runCatching { contatoRepository.fetchContatoById(contatoId) }
+                        .getOrNull()
+                    adicionarResponsavel(
+                        contato = responsavelContato,
+                        fallbackId = contatoId,
+                        fallbackEmail = responsavelContato?.email
+                    )
+                }
+
+                membrosOrdenados.forEach { membro ->
+                    adicionarResponsavel(contato = membro)
+                }
 
                 responsavelIds.forEach { responsavelId ->
                     if (opcoes.none { it.id == responsavelId }) {
-                        val responsavel = runCatching { contatoRepository.fetchContatoById(responsavelId) }
+                        val responsavelExtra = runCatching { contatoRepository.fetchContatoById(responsavelId) }
                             .getOrNull()
-                            .toResponsavelOption()
-                        if (responsavel != null) {
-                            opcoes.add(responsavel)
-                            idsSemDados.remove(responsavel.id)
-                        }
+                        adicionarResponsavel(
+                            contato = responsavelExtra,
+                            fallbackId = responsavelId,
+                            fallbackEmail = responsavelExtra?.email
+                        )
                     }
                 }
 
                 if (idsSemDados.isNotEmpty()) {
                     idsSemDados.forEach { id ->
-                        opcoes.add(
-                            ResponsavelOption(
-                                id = id,
-                                nome = "Responsável #$id"
-                            )
-                        )
+                        opcoes.add(ResponsavelOption(id = id, nome = "Responsável #$id"))
                     }
                 }
 
@@ -358,60 +408,60 @@ class TarefaFormViewModel(
         }
     }
 
-    private suspend fun criarResponsavelDoQuadro(
-        ownerId: Long?,
-        membrosGrupo: List<Contato>
-    ): ResponsavelOption? {
-        val usuarioId = ownerId ?: TokenManager.usuarioId ?: return null
+    private fun construirResponsavelOption(
+        contato: Contato?,
+        index: Int,
+        fallbackId: Long?,
+        fallbackNome: String?,
+        fallbackEmail: String?,
+        usuarioLogadoId: Long?,
+        nomeUsuarioLogado: String?,
+        emailUsuarioLogadoNormalizado: String?,
+        contatosPorIdContato: Map<Long, ContatoResumo>,
+        contatosPorEmail: Map<String, ContatoResumo>
+    ): Pair<String, ResponsavelOption>? {
+        val emailDisponivel = contato?.email.trimmedOrNull() ?: fallbackEmail.trimmedOrNull()
+        val emailNormalizado = emailDisponivel?.lowercase()
+        val nomeDisponivel = contato?.nome.trimmedOrNull() ?: fallbackNome.trimmedOrNull()
+        val idResponsavel = contato?.idContato ?: contato?.ownerId ?: contato?.id ?: fallbackId
 
-        val nomeDoToken = TokenManager.nomeUsuario
-            ?.takeIf { it.isNotBlank() && usuarioId == TokenManager.usuarioId }
-
-        val nomeDoGrupo = membrosGrupo.firstNotNullOfOrNull { membro ->
-            val membroId = membro.idContato ?: membro.ownerId ?: membro.id
-            if (membroId == usuarioId) {
-                membro.nomeParaResponsavel()
-            } else {
-                null
-            }
+        val chaveUnica = when {
+            contato?.idContato != null -> "idContato:${contato.idContato}"
+            emailNormalizado != null -> "email:$emailNormalizado"
+            contato?.id != null -> "id:${contato.id}"
+            nomeDisponivel != null -> "nome:${nomeDisponivel.lowercase()}"
+            idResponsavel != null -> "idFallback:$idResponsavel"
+            else -> "indice:$index"
         }
 
-        val nomeDoContato = if (nomeDoToken == null && nomeDoGrupo == null) {
-            runCatching { contatoRepository.fetchContatoById(usuarioId) }
-                .getOrNull()
-                ?.nomeParaResponsavel()
-        } else {
-            null
+        val contatoResumoAssociado = when {
+            contato?.idContato != null -> contatosPorIdContato[contato.idContato]
+            idResponsavel != null -> contatosPorIdContato[idResponsavel]
+            emailNormalizado != null -> contatosPorEmail[emailNormalizado]
+            else -> null
+        } ?: emailNormalizado?.let { contatosPorEmail[it] }
+
+        val nomeContato = contatoResumoAssociado?.nome.trimmedOrNull()
+        val emailContato = contatoResumoAssociado?.email.trimmedOrNull() ?: emailDisponivel
+
+        val isUsuarioLogado = when {
+            usuarioLogadoId != null && contato?.idContato == usuarioLogadoId -> true
+            usuarioLogadoId != null && idResponsavel == usuarioLogadoId -> true
+            emailUsuarioLogadoNormalizado != null && emailNormalizado == emailUsuarioLogadoNormalizado -> true
+            else -> false
         }
 
-
-        val nome = nomeDoToken ?: nomeDoGrupo ?: nomeDoContato ?: "Usuário #$usuarioId"
-        return ResponsavelOption(usuarioId, nome)
-    }
-        private fun Contato?.toResponsavelOption(): ResponsavelOption? {
-            val contato = this ?: return null
-            val idResponsavel = contato.idContato ?: contato.ownerId ?: contato.id
-            val nomeResponsavel = contato.nomeParaResponsavel()
-                ?: idResponsavel?.let { "Responsável #$it" }
-
-            return if (idResponsavel != null && nomeResponsavel != null) {
-            ResponsavelOption(idResponsavel, nomeResponsavel)
-        } else {
-            null
+        val displayText = when {
+            isUsuarioLogado && nomeUsuarioLogado != null -> nomeUsuarioLogado
+            nomeContato != null -> nomeContato
+            emailContato != null -> emailContato
+            nomeDisponivel != null -> nomeDisponivel
+            idResponsavel != null -> "Responsável #$idResponsavel"
+            else -> return null
         }
-    }
 
-    private fun Contato.nomeParaResponsavel(): String? {
-        val usuarioLogadoId = TokenManager.usuarioId
-        val nomeNormalizado = nome?.trim()?.takeIf { it.isNotEmpty() }
-        val emailNormalizado = email?.trim()?.takeIf { it.isNotEmpty() }
-        val ehContatoDoUsuario = usuarioLogadoId != null && ownerId == usuarioLogadoId
-
-        return if (ehContatoDoUsuario) {
-            nomeNormalizado ?: emailNormalizado
-        } else {
-            emailNormalizado ?: nomeNormalizado
-        }
+        val idFinal = idResponsavel ?: return null
+        return chaveUnica to ResponsavelOption(id = idFinal, nome = displayText)
     }
     
     fun atualizarResponsaveisSelecionados(ids: Set<Long>) {
@@ -436,3 +486,5 @@ class TarefaFormViewModel(
         return ordenadosPorNome + naoListados
     }
 }
+
+private fun String?.trimmedOrNull(): String? = this?.trim()?.takeIf { it.isNotEmpty() }
