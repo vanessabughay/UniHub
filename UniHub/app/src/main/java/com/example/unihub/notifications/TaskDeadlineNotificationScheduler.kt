@@ -202,6 +202,13 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
             )
         }
 
-        private fun immutableFlag(): Int = AttendanceNotificationScheduler.immutableFlag()
+        @Suppress("DEPRECATION")
+        private fun immutableFlag(): Int {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PendingIntent.FLAG_IMMUTABLE
+            } else {
+                0
+            }
+        }
     }
 }
