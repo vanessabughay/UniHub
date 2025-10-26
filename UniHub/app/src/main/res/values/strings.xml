@@ -19,4 +19,12 @@
     <string name="evaluation_notification_default_title">Avaliação</string>
     <string name="evaluation_notification_button_details">Ver detalhes</string>
     <string name="evaluation_notification_label">AVALIAÇÃO</string>
+    <string name="task_channel_name">Lembretes de tarefas</string>
+    <string name="task_channel_description">Notificações para prazos de tarefas.</string>
+    <string name="task_notification_prompt">O prazo da tarefa está se aproximando.</string>
+    <string name="task_notification_deadline_format">Prazo: %1$s</string>
+    <string name="task_notification_deadline_unknown">Prazo não informado</string>
+    <string name="task_notification_board_format">Quadro: %1$s</string>
+    <string name="task_notification_button_details">Ver tarefa</string>
+    <string name="task_notification_label">TAREFA</string>
 </resources>

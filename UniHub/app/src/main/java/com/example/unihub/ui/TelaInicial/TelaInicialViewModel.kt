@@ -44,7 +44,9 @@ data class Tarefa(
     val diaSemana: String,
     val dataCurta: String,
     val titulo: String,
-    val descricao: String
+    val descricao: String,
+    val prazoIso: String? = null,
+    val nomeQuadro: String? = null
 )
 
 /* ====== ViewModel ====== */
@@ -131,17 +133,16 @@ class TelaInicialViewModel(
             .map { it.first }
 
         val tarefasFiltradas = _estado.value.tarefas.mapNotNull { tarefa ->
-            try {
-                val dataTarefa = LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter)
-                if (!dataTarefa.isBefore(dataAtual) && !dataTarefa.isAfter(dataLimite)) {
-                    tarefa to dataTarefa
-                } else {
-                    null
+            val dataTarefa = tarefa.prazoIso?.let { parseToLocalDate(it) }
+                ?: run {
+                    runCatching { LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter) }
+                        .getOrNull()
                 }
-            } catch (e: Exception) {
-                null
-            }
-        }.sortedBy { it.second }
+
+            dataTarefa?.takeIf { !it.isBefore(dataAtual) && !it.isAfter(dataLimite) }
+                ?.let { tarefa to it }
+        }
+            .sortedBy { it.second }
             .map { it.first }
 
         _estado.update {
@@ -212,23 +213,39 @@ class TelaInicialViewModel(
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
         val data = parseToLocalDate(real.dataPrazo) ?: return null
         val localePtBr = Locale("pt", "BR")
+        val nomeQuadro = real.nomeQuadro
+            .takeIf { it.isNotBlank() }
+            ?: ""
 
         return Tarefa(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
                 .replaceFirstChar { it.titlecase(localePtBr) },
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
             titulo = real.titulo,
-            descricao = real.nomeQuadro
+            descricao = nomeQuadro,
+            prazoIso = real.dataPrazo,
+            nomeQuadro = nomeQuadro
         )
     }
 
     /** Converte a string de data do backend para LocalDate */
     private fun parseToLocalDate(dataString: String?): LocalDate? {
         if (dataString.isNullOrBlank()) return null
-        return try {
-            LocalDate.parse(dataString.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE)
-        } catch (e: Exception) {
-            null
+        val trimmed = dataString.trim()
+        val dateTimeFormatters = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )
+
+        dateTimeFormatters.forEach { formatter ->
+            runCatching { java.time.LocalDateTime.parse(trimmed, formatter) }
+                .getOrNull()
+                ?.let { return it.toLocalDate() }
         }
+        return runCatching {
+            LocalDate.parse(trimmed.take(10), DateTimeFormatter.ISO_LOCAL_DATE)
+        }.getOrNull()
     }
 }

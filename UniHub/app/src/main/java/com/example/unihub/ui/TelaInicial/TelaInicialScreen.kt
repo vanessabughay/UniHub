@@ -49,6 +49,7 @@ import com.example.unihub.data.config.TokenManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
+import com.example.unihub.notifications.TaskDeadlineNotificationScheduler
 
 
 
@@ -75,6 +76,7 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val taskScheduler = remember { TaskDeadlineNotificationScheduler(context.applicationContext) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -85,6 +87,27 @@ fun TelaInicial(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    LaunchedEffect(estado.tarefas) {
+        val infos = estado.tarefas.mapNotNull { tarefa ->
+            val deadlineIso = tarefa.prazoIso?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val identifierSeed = buildString {
+                append(tarefa.titulo)
+                append('-')
+                append(deadlineIso)
+                append('-')
+                append(tarefa.nomeQuadro ?: tarefa.descricao)
+            }
+
+            TaskDeadlineNotificationScheduler.TaskDeadlineInfo(
+                identifier = identifierSeed,
+                titulo = tarefa.titulo,
+                prazoIso = deadlineIso,
+                nomeQuadro = tarefa.nomeQuadro ?: tarefa.descricao
+            )
+        }
+        taskScheduler.scheduleNotifications(infos)
     }
 
 
