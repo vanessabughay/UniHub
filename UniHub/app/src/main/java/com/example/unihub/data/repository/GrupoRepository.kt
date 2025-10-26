@@ -16,6 +16,7 @@ interface Grupobackend { // Removi o "_" inicial, é uma convenção melhor
     suspend fun addGrupoApi(grupo: Grupo)
     suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean
     suspend fun deleteGrupoApi(id: Long): Boolean
+    suspend fun leaveGrupoApi(id: Long): Boolean
 }
 
 // Esta é agora a única classe GrupoRepository
@@ -85,5 +86,10 @@ class GrupoRepository(private val backend: Grupobackend) {
     suspend fun deleteGrupo(id: String): Boolean {
         val longId = id.toLongOrNull() ?: throw IllegalArgumentException("ID de Grupo inválido.")
         return backend.deleteGrupoApi(longId)
+    }
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    suspend fun leaveGrupo(id: String): Boolean {
+        val longId = id.toLongOrNull() ?: throw IllegalArgumentException("ID de Grupo inválido.")
+        return backend.leaveGrupoApi(longId)
     }
 }

@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Person // Ícone para membro
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
+import com.example.unihub.data.config.TokenManager
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
 val DeleteButtonErrorColor = Color(0xFFB00020) // Uma cor de erro típica para o botão excluir
@@ -76,6 +77,46 @@ fun ManterGrupoScreen(
     var showAddMembrosDialog by remember { mutableStateOf(false) }
     var showRemoveMembrosDialog by remember { mutableStateOf(false) }
     var isSaving by remember { mutableStateOf(false) }
+
+    val usuarioIdLogado = TokenManager.usuarioId
+    val adminEmailPadrao = TokenManager.emailUsuario?.trim()?.lowercase()
+    val adminContato = uiState.membrosDoGrupo.firstOrNull { membro ->
+        val emailNormalizado = membro.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+        when {
+            uiState.adminContatoId != null && membro.id == uiState.adminContatoId -> true
+            adminEmailPadrao != null && emailNormalizado == adminEmailPadrao -> true
+            else -> false
+        }
+    }
+    val adminEmailNormalizado = adminContato?.email?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+        ?: adminEmailPadrao
+    val isUsuarioAdministrador = remember(
+        grupoId,
+        uiState.ownerId,
+        usuarioIdLogado,
+        uiState.adminContatoId,
+        adminEmailNormalizado,
+        uiState.membrosDoGrupo
+    ) {
+        if (grupoId == null) {
+            true
+        } else {
+            val ownerMatches = uiState.ownerId != null && usuarioIdLogado != null && uiState.ownerId == usuarioIdLogado
+            val emailMatches = uiState.adminContatoId != null && adminEmailNormalizado != null &&
+                    uiState.membrosDoGrupo.any { membro ->
+                        val emailNormalizado = membro.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+                        membro.id == uiState.adminContatoId && emailNormalizado == adminEmailNormalizado
+                    }
+            ownerMatches || emailMatches
+        }
+    }
+    val membrosRemoviveis = uiState.membrosDoGrupo.filterNot { membro ->
+        val emailNormalizado = membro.email.trim().takeIf { it.isNotEmpty() }?.lowercase()
+        val coincideId = uiState.adminContatoId != null && membro.id == uiState.adminContatoId
+        val coincideContato = adminContato?.id == membro.id
+        val coincideEmail = adminEmailNormalizado != null && emailNormalizado == adminEmailNormalizado
+        coincideId || coincideContato || coincideEmail
+    }
 
     // Efeitos (mantidos como estão)
     LaunchedEffect(uiState.sucesso, uiState.isExclusao) {
@@ -104,6 +145,11 @@ fun ManterGrupoScreen(
         }
     }
 
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading) {
+            isSaving = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -114,7 +160,7 @@ fun ManterGrupoScreen(
         }
     ) { paddingValues ->
 
-        if (showDeleteDialog) { // Diálogo de exclusão do grupo (mantido)
+        if (isUsuarioAdministrador && showDeleteDialog) { // Diálogo de exclusão do grupo (mantido)
             AlertDialog(
                 onDismissRequest = { showDeleteDialog = false },
                 title = { Text("Confirmar Exclusão") },
@@ -134,7 +180,7 @@ fun ManterGrupoScreen(
         }
 
         // Diálogo para Adicionar Membros
-        if (showAddMembrosDialog) {
+        if (isUsuarioAdministrador && showAddMembrosDialog) {
             SelecaoContatosDialog(
                 titulo = "Adicionar Contatos ao Grupo",
                 contatosDisponiveis = uiState.todosOsContatosDisponiveis,
@@ -150,11 +196,11 @@ fun ManterGrupoScreen(
         }
 
         // Diálogo para Remover Membros
-        if (showRemoveMembrosDialog) {
+        if (isUsuarioAdministrador && showRemoveMembrosDialog) {
             SelecaoContatosDialog(
                 titulo = "Remover Contatos do Grupo",
                 // Mostra apenas os membros atuais para remoção
-                contatosDisponiveis = uiState.membrosDoGrupo,
+                contatosDisponiveis = membrosRemoviveis,
                 idsContatosJaSelecionados = emptySet(), // Não aplicável aqui, pois todos são selecionáveis para remoção
                 onDismissRequest = { showRemoveMembrosDialog = false },
                 onConfirmarSelecao = { idsSelecionadosParaRemover ->
@@ -178,7 +224,7 @@ fun ManterGrupoScreen(
             var nomeState by remember(uiState.nome) { mutableStateOf(uiState.nome) }
             LaunchedEffect(uiState.nome) {
                 nomeState = uiState.nome
-                viewModel.setNomeGrupo(uiState.nome) // Sincroniza o nome no ViewModel também
+                //viewModel.setNomeGrupo(uiState.nome) // Sincroniza o nome no ViewModel também
             }
 
 
@@ -207,6 +253,7 @@ fun ManterGrupoScreen(
                         label = { Text("Nome do Grupo") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        enabled = isUsuarioAdministrador,
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
@@ -233,18 +280,39 @@ fun ManterGrupoScreen(
                     )
 
                     // Exibição dos membros atuais (opcional)
-                    if (uiState.membrosDoGrupo.isNotEmpty()) {
+                    val nomeAdministrador = adminContato?.nome?.takeIf { it.isNotBlank() }
+                        ?: TokenManager.nomeUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: adminContato?.email?.takeIf { it.isNotBlank() }
+                        ?: TokenManager.emailUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                        ?: TokenManager.usuarioId?.let { "Usuário #$it" }
+                        ?: "Administrador"
 
-                        //Text("Membros Atuais:", style = MaterialTheme.typography.labelMedium)
+                    val membrosFormatados = buildList {
+                        add("- $nomeAdministrador (administrador do Grupo)")
+                        membrosRemoviveis.forEach { membro ->
+                            val nomeAjustado = membro.nome.takeIf { it.isNotBlank() }
+                                ?: membro.email.trim().takeIf { it.isNotEmpty() }
+                                ?: "Membro"
+                            add("- $nomeAjustado")
+                        }
+                    }
 
-                        uiState.membrosDoGrupo.take(5).forEach { membro -> // Mostra até 5 para não poluir
+                    if (membrosFormatados.isNotEmpty()) {
+                        membrosFormatados.take(5).forEach { descricao ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Filled.Person, contentDescription = "Membro", modifier = Modifier.padding(end = 8.dp))
-                                Text(membro.nome, style = MaterialTheme.typography.bodyMedium)
+                                Icon(
+                                    Icons.Filled.Person,
+                                    contentDescription = "Membro",
+                                    modifier = Modifier.padding(end = 8.dp)
+                                )
+                                Text(descricao, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
-                        if (uiState.membrosDoGrupo.size > 5) {
-                            Text("... e mais ${uiState.membrosDoGrupo.size - 5}", style = MaterialTheme.typography.bodySmall)
+                        if (membrosFormatados.size > 5) {
+                            Text(
+                                "... e mais ${membrosFormatados.size - 5}",
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
                         Spacer(Modifier.height(8.dp))
                     } else {
@@ -252,30 +320,32 @@ fun ManterGrupoScreen(
                     }
 
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = { showAddMembrosDialog = true },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp)
+                    if (isUsuarioAdministrador) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(Icons.Filled.AddCircle, contentDescription = "Adicionar", modifier = Modifier.padding(end = 4.dp))
-                            Text("Adicionar ao Grupo")
-                        }
-                        Button(
-                            onClick = { showRemoveMembrosDialog = true },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFD3D3D3),
-                                contentColor = Color.Black
-                            ),
-                            enabled = uiState.membrosDoGrupo.isNotEmpty() // Habilita só se houver membros
-                        ) {
-                            Icon(Icons.Filled.Delete, contentDescription = "Remover", modifier = Modifier.padding(end = 4.dp))
-                            Text("Remover do Grupo")
+                            Button(
+                                onClick = { showAddMembrosDialog = true },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(Icons.Filled.AddCircle, contentDescription = "Adicionar", modifier = Modifier.padding(end = 4.dp))
+                                Text("Adicionar ao Grupo")
+                            }
+                            Button(
+                                onClick = { showRemoveMembrosDialog = true },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFD3D3D3),
+                                    contentColor = Color.Black
+                                ),
+                                enabled = uiState.membrosDoGrupo.isNotEmpty() // Habilita só se houver membros
+                            ) {
+                                Icon(Icons.Filled.Delete, contentDescription = "Remover", modifier = Modifier.padding(end = 4.dp))
+                                Text("Remover do Grupo")
+                            }
                         }
                     }
                 }
@@ -287,60 +357,62 @@ fun ManterGrupoScreen(
             }
 
             // Botões de Ação (Salvar/Atualizar e Excluir se for edição)
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Button( // Botão Salvar/Atualizar Grupo
-                    onClick = {
-                        if (!isSaving) {
-                            isSaving = true // trava o botão e mostra "Salvando..."
-
-                            if (grupoId == null) {
-                                viewModel.createGrupo(uiState.nome)
-                            } else {
-                                viewModel.updateGrupo(grupoId, uiState.nome)
-                            }
-
-                            // Quando a tela for recarregada, o remember reseta e reativa o botão
-                        }
-                    },
-                    enabled = !isSaving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD3D3D3),
-                        contentColor = Color.Black
-                    )
+            if (isUsuarioAdministrador) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = if (isSaving)
-                            "Salvando..." // feedback visual
-                        else if (grupoId == null)
-                            "Criar Grupo"
-                        else
-                            "Atualizar Grupo",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                    Button( // Botão Salvar/Atualizar Grupo
+                        onClick = {
+                            if (!isSaving) {
+                                isSaving = true // trava o botão e mostra "Salvando..."
 
-                if (grupoId != null) { // Botão Excluir Grupo (somente em modo de edição)
-                    Button(
-                        onClick = { showDeleteDialog = true },
-                        enabled = !isSaving, // desativa enquanto salva
+                                if (grupoId == null) {
+                                    viewModel.createGrupo(uiState.nome)
+                                } else {
+                                    viewModel.updateGrupo(grupoId, uiState.nome)
+                                }
+
+                                // Quando a tela for recarregada, o remember reseta e reativa o botão
+                            }
+                        },
+                        enabled = !isSaving,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f),
-                            contentColor = DeleteButtonErrorColor
+                            containerColor = Color(0xFFD3D3D3),
+                            contentColor = Color.Black
                         )
                     ) {
-                        Text("Excluir Grupo", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        Text(
+                            text = if (isSaving)
+                                "Salvando..." // feedback visual
+                            else if (grupoId == null)
+                                "Criar Grupo"
+                            else
+                                "Atualizar Grupo",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (grupoId != null && uiState.podeExcluirGrupo) { // Botão Excluir Grupo (somente em modo de edição e quando permitido)
+                        Button(
+                            onClick = { showDeleteDialog = true },
+                            enabled = !isSaving, // desativa enquanto salva
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = DeleteButtonErrorColor.copy(alpha = 0.1f),
+                                contentColor = DeleteButtonErrorColor
+                            )
+                        ) {
+                            Text("Excluir Grupo", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                        }
                     }
                 }
             }

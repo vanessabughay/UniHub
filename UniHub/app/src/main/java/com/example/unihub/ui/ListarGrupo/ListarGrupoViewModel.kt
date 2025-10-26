@@ -157,6 +157,56 @@ class ListarGrupoViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    fun leaveGrupo(grupoId: String, onResult: (sucesso: Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+
+            try {
+                val id = grupoId.toLongOrNull()
+                if (id == null) {
+                    _errorMessage.value = "ID de Grupo inválido."
+                    _isLoading.value = false
+                    onResult(false)
+                    return@launch
+                }
+
+                var delegouCarregamento = false
+                val leaveSuccess = repository.leaveGrupo(id.toString())
+
+                if (leaveSuccess) {
+                    delegouCarregamento = true
+                    loadGrupo()
+                    onResult(true)
+                } else {
+                    _errorMessage.value = "Falha ao sair do Grupo no servidor/banco de dados."
+                    onResult(false)
+                }
+
+                if (!delegouCarregamento) {
+                    _isLoading.value = false
+                }
+            } catch (e: IllegalArgumentException) {
+                _errorMessage.value = e.message ?: "ID de Grupo inválido."
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: IOException) {
+                _errorMessage.value = "Erro de rede ao sair do Grupo: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: HttpException) {
+                _errorMessage.value = "Erro do servidor (${e.code()}) ao sair do Grupo."
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: Exception) {
+                _errorMessage.value = "Erro ao sair do Grupo: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            }
+        }
+    }
+
     fun clearErrorMessage() {
         _errorMessage.value = null
     }

@@ -61,6 +61,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoResumo
 
@@ -168,9 +169,24 @@ fun ListarGrupoScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.deleteGrupo(grupoAtual.id!!.toString()) { sucesso ->
-                            if (sucesso) {
-                                Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                        val grupoId = grupoAtual.id?.toString()
+                        if (grupoId != null) {
+                            when (acaoAtual) {
+                                GrupoAcao.EXCLUIR -> {
+                                    viewModel.deleteGrupo(grupoId) { sucesso ->
+                                        if (sucesso) {
+                                            Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+
+                                GrupoAcao.SAIR -> {
+                                    viewModel.leaveGrupo(grupoId) { sucesso ->
+                                        if (sucesso) {
+                                            Toast.makeText(context, mensagemSucesso, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
                             }
                         }
                         showConfirmActionDialog = false
@@ -393,15 +409,39 @@ fun GrupoItemExpansivel(
                         val membrosOrdenados = grupo.membros
                             .sortedBy { contato -> contato.id ?: Long.MAX_VALUE }
 
+                        val membrosParaExibir = if (membrosOrdenados.isNotEmpty()) {
+                            membrosOrdenados
+                        } else {
+                            val ownerId = grupo.ownerId
+                            val nomeAdministrador = TokenManager.nomeUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                                ?: TokenManager.emailUsuario?.trim()?.takeIf { it.isNotEmpty() }
+                                ?: ownerId?.let { "Usuário #$it" }
+                            if (ownerId != null && nomeAdministrador != null) {
+                                listOf(
+                                    Contato(
+                                        id = grupo.adminContatoId ?: ownerId,
+                                        nome = nomeAdministrador,
+                                        email = TokenManager.emailUsuario,
+                                        pendente = false,
+                                        idContato = ownerId,
+                                        ownerId = ownerId
+                                    )
+                                )
+                            } else {
+                                emptyList()
+                            }
+                        }
+
                         var acaoGrupo = GrupoAcao.SAIR
                         var iconeAcao = Icons.Filled.Logout
                         var descricaoAcao = "Sair do Grupo"
+                        val isUsuarioLogadoAdmin = usuarioLogadoId != null && grupo.ownerId == usuarioLogadoId
 
-                        if (membrosOrdenados.isEmpty()) {
+                        if (membrosParaExibir.isEmpty()) {
                             Text(
                                 "Nenhum integrante neste grupo.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                modifier = Modifier.align(Alignment.CenterHorizontally) // Centraliza se não houver membros
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
                             )
                         } else {
                             val contatosDisponiveis = if (usuarioLogadoId != null) {
@@ -432,7 +472,7 @@ fun GrupoItemExpansivel(
                                 ?.lowercase()
 
 
-                            membrosOrdenados.forEachIndexed { index, contato ->
+                            membrosParaExibir.forEachIndexed { index, contato ->
                                 val emailDisponivel =
                                     contato.email?.trim()?.takeIf { it.isNotEmpty() }
                                 val emailNormalizado = emailDisponivel?.lowercase()
@@ -487,11 +527,15 @@ fun GrupoItemExpansivel(
                                 val isAdministrador = grupo.ownerId != null &&
                                         contato.idContato != null &&
                                         contato.idContato == grupo.ownerId
+
                                 val rotuloAdministrador = if (isAdministrador) {
                                     " (Administrador do Grupo)"
                                 } else {
                                     ""
                                 }
+
+
+
                                 Text(
                                     text = "- $textoBase$rotuloAdministrador",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -499,7 +543,7 @@ fun GrupoItemExpansivel(
                                 )
                             }
                             val podeExcluirGrupo =
-                                usuarioLogadoEstaNoGrupo && totalMembrosExibidos <= 1
+                                isUsuarioLogadoAdmin && usuarioLogadoEstaNoGrupo && totalMembrosExibidos <= 1
                             acaoGrupo = if (podeExcluirGrupo) GrupoAcao.EXCLUIR else GrupoAcao.SAIR
                             if (acaoGrupo == GrupoAcao.EXCLUIR) {
                                 iconeAcao = Icons.Filled.Delete
@@ -517,7 +561,7 @@ fun GrupoItemExpansivel(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween // Para separar os ícones
                         ) {
-                            // Botão Sair/Excluir (esquerda)
+                            // Botão Sair (esquerda)
                             IconButton(onClick = { onAcaoClick(acaoGrupo) }) {
                                 Icon(
                                     imageVector = iconeAcao,
@@ -527,13 +571,17 @@ fun GrupoItemExpansivel(
                             }
 
                             // Botão Editar (direita)
-                            IconButton(onClick = onEditarClick) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = "Editar Grupo",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                            if (isUsuarioLogadoAdmin) {
+                                IconButton(onClick = onEditarClick) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "Editar Grupo",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
+
+
                         }
                     }
                 }

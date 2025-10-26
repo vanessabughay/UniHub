@@ -23,6 +23,9 @@ data class ManterGrupoUiState(
     val nome: String = "",
     val grupoIdAtual: String? = null,
     val membrosDoGrupo: List<ContatoResumoUi> = emptyList(),
+    val ownerId: Long? = null,
+    val adminContatoId: Long? = null,
+    val podeExcluirGrupo: Boolean = false,
     val isLoading: Boolean = false,
     val erro: String? = null,
     val sucesso: Boolean = false,
@@ -65,9 +68,14 @@ class ManterGrupoViewModel(
                   // e que Grupo tem uma propriedade 'membros' (List<Contato> ou List<Long>).
                     grupoRepository.getGrupoById(longId).collect { grupo ->
                         if (grupo != null) {
+                            val podeExcluir = calcularPodeExcluirGrupo(grupo)
                             _uiState.update {
                                 it.copy(
                                     nome = grupo.nome ?: "",
+                                    grupoIdAtual = grupo.id?.toString() ?: id,
+                                    ownerId = grupo.ownerId,
+                                    adminContatoId = grupo.adminContatoId,
+                                    podeExcluirGrupo = podeExcluir,
                                     isLoading = false
                                 )
                             }
@@ -76,15 +84,39 @@ class ManterGrupoViewModel(
                                 .toSet()
                             _idMembrosSelecionados.value = idsDosMembrosDoGrupo
                         } else {
-                            _uiState.update { it.copy(erro = "Grupo não encontrado", isLoading = false) }
+                            _uiState.update {
+                                it.copy(
+                                    erro = "Grupo não encontrado",
+                                    ownerId = null,
+                                    adminContatoId = null,
+                                    podeExcluirGrupo = false,
+                                    isLoading = false
+                                )
+                            }
                         }
                     }
                 } catch (e: Exception) {
-                    _uiState.update { it.copy(erro = e.message, isLoading = false) }
+                    _uiState.update {
+                        it.copy(
+                            erro = e.message,
+                            ownerId = null,
+                            adminContatoId = null,
+                            podeExcluirGrupo = false,
+                            isLoading = false
+                        )
+                    }
                 }
             }
         } else {
-            _uiState.update { it.copy(erro = "ID de Grupo inválido", grupoIdAtual = null) }
+            _uiState.update {
+                it.copy(
+                    erro = "ID de Grupo inválido",
+                    grupoIdAtual = null,
+                    ownerId = null,
+                    adminContatoId = null,
+                    podeExcluirGrupo = false
+                )
+            }
         }
     }
 
@@ -260,7 +292,9 @@ class ManterGrupoViewModel(
                                     id = id,
                                     nome = nome,
                                     email = email,
-                                    pendente = modeloContato.pendente
+                                    pendente = modeloContato.pendente,
+                                    registroId = modeloContato.registroId,
+                                    ownerId = modeloContato.ownerId
                                 )
                             } else {
                                 null // Se algum campo essencial for nulo, não inclua este contato no resultado do mapNotNull
@@ -294,10 +328,18 @@ class ManterGrupoViewModel(
     //  para manipular a seleção de membros
     fun addMembroAoGrupoPeloId(contatoId: Long) {
         _idMembrosSelecionados.update { currentIds -> currentIds + contatoId }
+        _uiState.update { it.copy(podeExcluirGrupo = false) }
     }
 
     fun removeMembroDoGrupoPeloId(contatoId: Long) {
         _idMembrosSelecionados.update { currentIds -> currentIds - contatoId }
+        // Pode voltar a permitir exclusão caso só reste o administrador
+        val podeExcluirNovamente = _idMembrosSelecionados.value.size <= 1 &&
+                _uiState.value.ownerId != null &&
+                _uiState.value.ownerId == TokenManager.usuarioId
+        if (podeExcluirNovamente) {
+            _uiState.update { it.copy(podeExcluirGrupo = true) }
+        }
     }
 
     // para definir o nome do grupo a partir da UI
@@ -308,5 +350,53 @@ class ManterGrupoViewModel(
 
     fun onEventoConsumido() {
         _uiState.update { it.copy(sucesso = false, erro = null, isExclusao = false, errorLoadingAllContatos = null) }
+    }
+
+    private fun calcularPodeExcluirGrupo(grupo: Grupo): Boolean {
+        val usuarioLogadoId = TokenManager.usuarioId
+        val ownerId = grupo.ownerId
+
+        if (usuarioLogadoId == null || ownerId == null || ownerId != usuarioLogadoId) {
+            return false
+        }
+
+        val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.lowercase()
+
+        val membrosUnicos = mutableSetOf<String>()
+        var usuarioLogadoEncontrado = false
+
+        grupo.membros.forEachIndexed { index, contato ->
+            val emailDisponivel = contato.email?.trim()?.takeIf { it.isNotEmpty() }
+            val emailNormalizado = emailDisponivel?.lowercase()
+            val chaveUnica = when {
+                contato.idContato != null -> "idContato:${contato.idContato}"
+                contato.id != null -> "id:${contato.id}"
+                emailNormalizado != null -> "email:$emailNormalizado"
+                contato.nome?.trim()?.takeIf { it.isNotEmpty() } != null ->
+                    "nome:${contato.nome!!.trim().lowercase()}"
+                else -> "indice:$index"
+            }
+
+            val adicionou = membrosUnicos.add(chaveUnica)
+            if (adicionou) {
+                if (contato.idContato != null && contato.idContato == usuarioLogadoId) {
+                    usuarioLogadoEncontrado = true
+                } else if (emailNormalizado != null && emailUsuarioLogadoNormalizado != null &&
+                    emailNormalizado == emailUsuarioLogadoNormalizado
+                ) {
+                    usuarioLogadoEncontrado = true
+                }
+            }
+        }
+
+        if (!usuarioLogadoEncontrado) {
+            membrosUnicos.add("owner:$ownerId")
+            usuarioLogadoEncontrado = true
+        }
+
+        return usuarioLogadoEncontrado && membrosUnicos.size <= 1
     }
 }

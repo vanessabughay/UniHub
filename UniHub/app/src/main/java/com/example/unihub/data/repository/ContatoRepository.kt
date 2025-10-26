@@ -14,7 +14,8 @@ data class ContatoResumo(
     val nome: String,
     val email: String,
     val pendente: Boolean,
-    val ownerId: Long?
+    val ownerId: Long?,
+    val registroId: Long?
 )
 
 
