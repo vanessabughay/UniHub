@@ -431,6 +431,7 @@ fun GrupoItemExpansivel(
                         var acaoGrupo = GrupoAcao.SAIR
                         var iconeAcao = Icons.Filled.Logout
                         var descricaoAcao = "Sair do Grupo"
+                        val isUsuarioLogadoAdmin = usuarioLogadoId != null && grupo.ownerId == usuarioLogadoId
 
                         if (membrosParaExibir.isEmpty()) {
                             Text(
@@ -444,7 +445,7 @@ fun GrupoItemExpansivel(
                             } else {
                                 emptyList()
                             }
-                            val isUsuarioLogadoAdmin = usuarioLogadoId != null && grupo.ownerId == usuarioLogadoId
+
                             val contatosPorEmail = contatosDisponiveis
                                 .mapNotNull { contatoResumo ->
                                     contatoResumo.email.trim().takeIf { it.isNotEmpty() }
@@ -556,7 +557,7 @@ fun GrupoItemExpansivel(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween // Para separar os ícones
                         ) {
-                            // Botão Sair/Excluir (esquerda)
+                            // Botão Sair (esquerda)
                             IconButton(onClick = { onAcaoClick(acaoGrupo) }) {
                                 Icon(
                                     imageVector = iconeAcao,
@@ -566,13 +567,17 @@ fun GrupoItemExpansivel(
                             }
 
                             // Botão Editar (direita)
-                            IconButton(onClick = onEditarClick) {
-                                Icon(
-                                    imageVector = Icons.Filled.Edit,
-                                    contentDescription = "Editar Grupo",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
+                            if (isUsuarioLogadoAdmin) {
+                                IconButton(onClick = onEditarClick) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "Editar Grupo",
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
                             }
+
+
                         }
                     }
                 }
