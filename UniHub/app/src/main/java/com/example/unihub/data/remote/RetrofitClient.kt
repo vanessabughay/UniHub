@@ -8,11 +8,18 @@ object RetrofitClient {
     private const val BASE_URL = "http://192.168.1.2:8080/"
    
 
-    val disciplinaApiService: DisciplinaApiService by lazy {
+    private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-            .create(DisciplinaApiService::class.java)
+    }
+
+    val disciplinaApiService: DisciplinaApiService by lazy {
+        retrofit.create(DisciplinaApiService::class.java)
+    }
+
+    val compartilhamentoApiService: CompartilhamentoApiService by lazy {
+        retrofit.create(CompartilhamentoApiService::class.java)
     }
 }

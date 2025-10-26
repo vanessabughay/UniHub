@@ -1,5 +1,6 @@
 package com.unihub.backend.controller;
 
+import com.unihub.backend.model.Avaliacao;
 import com.unihub.backend.model.Disciplina;
 import com.unihub.backend.model.HorarioAula;
 import com.unihub.backend.service.DisciplinaService;
@@ -48,12 +49,32 @@ public class DisciplinaController {
         existente.setAtiva(novaDisciplina.isAtiva());
         existente.setReceberNotificacoes(novaDisciplina.isReceberNotificacoes());
 
-    
-        existente.getAulas().clear();
+        if (novaDisciplina.getProprietario() != null) {
+            existente.setProprietario(novaDisciplina.getProprietario());
+        }
+
+
+        if (existente.getAulas() != null) {
+            existente.getAulas().clear();
+        } else {
+            existente.setAulas(new java.util.ArrayList<>());
+        }
         if (novaDisciplina.getAulas() != null) {
             for (HorarioAula aula : novaDisciplina.getAulas()) {
                 aula.setDisciplina(existente);
                 existente.getAulas().add(aula);
+            }
+        }
+
+        if (existente.getAvaliacoes() != null) {
+            existente.getAvaliacoes().clear();
+        } else {
+            existente.setAvaliacoes(new java.util.ArrayList<>());
+        }
+        if (novaDisciplina.getAvaliacoes() != null) {
+            for (Avaliacao avaliacao : novaDisciplina.getAvaliacoes()) {
+                avaliacao.setDisciplina(existente);
+                existente.getAvaliacoes().add(avaliacao);
             }
         }
 

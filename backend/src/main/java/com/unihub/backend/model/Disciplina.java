@@ -25,10 +25,18 @@ public class Disciplina {
     private String salaProfessor;
     private boolean isAtiva;
     private boolean receberNotificacoes;
-    
+
+    @ManyToOne
+    @JoinColumn(name = "proprietario_id")
+    private Usuario proprietario;
+
     @OneToMany(mappedBy = "disciplina", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<HorarioAula> aulas;
+
+    @OneToMany(mappedBy = "disciplina", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private List<Avaliacao> avaliacoes;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -69,12 +77,25 @@ public class Disciplina {
     public boolean isReceberNotificacoes() { return receberNotificacoes; }
     public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }
 
+    public Usuario getProprietario() { return proprietario; }
+    public void setProprietario(Usuario proprietario) { this.proprietario = proprietario; }
+
     public List<HorarioAula> getAulas() { return aulas; }
     public void setAulas(List<HorarioAula> aulas) {
         this.aulas = aulas;
         if (aulas != null) {
             for (HorarioAula aula : aulas) {
                 aula.setDisciplina(this);
+            }
+        }
+    }
+
+    public List<Avaliacao> getAvaliacoes() { return avaliacoes; }
+    public void setAvaliacoes(List<Avaliacao> avaliacoes) {
+        this.avaliacoes = avaliacoes;
+        if (avaliacoes != null) {
+            for (Avaliacao avaliacao : avaliacoes) {
+                avaliacao.setDisciplina(this);
             }
         }
     }

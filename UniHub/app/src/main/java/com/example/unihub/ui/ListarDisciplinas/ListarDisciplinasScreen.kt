@@ -26,6 +26,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel // Importando ViewModel
 import com.example.unihub.components.CabecalhoPrincipal
 import com.example.unihub.components.SearchBox
 import com.example.unihub.data.model.HorarioAula // Importando HorarioAula
+import com.example.unihub.data.remote.CompartilhamentoApiService
+import com.example.unihub.data.repository.CompartilhamentoRepository // Para o Preview
 import com.example.unihub.data.repository.DisciplinaRepository // Para o Preview
 import com.example.unihub.data.repository.DisciplinaResumo // Importando o DisciplinaResumo do repositório
 
@@ -43,12 +45,24 @@ fun ListarDisciplinasScreen(
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    val contatos by viewModel.contatos.collectAsState()
+    val shareMessage by viewModel.shareMessage.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
     var idDisciplinaSelecionada by remember { mutableStateOf<String?>(null) }
+    var mostrarDialogoCompartilhamento by remember { mutableStateOf(false) }
+    var disciplinaSelecionadaParaCompartilhar by remember { mutableStateOf<DisciplinaResumoUi?>(null) }
+    var contatoSelecionadoId by remember { mutableStateOf<Long?>(null) }
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+    }
+
+    LaunchedEffect(shareMessage) {
+        shareMessage?.let { mensagem ->
+            Toast.makeText(context, mensagem, Toast.LENGTH_LONG).show()
+            viewModel.consumirShareMessage()
+        }
     }
 
     val disciplinasFiltradas = if (searchQuery.isBlank()) {
@@ -117,11 +131,66 @@ fun ListarDisciplinasScreen(
                         onDisciplinaDoubleClick(disciplina.id)
                     },
                     onShareClicked = {
-                        Toast.makeText(context, "Compartilhar ${it.nome}", Toast.LENGTH_SHORT).show()
+                        disciplinaSelecionadaParaCompartilhar = it
+                        contatoSelecionadoId = contatos.firstOrNull()?.id
+                        mostrarDialogoCompartilhamento = true
                     }
                 )
             }
         }
+    }
+
+    if (mostrarDialogoCompartilhamento) {
+        AlertDialog(
+            onDismissRequest = { mostrarDialogoCompartilhamento = false },
+            title = { Text(text = "Compartilhar disciplina") },
+            text = {
+                if (contatos.isEmpty()) {
+                    Text(text = "Nenhum contato disponível para compartilhar.")
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        contatos.forEach { contato ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                RadioButton(
+                                    selected = contatoSelecionadoId == contato.id,
+                                    onClick = { contatoSelecionadoId = contato.id }
+                                )
+                                Column {
+                                    Text(text = contato.nome, fontWeight = FontWeight.SemiBold)
+                                    Text(text = contato.email, fontSize = 12.sp, color = Color.Gray)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = contatos.isNotEmpty(),
+                    onClick = {
+                        val disciplina = disciplinaSelecionadaParaCompartilhar
+                        val contatoId = contatoSelecionadoId
+                        val disciplinaIdLong = disciplina?.id?.toLongOrNull()
+                        if (disciplina == null || contatoId == null || disciplinaIdLong == null) {
+                            Toast.makeText(context, "Selecione um contato válido", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+                        viewModel.compartilharDisciplina(disciplinaIdLong, contatoId)
+                        mostrarDialogoCompartilhamento = false
+                    }
+                ) {
+                    Text(text = "Enviar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { mostrarDialogoCompartilhamento = false }) {
+                    Text(text = "Cancelar")
+                }
+            }
+        )
     }
 }
 
@@ -226,9 +295,56 @@ fun ListarDisciplinasScreenPreview() {
 
         // Instância mock do repositório
         val mockRepository = DisciplinaRepository(mockBackend)
+        val mockCompartilhamentoApi = object : CompartilhamentoApiService {
+            override suspend fun listarContatos(usuarioId: Long) = listOf(
+                com.example.unihub.data.model.UsuarioResumo(1, "Maria Silva", "maria@exemplo.com"),
+                com.example.unihub.data.model.UsuarioResumo(2, "João Souza", "joao@exemplo.com")
+            )
+
+            override suspend fun adicionarContato(
+                usuarioId: Long,
+                request: CompartilhamentoApiService.AdicionarContatoRequest
+            ) = com.example.unihub.data.model.UsuarioResumo(request.contatoId, "Contato", "contato@exemplo.com")
+
+            override suspend fun compartilhar(request: com.example.unihub.data.model.CompartilharDisciplinaRequest) =
+                com.example.unihub.data.model.ConviteCompartilhamentoResponse(
+                    id = 1,
+                    disciplinaId = request.disciplinaId,
+                    remetenteId = request.remetenteId,
+                    destinatarioId = request.destinatarioId,
+                    status = "PENDENTE",
+                    mensagem = null
+                )
+
+            override suspend fun aceitarConvite(
+                conviteId: Long,
+                request: CompartilhamentoApiService.AcaoConviteRequest
+            ) = compartilhar(
+                com.example.unihub.data.model.CompartilharDisciplinaRequest(
+                    disciplinaId = conviteId,
+                    remetenteId = request.usuarioId,
+                    destinatarioId = request.usuarioId
+                )
+            )
+
+            override suspend fun rejeitarConvite(
+                conviteId: Long,
+                request: CompartilhamentoApiService.AcaoConviteRequest
+            ) = compartilhar(
+                com.example.unihub.data.model.CompartilharDisciplinaRequest(
+                    disciplinaId = conviteId,
+                    remetenteId = request.usuarioId,
+                    destinatarioId = request.usuarioId
+                )
+            )
+
+            override suspend fun listarNotificacoes(usuarioId: Long) = emptyList<com.example.unihub.data.model.NotificacaoResponse>()
+        }
+
+        val mockCompartilhamentoRepository = CompartilhamentoRepository(mockCompartilhamentoApi)
 
         // Instância do ViewModel com o repositório mock
-        val mockViewModel = ListarDisciplinasViewModel(mockRepository)
+        val mockViewModel = ListarDisciplinasViewModel(mockRepository, mockCompartilhamentoRepository)
 
         ListarDisciplinasScreen(
             viewModel = mockViewModel,
