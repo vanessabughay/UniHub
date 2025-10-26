@@ -94,14 +94,14 @@ open class TarefaRepository(private val apiService: TarefaApi) {
 }
 
 private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
-    val prazoLocalDate = Instant.ofEpochMilli(this.prazo)
+    val prazoLocalDateTime = Instant.ofEpochMilli(this.prazo)
         .atZone(ZoneId.systemDefault())
-        .toLocalDate()
+        .toLocalDateTime()
 
     return TarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
-        dataPrazo = prazoLocalDate,
+        dataPrazo = prazoLocalDateTime,
         responsavelIds = this.responsaveisIds
     )
 }

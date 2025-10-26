@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unihub.backend.model.enums.TarefaStatus;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -36,7 +35,7 @@ public class TarefaPlanejamento {
     @Column(nullable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
-    private LocalDate dataPrazo;
+    private LocalDateTime dataPrazo;
 
     private LocalDateTime dataConclusao;
 
@@ -105,11 +104,11 @@ public class TarefaPlanejamento {
         this.dataCriacao = dataCriacao;
     }
 
-    public LocalDate getDataPrazo() {
+    public LocalDateTime getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
+    public void setDataPrazo(LocalDateTime dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

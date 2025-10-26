@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -310,8 +311,8 @@ public class QuadroPlanejamentoService {
         tarefa.setDescricao(request.getDescricao());
 
         if (request.getPrazo() != null) {
-            tarefa.setDataPrazo(convertEpochToLocalDate(request.getPrazo()));
-        } else {
+            tarefa.setDataPrazo(convertEpochToLocalDateTime(request.getPrazo()));
+                } else {
             tarefa.setDataPrazo(null);
         }
 
@@ -494,7 +495,7 @@ public class QuadroPlanejamentoService {
         response.setTitulo(tarefa.getTitulo());
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
-        response.setPrazo(convertLocalDateToEpoch(tarefa.getDataPrazo()));
+        response.setPrazo(convertLocalDateTimeToEpoch(tarefa.getDataPrazo()));
         response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
         response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
@@ -522,13 +523,6 @@ public class QuadroPlanejamentoService {
     }
 
 
-    private Long convertLocalDateToEpoch(LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
-
     private Long convertLocalDateTimeToEpoch(LocalDateTime dateTime) {
         if (dateTime == null) {
             return null;
@@ -536,15 +530,16 @@ public class QuadroPlanejamentoService {
         return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
-    private LocalDate convertEpochToLocalDate(Long epochMillis) {
-        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate();
+    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis) {
+        if (epochMillis == null) {
+            return null;
+        }
+        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
     private LocalDateTime convertEpochToLocalDateTime(Long epochMillis, LocalDateTime defaultValue) {
-        if (epochMillis == null) {
-            return defaultValue;
-        }
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+        LocalDateTime converted = convertEpochToLocalDateTime(epochMillis);
+        return converted != null ? converted : defaultValue;
     }
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
@@ -689,8 +684,8 @@ public class QuadroPlanejamentoService {
     @Transactional(readOnly = true)
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {
 
-        LocalDate dataInicio = LocalDate.now();
-        LocalDate dataFim = dataInicio.plusDays(15);
+        LocalDateTime dataInicio = LocalDate.now().atStartOfDay();
+        LocalDateTime dataFim = dataInicio.plusDays(15).with(LocalTime.MAX);
 
         List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
                 usuarioId, 
@@ -706,7 +701,7 @@ public class QuadroPlanejamentoService {
     private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
         String dataPrazoFormatada = null;
         if (tarefa.getDataPrazo() != null) {
-            dataPrazoFormatada = tarefa.getDataPrazo().format(DateTimeFormatter.ISO_LOCAL_DATE);
+            dataPrazoFormatada = tarefa.getDataPrazo().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         }
 
         String nomeQuadro = "Sem quadro";

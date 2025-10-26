@@ -1,13 +1,15 @@
 package com.unihub.backend.dto.planejamento;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+
+import org.hibernate.grammars.hql.HqlParser.LocalDateTimeFunctionContext;
 
 public class TarefaPlanejamentoRequest {
 
     private String titulo;
     private String descricao;
-    private LocalDate dataPrazo;
+    private LocalDateTime dataPrazo;
     private List<Long> responsavelIds;
     
     public String getTitulo() {
@@ -26,11 +28,11 @@ public class TarefaPlanejamentoRequest {
         this.descricao = descricao;
     }
 
-    public LocalDate getDataPrazo() {
+    public LocalDateTime getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
+    public void setDataPrazo(LocalDateTime dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

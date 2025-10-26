@@ -35,6 +35,7 @@ import com.example.unihub.components.CampoCombobox
 import com.example.unihub.components.CampoDropdownMultiSelect
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
+import com.example.unihub.components.CampoHorario
 
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Comentario
@@ -69,11 +70,36 @@ import com.example.unihub.ui.ManterAvaliacao.stringTimeToMinutes
 
 private fun getDefaultPrazoForUI(): Long {
     return Calendar.getInstance().apply {
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+}
+
+private fun extractMinutesOfDay(epochMillis: Long): Int {
+    val calendar = Calendar.getInstance().apply { timeInMillis = epochMillis }
+    return calendar.get(Calendar.HOUR_OF_DAY) * 60 + calendar.get(Calendar.MINUTE)
+}
+
+private fun getDateAtStartOfDay(epochMillis: Long): Long {
+    if (epochMillis == 0L) return 0L
+    return Calendar.getInstance().apply {
+        timeInMillis = epochMillis
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
+}
+
+private fun combineDateAndMinutes(dateMillis: Long, minutesOfDay: Int): Long {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = dateMillis
+        set(Calendar.HOUR_OF_DAY, minutesOfDay / 60)
+        set(Calendar.MINUTE, minutesOfDay % 60)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }
+    return calendar.timeInMillis
 }
 
 @Composable
@@ -103,6 +129,7 @@ fun TarefaFormScreen(
     var descricao by remember { mutableStateOf("") }
     var statusSelecionado by remember { mutableStateOf(Status.INICIADA) }
     var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
+    var prazoHorario by remember { mutableStateOf(extractMinutesOfDay(prazo)) }
     var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
     var novoComentario by remember { mutableStateOf("") }
     var comentarioEmEdicaoId by remember { mutableStateOf<String?>(null) }
@@ -139,6 +166,7 @@ LaunchedEffect(quadroId) {
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
                 prazo = loadedTarefa.prazo
+                prazoHorario = extractMinutesOfDay(loadedTarefa.prazo)
                 tarefaViewModel.atualizarResponsaveisSelecionados(loadedTarefa.responsaveisIds.toSet())
             }
         }
@@ -189,11 +217,23 @@ LaunchedEffect(quadroId) {
             null -> Unit
         }
     }
-/*
+
     val showDatePicker = {
-        showLocalizedDatePicker(context, prazo, locale) { prazo = it }
+        val currentDateMillis = if (prazo == 0L) {
+            getDateAtStartOfDay(getDefaultPrazoForUI())
+        } else {
+            getDateAtStartOfDay(prazo)
+        }
+        showLocalizedDatePicker(context, currentDateMillis, locale) { selectedDate ->
+            val dateBase = if (selectedDate == 0L) {
+                getDateAtStartOfDay(getDefaultPrazoForUI())
+            } else {
+                getDateAtStartOfDay(selectedDate)
+            }
+            prazo = combineDateAndMinutes(dateBase, prazoHorario)
+        }
     }
-*/
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -238,46 +278,40 @@ LaunchedEffect(quadroId) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
-            ){
-                // DATA E HORA DA ENTREGA (lado a lado)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    val dataEntregaMillis = remember(uiState.dataEntrega) {
-                        stringDateToMillis(uiState.dataEntrega)
-                    }
-                    CampoData(
-                        label = "Data",
-                        value = formatDateToLocale(dataEntregaMillis, locale),
-                        onClick = {
-                            showLocalizedDatePicker(context, dataEntregaMillis, locale) { millis ->
-                                val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
-                                viewModel.setDataEntrega(iso)
-                            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                CampoData(
+                    label = "Data",
+                    value = formatDateToLocale(
+                        if (prazo == 0L) {
+                            getDateAtStartOfDay(getDefaultPrazoForUI())
+                        } else {
+                            getDateAtStartOfDay(prazo)
                         },
-                        modifier = Modifier.weight(1f)
-                    )
+                        locale
+                    ),
+                    onClick = showDatePicker,
+                    modifier = Modifier.weight(1f)
+                )
 
-                    val horaEntregaEmMinutos = remember(uiState.horaEntrega) {
-                        stringTimeToMinutes(uiState.horaEntrega).takeIf { it >= 0 }
-                    }
-
-                    CampoHorario(
-                        label = "Horário",
-                        value = horaEntregaEmMinutos,
-                        onTimeSelected = { totalMinutes ->
-                            viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            )}
+                CampoHorario(
+                    label = "Horário",
+                    value = prazoHorario,
+                    onTimeSelected = { minutosSelecionados ->
+                        prazoHorario = minutosSelecionados
+                        val dataBase = if (prazo == 0L) {
+                            getDateAtStartOfDay(getDefaultPrazoForUI())
+                        } else {
+                            getDateAtStartOfDay(prazo)
+                        }
+                        prazo = combineDateAndMinutes(dataBase, minutosSelecionados)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 

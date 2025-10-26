@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,7 +27,7 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
            "ORDER BY t.dataPrazo ASC")
     List<TarefaPlanejamento> findProximasTarefasPorResponsavel(
             @Param("usuarioId") Long usuarioId,
-            @Param("dataInicio") LocalDate dataInicio,
-            @Param("dataFim") LocalDate dataFim
+             @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim
     );
 }
