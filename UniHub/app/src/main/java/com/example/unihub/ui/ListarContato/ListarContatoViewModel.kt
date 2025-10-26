@@ -17,7 +17,9 @@ data class ContatoResumoUi(
     val id: Long,
     val nome: String,
     val email: String,
-    val pendente: Boolean = false
+    val pendente: Boolean = false,
+    val registroId: Long? = null,
+    val ownerId: Long? = null
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -57,7 +59,9 @@ class ListarContatoViewModel(
                                 id = contato.id,
                                 nome = contato.nome,
                                 email = contato.email,
-                                pendente = contato.pendente
+                                pendente = contato.pendente,
+                                registroId = contato.registroId,
+                                ownerId = contato.ownerId
                             )
                         }.sortedBy { it.nome.lowercase() }
                     }
@@ -80,7 +84,9 @@ class ListarContatoViewModel(
                                     id = contato.id,
                                     nome = contato.nome,
                                     email = contato.email,
-                                    pendente = contato.pendente
+                                    pendente = contato.pendente,
+                                    registroId = contato.registroId,
+                                    ownerId = contato.ownerId
                                 )
                             }.sortedBy { it.nome.lowercase() }
                         }

@@ -260,7 +260,9 @@ class ManterGrupoViewModel(
                                     id = id,
                                     nome = nome,
                                     email = email,
-                                    pendente = modeloContato.pendente
+                                    pendente = modeloContato.pendente,
+                                    registroId = modeloContato.registroId,
+                                    ownerId = modeloContato.ownerId
                                 )
                             } else {
                                 null // Se algum campo essencial for nulo, não inclua este contato no resultado do mapNotNull

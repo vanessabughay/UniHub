@@ -131,9 +131,14 @@ fun ManterAvaliacaoScreen(
             SelecaoContatosDialog(
                 titulo = "Adicionar Integrantes",
                 contatosDisponiveis = uiState.todosOsContatosDisponiveis.filter { c ->
-                    !uiState.integrantesDaAvaliacao.any { integrante -> integrante.id == c.id}
+                    val registroId = c.registroId ?: return@filter false
+                    uiState.integrantesDaAvaliacao.none { integrante ->
+                        integrante.registroId == registroId
+                    }
                 },
-                idsContatosJaSelecionados = uiState.integrantesDaAvaliacao.map { it.id }.toSet(),
+                idsContatosJaSelecionados = uiState.integrantesDaAvaliacao
+                    .mapNotNull { it.registroId }
+                    .toSet(),
                 onDismissRequest = { showAddIntegrantesDialog = false },
                 onConfirmarSelecao = { idsSelecionadosParaAdicionar ->
                     idsSelecionadosParaAdicionar.forEach { viewModel.addIntegrantePeloId(it) }
@@ -655,11 +660,12 @@ fun SelecaoContatosDialog(
                                 .heightIn(max = 300.dp) // Limita altura
                         ) {
                             LazyColumn {
-                                items(contatosFiltrados, key = { it.id }) { contato ->
-                                    val isChecked = idsTemporariamenteSelecionados.contains(contato.id)
+                                items(contatosFiltrados, key = { it.registroId ?: it.id }) { contato ->
+                                    val selectionId = contato.registroId ?: contato.id
+                                    val isChecked = idsTemporariamenteSelecionados.contains(selectionId)
                                     // Na adição, desabilitar se já for integrante (via idsContatosJaSelecionados)
                                     // Na remoção, todos os listados (que são os integrantesDaAvaliacao) são habilitados para seleção
-                                    val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(contato.id)
+                                    val isEnabled = isForRemoval || !idsContatosJaSelecionados.contains(selectionId)
 
                                     Row(
                                         modifier = Modifier
@@ -667,9 +673,9 @@ fun SelecaoContatosDialog(
                                             .clickable(enabled = isEnabled) {
                                                 if (isEnabled) {
                                                     idsTemporariamenteSelecionados = if (isChecked) {
-                                                        idsTemporariamenteSelecionados - contato.id
+                                                        idsTemporariamenteSelecionados - selectionId
                                                     } else {
-                                                        idsTemporariamenteSelecionados + contato.id
+                                                        idsTemporariamenteSelecionados + selectionId
                                                     }
                                                 }
                                             }
@@ -682,7 +688,7 @@ fun SelecaoContatosDialog(
                                             enabled = isEnabled
                                         )
                                         Text(
-                                            text = contato.nome + if (idsContatosJaSelecionados.contains(contato.id) && !isForRemoval) " (Já é integrante)" else "",
+                                            text = contato.nome + if (idsContatosJaSelecionados.contains(selectionId) && !isForRemoval) " (Já é integrante)" else "",
                                             modifier = Modifier.padding(start = 8.dp),
                                             color = if (isEnabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                         )
