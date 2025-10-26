@@ -145,6 +145,11 @@ fun ManterGrupoScreen(
         }
     }
 
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading) {
+            isSaving = false
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -219,7 +224,7 @@ fun ManterGrupoScreen(
             var nomeState by remember(uiState.nome) { mutableStateOf(uiState.nome) }
             LaunchedEffect(uiState.nome) {
                 nomeState = uiState.nome
-                viewModel.setNomeGrupo(uiState.nome) // Sincroniza o nome no ViewModel também
+                //viewModel.setNomeGrupo(uiState.nome) // Sincroniza o nome no ViewModel também
             }
 
 
