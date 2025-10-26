@@ -17,6 +17,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
 import java.util.Locale
 
 sealed class TarefaFormResult {
@@ -407,6 +412,44 @@ class TarefaFormViewModel(
             }
         }
     }
+
+    private fun splitBackendDateTime(raw: String?): Pair<String, String> {
+        if (raw.isNullOrBlank()) return "" to ""
+        // tenta LocalDateTime com vários formatos
+        val dtPatterns = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,           // 2025-10-01T14:30:00
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"), // 2025-10-01 14:30
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")// 2025-10-01T14:30
+        )
+        for (fmt in dtPatterns) {
+            try {
+                val ldt = LocalDateTime.parse(raw, fmt)
+                return ldt.toLocalDate().format(dateFormatter) to ldt.toLocalTime().format(timeFormatter)
+            } catch (_: Exception) { /* tenta próximo */ }
+        }
+        // tenta só data
+        return try {
+            val ld = LocalDate.parse(raw, dateFormatter)
+            ld.format(dateFormatter) to ""
+        } catch (_: Exception) {
+            // fallback bruto (não quebra a tela)
+            raw to ""
+        }
+    }
+
+    private fun getLocalDateTimeFromUi(): LocalDateTime? {
+        val st = _uiState.value
+        if (st.dataEntrega.isBlank() || st.horaEntrega.isBlank()) return null
+        return try {
+            val datePart = LocalDate.parse(st.dataEntrega, dateFormatter)
+            val timePart = LocalTime.parse(st.horaEntrega, timeFormatter)
+            LocalDateTime.of(datePart, timePart)
+        } catch (_: DateTimeParseException) {
+            null
+        }
+    }
+
+
 
     private fun construirResponsavelOption(
         contato: Contato?,

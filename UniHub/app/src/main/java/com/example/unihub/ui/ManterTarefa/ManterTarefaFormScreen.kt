@@ -60,6 +60,11 @@ import com.example.unihub.components.showLocalizedDatePicker
 import java.util.Calendar
 import java.util.Locale
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoHorario
+import com.example.unihub.ui.ManterAvaliacao.millisToIsoDate
+import com.example.unihub.ui.ManterAvaliacao.minutesToHHmm
+import com.example.unihub.ui.ManterAvaliacao.stringDateToMillis
+import com.example.unihub.ui.ManterAvaliacao.stringTimeToMinutes
 
 
 private fun getDefaultPrazoForUI(): Long {
@@ -184,11 +189,11 @@ LaunchedEffect(quadroId) {
             null -> Unit
         }
     }
-
+/*
     val showDatePicker = {
         showLocalizedDatePicker(context, prazo, locale) { prazo = it }
     }
-
+*/
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -238,10 +243,40 @@ LaunchedEffect(quadroId) {
                     .fillMaxWidth()
                     .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
             ){
-            CampoData(
-                label = "Prazo",
-                value = formatDateToLocale(prazo, locale),
-                onClick = showDatePicker
+                // DATA E HORA DA ENTREGA (lado a lado)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    val dataEntregaMillis = remember(uiState.dataEntrega) {
+                        stringDateToMillis(uiState.dataEntrega)
+                    }
+                    CampoData(
+                        label = "Data",
+                        value = formatDateToLocale(dataEntregaMillis, locale),
+                        onClick = {
+                            showLocalizedDatePicker(context, dataEntregaMillis, locale) { millis ->
+                                val iso = millisToIsoDate(millis) // "AAAA-MM-DD"
+                                viewModel.setDataEntrega(iso)
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    val horaEntregaEmMinutos = remember(uiState.horaEntrega) {
+                        stringTimeToMinutes(uiState.horaEntrega).takeIf { it >= 0 }
+                    }
+
+                    CampoHorario(
+                        label = "Horário",
+                        value = horaEntregaEmMinutos,
+                        onTimeSelected = { totalMinutes ->
+                            viewModel.setHoraEntrega(minutesToHHmm(totalMinutes)) // "HH:MM"
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             )}
 
             Spacer(modifier = Modifier.height(16.dp))
