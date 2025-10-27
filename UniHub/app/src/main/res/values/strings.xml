@@ -31,4 +31,6 @@
     <string name="share_notification_history_title">Compartilhamento</string>
     <string name="share_notification_history_accept">Você aceitou o compartilhamento.</string>
     <string name="share_notification_history_reject">Você rejeitou o compartilhamento.</string>
+    <string name="share_notification_action_session_expired">Sessão expirada. Faça login novamente para responder convites.</string>
+    <string name="share_notification_action_error">Não foi possível atualizar o convite. Tente novamente.</string>
 </resources>

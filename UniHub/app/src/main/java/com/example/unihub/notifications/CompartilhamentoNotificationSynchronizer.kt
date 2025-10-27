@@ -1,0 +1,118 @@
+package com.example.unihub.notifications
+
+import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
+import com.example.unihub.data.repository.NotificationHistoryRepository
+import com.example.unihub.data.repository.CompartilhamentoRepository
+import com.example.unihub.data.repository.CompartilhamentoBackend
+import com.example.unihub.data.apiBackend.ApiCompartilhamentoBackend
+import com.example.unihub.data.model.NotificacaoResponse
+import com.example.unihub.data.config.TokenManager
+import com.example.unihub.ui.ListarDisciplinas.NotificacaoConviteUi
+
+class CompartilhamentoNotificationSynchronizer private constructor(context: Context) {
+
+    private val appContext = context.applicationContext
+    private val notificationManager = CompartilhamentoNotificationManager(appContext)
+    private val historyRepository = NotificationHistoryRepository.getInstance(appContext)
+    private val repository = CompartilhamentoRepository(createBackend())
+    private val preferences: SharedPreferences =
+        appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    suspend fun refreshFromBackend(usuarioId: Long) {
+        val notifications = repository.listarNotificacoes(usuarioId).map { it.toUi() }
+        synchronize(notifications)
+    }
+
+    fun synchronize(notifications: List<NotificacaoConviteUi>) {
+        val currentInviteIds = notifications.mapNotNull { it.conviteId }.toSet()
+        val previousInviteIds = loadActiveInviteIds()
+        val removedInvites = previousInviteIds - currentInviteIds
+
+        removedInvites.forEach { inviteId ->
+            historyRepository.markShareInviteHandled(inviteId)
+            removeInvite(inviteId)
+        }
+
+        notifications.forEach { notification ->
+            notificationManager.showNotification(notification)
+        }
+
+        saveActiveInviteIds(currentInviteIds)
+    }
+
+    fun completeInvite(inviteId: Long) {
+        historyRepository.markShareInviteHandled(inviteId)
+        removeInvite(inviteId)
+    }
+
+    private fun removeInvite(inviteId: Long) {
+        notificationManager.cancelNotification(notificationManager.notificationIdForInvite(inviteId))
+        val updated = loadActiveInviteIds() - inviteId
+        saveActiveInviteIds(updated)
+    }
+
+    private fun loadActiveInviteIds(): Set<Long> {
+        val stored = preferences.getStringSet(KEY_ACTIVE_INVITES, emptySet()) ?: emptySet()
+        return stored.mapNotNull { it.toLongOrNull() }.toSet()
+    }
+
+    private fun saveActiveInviteIds(ids: Set<Long>) {
+        preferences.edit()
+            .putStringSet(KEY_ACTIVE_INVITES, ids.map { it.toString() }.toSet())
+            .apply()
+    }
+
+    private fun createBackend(): CompartilhamentoBackend = ApiCompartilhamentoBackend()
+
+    private fun NotificacaoResponse.toUi(): NotificacaoConviteUi = NotificacaoConviteUi(
+        id = id,
+        mensagem = mensagem,
+        conviteId = conviteId,
+        tipo = tipo,
+        lida = lida,
+        criadaEm = criadaEm
+    )
+
+    companion object {
+        private const val PREFS_NAME = "share_notification_synchronizer"
+        private const val KEY_ACTIVE_INVITES = "active_invites"
+
+        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val isRunning = AtomicBoolean(false)
+
+        fun getInstance(context: Context): CompartilhamentoNotificationSynchronizer {
+            return CompartilhamentoNotificationSynchronizer(context)
+        }
+
+        fun triggerImmediate(context: Context) {
+            val appContext = context.applicationContext
+            val userId = TokenManager.usuarioId ?: return
+            if (!isRunning.compareAndSet(false, true)) {
+                return
+            }
+            scope.launch {
+                try {
+                    getInstance(appContext).refreshFromBackend(userId)
+                } catch (_: Exception) {
+                    // Ignore refresh errors silently; user can retry later.
+                } finally {
+                    isRunning.set(false)
+                }
+            }
+        }
+
+        fun broadcastRefresh(context: Context) {
+            val intent = Intent(CompartilhamentoNotificationActionReceiver.ACTION_REFRESH).apply {
+                `package` = context.packageName
+            }
+            context.sendBroadcast(intent)
+        }
+    }
+}

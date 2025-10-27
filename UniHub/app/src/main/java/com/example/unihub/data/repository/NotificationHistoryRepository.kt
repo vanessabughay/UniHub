@@ -18,7 +18,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val id: Long,
         val title: String,
         val message: String,
-        val timestampMillis: Long
+        val timestampMillis: Long,
+        val shareInviteId: Long? = null,
+        val shareActionPending: Boolean = false
     )
 
     private val preferences =
@@ -41,23 +43,62 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
     val historyFlow: StateFlow<List<NotificationEntry>> = _historyFlow.asStateFlow()
 
-    fun logNotification(title: String, message: String, timestampMillis: Long) {
-        val entry = NotificationEntry(
-            id = lastId.incrementAndGet(),
-            title = title,
-            message = message,
-            timestampMillis = timestampMillis
-        )
-
+    fun logNotification(
+        title: String,
+        message: String,
+        timestampMillis: Long,
+        shareInviteId: Long? = null,
+        shareActionPending: Boolean = false
+    ) {
         synchronized(lock) {
-            val updatedHistory = listOf(entry) + _historyFlow.value
-            val limitedHistory = updatedHistory
+            val existingEntry = shareInviteId?.let { id ->
+                _historyFlow.value.firstOrNull { it.shareInviteId == id }
+            }
+
+            val entryId = existingEntry?.id ?: lastId.incrementAndGet()
+
+            val effectiveTimestamp = if (existingEntry != null && shareInviteId != null) {
+                existingEntry.timestampMillis
+            } else {
+                timestampMillis
+            }
+
+            val entry = NotificationEntry(
+                id = entryId,
+                title = title,
+                message = message,
+                timestampMillis = effectiveTimestamp,
+                shareInviteId = shareInviteId,
+                shareActionPending = if (shareInviteId != null) shareActionPending else false
+            )
+
+            val filteredHistory = _historyFlow.value.filterNot { it.id == entryId }
+            val updatedHistory = (listOf(entry) + filteredHistory)
                 .sortedByDescending { it.timestampMillis }
                 .take(MAX_ENTRIES)
 
-            _historyFlow.value = limitedHistory
-            saveEntries(limitedHistory)
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory)
             preferences.edit().putLong(KEY_LAST_ID, lastId.get()).apply()
+        }
+    }
+
+    fun markShareInviteHandled(inviteId: Long) {
+        synchronized(lock) {
+            val currentHistory = _historyFlow.value.toMutableList()
+            val index = currentHistory.indexOfFirst { it.shareInviteId == inviteId }
+            if (index == -1) return
+
+            val entry = currentHistory[index]
+            if (!entry.shareActionPending) return
+
+            currentHistory[index] = entry.copy(shareActionPending = false)
+            val updatedHistory = currentHistory
+                .sortedByDescending { it.timestampMillis }
+                .take(MAX_ENTRIES)
+
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory)
         }
     }
 
@@ -73,9 +114,28 @@ class NotificationHistoryRepository private constructor(context: Context) {
                     val title = obj.optString(JSON_TITLE, null)
                     val message = obj.optString(JSON_MESSAGE, null)
                     val timestamp = obj.optLong(JSON_TIMESTAMP, -1L)
+                    val inviteId = if (obj.has(JSON_SHARE_INVITE_ID)) {
+                        obj.optLong(JSON_SHARE_INVITE_ID, -1L).takeIf { it >= 0 }
+                    } else {
+                        null
+                    }
+                    val pending = if (obj.has(JSON_SHARE_ACTION_PENDING)) {
+                        obj.optBoolean(JSON_SHARE_ACTION_PENDING, false)
+                    } else {
+                        false
+                    }
 
                     if (id >= 0 && !title.isNullOrBlank() && !message.isNullOrBlank() && timestamp >= 0) {
-                        add(NotificationEntry(id, title, message, timestamp))
+                        add(
+                            NotificationEntry(
+                                id = id,
+                                title = title,
+                                message = message,
+                                timestampMillis = timestamp,
+                                shareInviteId = inviteId,
+                                shareActionPending = pending
+                            )
+                        )
                     }
                 }
             }
@@ -90,6 +150,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 put(JSON_TITLE, entry.title)
                 put(JSON_MESSAGE, entry.message)
                 put(JSON_TIMESTAMP, entry.timestampMillis)
+                entry.shareInviteId?.let { inviteId ->
+                    put(JSON_SHARE_INVITE_ID, inviteId)
+                    put(JSON_SHARE_ACTION_PENDING, entry.shareActionPending)
+                }
             }
             array.put(obj)
         }
@@ -106,6 +170,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_TITLE = "title"
         private const val JSON_MESSAGE = "message"
         private const val JSON_TIMESTAMP = "timestamp"
+        private const val JSON_SHARE_INVITE_ID = "share_invite_id"
+        private const val JSON_SHARE_ACTION_PENDING = "share_action_pending"
 
         @Volatile
         private var instance: NotificationHistoryRepository? = null

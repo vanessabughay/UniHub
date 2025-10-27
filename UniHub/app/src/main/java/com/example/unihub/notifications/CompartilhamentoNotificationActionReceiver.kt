@@ -3,7 +3,6 @@ package com.example.unihub.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationManagerCompat
 import com.example.unihub.R
 import com.example.unihub.data.apiBackend.ApiCompartilhamentoBackend
 import com.example.unihub.data.config.TokenManager
@@ -49,11 +48,11 @@ class CompartilhamentoNotificationActionReceiver : BroadcastReceiver() {
                         timestampMillis = System.currentTimeMillis()
                     )
 
-                    notifyRefresh(appContext)
+                    CompartilhamentoNotificationSynchronizer.getInstance(appContext)
+                        .completeInvite(conviteId)
 
-                    withContext(Dispatchers.Main) {
-                        NotificationManagerCompat.from(appContext).cancel(notificationId)
-                    }
+                    notifyRefresh(appContext)
+                    CompartilhamentoNotificationSynchronizer.triggerImmediate(appContext)
                 }
             } catch (_: Exception) {
                 // In case of error we keep the notification so the user can retry.

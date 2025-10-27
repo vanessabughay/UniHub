@@ -1,6 +1,10 @@
 package com.example.unihub.ui.ListarDisciplinas
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Build
 import android.widget.Toast
@@ -17,8 +21,11 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -31,15 +38,8 @@ import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.UsuarioResumo
 import com.example.unihub.notifications.AttendanceNotificationScheduler
-import android.content.BroadcastReceiver
-import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.draw.clip
 import com.example.unihub.notifications.CompartilhamentoNotificationActionReceiver
-import com.example.unihub.notifications.CompartilhamentoNotificationManager
+import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
@@ -69,9 +69,7 @@ fun ListarDisciplinasScreen(
     val isCompartilhando by compartilhamentoViewModel.isCompartilhando.collectAsState()
 
     var disciplinaParaCompartilhar by remember { mutableStateOf<DisciplinaResumoUi?>(null) }
-    val notificationManager = remember { CompartilhamentoNotificationManager(context) }
-    val processedNotifications = remember { mutableStateMapOf<Long, Boolean>() }
-    val activeInviteNotifications = remember { mutableStateMapOf<Long, Int>() }
+    val notificationSynchronizer = remember { CompartilhamentoNotificationSynchronizer.getInstance(context) }
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -119,35 +117,7 @@ fun ListarDisciplinasScreen(
     }
 
     LaunchedEffect(notificacoes) {
-        val currentIds = notificacoes.map { it.id }.toSet()
-        val processedToRemove = processedNotifications.keys - currentIds
-        processedToRemove.forEach { processedNotifications.remove(it) }
-
-        val currentInviteIds = notificacoes
-            .filter { it.conviteId != null }
-            .map { it.id }
-            .toSet()
-        val invitesToRemove = activeInviteNotifications.keys - currentInviteIds
-        invitesToRemove.forEach { key ->
-            activeInviteNotifications.remove(key)?.let(notificationManager::cancelNotification)
-        }
-
-        notificacoes.forEach { notification ->
-            val alreadyProcessed = processedNotifications.containsKey(notification.id)
-            if (!alreadyProcessed) {
-                notificationManager.showNotification(notification)
-                processedNotifications[notification.id] = true
-                if (notification.conviteId != null) {
-                    activeInviteNotifications[notification.id] =
-                        notificationManager.notificationId(notification)
-                }
-            } else if (notification.conviteId != null &&
-                !activeInviteNotifications.containsKey(notification.id)
-            ) {
-                activeInviteNotifications[notification.id] =
-                    notificationManager.notificationId(notification)
-            }
-        }
+        notificationSynchronizer.synchronize(notificacoes)
     }
 
     DisposableEffect(context) {

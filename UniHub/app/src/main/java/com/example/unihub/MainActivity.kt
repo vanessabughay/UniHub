@@ -45,6 +45,7 @@ import com.example.unihub.ui.TelaInicial.TelaInicial
 import com.example.unihub.ui.Login.LoginScreen
 import com.example.unihub.ui.Registro.RegisterScreen
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
 import com.example.unihub.data.apiBackend.ApiQuadroBackend
@@ -197,6 +198,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // TokenManager.clearToken(applicationContext)
         TokenManager.loadToken(applicationContext)
+        if (TokenManager.usuarioId != null) {
+            CompartilhamentoNotificationSynchronizer.triggerImmediate(applicationContext)
+        }
 
         navigationIntentFlow.value = intent
 

@@ -1,13 +1,11 @@
 package com.example.unihub.notifications
 
-import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
@@ -16,13 +14,16 @@ import com.example.unihub.R
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.ui.ListarDisciplinas.NotificacaoConviteUi
 
+/**
+ * Handles showing discipline sharing notifications and logging them in the
+ * local history so that they appear in the notification timeline screen.
+ */
 class CompartilhamentoNotificationManager(context: Context) {
 
     private val appContext = context.applicationContext
     private val notificationManager = NotificationManagerCompat.from(appContext)
     private val historyRepository = NotificationHistoryRepository.getInstance(appContext)
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showNotification(notification: NotificacaoConviteUi) {
         ensureChannels()
         val notificationId = notificationId(notification)
@@ -46,6 +47,7 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         val title = appContext.getString(titleRes)
         val message = notification.mensagem
+        val isInvite = isInvite(notification)
 
         val contentIntent = buildContentIntent(notificationId)
 
@@ -58,9 +60,9 @@ class CompartilhamentoNotificationManager(context: Context) {
             .setAutoCancel(autoCancel)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_MESSAGE)
-            .setOngoing(notification.tipo == TIPO_CONVITE)
+            .setOngoing(isInvite)
 
-        if (notification.tipo == TIPO_CONVITE && notification.conviteId != null) {
+        if (isInvite && notification.conviteId != null) {
             val acceptIntent = createActionIntent(
                 action = CompartilhamentoNotificationActionReceiver.ACTION_ACCEPT,
                 notification = notification,
@@ -89,7 +91,9 @@ class CompartilhamentoNotificationManager(context: Context) {
         historyRepository.logNotification(
             title = title,
             message = message,
-            timestampMillis = System.currentTimeMillis()
+            timestampMillis = System.currentTimeMillis(),
+            shareInviteId = notification.conviteId,
+            shareActionPending = isInvite
         )
     }
 
@@ -100,6 +104,14 @@ class CompartilhamentoNotificationManager(context: Context) {
     fun notificationId(notification: NotificacaoConviteUi): Int {
         val key = notification.conviteId ?: notification.id
         return (key xor (key shr 32)).toInt()
+    }
+
+    fun notificationIdForInvite(inviteId: Long): Int {
+        return (inviteId xor (inviteId shr 32)).toInt()
+    }
+
+    private fun isInvite(notification: NotificacaoConviteUi): Boolean {
+        return notification.tipo == TIPO_CONVITE && notification.conviteId != null
     }
 
     private fun createActionIntent(
@@ -169,6 +181,6 @@ class CompartilhamentoNotificationManager(context: Context) {
         private const val CHANNEL_INVITES = "compartilhamento_invites"
         private const val CHANNEL_RESPONSES = "compartilhamento_responses"
         private const val TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO"
-        private const val TIPO_RESPOSTA = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+        const val TIPO_RESPOSTA = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
     }
 }
