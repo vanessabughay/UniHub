@@ -6,24 +6,21 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.VisibleForTesting
-import com.example.unihub.data.model.HorarioAula
-import java.time.DayOfWeek
-import java.text.Normalizer
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.temporal.TemporalAdjusters
-import java.util.Locale
+import java.time.format.DateTimeFormatter
 import java.util.Objects
 import kotlin.math.abs
 
 class TaskDeadlineNotificationScheduler(private val context: Context) {
 
-    data class DisciplineScheduleInfo(
-        val id: Long,
-        val nome: String,
-        val receberNotificacoes: Boolean,
-        val horariosAulas: List<HorarioAula>,
-        val totalAusencias: Int,
-        val ausenciasPermitidas: Int?
+    data class TaskDeadlineInfo(
+        val identifier: String,
+        val titulo: String,
+        val prazoIso: String,
+        val nomeQuadro: String?
     )
 
     private val alarmManager: AlarmManager? =
@@ -32,7 +29,7 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
     private val preferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun scheduleNotifications(disciplinas: List<DisciplineScheduleInfo>) {
+    fun scheduleNotifications(tarefas: List<TaskDeadlineInfo>) {
         val manager = alarmManager ?: return
 
         val storedRequestCodes =
@@ -48,32 +45,20 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
 
         val baseIntent = Intent(context, TaskDeadlineNotificationReceiver::class.java)
 
-        disciplinas.forEach { disciplina ->
-            if (!disciplina.receberNotificacoes) {
-                return@forEach
+        tarefas.forEach { tarefa ->
+            val triggerAtMillis = computeTriggerMillis(tarefa.prazoIso) ?: return@forEach
+            val requestCode = buildRequestCode(tarefa.identifier, triggerAtMillis)
+            newRequestCodes.add(requestCode.toString())
+
+            val intent = Intent(baseIntent).apply {
+                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TASK_IDENTIFIER, tarefa.identifier)
+                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TASK_TITLE, tarefa.titulo)
+                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TASK_BOARD, tarefa.nomeQuadro)
+                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TASK_DEADLINE_ISO, tarefa.prazoIso)
+                putExtra(TaskDeadlineNotificationReceiver.EXTRA_TASK_DEADLINE_MILLIS, triggerAtMillis)
             }
 
-            disciplina.horariosAulas.forEachIndexed { index, horario ->
-                val triggerAtMillis = computeNextTriggerMillis(horario) ?: return@forEachIndexed
-
-                val requestCode = buildRequestCode(disciplina.id, index, horario)
-                newRequestCodes.add(requestCode.toString())
-
-                val intent = Intent(baseIntent).apply {
-                    putExtra(TaskDeadlineeNotificationReceiver.EXTRA_DISCIPLINA_ID, disciplina.id)
-                    putExtra(TaskDeadlineeNotificationReceiver.EXTRA_DISCIPLINA_NOME, disciplina.nome)
-                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
-                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
-                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
-                    putExtra(TaskDeadlineNotificationReceiver.EXTRA_TOTAL_AUSENCIAS, disciplina.totalAusencias)
-                    putExtra(
-                        TaskDeadlineNotificationReceiver.EXTRA_AUSENCIAS_MAX,
-                        disciplina.ausenciasPermitidas ?: TaskDeadlineNotificationReceiver.NO_AUSENCIA_LIMIT
-                    )
-                }
-
-                scheduleExactAlarm(requestCode, triggerAtMillis, intent)
-            }
+            scheduleExactAlarm(requestCode, triggerAtMillis, intent)
         }
 
         preferences.edit().putStringSet(KEY_REQUEST_CODES, newRequestCodes).apply()
@@ -91,10 +76,6 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
                 )
                 manager.cancel(pendingIntent)
             }
-    }
-
-    private fun computeNextTriggerMillis(horario: HorarioAula): Long? {
-        return computeTriggerMillis(horario.diaDaSemana, horario.horarioInicio)
     }
 
     fun scheduleExactAlarm(requestCode: Int, triggerAtMillis: Long, intent: Intent) {
@@ -138,8 +119,8 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
         }
     }
 
-    private fun buildRequestCode(id: Long, index: Int, horario: HorarioAula): Int {
-        val raw = Objects.hash(id, index, horario.diaDaSemana, horario.horarioInicio)
+    private fun buildRequestCode(identifier: String, triggerAtMillis: Long): Int {
+        val raw = Objects.hash(identifier, triggerAtMillis)
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
 
@@ -157,49 +138,62 @@ class TaskDeadlineNotificationScheduler(private val context: Context) {
         private const val KEY_REQUEST_CODES = "request_codes"
 
         internal fun computeTriggerMillis(
-            dayLabel: String,
-            startMinutes: Int,
+            deadlineIso: String,
             now: ZonedDateTime = ZonedDateTime.now()
         ): Long? {
-            val dayOfWeek = mapDayOfWeek(dayLabel) ?: return null
-            if (startMinutes < 0) return null
-
-            var scheduled = now.with(TemporalAdjusters.nextOrSame(dayOfWeek))
-                .withHour(startMinutes / 60)
-                .withMinute(startMinutes % 60)
-                .withSecond(0)
-                .withNano(0)
-
-            if (scheduled.isBefore(now)) {
-                scheduled = scheduled.plusWeeks(1)
-            }
-
-            return scheduled.toInstant().toEpochMilli()
-        }
-
-        private fun mapDayOfWeek(label: String): DayOfWeek? = mapDayOfWeekInternal(label)
-
-        @VisibleForTesting
-        internal fun mapDayOfWeekInternal(label: String): DayOfWeek? {
-            val normalized = normalizeDayLabel(label)
-            return when (normalized) {
-                "segunda-feira" -> DayOfWeek.MONDAY
-                "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
-                "quarta-feira" -> DayOfWeek.WEDNESDAY
-                "quinta-feira" -> DayOfWeek.THURSDAY
-                "sexta-feira" -> DayOfWeek.FRIDAY
-                "sábado", "sabado" -> DayOfWeek.SATURDAY
-                "domingo" -> DayOfWeek.SUNDAY
-                else -> null
-            }
+            val deadline = parseDeadline(deadlineIso, now.zone) ?: return null
+            if (deadline.isBefore(now)) return null
+            return deadline.toInstant().toEpochMilli()
         }
 
         @VisibleForTesting
-        internal fun normalizeDayLabel(label: String): String {
-            val trimmed = label.trim().lowercase(Locale.getDefault())
-            val withoutDiacritics = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
-                .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            return withoutDiacritics.replace("[^a-z]".toRegex(), "")
+        internal fun parseDeadline(
+            deadlineIso: String,
+            zone: ZoneId = ZoneId.systemDefault()
+        ): ZonedDateTime? {
+            val trimmed = deadlineIso.trim()
+            if (trimmed.isEmpty()) return null
+
+            val zoneAwareFormatters = listOf(
+                DateTimeFormatter.ISO_ZONED_DATE_TIME,
+                DateTimeFormatter.ISO_OFFSET_DATE_TIME
+            )
+
+            zoneAwareFormatters.forEach { formatter ->
+                runCatching { ZonedDateTime.parse(trimmed, formatter) }
+                    .getOrNull()
+                    ?.let { return it }
+            }
+
+            val localDateTimeFormatters = listOf(
+
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+
+                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
+
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+
+            )
+
+            localDateTimeFormatters.forEach { formatter ->
+
+                runCatching { LocalDateTime.parse(trimmed, formatter) }
+
+                    .getOrNull()
+
+                    ?.let { return it.atZone(zone) }
+
+            }
+
+            return runCatching {
+
+                LocalDate.parse(trimmed.take(10), DateTimeFormatter.ISO_LOCAL_DATE)
+
+                    .atStartOfDay(zone)
+
+            }.getOrNull()
         }
 
         @Suppress("DEPRECATION")
