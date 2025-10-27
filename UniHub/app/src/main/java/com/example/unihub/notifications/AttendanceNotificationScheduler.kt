@@ -79,6 +79,17 @@ class AttendanceNotificationScheduler(private val context: Context) {
         preferences.edit().putStringSet(KEY_REQUEST_CODES, newRequestCodes).apply()
     }
 
+    /**
+     * Cancela todos os alarmes agendados e remove o registro das preferências.
+     */
+    fun cancelAllNotifications() {
+        val manager = alarmManager ?: return
+        val storedRequestCodes = preferences.getStringSet(KEY_REQUEST_CODES, emptySet()).orEmpty()
+        cancelStored(manager, storedRequestCodes)
+        preferences.edit().remove(KEY_REQUEST_CODES).apply()
+    }
+
+
     private fun cancelStored(manager: AlarmManager, storedCodes: Set<String>) {
         if (storedCodes.isEmpty()) return
         storedCodes.mapNotNull { it.toIntOrNull() }
