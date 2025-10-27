@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
@@ -32,6 +31,15 @@ import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.UsuarioResumo
 import com.example.unihub.notifications.AttendanceNotificationScheduler
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.clip
+import com.example.unihub.notifications.CompartilhamentoNotificationActionReceiver
+import com.example.unihub.notifications.CompartilhamentoNotificationManager
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
@@ -58,10 +66,12 @@ fun ListarDisciplinasScreen(
     val compartilhamentoErro by compartilhamentoViewModel.erro.collectAsState()
     val compartilhamentoStatus by compartilhamentoViewModel.statusMessage.collectAsState()
     val isCarregandoContatos by compartilhamentoViewModel.isCarregandoContatos.collectAsState()
-    val convitesEmProcessamento by compartilhamentoViewModel.convitesEmProcessamento.collectAsState()
     val isCompartilhando by compartilhamentoViewModel.isCompartilhando.collectAsState()
 
     var disciplinaParaCompartilhar by remember { mutableStateOf<DisciplinaResumoUi?>(null) }
+    val notificationManager = remember { CompartilhamentoNotificationManager(context) }
+    val processedNotifications = remember { mutableStateMapOf<Long, Boolean>() }
+    val activeInviteNotifications = remember { mutableStateMapOf<Long, Int>() }
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -98,6 +108,7 @@ fun ListarDisciplinasScreen(
     }
     var searchQuery by remember { mutableStateOf("") }
     var usuarioIdState by remember { mutableStateOf(TokenManager.usuarioId) }
+    val latestUsuarioIdState = rememberUpdatedState(usuarioIdState)
 
     LaunchedEffect(Unit) {
         TokenManager.loadToken(context.applicationContext)
@@ -107,7 +118,58 @@ fun ListarDisciplinasScreen(
         viewModel.loadDisciplinas()
     }
 
+    LaunchedEffect(notificacoes) {
+        val currentIds = notificacoes.map { it.id }.toSet()
+        val processedToRemove = processedNotifications.keys - currentIds
+        processedToRemove.forEach { processedNotifications.remove(it) }
 
+        val currentInviteIds = notificacoes
+            .filter { it.conviteId != null }
+            .map { it.id }
+            .toSet()
+        val invitesToRemove = activeInviteNotifications.keys - currentInviteIds
+        invitesToRemove.forEach { key ->
+            activeInviteNotifications.remove(key)?.let(notificationManager::cancelNotification)
+        }
+
+        notificacoes.forEach { notification ->
+            val alreadyProcessed = processedNotifications.containsKey(notification.id)
+            if (!alreadyProcessed) {
+                notificationManager.showNotification(notification)
+                processedNotifications[notification.id] = true
+                if (notification.conviteId != null) {
+                    activeInviteNotifications[notification.id] =
+                        notificationManager.notificationId(notification)
+                }
+            } else if (notification.conviteId != null &&
+                !activeInviteNotifications.containsKey(notification.id)
+            ) {
+                activeInviteNotifications[notification.id] =
+                    notificationManager.notificationId(notification)
+            }
+        }
+    }
+
+    DisposableEffect(context) {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val userId = latestUsuarioIdState.value
+                if (userId != null) {
+                    compartilhamentoViewModel.carregarNotificacoes(userId)
+                }
+            }
+        }
+        val filter = IntentFilter(CompartilhamentoNotificationActionReceiver.ACTION_REFRESH)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            context.registerReceiver(receiver, filter)
+        }
+        onDispose {
+            context.unregisterReceiver(receiver)
+        }
+    }
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
@@ -168,48 +230,6 @@ fun ListarDisciplinasScreen(
                     .fillMaxWidth()
                     .padding(16.dp)
             )
-
-            if (notificacoes.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(
-                        text = "Convites Recebidos",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    notificacoes.forEach { notificacao ->
-                        val conviteId = notificacao.conviteId
-                        NotificacaoConviteCard(
-                            notificacao = notificacao,
-                            onAceitar = conviteId?.let {
-                                {
-                                    val usuarioId = usuarioIdState
-                                    if (usuarioId != null) {
-                                        compartilhamentoViewModel.aceitarConvite(usuarioId, it)
-                                    } else {
-                                        Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            onRejeitar = conviteId?.let {
-                                {
-                                    val usuarioId = usuarioIdState
-                                    if (usuarioId != null) {
-                                        compartilhamentoViewModel.rejeitarConvite(usuarioId, it)
-                                    } else {
-                                        Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            isProcessando = conviteId?.let { convitesEmProcessamento.contains(it) } == true
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                }
-            }
 
             LazyColumn(
                 modifier = Modifier
@@ -365,62 +385,6 @@ fun DisciplinaItem(
                     contentDescription = "Compartilhar Disciplina",
                     tint = MaterialTheme.colorScheme.onSurface
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun NotificacaoConviteCard(
-    notificacao: NotificacaoConviteUi,
-    onAceitar: (() -> Unit)?,
-    onRejeitar: (() -> Unit)?,
-    isProcessando: Boolean
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = notificacao.mensagem,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold
-            )
-            notificacao.criadaEm?.let { data ->
-                Text(
-                    text = data,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-            if (onAceitar != null || onRejeitar != null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isProcessando) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        if (onRejeitar != null) {
-                            TextButton(onClick = onRejeitar) {
-                                Text("Rejeitar")
-                            }
-                        }
-                        if (onAceitar != null) {
-                            TextButton(onClick = onAceitar) {
-                                Text("Aceitar")
-                            }
-                        }
-                    }
-                }
             }
         }
     }
