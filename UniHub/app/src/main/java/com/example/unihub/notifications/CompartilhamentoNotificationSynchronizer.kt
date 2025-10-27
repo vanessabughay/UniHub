@@ -31,19 +31,45 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
     }
 
     fun synchronize(notifications: List<NotificacaoConviteUi>) {
-        val currentInviteIds = notifications.mapNotNull { it.conviteId }.toSet()
+        // 1) Marca como tratados todos os convites já lidos
+        notifications
+            .filter { it.isInviteAlreadyHandled() }
+            .mapNotNull { it.conviteId }
+            .forEach { inviteId ->
+                historyRepository.markShareInviteHandled(inviteId)
+            }
+
+        // 2) Mantém apenas os ainda não tratados
+        val filteredNotifications = notifications.filterNot { it.isInviteAlreadyHandled() }
+
+        // 3) Calcula convites pendentes atuais (somente os válidos)
+        val pendingInvites = filteredNotifications.filter { it.isPendingInvite() }
+        val currentInviteIds = pendingInvites.mapNotNull { it.conviteId }.toSet()
+
+        // 4) Descobre convites que sumiram (foram respondidos/cancelados no backend)
         val previousInviteIds = loadActiveInviteIds()
         val removedInvites = previousInviteIds - currentInviteIds
-
         removedInvites.forEach { inviteId ->
             historyRepository.markShareInviteHandled(inviteId)
             removeInvite(inviteId)
         }
 
-        notifications.forEach { notification ->
-            notificationManager.showNotification(notification)
+        // 5) Mostra convites com UI especial
+        if (notificationManager.canNotify()) {
+            pendingInvites.forEach { invite ->
+                notificationManager.showInviteNotification(invite)
+            }
         }
 
+        // 6) Mostra o restante de forma genérica
+        if (notificationManager.canNotify()) {
+            val otherNotifications = filteredNotifications.filterNot { it.isPendingInvite() }
+            otherNotifications.forEach { notif ->
+                notificationManager.showGenericNotification(notif)
+            }
+        }
+
+        // 7) Persiste os convites ativos do momento
         saveActiveInviteIds(currentInviteIds)
     }
 
@@ -80,9 +106,18 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
         criadaEm = criadaEm
     )
 
+    private fun NotificacaoConviteUi.isPendingInvite(): Boolean {
+        return tipo == TIPO_CONVITE && conviteId != null && !lida
+    }
+
+    private fun NotificacaoConviteUi.isInviteAlreadyHandled(): Boolean {
+        return tipo == TIPO_CONVITE && conviteId != null && lida
+    }
+
     companion object {
         private const val PREFS_NAME = "share_notification_synchronizer"
         private const val KEY_ACTIVE_INVITES = "active_invites"
+        private const val TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO"
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val isRunning = AtomicBoolean(false)
