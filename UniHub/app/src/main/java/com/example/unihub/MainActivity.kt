@@ -25,8 +25,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.unihub.data.apiBackend.ApiAvaliacaoBackend
 import androidx.compose.runtime.getValue
-
-
 import com.example.unihub.ui.ListarDisciplinas.ListarDisciplinasScreen
 import com.example.unihub.ui.ListarContato.ListarContatoScreen
 import com.example.unihub.ui.ManterConta.ManterContaScreen
@@ -86,6 +84,13 @@ import com.example.unihub.ui.TelaEsqueciSenha.TelaRedefinirSenha
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModel
 import com.example.unihub.ui.VisualizarDisciplina.VisualizarDisciplinaViewModelFactory
 import kotlinx.coroutines.flow.MutableStateFlow
+import com.example.unihub.ui.HistoricoNotificacoes.HistoricoNotificacoesScreen
+import com.example.unihub.data.apiBackend.NotificacoesApiBackend
+import com.example.unihub.data.repository.NotificacoesRepository
+import com.example.unihub.notifications.AttendanceNotificationScheduler
+import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.notificacoes.ui.NotificacoesScreen
+import com.example.unihub.ui.Notificacoes.NotificacoesViewModelFactory
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -94,6 +99,7 @@ sealed class Screen(val route: String) {
     object TelaInicial : Screen("tela_inicial")
     object HistoricoNotificacoes : Screen("historico_notificacoes")
 
+    object GerenciarNotificacoes : Screen("gerenciar_notificacoes")
     object ListarDisciplinas : Screen("lista_disciplinas")
 
     object ListarQuadros : Screen("lista_quadros")
@@ -771,6 +777,33 @@ class MainActivity : ComponentActivity() {
                     // HISTÓRICO DE NOTIFICAÇÕES
                     composable(Screen.HistoricoNotificacoes.route) {
                         HistoricoNotificacoesScreen(onVoltar = { navController.popBackStack() })
+                    }
+
+                    // GERENCIAR NOTIFICAÇÕES
+                    composable(Screen.GerenciarNotificacoes.route) {
+                        val context = LocalContext.current
+
+                        val notificacoesApi = NotificacoesApiBackend()
+                        val attendanceScheduler = AttendanceNotificationScheduler(context)
+                        val evaluationScheduler = EvaluationNotificationScheduler(context)
+                        val disciplinaRepository = DisciplinaRepository(ApiDisciplinaBackend())
+                        val avaliacaoRepository = AvaliacaoRepository(ApiAvaliacaoBackend())
+
+                        val notificacoesRepository = NotificacoesRepository(
+                            api = notificacoesApi,
+                            attendanceScheduler = attendanceScheduler,
+                            evaluationScheduler = evaluationScheduler,
+                            disciplinaRepository = disciplinaRepository,
+                            avaliacaoRepository = avaliacaoRepository
+                        )
+
+                        val factory = NotificacoesViewModelFactory(notificacoesRepository)
+
+                        NotificacoesScreen(
+                            viewModel = viewModel(factory = factory),
+                            onBack = { navController.popBackStack() },
+                            onAbrirHistorico = { navController.navigate(Screen.HistoricoNotificacoes.route) }
+                        )
                     }
 
                     // ANOTAÇÕES

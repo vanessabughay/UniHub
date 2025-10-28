@@ -145,14 +145,18 @@ fun ListarAvaliacaoScreen(
     LaunchedEffect(avaliacoesState) {
         val infos = avaliacoesState.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
+
+            val disciplinaIdLong = (avaliacao.disciplina?.id as? String)?.toLongOrNull()
+
             EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
                 descricao = avaliacao.descricao,
-                disciplinaId = avaliacao.disciplina?.id,
+                disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
-                receberNotificacoes = avaliacao.receberNotificacoes
+                receberNotificacoes = avaliacao.receberNotificacoes,
+                antecedenciaDias = 2 
             )
         }
         scheduler.scheduleNotifications(infos)

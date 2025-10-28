@@ -99,7 +99,7 @@ fun TelaInicial(
                 "contatos" -> navController.navigate("lista_contato")
                 "grupos" -> navController.navigate("lista_grupo")
                 "historico_notificacoes" -> navController.navigate("historico_notificacoes")
-                //"configurar notificações" -> navController.navigate("configurar_notificacoes")
+                "gerenciar notificações" -> navController.navigate("gerenciar_notificacoes")
                 else -> {}
             }
         }
@@ -581,7 +581,7 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
     "perfil" -> Outlined.Person
     "contatos" -> Outlined.Contacts
     "grupos" -> Outlined.Groups
-    "configurar notificações" -> Outlined.Settings
+    "gerenciar notificações" -> Outlined.Settings
     else -> Outlined.Circle
 
 }
@@ -628,7 +628,7 @@ private fun TelaInicialViewPreview() {
                     "Contatos",
                     "Grupos",
                     "Quadros",
-                    "Configurar notificações"
+                    "Gerenciar notificações"
                 ),
                 atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações"),
                 secaoAvaliacoesAberta = true,
