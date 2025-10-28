@@ -142,13 +142,19 @@ class TaskNotificationScheduler(private val context: Context) {
         private const val PREFS_NAME = "task_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
 
+        private val LOCAL_DATE_TIME_FORMATTERS = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+        )
+
         internal fun computeTriggerMillis(
             deadlineIso: String?,
             zoneId: ZoneId = ZoneId.systemDefault(),
             now: ZonedDateTime = ZonedDateTime.now(zoneId),
         ): Long? {
-            val dateTime = parseDateTime(deadlineIso, zoneId) ?: return null
-            if (!dateTime.isAfter(now)) {
+            val dateTime = parseToZonedDateTime(deadlineIso, zoneId) ?: return null
+            if (dateTime.isBefore(now)) {
                 return null
             }
             return dateTime.toInstant().toEpochMilli()
@@ -157,8 +163,13 @@ class TaskNotificationScheduler(private val context: Context) {
         internal fun parseDateTime(
             deadlineIso: String?,
             zoneId: ZoneId = ZoneId.systemDefault(),
+        ): ZonedDateTime? = parseToZonedDateTime(deadlineIso, zoneId)
+
+        private fun parseToZonedDateTime(
+            value: String?,
+            zoneId: ZoneId,
         ): ZonedDateTime? {
-            val trimmed = deadlineIso?.trim().orEmpty()
+            val trimmed = value?.trim().orEmpty()
             if (trimmed.isEmpty()) return null
 
             runCatching { Instant.parse(trimmed) }.getOrNull()?.let {
@@ -171,21 +182,14 @@ class TaskNotificationScheduler(private val context: Context) {
                 return it.atZoneSameInstant(zoneId)
             }
 
-            val localFormatters = listOf(
-                DateTimeFormatter.ISO_LOCAL_DATE_TIME,
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
-            )
-
-            localFormatters.forEach { formatter ->
+            LOCAL_DATE_TIME_FORMATTERS.forEach { formatter ->
                 runCatching { LocalDateTime.parse(trimmed, formatter) }
                     .getOrNull()
                     ?.let { return it.atZone(zoneId) }
             }
 
             return runCatching {
-                LocalDate.parse(trimmed.take(10), DateTimeFormatter.ISO_LOCAL_DATE)
+                LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE)
                     .atStartOfDay(zoneId)
             }.getOrNull()
         }

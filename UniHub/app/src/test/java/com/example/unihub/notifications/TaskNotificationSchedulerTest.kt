@@ -35,4 +35,12 @@ class TaskNotificationSchedulerTest {
         val trigger = TaskNotificationScheduler.computeTriggerMillis(future.toString(), now = now) ?: error("trigger should not be null")
         assertEquals(future.toInstant().toEpochMilli(), trigger)
     }
+
+    @Test
+    fun `computeTriggerMillis allows deadlines that match current time`() {
+        val zoneId = ZoneId.of("UTC")
+        val now = ZonedDateTime.now(zoneId).withSecond(0).withNano(0)
+        val trigger = TaskNotificationScheduler.computeTriggerMillis(now.toString(), zoneId = zoneId, now = now)
+        assertEquals(now.toInstant().toEpochMilli(), trigger)
+    }
 }
