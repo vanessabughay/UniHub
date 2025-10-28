@@ -25,7 +25,6 @@ import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +48,6 @@ import com.example.unihub.data.config.TokenManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
-import com.example.unihub.notifications.TaskNotificationScheduler
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -74,7 +72,6 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val taskScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -105,38 +102,6 @@ fun TelaInicial(
             }
         }
     }
-
-    LaunchedEffect(estado.tarefas) {
-        val infos = estado.tarefas.mapNotNull { tarefa ->
-            val identifier = buildString {
-                if (tarefa.titulo.isNotBlank()) append(tarefa.titulo)
-                tarefa.prazoIso?.takeIf { it.isNotBlank() }?.let {
-                    if (isNotEmpty()) {
-                        append("@")
-                    }
-                    append(it)
-                }
-                tarefa.nomeQuadro?.takeIf { it.isNotBlank() }?.let {
-                    if (isNotEmpty()) {
-                        append("@")
-                    }
-                    append(it)
-                }
-            }.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-
-            TaskNotificationScheduler.TaskInfo(
-                identifier = identifier,
-                titulo = tarefa.titulo,
-                quadroNome = tarefa.nomeQuadro,
-                prazoIso = tarefa.prazoIso,
-                prazoMillis = null,
-                receberNotificacoes = true
-            )
-        }
-
-        taskScheduler.scheduleNotifications(infos)
-    }
-
 
     TelaInicialView(
         estado = estado,
