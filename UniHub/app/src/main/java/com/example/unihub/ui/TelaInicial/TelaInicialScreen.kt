@@ -49,6 +49,7 @@ import com.example.unihub.data.config.TokenManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
+import com.example.unihub.notifications.TaskNotificationScheduler
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -73,6 +74,7 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val taskScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -96,8 +98,17 @@ fun TelaInicial(
                 append(tarefa.nomeQuadro ?: tarefa.descricao)
             }
 
-
+            TaskNotificationScheduler.TaskInfo(
+                identifierSeed = identifierSeed,
+                titulo = tarefa.titulo,
+                descricao = tarefa.descricao,
+                deadlineIso = deadlineIso,
+                quadroNome = tarefa.nomeQuadro,
+                receberNotificacoes = true,
+            )
         }
+
+        taskScheduler.scheduleNotifications(infos)
     }
 
 
