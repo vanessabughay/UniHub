@@ -49,6 +49,7 @@ import com.example.unihub.data.config.TokenManager
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
+import com.example.unihub.notifications.TaskNotificationScheduler
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -73,6 +74,7 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val taskScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -102,6 +104,37 @@ fun TelaInicial(
                 else -> {}
             }
         }
+    }
+
+    LaunchedEffect(estado.tarefas) {
+        val infos = estado.tarefas.mapNotNull { tarefa ->
+            val identifier = buildString {
+                if (tarefa.titulo.isNotBlank()) append(tarefa.titulo)
+                tarefa.prazoIso?.takeIf { it.isNotBlank() }?.let {
+                    if (isNotEmpty()) {
+                        append("@")
+                    }
+                    append(it)
+                }
+                tarefa.nomeQuadro?.takeIf { it.isNotBlank() }?.let {
+                    if (isNotEmpty()) {
+                        append("@")
+                    }
+                    append(it)
+                }
+            }.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+
+            TaskNotificationScheduler.TaskInfo(
+                identifier = identifier,
+                titulo = tarefa.titulo,
+                quadroNome = tarefa.nomeQuadro,
+                prazoIso = tarefa.prazoIso,
+                prazoMillis = null,
+                receberNotificacoes = true
+            )
+        }
+
+        taskScheduler.scheduleNotifications(infos)
     }
 
 

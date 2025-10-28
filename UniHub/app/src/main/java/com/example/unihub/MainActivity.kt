@@ -846,6 +846,16 @@ class MainActivity : ComponentActivity() {
         }
 
         val targetScreen = intent.getStringExtra(EXTRA_TARGET_SCREEN)
+
+        if (targetScreen == TARGET_SCREEN_LISTAR_QUADROS) {
+            navController.navigate(Screen.ListarQuadros.route) {
+                launchSingleTop = true
+            }
+
+            intent.removeExtra(EXTRA_TARGET_SCREEN)
+            return
+        }
+
         val avaliacaoId = intent.getStringExtra(EXTRA_TARGET_AVALIACAO_ID)
         if (!avaliacaoId.isNullOrBlank()) {
             val disciplinaId = intent.getStringExtra(EXTRA_TARGET_DISCIPLINA_ID)
@@ -887,6 +897,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_SCREEN_VISUALIZAR_DISCIPLINA = "visualizar_disciplina"
         const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
         const val TARGET_SCREEN_VISUALIZAR_AVALIACAO = "visualizar_avaliacao"
+        const val TARGET_SCREEN_LISTAR_QUADROS = "listar_quadros"
     }
 }
 
