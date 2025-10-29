@@ -112,7 +112,6 @@ private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
         descricao = this.descricao,
         status = this.status.name,
         prazo = this.prazo,
-        dataInicio = this.dataInicio,
         dataFim = this.dataFim,
         responsavelIds = this.responsaveisIds
     )

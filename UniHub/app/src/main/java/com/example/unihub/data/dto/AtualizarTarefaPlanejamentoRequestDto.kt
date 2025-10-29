@@ -5,7 +5,6 @@ data class AtualizarTarefaPlanejamentoRequestDto(
     val descricao: String?,
     val status: String?,
     val prazo: Long?,
-    val dataInicio: Long?,
     val dataFim: Long?,
     val responsavelIds: List<Long>
 )

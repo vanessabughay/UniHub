@@ -32,9 +32,6 @@ public class TarefaPlanejamento {
     @Column(nullable = false)
     private TarefaStatus status = TarefaStatus.PENDENTE;
 
-    @Column(nullable = false)
-    private LocalDateTime dataCriacao = LocalDateTime.now();
-
     private LocalDateTime dataPrazo;
 
     private LocalDateTime dataConclusao;
@@ -94,14 +91,6 @@ public class TarefaPlanejamento {
 
     public void setStatus(TarefaStatus status) {
         this.status = status;
-    }
-
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
-    }
-
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
     }
 
     public LocalDateTime getDataPrazo() {

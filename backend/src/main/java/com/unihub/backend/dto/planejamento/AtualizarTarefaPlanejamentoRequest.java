@@ -8,7 +8,6 @@ public class AtualizarTarefaPlanejamentoRequest {
     private String descricao;
     private String status;
     private Long prazo;
-    private Long dataInicio;
     private Long dataFim;
     private List<Long> responsavelIds;
 
@@ -42,14 +41,6 @@ public class AtualizarTarefaPlanejamentoRequest {
 
     public void setPrazo(Long prazo) {
         this.prazo = prazo;
-    }
-
-    public Long getDataInicio() {
-        return dataInicio;
-    }
-
-    public void setDataInicio(Long dataInicio) {
-        this.dataInicio = dataInicio;
     }
 
     public Long getDataFim() {

@@ -651,8 +651,7 @@ LaunchedEffect(quadroId) {
                         titulo = titulo,
                         descricao = if (descricao.isBlank()) null else descricao,
                         status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
-                        prazo = prazo,
-                        dataInicio = System.currentTimeMillis()
+                        prazo = prazo
                     )
                     ultimaAcao = TarefaFormAction.CREATE
                     tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)

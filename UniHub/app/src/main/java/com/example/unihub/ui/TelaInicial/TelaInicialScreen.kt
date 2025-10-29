@@ -1,7 +1,11 @@
 package com.example.unihub.ui.TelaInicial
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresExtension
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -31,23 +35,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
-import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.notifications.TaskNotificationScheduler
+import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -72,6 +78,16 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val taskScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
+
+    val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { }
+    } else {
+        null
+    }
+
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -84,6 +100,37 @@ fun TelaInicial(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val granted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (!granted) {
+                notificationPermissionLauncher?.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
+
+    LaunchedEffect(estado.tarefas) {
+        val infos = estado.tarefas.mapNotNull { tarefa ->
+            val deadline = tarefa.prazoIso?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val keyParts = buildList {
+                add(deadline)
+                tarefa.titulo.takeIf { it.isNotBlank() }?.let { add(it) }
+                tarefa.nomeQuadro?.takeIf { it.isNotBlank() }?.let { add(it) }
+            }
+            val uniqueKey = keyParts.joinToString("|")
+            TaskNotificationScheduler.TaskInfo(
+                uniqueKey = uniqueKey,
+                titulo = tarefa.titulo,
+                nomeQuadro = tarefa.nomeQuadro,
+                dataPrazoIso = deadline
+            )
+        }
+        taskScheduler.scheduleNotifications(infos)
+    }
 
 
     LaunchedEffect(Unit) {

@@ -496,7 +496,6 @@ public class QuadroPlanejamentoService {
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
         response.setPrazo(convertLocalDateTimeToEpoch(tarefa.getDataPrazo()));
-        response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
         response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
