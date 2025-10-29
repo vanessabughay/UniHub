@@ -149,13 +149,21 @@ class ListarContatoViewModel(
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun aceitarConvite(contatoId: Long, onResult: (sucesso: Boolean) -> Unit) {
+    fun aceitarConvite(registroId: Long?, onResult: (sucesso: Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
             try {
-                repository.acceptInvitation(contatoId)
+                val id = registroId
+                if (id == null) {
+                    _errorMessage.value = "Convite sem identificador para confirmação."
+                    _isLoading.value = false
+                    onResult(false)
+                    return@launch
+                }
+
+                repository.acceptInvitation(id)
                 loadContatos()
                 onResult(true)
             } catch (e: Exception) {
@@ -167,13 +175,21 @@ class ListarContatoViewModel(
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun rejeitarConvite(contatoId: Long, onResult: (sucesso: Boolean) -> Unit) {
+    fun rejeitarConvite(registroId: Long?, onResult: (sucesso: Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
             try {
-                repository.rejectInvitation(contatoId)
+                val id = registroId
+                if (id == null) {
+                    _errorMessage.value = "Convite sem identificador para rejeição."
+                    _isLoading.value = false
+                    onResult(false)
+                    return@launch
+                }
+
+                repository.rejectInvitation(id)
                 loadContatos()
                 onResult(true)
             } catch (e: Exception) {
