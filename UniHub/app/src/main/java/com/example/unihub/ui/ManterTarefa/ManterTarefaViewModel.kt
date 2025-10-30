@@ -115,18 +115,9 @@ class TarefaFormViewModel(
             _isLoading.value = true
             try {
                 val tarefaAtual = _tarefaState.value
-                var tarefaParaSalvar = tarefaAtualizada
-
-                tarefaParaSalvar = if (tarefaAtualizada.status == Status.CONCLUIDA && tarefaAtual?.dataFim == null) {
-                    tarefaAtualizada.copy(dataFim = System.currentTimeMillis())
-                } else if (tarefaAtual?.status == Status.CONCLUIDA && tarefaAtualizada.status != Status.CONCLUIDA) {
-                    tarefaAtualizada.copy(dataFim = null)
-                } else {
-                    tarefaAtualizada
-                }
 
                 val responsaveisOrdenados = ordenarResponsaveisSelecionados()
-                tarefaParaSalvar = tarefaParaSalvar.copy(responsaveisIds = responsaveisOrdenados)
+                val tarefaParaSalvar = tarefaAtualizada.copy(responsaveisIds = responsaveisOrdenados)
 
                 val tarefaSalva = repository.updateTarefa(quadroId, colunaId, tarefaParaSalvar)
                 _tarefaState.value = tarefaSalva

@@ -345,7 +345,6 @@ private val MOCK_QUADRO_PARA_EDICAO = Quadro(
     contatoId = 102,
     grupoId = null,
     colunas = emptyList(),
-    dataInicio = System.currentTimeMillis() - 86400000L * 5,
     dataFim = System.currentTimeMillis() + 86400000L * 10,
     donoId = 1L
 )

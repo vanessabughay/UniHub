@@ -8,7 +8,6 @@ public class AtualizarTarefaPlanejamentoRequest {
     private String descricao;
     private String status;
     private Long prazo;
-    private Long dataFim;
     private List<Long> responsavelIds;
 
     public String getTitulo() {
@@ -43,13 +42,7 @@ public class AtualizarTarefaPlanejamentoRequest {
         this.prazo = prazo;
     }
 
-    public Long getDataFim() {
-        return dataFim;
-    }
-
-    public void setDataFim(Long dataFim) {
-        this.dataFim = dataFim;
-    }
+    
 
     public List<Long> getResponsavelIds() {
         return responsavelIds;

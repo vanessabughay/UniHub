@@ -3,7 +3,6 @@ package com.example.unihub.data.model
 import android.os.Parcelable
 import java.util.Calendar
 import com.example.unihub.data.util.FlexibleLongAdapter
-import com.example.unihub.data.util.FlexibleNullableLongAdapter
 import com.google.gson.annotations.JsonAdapter
 import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
@@ -27,9 +26,7 @@ data class Tarefa(
     @SerializedName("responsavelIds")
     val responsaveisIds: List<Long> = emptyList(),
     @JsonAdapter(FlexibleLongAdapter::class)
-    val prazo: Long = getDefaultPrazo(), // PRAZO AGORA É NÃO-NULLABLE e tem um padrão
-    @JsonAdapter(FlexibleNullableLongAdapter::class)
-    val dataFim: Long? = null
+    val prazo: Long = getDefaultPrazo() // PRAZO AGORA É NÃO-NULLABLE e tem um padrão
 ) : Parcelable {
 
 }

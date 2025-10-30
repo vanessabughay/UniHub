@@ -117,7 +117,7 @@ public class QuadroPlanejamentoService {
             quadro.setGrupo(grupo);
         }
 
-        quadro.setDataCriacao(Instant.now());
+
         if (dto.getDataFim() != null) {
             quadro.setDataPrazo(Instant.ofEpochMilli(dto.getDataFim()));
         }
@@ -198,7 +198,6 @@ public class QuadroPlanejamentoService {
         response.setId(quadro.getId());
         response.setNome(quadro.getTitulo());
         response.setEstado(quadro.getStatus());
-        response.setDataInicio(quadro.getDataCriacao());
         response.setDataFim(quadro.getDataPrazo());
         response.setDonoId(quadro.getDonoId());
         
@@ -318,10 +317,8 @@ public class QuadroPlanejamentoService {
 
         if ("CONCLUIDA".equalsIgnoreCase(request.getStatus())) {
             tarefa.setStatus(TarefaStatus.CONCLUIDA);
-            tarefa.setDataConclusao(convertEpochToLocalDateTime(request.getDataFim(), LocalDateTime.now()));
         } else {
             tarefa.setStatus(TarefaStatus.PENDENTE);
-            tarefa.setDataConclusao(null);
         }
 
         if (request.getResponsavelIds() != null) {
@@ -341,10 +338,8 @@ public class QuadroPlanejamentoService {
 
         if (request.isConcluida()) {
             tarefa.setStatus(TarefaStatus.CONCLUIDA);
-            tarefa.setDataConclusao(LocalDateTime.now());
         } else {
             tarefa.setStatus(TarefaStatus.PENDENTE);
-            tarefa.setDataConclusao(null);
         }
 
         return tarefaRepository.save(tarefa);
@@ -496,7 +491,6 @@ public class QuadroPlanejamentoService {
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
         response.setPrazo(convertLocalDateTimeToEpoch(tarefa.getDataPrazo()));
-        response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
@@ -536,10 +530,7 @@ public class QuadroPlanejamentoService {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
     }
 
-    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis, LocalDateTime defaultValue) {
-        LocalDateTime converted = convertEpochToLocalDateTime(epochMillis);
-        return converted != null ? converted : defaultValue;
-    }
+
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);

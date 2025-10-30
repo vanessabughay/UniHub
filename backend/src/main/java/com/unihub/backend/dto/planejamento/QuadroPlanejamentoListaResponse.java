@@ -2,16 +2,15 @@ package com.unihub.backend.dto.planejamento;
 
 import com.unihub.backend.model.QuadroPlanejamento;
 import com.unihub.backend.model.enums.QuadroStatus;
+
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+
 
 public class QuadroPlanejamentoListaResponse {
 
     private Long id;
     private String nome;
     private QuadroStatus estado;
-    private Instant dataInicio;
     private Instant dataFim;
     private Long donoId;
 
@@ -24,7 +23,6 @@ public class QuadroPlanejamentoListaResponse {
         response.setId(quadro.getId());
         response.setNome(quadro.getTitulo());
         response.setEstado(quadro.getStatus());
-        response.setDataInicio(quadro.getDataCriacao());
         response.setDataFim(quadro.getDataPrazo());
         response.setDonoId(quadro.getDonoId());
 
@@ -68,13 +66,7 @@ public class QuadroPlanejamentoListaResponse {
         this.estado = estado;
     }
 
-    public Instant getDataInicio() {
-        return dataInicio;
-    }
-
-    public void setDataInicio(Instant dataInicio) {
-        this.dataInicio = dataInicio;
-    }
+    
 
     public Instant getDataFim() {
         return dataFim;

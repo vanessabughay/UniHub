@@ -34,8 +34,6 @@ public class TarefaPlanejamento {
 
     private LocalDateTime dataPrazo;
 
-    private LocalDateTime dataConclusao;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coluna_id", nullable = false)
     @JsonBackReference("coluna-tarefas")
@@ -101,13 +99,7 @@ public class TarefaPlanejamento {
         this.dataPrazo = dataPrazo;
     }
 
-    public LocalDateTime getDataConclusao() {
-        return dataConclusao;
-    }
-
-    public void setDataConclusao(LocalDateTime dataConclusao) {
-        this.dataConclusao = dataConclusao;
-    }
+    
 
     public ColunaPlanejamento getColuna() {
         return coluna;

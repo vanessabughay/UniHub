@@ -9,7 +9,6 @@ public class TarefaPlanejamentoResponse {
     private String descricao;
     private String status;
     private Long prazo;
-    private Long dataFim;
     private List<Long> responsavelIds;
     private String responsaveis;
 
@@ -53,13 +52,7 @@ public class TarefaPlanejamentoResponse {
         this.prazo = prazo;
     }
 
-    public Long getDataFim() {
-        return dataFim;
-    }
-
-    public void setDataFim(Long dataFim) {
-        this.dataFim = dataFim;
-    }
+    
 
     public List<Long> getResponsavelIds() {
         return responsavelIds;
