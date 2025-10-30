@@ -310,8 +310,8 @@ public class QuadroPlanejamentoService {
         tarefa.setDescricao(request.getDescricao());
 
         if (request.getPrazo() != null) {
-            tarefa.setDataPrazo(convertEpochToLocalDateTime(request.getPrazo()));
-                } else {
+            tarefa.setDataPrazo(request.getPrazo()); 
+        } else {
             tarefa.setDataPrazo(null);
         }
 
@@ -522,15 +522,6 @@ public class QuadroPlanejamentoService {
         }
         return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
-
-    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis) {
-        if (epochMillis == null) {
-            return null;
-        }
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
-    }
-
-
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);

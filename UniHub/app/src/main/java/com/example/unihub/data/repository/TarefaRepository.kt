@@ -107,11 +107,19 @@ private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
 }
 
 private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
+    val prazoLocalDateTime = this.prazo
+        .takeIf { it > 0L }
+        ?.let { epoch ->
+            Instant.ofEpochMilli(epoch)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+        }
+
     return AtualizarTarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
         status = this.status.name,
-        prazo = this.prazo,
+        prazo = prazoLocalDateTime,
         responsavelIds = this.responsaveisIds
     )
 }
