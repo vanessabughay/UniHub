@@ -8,7 +8,7 @@ public class AtualizarTarefaPlanejamentoRequest {
     private String titulo;
     private String descricao;
     private String status;
-private LocalDateTime prazo;
+    private Long prazo;
     private List<Long> responsavelIds;
 
     public String getTitulo() {
@@ -35,12 +35,12 @@ private LocalDateTime prazo;
         this.status = status;
     }
 
-    public LocalDateTime getPrazo() {
-                return prazo;
+    public Long getPrazo() {
+        return prazo;
     }
 
-    public void setPrazo(LocalDateTime prazo) {
-                this.prazo = prazo;
+    public void setPrazo(Long prazo) {
+        this.prazo = prazo;
     }
 
     

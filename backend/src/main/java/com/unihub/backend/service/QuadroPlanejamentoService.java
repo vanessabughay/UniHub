@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.unihub.backend.dto.planejamento.TarefaDto; 
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
 import java.time.Instant;
@@ -34,6 +33,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -289,8 +290,12 @@ public class QuadroPlanejamentoService {
         TarefaPlanejamento tarefa = new TarefaPlanejamento();
         tarefa.setTitulo(request.getTitulo());
         tarefa.setDescricao(request.getDescricao());
-        tarefa.setDataPrazo(request.getDataPrazo());
-        tarefa.setColuna(coluna);
+if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
+            tarefa.setDataPrazo(Instant.ofEpochMilli(request.getDataPrazo()));
+        } else {
+            tarefa.setDataPrazo(null);
+        }
+                tarefa.setColuna(coluna);
 
         tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
 
@@ -309,8 +314,9 @@ public class QuadroPlanejamentoService {
 
         tarefa.setDescricao(request.getDescricao());
 
-        if (request.getPrazo() != null) {
-            tarefa.setDataPrazo(request.getPrazo()); 
+        if (request.getPrazo() != null && request.getPrazo() > 0) {
+            tarefa.setDataPrazo(Instant.ofEpochMilli(request.getPrazo()));
+
         } else {
             tarefa.setDataPrazo(null);
         }
@@ -490,8 +496,8 @@ public class QuadroPlanejamentoService {
         response.setTitulo(tarefa.getTitulo());
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
-        response.setPrazo(convertLocalDateTimeToEpoch(tarefa.getDataPrazo()));
-        response.setResponsavelIds(tarefa.getResponsaveisIds());
+        response.setPrazo(convertInstantToEpoch(tarefa.getDataPrazo()));
+                response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
     }
@@ -516,12 +522,12 @@ public class QuadroPlanejamentoService {
     }
 
 
-    private Long convertLocalDateTimeToEpoch(LocalDateTime dateTime) {
-        if (dateTime == null) {
+     private Long convertInstantToEpoch(Instant instant) {
+        if (instant == null) {
             return null;
         }
-        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
+        return instant.toEpochMilli();
+        }
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
@@ -665,11 +671,14 @@ public class QuadroPlanejamentoService {
     @Transactional(readOnly = true)
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {
 
-        LocalDateTime dataInicio = LocalDate.now().atStartOfDay();
-        LocalDateTime dataFim = dataInicio.plusDays(15).with(LocalTime.MAX);
+        ZoneId zone = ZoneId.systemDefault();
+        ZonedDateTime inicioZdt = LocalDate.now(zone).atStartOfDay(zone);
+        ZonedDateTime fimZdt = inicioZdt.plusDays(15).with(LocalTime.MAX);
+        Instant dataInicio = inicioZdt.toInstant();
+        Instant dataFim = fimZdt.toInstant();
 
         List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
-                usuarioId, 
+                usuarioId,
                 dataInicio,
                 dataFim
         );
@@ -680,10 +689,7 @@ public class QuadroPlanejamentoService {
     }
 
     private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
-        String dataPrazoFormatada = null;
-        if (tarefa.getDataPrazo() != null) {
-            dataPrazoFormatada = tarefa.getDataPrazo().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        }
+                Long prazo = convertInstantToEpoch(tarefa.getDataPrazo());
 
         String nomeQuadro = "Sem quadro";
         if (tarefa.getColuna() != null && tarefa.getColuna().getQuadro() != null) {
@@ -693,7 +699,7 @@ public class QuadroPlanejamentoService {
 
         return new TarefaDto(
                 tarefa.getTitulo(),
-                dataPrazoFormatada,
+                prazo,
                 nomeQuadro
         );
     }

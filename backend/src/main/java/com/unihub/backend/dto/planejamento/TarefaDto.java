@@ -4,11 +4,11 @@ package com.unihub.backend.dto.planejamento;
 public class TarefaDto {
 
     private String titulo;
-    private String dataPrazo; 
+    private Long dataPrazo;
     private String nomeQuadro;
 
     // Construtor
-    public TarefaDto(String titulo, String dataPrazo, String nomeQuadro) {
+    public TarefaDto(String titulo, Long dataPrazo, String nomeQuadro) {
         this.titulo = titulo;
         this.dataPrazo = dataPrazo;
         this.nomeQuadro = nomeQuadro;
@@ -23,12 +23,12 @@ public class TarefaDto {
         this.titulo = titulo;
     }
 
-    public String getDataPrazo() {
-        return dataPrazo;
+    public Long getDataPrazo() {
+                return dataPrazo;
     }
 
-    public void setDataPrazo(String dataPrazo) {
-        this.dataPrazo = dataPrazo;
+    public void setDataPrazo(Long dataPrazo) {
+                this.dataPrazo = dataPrazo;
     }
 
     public String getNomeQuadro() {

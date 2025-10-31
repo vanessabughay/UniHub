@@ -2,10 +2,12 @@ package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unihub.backend.model.enums.TarefaStatus;
 import jakarta.persistence.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -32,7 +34,7 @@ public class TarefaPlanejamento {
     @Column(nullable = false)
     private TarefaStatus status = TarefaStatus.PENDENTE;
 
-    private LocalDateTime dataPrazo;
+    private Instant dataPrazo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coluna_id", nullable = false)
@@ -91,11 +93,12 @@ public class TarefaPlanejamento {
         this.status = status;
     }
 
-    public LocalDateTime getDataPrazo() {
+    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
+    public Instant getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDateTime dataPrazo) {
+    public void setDataPrazo(Instant dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

@@ -9,9 +9,6 @@ import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.TarefaPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import com.example.unihub.data.dto.TarefaDto
 
 open class TarefaRepository(private val apiService: TarefaApi) {
@@ -98,7 +95,7 @@ private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
     return TarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
-        dataPrazo = this.prazo.toIsoLocalDateTimeString(),
+        dataPrazo = this.prazo.toEpochMillisOrNull(),
         responsavelIds = this.responsaveisIds
     )
 }
@@ -108,16 +105,9 @@ private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
         titulo = this.titulo,
         descricao = this.descricao,
         status = this.status.name,
-        prazo = this.prazo.toIsoLocalDateTimeString(),
+        prazo = this.prazo.toEpochMillisOrNull(),
         responsavelIds = this.responsaveisIds
     )
 }
 
-private fun Long.toIsoLocalDateTimeString(): String? {
-    if (this <= 0L) return null
-    val zoneId = ZoneId.systemDefault()
-    return Instant.ofEpochMilli(this)
-        .atZone(zoneId)
-        .toLocalDateTime()
-        .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-}
+private fun Long.toEpochMillisOrNull(): Long? = if (this > 0L) this else null
