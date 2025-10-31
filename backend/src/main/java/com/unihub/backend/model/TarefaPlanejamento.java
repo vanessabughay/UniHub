@@ -57,8 +57,8 @@ public class TarefaPlanejamento {
 
     @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<TarefaComentarioNotificacao> notificacoesComentario = new LinkedHashSet<>();
-
+    private Set<TarefaNotificacao> notificacoes = new LinkedHashSet<>();
+    
     public Long getId() {
         return id;
     }
@@ -161,11 +161,11 @@ public class TarefaPlanejamento {
         this.comentarios = comentarios;
     }
 
-    public Set<TarefaComentarioNotificacao> getNotificacoesComentario() {
-        return notificacoesComentario;
+    public Set<TarefaNotificacao> getNotificacoes() {
+        return notificacoes;
     }
 
-    public void setNotificacoesComentario(Set<TarefaComentarioNotificacao> notificacoesComentario) {
-        this.notificacoesComentario = notificacoesComentario;
+    public void setNotificacoes(Set<TarefaNotificacao> notificacoes) {
+        this.notificacoes = notificacoes;
     }
 }

@@ -39,7 +39,6 @@ import com.example.unihub.components.CampoHorario
 
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Comentario
-import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
@@ -118,7 +117,7 @@ fun TarefaFormScreen(
     val responsaveisSelecionados by tarefaViewModel.responsaveisSelecionados.collectAsState()
     val comentarios by tarefaViewModel.comentarios.collectAsState()
     val comentariosCarregando by tarefaViewModel.comentariosCarregando.collectAsState()
-    val receberNotificacoesComentarios by tarefaViewModel.receberNotificacoes.collectAsState()
+    val receberNotificacoesTarefa by tarefaViewModel.receberNotificacoes.collectAsState()
     val comentarioResultado by tarefaViewModel.comentarioResultado.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
@@ -582,10 +581,10 @@ LaunchedEffect(quadroId) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Checkbox(
-                        checked = receberNotificacoesComentarios,
+                        checked = receberNotificacoesTarefa,
                         onCheckedChange = { marcado ->
                             tarefaId?.let { id ->
-                                tarefaViewModel.atualizarPreferenciaComentarios(
+                                tarefaViewModel.atualizarPreferenciaTarefa(
                                     quadroId,
                                     colunaId,
                                     id,

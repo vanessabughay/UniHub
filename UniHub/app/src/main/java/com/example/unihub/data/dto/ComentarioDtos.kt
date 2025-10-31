@@ -4,6 +4,6 @@ data class ComentarioRequestDto(
     val conteudo: String
 )
 
-data class ComentarioNotificacaoRequestDto(
+data class TarefaNotificacaoRequestDto(
     val receberNotificacoes: Boolean
 )

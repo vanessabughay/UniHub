@@ -238,7 +238,7 @@ class TarefaFormViewModel(
         }
     }
 
-    fun atualizarPreferenciaComentarios(
+    fun atualizarPreferenciaTarefa(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
@@ -246,7 +246,7 @@ class TarefaFormViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val resposta = repository.atualizarPreferenciaComentarios(
+                val resposta = repository.atualizarPreferenciaTarefa(
                     quadroId,
                     colunaId,
                     tarefaId,

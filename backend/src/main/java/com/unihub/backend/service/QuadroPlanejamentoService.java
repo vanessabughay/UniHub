@@ -1,10 +1,10 @@
 package com.unihub.backend.service;
 
-import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
+import com.unihub.backend.dto.planejamento.AtualizarPreferenciaTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
-import com.unihub.backend.dto.planejamento.PreferenciaComentarioResponse;
+import com.unihub.backend.dto.planejamento.PreferenciaTarefaResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
@@ -62,7 +62,7 @@ public class QuadroPlanejamentoService {
     @Autowired
     private TarefaComentarioRepository tarefaComentarioRepository;
     @Autowired
-    private TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository;
+    private TarefaNotificacaoRepository tarefaNotificacaoRepository;
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
         String tituloNormalizado = titulo != null ? titulo.trim() : null;
@@ -360,8 +360,8 @@ public class QuadroPlanejamentoService {
                 .map(comentario -> toComentarioResponse(comentario, usuarioId))
                 .collect(Collectors.toList());
 
-        boolean receberNotificacoes = tarefaComentarioNotificacaoRepository
-                .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+        boolean receberNotificacoes = tarefaNotificacaoRepository
+            .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
 
         TarefaComentariosResponse response = new TarefaComentariosResponse();
         response.setComentarios(comentarios);
@@ -423,30 +423,30 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional
-    public PreferenciaComentarioResponse atualizarPreferenciaComentario(Long quadroId, Long colunaId, Long tarefaId,
-                                                                        AtualizarPreferenciaComentarioRequest request,
-                                                                        Long usuarioId) {
+    public PreferenciaTarefaResponse atualizarPreferenciaTarefa(Long quadroId, Long colunaId, Long tarefaId,
+                                                                AtualizarPreferenciaTarefaRequest request,
+                                                                Long usuarioId) {
         TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
 
         boolean desejaReceber = request.isReceberNotificacoes();
         if (desejaReceber) {
-            boolean jaExiste = tarefaComentarioNotificacaoRepository
+                        boolean jaExiste = tarefaNotificacaoRepository
                     .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
             if (!jaExiste) {
                 Usuario usuario = usuarioRepository.findById(usuarioId)
                         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-                TarefaComentarioNotificacao notificacao = new TarefaComentarioNotificacao();
+                TarefaNotificacao notificacao = new TarefaNotificacao();
                 notificacao.setTarefa(tarefa);
                 notificacao.setUsuario(usuario);
-                tarefaComentarioNotificacaoRepository.save(notificacao);
+                tarefaNotificacaoRepository.save(notificacao);
             }
         } else {
-            tarefaComentarioNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+            tarefaNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
         }
 
-        boolean estadoAtual = tarefaComentarioNotificacaoRepository
+        boolean estadoAtual = tarefaNotificacaoRepository
                 .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
-        return new PreferenciaComentarioResponse(estadoAtual);
+                return new PreferenciaTarefaResponse(estadoAtual);
     }
 
 

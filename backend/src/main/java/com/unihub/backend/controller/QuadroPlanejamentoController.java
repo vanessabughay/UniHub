@@ -4,7 +4,7 @@ package com.unihub.backend.controller;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
 
 import com.unihub.backend.dto.planejamento.TarefaDto; 
-import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
+import com.unihub.backend.dto.planejamento.AtualizarPreferenciaTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
@@ -14,7 +14,7 @@ import com.unihub.backend.dto.planejamento.TarefaComentarioRequest;
 import com.unihub.backend.dto.planejamento.TarefaComentarioResponse;
 import com.unihub.backend.dto.planejamento.TarefaComentariosResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoRequest;
-import com.unihub.backend.dto.planejamento.PreferenciaComentarioResponse;
+import com.unihub.backend.dto.planejamento.PreferenciaTarefaResponse;
 import com.unihub.backend.dto.planejamento.TarefaPlanejamentoResponse;
 import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.QuadroPlanejamento;
@@ -177,13 +177,13 @@ public class QuadroPlanejamentoController {
         service.excluirComentario(id, colunaId, tarefaId, comentarioId, usuarioId);
     }
 
-    @PutMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios/preferencias")
-    public PreferenciaComentarioResponse atualizarPreferenciaComentario(@PathVariable Long id,
-                                                                        @PathVariable Long colunaId,
-                                                                        @PathVariable Long tarefaId,
-                                                                        @RequestBody AtualizarPreferenciaComentarioRequest request,
-                                                                        @AuthenticationPrincipal Long usuarioId) {
-        return service.atualizarPreferenciaComentario(id, colunaId, tarefaId, request, usuarioId);
+    @PutMapping("/{id}/colunas/{colunaId}/tarefas/{tarefaId}/preferencias")
+    public PreferenciaTarefaResponse atualizarPreferenciaTarefa(@PathVariable Long id,
+                                                                @PathVariable Long colunaId,
+                                                                @PathVariable Long tarefaId,
+                                                                @RequestBody AtualizarPreferenciaTarefaRequest request,
+                                                                @AuthenticationPrincipal Long usuarioId) {
+        return service.atualizarPreferenciaTarefa(id, colunaId, tarefaId, request, usuarioId);
     }
 
     @PatchMapping("/{id}/tarefas/{tarefaId}/status")

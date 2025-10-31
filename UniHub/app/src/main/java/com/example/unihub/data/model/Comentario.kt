@@ -18,6 +18,6 @@ data class ComentariosResponse(
     val receberNotificacoes: Boolean
 )
 
-data class ComentarioPreferenciaResponse(
+data class TarefaPreferenciaResponse(
     val receberNotificacoes: Boolean
 )
