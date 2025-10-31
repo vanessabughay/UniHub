@@ -11,6 +11,7 @@ import com.example.unihub.data.model.TarefaPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import com.example.unihub.data.dto.TarefaDto
 
 open class TarefaRepository(private val apiService: TarefaApi) {
@@ -90,36 +91,33 @@ open class TarefaRepository(private val apiService: TarefaApi) {
         return apiService.getProximasTarefas()
     }
 
-
 }
 
 private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
-    val prazoLocalDateTime = Instant.ofEpochMilli(this.prazo)
-        .atZone(ZoneId.systemDefault())
-        .toLocalDateTime()
 
     return TarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
-        dataPrazo = prazoLocalDateTime,
+        dataPrazo = this.prazo.toIsoLocalDateTimeString(),
         responsavelIds = this.responsaveisIds
     )
 }
 
 private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
-    val prazoLocalDateTime = this.prazo
-        .takeIf { it > 0L }
-        ?.let { epoch ->
-            Instant.ofEpochMilli(epoch)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime()
-        }
-
     return AtualizarTarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
         status = this.status.name,
-        prazo = prazoLocalDateTime,
+        prazo = this.prazo.toIsoLocalDateTimeString(),
         responsavelIds = this.responsaveisIds
     )
+}
+
+private fun Long.toIsoLocalDateTimeString(): String? {
+    if (this <= 0L) return null
+    val zoneId = ZoneId.systemDefault()
+    return Instant.ofEpochMilli(this)
+        .atZone(zoneId)
+        .toLocalDateTime()
+        .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
 }
