@@ -12,7 +12,7 @@ data class Tarefa(
     val status: Status = Status.INICIADA,
     @SerializedName("responsavelIds")
     val responsaveisIds: List<Long> = emptyList(),
-    @SerializedName("dataPrazo")
+    @SerializedName(value = "dataPrazo", alternate = ["prazo"])
     val prazo: String? = null,
 ) : Parcelable {
 
