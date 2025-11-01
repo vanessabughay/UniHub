@@ -146,7 +146,7 @@ class TaskNotificationScheduler(private val context: Context) {
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
-            if (!zonedDateTime.isAfter(now)) {
+            if (zonedDateTime.isBefore(now)) {
                 return null
             }
             return zonedDateTime.toInstant().toEpochMilli()
