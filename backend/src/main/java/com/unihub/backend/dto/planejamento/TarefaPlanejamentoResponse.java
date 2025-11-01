@@ -8,7 +8,7 @@ public class TarefaPlanejamentoResponse {
     private String titulo;
     private String descricao;
     private String status;
-    private Long prazo;
+    private String prazo;
     private List<Long> responsavelIds;
     private String responsaveis;
 
@@ -44,11 +44,11 @@ public class TarefaPlanejamentoResponse {
         this.status = status;
     }
 
-    public Long getPrazo() {
+    public String getPrazo() {
         return prazo;
     }
 
-    public void setPrazo(Long prazo) {
+    public void setPrazo(String prazo) {
         this.prazo = prazo;
     }
 

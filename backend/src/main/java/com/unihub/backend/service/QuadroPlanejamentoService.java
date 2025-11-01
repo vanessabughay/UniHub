@@ -32,9 +32,11 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -290,12 +292,12 @@ public class QuadroPlanejamentoService {
         TarefaPlanejamento tarefa = new TarefaPlanejamento();
         tarefa.setTitulo(request.getTitulo());
         tarefa.setDescricao(request.getDescricao());
-if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
-            tarefa.setDataPrazo(Instant.ofEpochMilli(request.getDataPrazo()));
+        if (request.getDataPrazo() != null && !request.getDataPrazo().isBlank()) {
+            tarefa.setDataPrazo(parsePrazo(request.getDataPrazo()));
         } else {
             tarefa.setDataPrazo(null);
         }
-                tarefa.setColuna(coluna);
+        tarefa.setColuna(coluna);
 
         tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
 
@@ -314,9 +316,8 @@ if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
 
         tarefa.setDescricao(request.getDescricao());
 
-        if (request.getPrazo() != null && request.getPrazo() > 0) {
-            tarefa.setDataPrazo(Instant.ofEpochMilli(request.getPrazo()));
-
+        if (request.getPrazo() != null && !request.getPrazo().isBlank()) {
+            tarefa.setDataPrazo(parsePrazo(request.getPrazo()));
         } else {
             tarefa.setDataPrazo(null);
         }
@@ -496,8 +497,8 @@ if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
         response.setTitulo(tarefa.getTitulo());
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
-        response.setPrazo(convertInstantToEpoch(tarefa.getDataPrazo()));
-                response.setResponsavelIds(tarefa.getResponsaveisIds());
+        response.setPrazo(formatInstantToIso(tarefa.getDataPrazo()));
+        response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
     }
@@ -522,12 +523,52 @@ if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
     }
 
 
-     private Long convertInstantToEpoch(Instant instant) {
+    private String formatInstantToIso(Instant instant) {
         if (instant == null) {
             return null;
         }
-        return instant.toEpochMilli();
+        return instant.atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+
+    private Instant parsePrazo(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
         }
+
+        String trimmed = valor.trim();
+
+        try {
+            return Instant.parse(trimmed);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return OffsetDateTime.parse(trimmed).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        String normalized = trimmed.replace(' ', 'T');
+        if (normalized.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
+            normalized = normalized + ":00";
+        }
+
+        try {
+            LocalDateTime dateTime = LocalDateTime.parse(normalized);
+            return dateTime.atZone(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            LocalDate date = LocalDate.parse(trimmed);
+            return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        throw new IllegalArgumentException("Formato de prazo inválido: " + valor);
+    }
+
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
@@ -689,8 +730,8 @@ if (request.getDataPrazo() != null && request.getDataPrazo() > 0) {
     }
 
     private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
-                Long prazo = convertInstantToEpoch(tarefa.getDataPrazo());
-
+        String prazo = formatInstantToIso(tarefa.getDataPrazo());
+        
         String nomeQuadro = "Sem quadro";
         if (tarefa.getColuna() != null && tarefa.getColuna().getQuadro() != null) {
              // CORREÇÃO APLICADA AQUI

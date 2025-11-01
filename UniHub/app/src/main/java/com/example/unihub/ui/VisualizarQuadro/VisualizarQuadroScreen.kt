@@ -43,7 +43,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.example.unihub.data.model.Tarefa
-import com.example.unihub.components.formatDateToLocale
+import com.example.unihub.notifications.TaskNotificationScheduler
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.style.TextOverflow
@@ -82,7 +84,13 @@ private fun OpcaoQuadroButton(item: OpcaoQuadro) {
     }
 }
 
-private fun formatarPrazo(prazo: Long): String = formatDateToLocale(prazo)
+private fun formatarPrazo(prazo: String?): String {
+    val zonedDateTime = TaskNotificationScheduler.parseDateTime(prazo)
+        ?: return "Sem prazo definido"
+    val locale = Locale("pt", "BR")
+    val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", locale)
+    return formatter.format(zonedDateTime)
+}
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @OptIn(ExperimentalMaterial3Api::class)

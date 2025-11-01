@@ -13,11 +13,10 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoReal
 import com.example.unihub.data.dto.TarefaDto
 
@@ -213,8 +212,8 @@ class TelaInicialViewModel(
 
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
-        val epochMillis = real.dataPrazo ?: return null
-        val zonedDateTime = Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault())
+        val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: return null
+        val zonedDateTime = TaskNotificationScheduler.parseDateTime(rawPrazo) ?: return null
         val data = zonedDateTime.toLocalDate()
         val localePtBr = Locale("pt", "BR")
         val nomeQuadro = real.nomeQuadro

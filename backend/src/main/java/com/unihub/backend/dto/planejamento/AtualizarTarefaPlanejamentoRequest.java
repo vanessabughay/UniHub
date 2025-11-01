@@ -1,6 +1,5 @@
 package com.unihub.backend.dto.planejamento;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public class AtualizarTarefaPlanejamentoRequest {
@@ -8,7 +7,7 @@ public class AtualizarTarefaPlanejamentoRequest {
     private String titulo;
     private String descricao;
     private String status;
-    private Long prazo;
+    private String prazo;
     private List<Long> responsavelIds;
 
     public String getTitulo() {
@@ -35,11 +34,11 @@ public class AtualizarTarefaPlanejamentoRequest {
         this.status = status;
     }
 
-    public Long getPrazo() {
+    public String getPrazo() {
         return prazo;
     }
 
-    public void setPrazo(Long prazo) {
+    public void setPrazo(String prazo) {
         this.prazo = prazo;
     }
 

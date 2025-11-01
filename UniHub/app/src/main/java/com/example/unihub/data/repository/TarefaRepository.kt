@@ -95,7 +95,7 @@ private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
     return TarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
-        dataPrazo = this.prazo.toEpochMillisOrNull(),
+        dataPrazo = this.prazo?.takeUnless { it.isBlank() },
         responsavelIds = this.responsaveisIds
     )
 }
@@ -105,9 +105,7 @@ private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
         titulo = this.titulo,
         descricao = this.descricao,
         status = this.status.name,
-        prazo = this.prazo.toEpochMillisOrNull(),
+        prazo = this.prazo?.takeUnless { it.isBlank() },
         responsavelIds = this.responsaveisIds
     )
 }
-
-private fun Long.toEpochMillisOrNull(): Long? = if (this > 0L) this else null
