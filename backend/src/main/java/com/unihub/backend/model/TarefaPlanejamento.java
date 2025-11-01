@@ -34,7 +34,7 @@ public class TarefaPlanejamento {
     @Column(nullable = false)
     private TarefaStatus status = TarefaStatus.PENDENTE;
 
-    private Instant dataPrazo;
+    private LocalDateTime dataPrazo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coluna_id", nullable = false)
@@ -93,12 +93,13 @@ public class TarefaPlanejamento {
         this.status = status;
     }
 
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    public Instant getDataPrazo() {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public LocalDateTime getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(Instant dataPrazo) {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public void setDataPrazo(LocalDateTime dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

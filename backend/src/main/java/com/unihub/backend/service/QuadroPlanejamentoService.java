@@ -122,7 +122,7 @@ public class QuadroPlanejamentoService {
 
 
         if (dto.getDataFim() != null) {
-            quadro.setDataPrazo(Instant.ofEpochMilli(dto.getDataFim()));
+            quadro.setDataPrazo(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getDataFim()), ZoneId.systemDefault()));
         }
         ajustarStatus(quadro, null); 
         
@@ -142,7 +142,7 @@ public class QuadroPlanejamentoService {
 
         existente.setTitulo(dto.getNome());
         if (dto.getDataFim() != null) {
-            existente.setDataPrazo(Instant.ofEpochMilli(dto.getDataFim()));
+            existente.setDataPrazo(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getDataFim()), ZoneId.systemDefault()));
         } else {
             existente.setDataPrazo(null);
         }
@@ -469,7 +469,7 @@ public class QuadroPlanejamentoService {
         }
 
         if (quadro.getStatus() == QuadroStatus.ENCERRADO && quadro.getDataPrazo() == null) {
-            quadro.setDataPrazo(Instant.now());
+            quadro.setDataPrazo(LocalDateTime.now());
         }
     }
 
@@ -497,7 +497,7 @@ public class QuadroPlanejamentoService {
         response.setTitulo(tarefa.getTitulo());
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
-        response.setPrazo(formatInstantToIso(tarefa.getDataPrazo()));
+        response.setPrazo(formatDateTimeToIso(tarefa.getDataPrazo()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
@@ -523,16 +523,14 @@ public class QuadroPlanejamentoService {
     }
 
 
-    private String formatInstantToIso(Instant instant) {
-        if (instant == null) {
+    private String formatDateTimeToIso(LocalDateTime dateTime) {
+        if (dateTime == null) {
             return null;
         }
-        return instant.atZone(ZoneId.systemDefault())
-                .toLocalDateTime()
-                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private Instant parsePrazo(String valor) {
+    private LocalDateTime parsePrazo(String valor) {
         if (valor == null || valor.isBlank()) {
             return null;
         }
@@ -540,13 +538,19 @@ public class QuadroPlanejamentoService {
         String trimmed = valor.trim();
 
         try {
-            return Instant.parse(trimmed);
+            Instant instant = Instant.parse(trimmed);
+            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(trimmed).toLocalDateTime();
         } catch (DateTimeParseException ignored) {
         }
 
         try {
-            return OffsetDateTime.parse(trimmed).toInstant();
-        } catch (DateTimeParseException ignored) {
+            long epochMillis = Long.parseLong(trimmed);
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+        } catch (NumberFormatException ignored) {
         }
 
         String normalized = trimmed.replace(' ', 'T');
@@ -555,14 +559,13 @@ public class QuadroPlanejamentoService {
         }
 
         try {
-            LocalDateTime dateTime = LocalDateTime.parse(normalized);
-            return dateTime.atZone(ZoneId.systemDefault()).toInstant();
+            return LocalDateTime.parse(normalized);
         } catch (DateTimeParseException ignored) {
         }
 
         try {
             LocalDate date = LocalDate.parse(trimmed);
-            return date.atStartOfDay(ZoneId.systemDefault()).toInstant();
+            return date.atStartOfDay();
         } catch (DateTimeParseException ignored) {
         }
 
@@ -713,15 +716,13 @@ public class QuadroPlanejamentoService {
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {
 
         ZoneId zone = ZoneId.systemDefault();
-        ZonedDateTime inicioZdt = LocalDate.now(zone).atStartOfDay(zone);
-        ZonedDateTime fimZdt = inicioZdt.plusDays(15).with(LocalTime.MAX);
-        Instant dataInicio = inicioZdt.toInstant();
-        Instant dataFim = fimZdt.toInstant();
+        LocalDateTime inicio = LocalDate.now(zone).atStartOfDay();
+        LocalDateTime fim = inicio.plusDays(15).with(LocalTime.MAX);
 
         List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
                 usuarioId,
-                dataInicio,
-                dataFim
+                inicio,
+                fim
         );
 
         return tarefas.stream()
@@ -730,8 +731,8 @@ public class QuadroPlanejamentoService {
     }
 
     private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
-        String prazo = formatInstantToIso(tarefa.getDataPrazo());
-        
+        String prazo = formatDateTimeToIso(tarefa.getDataPrazo());
+
         String nomeQuadro = "Sem quadro";
         if (tarefa.getColuna() != null && tarefa.getColuna().getQuadro() != null) {
              // CORREÇÃO APLICADA AQUI

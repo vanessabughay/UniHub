@@ -4,6 +4,7 @@ import com.unihub.backend.model.QuadroPlanejamento;
 import com.unihub.backend.model.enums.QuadroStatus;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 
 
 public class QuadroPlanejamentoListaResponse {
@@ -11,7 +12,7 @@ public class QuadroPlanejamentoListaResponse {
     private Long id;
     private String nome;
     private QuadroStatus estado;
-    private Instant dataFim;
+    private LocalDateTime dataFim;
     private Long donoId;
 
     private Long disciplinaId;
@@ -67,12 +68,11 @@ public class QuadroPlanejamentoListaResponse {
     }
 
     
-
-    public Instant getDataFim() {
+    public LocalDateTime getDataFim() {
         return dataFim;
     }
 
-    public void setDataFim(Instant dataFim) {
+    public void setDataFim(LocalDateTime dataFim) {
         this.dataFim = dataFim;
     }
 

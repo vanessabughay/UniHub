@@ -4,6 +4,7 @@ import com.unihub.backend.model.ColunaPlanejamento;
 import com.unihub.backend.model.enums.QuadroStatus;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class QuadroPlanejamentoDetalhesResponse {
@@ -11,7 +12,7 @@ public class QuadroPlanejamentoDetalhesResponse {
     private Long id;
     private String nome;
     private QuadroStatus estado;
-    private Instant dataFim;
+    private LocalDateTime dataFim;
     private Long donoId;
 
     // os campos antigos pelos novos IDs
@@ -53,12 +54,11 @@ public class QuadroPlanejamentoDetalhesResponse {
     }
 
 
-
-    public Instant getDataFim() {
+    public LocalDateTime getDataFim() {
         return dataFim;
     }
 
-    public void setDataFim(Instant dataFim) {
+    public void setDataFim(LocalDateTime dataFim) {
         this.dataFim = dataFim;
     }
 
