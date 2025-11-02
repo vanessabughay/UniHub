@@ -42,10 +42,14 @@ data class EstadoTelaInicial(
 
 data class Tarefa(
     val diaSemana: String,
-    val dataCurta: String,
+    val dataPrazo: LocalDate,
     val titulo: String,
     val descricao: String
-)
+) {
+    // Getter para a UI usar a data curta (dd/MM)
+    val dataCurta: String
+        get() = dataPrazo.format(DateTimeFormatter.ofPattern("dd/MM", Locale("pt", "BR")))
+}
 
 /* ====== ViewModel ====== */
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -132,7 +136,8 @@ class TelaInicialViewModel(
 
         val tarefasFiltradas = _estado.value.tarefas.mapNotNull { tarefa ->
             try {
-                val dataTarefa = LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter)
+                val dataTarefa = tarefa.dataPrazo
+
                 if (!dataTarefa.isBefore(dataAtual) && !dataTarefa.isAfter(dataLimite)) {
                     tarefa to dataTarefa
                 } else {
@@ -210,13 +215,14 @@ class TelaInicialViewModel(
 
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
+        // data contém o LocalDate completo (com o ano correto)
         val data = parseToLocalDate(real.dataPrazo) ?: return null
         val localePtBr = Locale("pt", "BR")
 
         return Tarefa(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
                 .replaceFirstChar { it.titlecase(localePtBr) },
-            dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
+            dataPrazo = data,
             titulo = real.titulo,
             descricao = real.nomeQuadro
         )
