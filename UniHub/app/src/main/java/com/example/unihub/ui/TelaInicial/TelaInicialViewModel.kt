@@ -220,13 +220,16 @@ class TelaInicialViewModel(
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
         val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: run {
-            Log.w(TAG, "Tarefa descartada: dataPrazo ausente (titulo=${real.titulo})")
+            Log.w(PRAZO_LOG_TAG, "Tarefa descartada: dataPrazo ausente (titulo=${real.titulo})")
             return null
         }
-        Log.d(TAG, "mapTarefaDtoToLocal: recebido dataPrazo=$rawPrazo (titulo=${real.titulo})")
+        Log.i(PRAZO_LOG_TAG, "mapTarefaDtoToLocal: recebido dataPrazo=$rawPrazo (titulo=${real.titulo})")
 
         val zonedDateTime = parseDeadline(rawPrazo) ?: run {
-            Log.w(TAG, "Tarefa descartada: parseDeadline falhou para dataPrazo=$rawPrazo (titulo=${real.titulo})")
+            Log.w(
+                PRAZO_LOG_TAG,
+                "Tarefa descartada: parseDeadline falhou para dataPrazo=$rawPrazo (titulo=${real.titulo})"
+            )
             return null
         }
         val data = zonedDateTime.toLocalDate()
@@ -236,8 +239,8 @@ class TelaInicialViewModel(
             ?: ""
 
         val prazoIso = zonedDateTime.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-        Log.d(
-            TAG,
+        Log.i(
+            PRAZO_LOG_TAG,
             "mapTarefaDtoToLocal: prazoIso gerado=$prazoIso (titulo=${real.titulo}, quadro=${nomeQuadro})"
         )
 
@@ -309,6 +312,7 @@ class TelaInicialViewModel(
 
     companion object {
         private const val TAG = "TelaInicialViewModel"
+        private const val PRAZO_LOG_TAG = "UniHubPrazo"
     }
 
 }

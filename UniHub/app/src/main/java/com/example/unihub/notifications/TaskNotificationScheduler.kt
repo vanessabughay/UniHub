@@ -54,7 +54,7 @@ class TaskNotificationScheduler(private val context: Context) {
                 )
                     ?: run {
                         Log.w(
-                            TAG,
+                            PRAZO_LOG_TAG,
                             "scheduleNotifications: ignorando tarefa '${tarefa.titulo}' (prazoIso=${tarefa.prazoIso})"
                         )
                         return@forEach
@@ -70,8 +70,8 @@ class TaskNotificationScheduler(private val context: Context) {
                     putExtra(TaskNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
                 }
 
-                Log.d(
-                    TAG,
+                Log.i(
+                    PRAZO_LOG_TAG,
                     "scheduleNotifications: agendando '${tarefa.titulo}' para ${triggerAtMillis} (prazoIso=${tarefa.prazoIso}, requestCode=$requestCode)"
                 )
 
@@ -107,7 +107,7 @@ class TaskNotificationScheduler(private val context: Context) {
 
         if (!canScheduleExactAlarms(manager)) {
             Log.w(
-                TAG,
+                PRAZO_LOG_TAG,
                 "scheduleExactAlarm: canScheduleExactAlarms retornou false para requestCode=$requestCode"
             )
             return
@@ -160,6 +160,7 @@ class TaskNotificationScheduler(private val context: Context) {
 
     companion object {
         private const val TAG = "TaskScheduler"
+        private const val PRAZO_LOG_TAG = "UniHubPrazo"
         private const val PREFS_NAME = "task_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
 
