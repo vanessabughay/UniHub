@@ -21,12 +21,26 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
 
     long countByColunaQuadroIdAndStatus(Long quadroId, TarefaStatus status);
 
-    @Query("SELECT t FROM TarefaPlanejamento t JOIN t.responsaveis r " +
-            "WHERE r.idContato = :usuarioId " +
-           "AND t.status != 'CONCLUIDA' " +
-           "AND t.dataPrazo BETWEEN :dataInicio AND :dataFim " +
-           "ORDER BY t.dataPrazo ASC")
-    List<TarefaPlanejamento> findProximasTarefasPorResponsavel(
+    @Query("""
+            SELECT DISTINCT t
+            FROM TarefaPlanejamento t
+            JOIN t.coluna c
+            JOIN c.quadro q
+            LEFT JOIN q.grupo grupo
+            LEFT JOIN grupo.membros membro
+            LEFT JOIN q.contato contato
+            LEFT JOIN t.responsaveis responsavel
+            WHERE t.status <> 'CONCLUIDA'
+              AND t.dataPrazo BETWEEN :dataInicio AND :dataFim
+              AND (
+                    q.usuario.id = :usuarioId
+                 OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId)
+                 OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId)
+                 OR (membro.idContato IS NOT NULL AND membro.idContato = :usuarioId)
+              )
+            ORDER BY t.dataPrazo ASC
+            """)
+    List<TarefaPlanejamento> findProximasTarefasPorParticipante(
             @Param("usuarioId") Long usuarioId,
             @Param("dataInicio") LocalDateTime dataInicio,
             @Param("dataFim") LocalDateTime dataFim

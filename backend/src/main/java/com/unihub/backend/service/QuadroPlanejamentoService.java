@@ -719,7 +719,7 @@ public class QuadroPlanejamentoService {
         LocalDateTime inicio = LocalDate.now(zone).atStartOfDay();
         LocalDateTime fim = inicio.plusDays(15).with(LocalTime.MAX);
 
-        List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
+        List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorParticipante(
                 usuarioId,
                 inicio,
                 fim
