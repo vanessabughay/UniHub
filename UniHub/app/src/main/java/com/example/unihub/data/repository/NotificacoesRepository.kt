@@ -65,7 +65,7 @@ class NotificacoesRepository(
 
                     val avaliacaoId = avaliacao.id ?: return@mapNotNull null
 
-                    val antecedenciaDias = getAntecedenciaDias(avaliacao.prioridade, config)
+                    // val antecedenciaDias = getAntecedenciaDias(avaliacao.prioridade, config)
 
                     EvaluationNotificationScheduler.EvaluationInfo(
                         id = avaliacaoId,
@@ -74,8 +74,10 @@ class NotificacoesRepository(
                         disciplinaNome = disciplinaNome,
                         dataHoraIso = avaliacao.dataEntrega,
                         prioridade = avaliacao.prioridade,
-                        receberNotificacoes = avaliacao.receberNotificacoes,
-                        antecedenciaDias = antecedenciaDias
+                       // receberNotificacoes = avaliacao.receberNotificacoes,
+                       // antecedenciaDias = antecedenciaDias
+                        receberNotificacoes = avaliacao.receberNotificacoes
+
                     )
                 }
             evaluationScheduler.scheduleNotifications(evaluationInfoList)
@@ -83,13 +85,13 @@ class NotificacoesRepository(
             evaluationScheduler.cancelAllNotifications()
         }
     }
-
+/*
     private fun getAntecedenciaDias(prioridade: Prioridade, config: NotificacoesConfig): Int {
         val antecedencia: Antecedencia = config.avaliacoesConfig.periodicidade[prioridade]
             ?: Antecedencia.padrao
         return antecedencia.dias
     }
-
+*/
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun getDisciplinasResumoSuspend(): List<DisciplinaResumo> {

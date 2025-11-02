@@ -158,8 +158,10 @@ fun ListarAvaliacaoScreen(
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
 
-                receberNotificacoes = avaliacao.receberNotificacoes,
-                antecedenciaDias = Antecedencia.padrao.dias
+                // receberNotificacoes = avaliacao.receberNotificacoes,
+                // antecedenciaDias = Antecedencia.padrao.dias
+                receberNotificacoes = avaliacao.receberNotificacoes
+
 
             )
         }

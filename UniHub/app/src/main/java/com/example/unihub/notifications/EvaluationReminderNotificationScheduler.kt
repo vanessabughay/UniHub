@@ -25,8 +25,10 @@ class EvaluationNotificationScheduler(private val context: Context) {
         val disciplinaNome: String?,
         val dataHoraIso: String?,
         val prioridade: Prioridade?,
-        val receberNotificacoes: Boolean,
-        val antecedenciaDias: Int // NOVO CAMPO
+       // val receberNotificacoes: Boolean,
+       // val antecedenciaDias: Int // NOVO CAMPO
+        val receberNotificacoes: Boolean
+
     )
 
     private val alarmManager: AlarmManager? =
@@ -55,7 +57,9 @@ class EvaluationNotificationScheduler(private val context: Context) {
             .forEach { avaliacao ->
                 val triggerAtMillis = computeTriggerMillis(
                     avaliacao.dataHoraIso,
-                    avaliacao.antecedenciaDias // USANDO NOVO CAMPO
+                    // avaliacao.antecedenciaDias // USANDO NOVO CAMPO
+                    avaliacao.prioridade
+
                 )
                     ?: return@forEach
 
@@ -167,14 +171,17 @@ class EvaluationNotificationScheduler(private val context: Context) {
 
         internal fun computeTriggerMillis(
             dateTimeString: String?,
-            antecedenciaDias: Int, // MUDOU AQUI
+            // antecedenciaDias: Int, // MUDOU AQUI
+            prioridade: Prioridade?,
             zoneId: ZoneId = ZoneId.systemDefault(),
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
 
             // Lógica alterada para usar Antecedência em dias
-            val reminderDuration = Duration.ofDays(antecedenciaDias.toLong())
+           // val reminderDuration = Duration.ofDays(antecedenciaDias.toLong())
+            val reminderDuration = prioridade?.let { toReminderDuration(it) }
+                ?: Duration.ofHours(12)
             val reminderDateTime = zonedDateTime.minus(reminderDuration)
 
             if (!reminderDateTime.isAfter(now)) {
@@ -183,7 +190,15 @@ class EvaluationNotificationScheduler(private val context: Context) {
             return reminderDateTime.toInstant().toEpochMilli()
         }
 
-        // toReminderDuration REMOVIDA
+        private fun toReminderDuration(prioridade: Prioridade): Duration {
+            return when (prioridade) {
+                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
+                Prioridade.BAIXA -> Duration.ofHours(12)
+                Prioridade.MEDIA -> Duration.ofDays(1)
+                Prioridade.ALTA -> Duration.ofDays(2)
+                Prioridade.MUITO_ALTA -> Duration.ofDays(3)
+            }
+        }
 
         internal fun parseDateTime(
             dateTimeString: String?,
