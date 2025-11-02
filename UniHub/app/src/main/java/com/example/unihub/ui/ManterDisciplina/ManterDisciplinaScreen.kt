@@ -1,6 +1,7 @@
 package com.example.unihub.ui.ManterDisciplina
 
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,22 +17,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import java.time.format.DateTimeFormatter
-import com.example.unihub.components.CabecalhoAlternativo
-import com.example.unihub.components.CampoDisciplina
 import java.util.Locale
 import java.util.UUID
 import android.widget.Toast
 import androidx.annotation.RequiresExtension
-import java.time.ZoneId
-import java.time.Instant
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.sp
-import kotlin.math.floor
-import kotlin.math.max
+import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.components.CampoDisciplina
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoHorario
 import com.example.unihub.components.formatDateToLocale
@@ -185,56 +181,17 @@ fun ManterDisciplinaScreen(
     onExcluirSucesso: () -> Unit,
     viewModel: ManterDisciplinaViewModel
 ) {
-    var codigo by remember { mutableStateOf("") }
-    var periodo by remember { mutableStateOf("") }
-    var nomeDisciplina by remember { mutableStateOf("") }
-    var nomeProfessor by remember { mutableStateOf("") }
-    var cargaHoraria by remember { mutableStateOf("") }
-    var qtdSemanas by remember { mutableStateOf("") }
-    var qtdAulasSemana by remember { mutableStateOf("1") }
-    var dataInicioSemestre by remember { mutableStateOf(0L) }
-    var dataFimSemestre by remember { mutableStateOf(0L) }
-    var aulas by remember { mutableStateOf(listOf(AulaInfo())) }
-    var emailProfessor by remember { mutableStateOf("") }
-    var plataformas by remember { mutableStateOf("") }
-    var telefoneProfessor by remember { mutableStateOf("") }
-    var salaProfessor by remember { mutableStateOf("") }
-    var ausenciasPermitidas by remember { mutableStateOf("") }
-    var isAtiva by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
     var isExclusao by remember { mutableStateOf(false) }
-    var isSaving by remember { mutableStateOf(false) }
-    val frequenciaMinima = viewModel.frequenciaMinima.collectAsState()
+
+    val uiState by viewModel.uiState.collectAsState()
+
+    val context = LocalContext.current
+    val locale = remember { Locale("pt", "BR") }
 
     LaunchedEffect(Unit) {
         viewModel.carregarFrequenciaMinima()
     }
-
-    LaunchedEffect(qtdSemanas, qtdAulasSemana, frequenciaMinima.value, disciplinaId) {
-        if (disciplinaId == null) {
-            val freq = frequenciaMinima.value
-            val semanas = qtdSemanas.toIntOrNull()
-            if (freq != null && semanas != null) {
-                val limiteCalculado = floor(((100 - freq).coerceAtLeast(0) / 100.0) * semanas).toInt()
-                ausenciasPermitidas = max(limiteCalculado, 0).toString()
-            }
-        }
-    }
-
-    LaunchedEffect(qtdAulasSemana) {
-        val quantidade = qtdAulasSemana.toIntOrNull() ?: 0
-        if (quantidade > aulas.size) aulas = aulas + List(quantidade - aulas.size) { AulaInfo() }
-        else if (quantidade < aulas.size && quantidade >= 0) aulas = aulas.take(quantidade)
-    }
-
-    val context = LocalContext.current
-    val locale = remember { Locale("pt", "BR") }
-    val disciplina = viewModel.disciplina.collectAsState()
-    val erro = viewModel.erro.collectAsState()
-    val sucesso = viewModel.sucesso.collectAsState()
-
-
-
 
     LaunchedEffect(disciplinaId) {
         if (disciplinaId != null) {
@@ -242,53 +199,8 @@ fun ManterDisciplinaScreen(
         }
     }
 
-
-    LaunchedEffect(disciplina.value) {
-        disciplina.value?.let { d ->
-            codigo = d.codigo.orEmpty()
-            nomeDisciplina = d.nome.orEmpty()
-            nomeProfessor = d.professor.orEmpty()
-            periodo = d.periodo.orEmpty()
-            cargaHoraria = (d.cargaHoraria ?: 0).toString()
-            qtdSemanas = (d.qtdSemanas ?: 0).toString()
-
-            val aulasList = d.aulas.orEmpty()
-            qtdAulasSemana = aulasList.size.toString()
-            aulas = aulasList.map {
-                AulaInfo(
-                    dia = it.diaDaSemana,
-                    ensalamento = it.sala,
-                    horarioInicio = it.horarioInicio,
-                    horarioFim = it.horarioFim
-                )
-            }
-
-            dataInicioSemestre = d.dataInicioSemestre
-                ?.atStartOfDay(ZoneId.systemDefault())
-                ?.toInstant()
-                ?.toEpochMilli()
-                ?: 0L
-
-            dataFimSemestre = d.dataFimSemestre
-                ?.atStartOfDay(ZoneId.systemDefault())
-                ?.toInstant()
-                ?.toEpochMilli()
-                ?: 0L
-
-            emailProfessor = d.emailProfessor.orEmpty()
-            plataformas = d.plataforma.orEmpty()
-            telefoneProfessor = d.telefoneProfessor.orEmpty()
-            salaProfessor = d.salaProfessor.orEmpty()
-            ausenciasPermitidas = d.ausenciasPermitidas?.toString() ?: ""
-
-            isAtiva = d.isAtiva
-        }
-    }
-
-
-
-    LaunchedEffect(sucesso.value) {
-        if (sucesso.value) {
+    LaunchedEffect(uiState.sucesso) {
+        if (uiState.sucesso) {
             if (isExclusao) {
                 onExcluirSucesso()
             } else {
@@ -297,7 +209,7 @@ fun ManterDisciplinaScreen(
         }
     }
 
-    erro.value?.let {
+    uiState.erro?.let {
         Toast.makeText(context, "Erro: $it", Toast.LENGTH_LONG).show()
     }
 
@@ -308,81 +220,8 @@ fun ManterDisciplinaScreen(
                 titulo = if (disciplinaId == null) "Nova Disciplina" else "Editar Disciplina",
                 onVoltar = onVoltar
             )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 30.dp, vertical = 16.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Button(
-                    onClick = {
-                        if (!isSaving) {
-                            isSaving = true
-
-                            val inicio = Instant.ofEpochMilli(dataInicioSemestre)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                            val fim = Instant.ofEpochMilli(dataFimSemestre)
-                                .atZone(ZoneId.systemDefault())
-                                .toLocalDate()
-                            val ausenciasExistentes = disciplina.value?.ausencias ?: emptyList()
-                            val disciplina = com.example.unihub.data.model.Disciplina(
-                                id = disciplinaId?.toLongOrNull(),
-                                codigo = codigo,
-                                nome = nomeDisciplina,
-                                professor = nomeProfessor,
-                                periodo = periodo,
-                                cargaHoraria = cargaHoraria.toIntOrNull() ?: 0,
-                                qtdSemanas = qtdSemanas.toIntOrNull() ?: 0,
-                                dataInicioSemestre = inicio,
-                                dataFimSemestre = fim,
-                                emailProfessor = emailProfessor,
-                                plataforma = plataformas,
-                                telefoneProfessor = telefoneProfessor,
-                                salaProfessor = salaProfessor,
-                                ausencias = ausenciasExistentes,
-                                ausenciasPermitidas = ausenciasPermitidas.toIntOrNull(),
-                                isAtiva = isAtiva,
-                                receberNotificacoes = true,
-                                avaliacoes = emptyList(),
-                                aulas = aulas.map {
-                                    com.example.unihub.data.model.HorarioAula(
-                                        diaDaSemana = it.dia,
-                                        sala = it.ensalamento,
-                                        horarioInicio = it.horarioInicio,
-                                        horarioFim = it.horarioFim
-                                    )
-                                }
-                            )
-
-                            if (disciplinaId == null) {
-                                viewModel.createDisciplina(disciplina)
-                            } else {
-                                viewModel.updateDisciplina(disciplina)
-                            }
-                        }
-                    },
-                    enabled = !isSaving,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
-                ) {
-                    Text(
-                        text = if (isSaving) "Salvando..." else "Confirmar",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White
-                    )
-                }
-            }
         }
-    )
-
-    { paddingValues ->
+    ) { paddingValues ->
         if (showDialog) {
             AlertDialog(
                 onDismissRequest = { showDialog = false },
@@ -413,15 +252,21 @@ fun ManterDisciplinaScreen(
             item {
                 CampoDisciplina(title = "Informações Gerais") {
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CampoDeTextoComTitulo("Código da Disciplina", codigo, { codigo = it }, Modifier.weight(1f), placeholder = "DSXXX")
+                        CampoDeTextoComTitulo(
+                            "Código da Disciplina",
+                            uiState.codigo,
+                            { viewModel.updateField(it, { s -> s.codigo }, { s, v -> s.copy(codigo = v) }) },
+                            Modifier.weight(1f),
+                            placeholder = "DSXXX"
+                        )
 
                         CampoDeTextoComTitulo(
                             titulo = "Período",
-                            valor = periodo,
+                            valor = uiState.periodo,
                             onValorChange = {
                                 val digitos = it.filter { c -> c.isDigit() }
                                 if (digitos.length <= 5) {
-                                    periodo = digitos
+                                    viewModel.updateField(digitos, { s -> s.periodo }, { s, v -> s.copy(periodo = v) })
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -430,8 +275,18 @@ fun ManterDisciplinaScreen(
                             visualTransformation = MaskVisualTransformation(PERIOD_MASK_PATTERN)
                         )
                     }
-                    CampoDeTextoComTitulo("Nome da Disciplina", nomeDisciplina, { nomeDisciplina = it }, placeholder = "Disciplina X")
-                    CampoDeTextoComTitulo("Nome do Professor", nomeProfessor, { nomeProfessor = it }, placeholder = "Professor X")
+                    CampoDeTextoComTitulo(
+                        "Nome da Disciplina",
+                        uiState.nomeDisciplina,
+                        { viewModel.updateField(it, { s -> s.nomeDisciplina }, { s, v -> s.copy(nomeDisciplina = v) }) },
+                        placeholder = "Disciplina X"
+                    )
+                    CampoDeTextoComTitulo(
+                        "Nome do Professor",
+                        uiState.nomeProfessor,
+                        { viewModel.updateField(it, { s -> s.nomeProfessor }, { s, v -> s.copy(nomeProfessor = v) }) },
+                        placeholder = "Professor X"
+                    )
                 }
             }
 
@@ -441,32 +296,53 @@ fun ManterDisciplinaScreen(
 
                         CampoDeTextoComTitulo(
                             titulo = "Carga Horária",
-                            valor = cargaHoraria,
-                            onValorChange = { cargaHoraria = it.filter { c -> c.isDigit() } },
+                            valor = uiState.cargaHoraria,
+                            onValorChange = {
+                                viewModel.updateField(
+                                    it.filter { c -> c.isDigit() },
+                                    { s -> s.cargaHoraria },
+                                    { s, v -> s.copy(cargaHoraria = v) }
+                                )
+                            },
                             modifier = Modifier.weight(1f),
                             placeholder = "Ex: 60",
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         CampoDeTextoComTitulo(
                             "Aulas/Semana",
-                            qtdAulasSemana,
-                            { qtdAulasSemana = it.filter { c -> c.isDigit() } },
+                            uiState.qtdAulasSemana,
+                            {
+                                val filtered = it.filter { c -> c.isDigit() }
+                                viewModel.updateQtdAulasSemana(filtered)
+                            },
                             Modifier.weight(1f),
                             placeholder = "Ex: 2",
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         CampoDeTextoComTitulo(
                             "Semanas (Total)",
-                            qtdSemanas,
-                            { qtdSemanas = it.filter { c -> c.isDigit() } },
+                            uiState.qtdSemanas,
+                            {
+                                viewModel.updateField(
+                                    it.filter { c -> c.isDigit() },
+                                    { s -> s.qtdSemanas },
+                                    { s, v -> s.copy(qtdSemanas = v) }
+                                )
+                            },
                             Modifier.weight(1f),
                             placeholder = "Ex: 18",
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                         )
                         CampoDeTextoComTitulo(
                             "Limite de Ausências",
-                            ausenciasPermitidas,
-                            { ausenciasPermitidas = it.filter { c -> c.isDigit() } },
+                            uiState.ausenciasPermitidas,
+                            {
+                                viewModel.updateField(
+                                    it.filter { c -> c.isDigit() },
+                                    { s -> s.ausenciasPermitidas },
+                                    { s, v -> s.copy(ausenciasPermitidas = v) }
+                                )
+                            },
                             Modifier.weight(1f),
                             placeholder = "Ex: 4",
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -474,53 +350,61 @@ fun ManterDisciplinaScreen(
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    aulas.forEachIndexed { index, aula ->
+                    uiState.aulas.forEachIndexed { index, aula ->
                         CampoSelecaoDia(
                             diaSelecionado = aula.dia,
-                            onDiaSelecionado = { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(dia = novoValor) } }
+                            onDiaSelecionado = { novoValor ->
+                                viewModel.updateAula(index) { it.copy(dia = novoValor) }
+                            }
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             CampoDeTextoComTitulo(
                                 titulo = "Ensalamento",
                                 valor = aula.ensalamento,
-                                onValorChange = { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(ensalamento = novoValor) } },
+                                onValorChange = { novoValor ->
+                                    viewModel.updateAula(index) { it.copy(ensalamento = novoValor) }
+                                },
                                 modifier = Modifier.weight(1f),
                                 placeholder = "Ex: B05"
                             )
                             CampoHorario(
                                 "Início",
                                 aula.horarioInicio,
-                                { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioInicio = novoValor) } },
+                                { novoValor ->
+                                    viewModel.updateAula(index) { it.copy(horarioInicio = novoValor) }
+                                },
                                 Modifier.weight(1f)
                             )
                             CampoHorario(
                                 "Fim",
                                 aula.horarioFim,
-                                { novoValor -> aulas = aulas.toMutableList().also { it[index] = aula.copy(horarioFim = novoValor) } },
+                                { novoValor ->
+                                    viewModel.updateAula(index) { it.copy(horarioFim = novoValor) }
+                                },
                                 Modifier.weight(1f)
                             )
                         }
-                        if (index < aulas.size - 1) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                        if (index < uiState.aulas.size - 1) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
                     }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoData(
                             label = "Início do Semestre",
-                            value = formatDateToLocale(dataInicioSemestre, locale),
+                            value = formatDateToLocale(uiState.dataInicioSemestre, locale),
                             onClick = {
-                                showLocalizedDatePicker(context, dataInicioSemestre, locale) {
-                                    dataInicioSemestre = it
+                                showLocalizedDatePicker(context, uiState.dataInicioSemestre, locale) {
+                                    viewModel.setDataInicioSemestre(it)
                                 }
                             },
                             modifier = Modifier.weight(1f)
                         )
                         CampoData(
                             label = "Fim do Semestre",
-                            value = formatDateToLocale(dataFimSemestre, locale),
+                            value = formatDateToLocale(uiState.dataFimSemestre, locale),
                             onClick = {
-                                showLocalizedDatePicker(context, dataFimSemestre, locale) {
-                                    dataFimSemestre = it
+                                showLocalizedDatePicker(context, uiState.dataFimSemestre, locale) {
+                                    viewModel.setDataFimSemestre(it)
                                 }
                             },
                             modifier = Modifier.weight(1f)
@@ -534,26 +418,30 @@ fun ManterDisciplinaScreen(
                 CampoDisciplina(title = "Informações do Professor") {
                     CampoDeTextoComTitulo(
                         titulo = "E-mail",
-                        valor = emailProfessor,
-                        onValorChange = { emailProfessor = it },
+                        valor = uiState.emailProfessor,
+                        onValorChange = {
+                            viewModel.updateField(it, { s -> s.emailProfessor }, { s, v -> s.copy(emailProfessor = v) })
+                        },
                         placeholder = "professor@exemplo.com",
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
 
                     CampoDeTextoComTitulo(
                         titulo = "Plataformas utilizadas",
-                        valor = plataformas,
-                        onValorChange = { plataformas = it },
+                        valor = uiState.plataformas,
+                        onValorChange = {
+                            viewModel.updateField(it, { s -> s.plataformas }, { s, v -> s.copy(plataformas = v) })
+                        },
                         placeholder = "Ex: Moodle, Teams"
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         CampoDeTextoComTitulo(
                             titulo = "Telefone",
-                            valor = telefoneProfessor,
+                            valor = uiState.telefoneProfessor,
                             onValorChange = {
                                 val digitos = it.filter { c -> c.isDigit() }
                                 if (digitos.length <= 11) {
-                                    telefoneProfessor = digitos
+                                    viewModel.updateField(digitos, { s -> s.telefoneProfessor }, { s, v -> s.copy(telefoneProfessor = v) })
                                 }
                             },
                             modifier = Modifier.weight(1f),
@@ -563,8 +451,10 @@ fun ManterDisciplinaScreen(
                         )
                         CampoDeTextoComTitulo(
                             titulo = "Sala do Professor",
-                            valor = salaProfessor,
-                            onValorChange = { salaProfessor = it },
+                            valor = uiState.salaProfessor,
+                            onValorChange = {
+                                viewModel.updateField(it, { s -> s.salaProfessor }, { s, v -> s.copy(salaProfessor = v) })
+                            },
                             modifier = Modifier.weight(1f),
                             placeholder = "Ex: D20"
                         )
@@ -580,25 +470,57 @@ fun ManterDisciplinaScreen(
                 ) {
                     Text("Disciplina Ativa", style = MaterialTheme.typography.bodyLarge)
                     Switch(
-                        checked = isAtiva,
-                        onCheckedChange = { isAtiva = it },
+                        checked = uiState.isAtiva,
+                        onCheckedChange = {
+                            Log.d("DISCIPLINA_DEBUG", "Switch clicado. Novo valor: $it")
+                            viewModel.setIsAtiva(it)
+                        },
                         colors = SwitchDefaults.colors(checkedTrackColor = ButtonConfirmColor)
                     )
                 }
             }
 
             item {
-                OutlinedButton(
-                    onClick = { showDialog = true },
+                Button(
+                    onClick = {
+                        if (!uiState.isLoading) {
+                            viewModel.saveDisciplina()
+                        }
+                    },
+                    enabled = !uiState.isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 80.dp, end = 80.dp)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = ButtonConfirmColor)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFE91E1E))
-                    Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                    Text("Excluir Disciplina", color = Color(0xFFE91E1E))
+                    Text(
+                        text = if (uiState.isLoading) "Salvando..." else "Confirmar",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White
+                    )
                 }
+            }
 
+            item {
+                if (disciplinaId != null) {
+                    OutlinedButton(
+                        onClick = { showDialog = true },
+                        enabled = !uiState.isLoading,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = "Excluir", tint = Color(0xFFE91E1E))
+                        Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                        Text("Excluir Disciplina", color = Color(0xFFE91E1E))
+                    }
+                }}
+
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }

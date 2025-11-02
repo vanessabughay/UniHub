@@ -216,6 +216,7 @@ fun QuadroFormScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 BotoesFormulario(
+                    modifier = Modifier.navigationBarsPadding().padding (vertical =16.dp),
                     onConfirm = viewModel::salvarOuAtualizarQuadro,
                     onDelete = if (isEditing) { { viewModel.excluirQuadro(quadroId!!) } } else null
                 )

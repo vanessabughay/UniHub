@@ -24,7 +24,7 @@ open class RegistroViewModel(
         success = false
 
         val cleanName = name.trim()
-        val cleanEmail = email.trim()
+        val cleanEmail = email.trim().lowercase()
         val cleanPassword = password.trim()
         val cleanConfirmPassword = confirmPassword.trim()
 

@@ -6,11 +6,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.model.HorarioAula
+import com.example.unihub.data.repository.DisciplinaResumo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+
+
 
 data class DisciplinaResumoUi(
     val id: Long,
@@ -19,7 +22,8 @@ data class DisciplinaResumoUi(
     val horariosAulas: List<HorarioAula>,
     val receberNotificacoes: Boolean,
     val totalAusencias: Int,
-    val ausenciasPermitidas: Int?
+    val ausenciasPermitidas: Int?,
+    val isAtiva: Boolean
 )
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -53,7 +57,8 @@ class ListarDisciplinasViewModel(
                             horariosAulas = disciplina.aulas,
                             receberNotificacoes = disciplina.receberNotificacoes,
                             totalAusencias = disciplina.totalAusencias,
-                            ausenciasPermitidas = disciplina.ausenciasPermitidas
+                            ausenciasPermitidas = disciplina.ausenciasPermitidas,
+                            isAtiva = disciplina.isAtiva
                         )
                     }
                     _disciplinas.value = uiDisciplinas

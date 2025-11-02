@@ -229,6 +229,7 @@ private fun VisualizarQuadroContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .navigationBarsPadding()
                     .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {

@@ -119,7 +119,8 @@ public class Disciplina {
     public void setSalaProfessor(String salaProfessor) { this.salaProfessor = salaProfessor; }
 
     public boolean isAtiva() { return isAtiva; } // Getter para boolean is...
-    public void setAtiva(boolean ativa) { isAtiva = ativa; } // Setter para boolean set...
+    
+    public void setAtiva(boolean ativa) { this.isAtiva = ativa; }
 
     public boolean isReceberNotificacoes() { return receberNotificacoes; }
     public void setReceberNotificacoes(boolean receberNotificacoes) { this.receberNotificacoes = receberNotificacoes; }

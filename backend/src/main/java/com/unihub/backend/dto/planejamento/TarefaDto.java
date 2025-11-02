@@ -7,6 +7,9 @@ public class TarefaDto {
     private String dataPrazo;
     private String nomeQuadro;
 
+    public TarefaDto() {
+    }
+
     // Construtor
     public TarefaDto(String titulo, String dataPrazo, String nomeQuadro) {
         this.titulo = titulo;

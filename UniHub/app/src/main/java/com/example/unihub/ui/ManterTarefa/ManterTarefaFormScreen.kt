@@ -674,7 +674,7 @@ LaunchedEffect(quadroId) {
 
         BotoesFormulario(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp).navigationBarsPadding(),
             onConfirm = {
                 if (titulo.isBlank()) {
                     Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
@@ -731,6 +731,7 @@ LaunchedEffect(quadroId) {
                 }
             } else null
         )
+        Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
