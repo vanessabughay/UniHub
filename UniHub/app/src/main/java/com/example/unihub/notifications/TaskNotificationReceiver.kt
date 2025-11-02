@@ -23,8 +23,8 @@ import kotlin.math.abs
 class TaskNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val avaliacaoId = intent.getLongExtra(EXTRA_TASK_ID, -1L)
-        if (avaliacaoId < 0) return
+        val taskId = intent.getLongExtra(EXTRA_TASK_ID, -1L)
+        if (taskId < 0) return
 
         val descricao = intent.getStringExtra(EXTRA_TASK_DESCRICAO).orEmpty()
         val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L).takeIf { it >= 0 }
@@ -34,12 +34,12 @@ class TaskNotificationReceiver : BroadcastReceiver() {
 
         createChannel(context)
 
-        val notificationId = abs((avaliacaoId.toString() + (dataHoraIso ?: "")).hashCode())
+        val notificationId = abs((taskId.toString() + (dataHoraIso ?: "")).hashCode())
 
         val visualizarIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MainActivity.EXTRA_TARGET_AVALIACAO_ID, avaliacaoId.toString())
-            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_AVALIACAO)
+            putExtra(MainActivity.EXTRA_TARGET_TASK_ID, taskId.toString())
+            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_TAREFA)
             disciplinaId?.let {
                 putExtra(MainActivity.EXTRA_TARGET_DISCIPLINA_ID, it.toString())
             }

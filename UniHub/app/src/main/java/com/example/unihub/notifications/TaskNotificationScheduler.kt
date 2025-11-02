@@ -170,12 +170,12 @@ class TaskNotificationScheduler(private val context: Context) {
 
         private fun toReminderDuration(prioridade: Prioridade?): Duration {
             return when (prioridade) {
-                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
-                Prioridade.BAIXA -> Duration.ofHours(12)
-                Prioridade.MEDIA -> Duration.ofHours(48)
-                Prioridade.ALTA -> Duration.ofDays(5)
-                Prioridade.MUITO_ALTA -> Duration.ofDays(7)
-                null -> Duration.ofHours(48)
+                Prioridade.MUITO_BAIXA -> Duration.ofHours(1)
+                Prioridade.BAIXA -> Duration.ofHours(1)
+                Prioridade.MEDIA -> Duration.ofHours(1)
+                Prioridade.ALTA -> Duration.ofDays(1)
+                Prioridade.MUITO_ALTA -> Duration.ofDays(1)
+                null -> Duration.ofHours(1)
             }
         }
 

@@ -898,6 +898,8 @@ class MainActivity : ComponentActivity() {
         const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
         const val TARGET_SCREEN_VISUALIZAR_AVALIACAO = "visualizar_avaliacao"
         const val TARGET_SCREEN_LISTAR_QUADROS = "listar_quadros"
+        const val EXTRA_TARGET_TASK_ID = "extra_target_task_id"
+        const val TARGET_SCREEN_VISUALIZAR_TAREFA = "visualizar_tarefa"
     }
 }
 
