@@ -100,7 +100,7 @@ fun ListarQuadrosScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(bottom = 35.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Button(

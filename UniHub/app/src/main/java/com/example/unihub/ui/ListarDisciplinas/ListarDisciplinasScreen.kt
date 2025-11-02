@@ -28,6 +28,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.notifications.AttendanceNotificationScheduler
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material3.MaterialTheme.colorScheme
 
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
@@ -42,6 +51,7 @@ fun ListarDisciplinasScreen(
 ) {
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
+
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
@@ -84,20 +94,39 @@ fun ListarDisciplinasScreen(
         viewModel.loadDisciplinas()
     }
 
-    var searchQuery by remember { mutableStateOf("") }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
 
-    val disciplinasFiltradas = if (searchQuery.isBlank()) {
-        disciplinasState
-    } else {
-        disciplinasState.filter {
-            it.nome.contains(searchQuery, ignoreCase = true) ||
-                    it.codigo.contains(searchQuery, ignoreCase = true)
+    val disciplinasComBusca by remember(disciplinasState, searchQuery) {
+        derivedStateOf {
+            val filtradas = if (searchQuery.isBlank()) {
+                disciplinasState
+            } else {
+                disciplinasState.filter {
+                    it.nome.contains(searchQuery, ignoreCase = true) ||
+                            it.codigo.contains(searchQuery, ignoreCase = true)
+                }
+            }
+            filtradas.sortedBy { it.nome }
         }
     }
+
+
+    val disciplinasAtivas by remember(disciplinasComBusca) {
+        derivedStateOf { disciplinasComBusca.filter { it.isAtiva } }
+    }
+
+    val disciplinasInativas by remember(disciplinasComBusca) {
+        derivedStateOf { disciplinasComBusca.filter { !it.isAtiva } }
+    }
+
+    var ativasExpandidas by rememberSaveable { mutableStateOf(true) }
+    var inativasExpandidas by rememberSaveable { mutableStateOf(false) }
+
+
 
     Scaffold(
         floatingActionButton = {
@@ -105,7 +134,8 @@ fun ListarDisciplinasScreen(
                 onClick = onAddDisciplina,
                 containerColor =  Color(0xFF5AB9D6),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.padding(bottom = 35.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
@@ -127,7 +157,7 @@ fun ListarDisciplinasScreen(
             CampoBusca(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = "Buscar por nome ou id",
+                placeholder = "Buscar por nome",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -138,30 +168,66 @@ fun ListarDisciplinasScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(disciplinasFiltradas) { disciplina ->
-                    DisciplinaItem(
-                        disciplina = disciplina,
-                        onViewDisciplina = {
-                            onDisciplinaClick(disciplina.id.toString())
-                        },
-                        onShareClicked = { d ->
-                            Toast.makeText(
-                                context,
-                                "Compartilhar ${d.nome}",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                if (disciplinasAtivas.isNotEmpty()) {
+                    item {
+                        TituloDeSecao(
+                            titulo = "Disciplinas Ativas (${disciplinasAtivas.size})",
+                            setaAbaixo = ativasExpandidas,
+                            onClick = { ativasExpandidas = !ativasExpandidas }
+                        )
+                    }
+                    item {
+                        AnimatedVisibility(visible = ativasExpandidas) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                disciplinasAtivas.forEach { disciplina ->
+                                    DisciplinaItem(
+                                        disciplina = disciplina,
+                                        onViewDisciplina = { onDisciplinaClick(disciplina.id.toString()) },
+                                        onShareClicked = { d -> Toast.makeText(context, "Compartilhar ${d.nome}", Toast.LENGTH_SHORT).show() }
+                                    )
+                                }
+                            }
                         }
-                    )
+                    }
+                }
+
+                if (disciplinasInativas.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TituloDeSecao(
+                            titulo = "Disciplinas Inativas (${disciplinasInativas.size})",
+                            setaAbaixo = inativasExpandidas,
+                            onClick = { inativasExpandidas = !inativasExpandidas }
+                        )
+                    }
+                    item {
+                        AnimatedVisibility(visible = inativasExpandidas) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                disciplinasInativas.forEach { disciplina ->
+                                    DisciplinaItem(
+                                        disciplina = disciplina,
+                                        onViewDisciplina = { onDisciplinaClick(disciplina.id.toString()) },
+                                        onShareClicked = { d -> Toast.makeText(context, "Compartilhar ${d.nome}", Toast.LENGTH_SHORT).show() }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (disciplinasAtivas.isEmpty() && disciplinasInativas.isEmpty()) {
+                    item {
+                        val msg = if (searchQuery.isBlank()) "Nenhuma disciplina cadastrada." else "Nenhuma disciplina encontrada para \"$searchQuery\""
+                        Text(msg, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
+                    }
                 }
             }
         }
     }
 }
 
-// -------- Item da lista --------
 
 @Composable
 fun DisciplinaItem(
@@ -236,5 +302,38 @@ fun DisciplinaItem(
                 )
             }
         }
+    }
+}
+
+
+
+@Composable
+private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (setaAbaixo) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = colorScheme.onSurface
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = titulo,
+                color = colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 10.dp),
+            thickness = DividerDefaults.Thickness,
+            color = colorScheme.onSurface.copy(alpha = 0.1f)
+        )
     }
 }

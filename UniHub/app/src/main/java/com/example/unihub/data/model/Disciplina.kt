@@ -1,5 +1,6 @@
 package com.example.unihub.data.model
 
+import com.google.gson.annotations.SerializedName
 import java.time.LocalDate
 
 // HorarioAula é uma classe simples para representar um horário de aula em um dia específico.
@@ -36,6 +37,7 @@ data class Disciplina(
     val avaliacoes: List<Avaliacao>,
 
     //ativar/desativar notificações ou a disciplina
+    @SerializedName("ativa") // <-- Diz ao Retrofit/Gson para mapear a chave "ativa" do JSON
     val isAtiva: Boolean, //equivalente a situação
     val receberNotificacoes: Boolean //implementar no diagrama
 )

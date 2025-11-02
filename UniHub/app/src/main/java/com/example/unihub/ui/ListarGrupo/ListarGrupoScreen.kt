@@ -174,8 +174,8 @@ fun ListarGrupoScreen(
                 onClick = onAddGrupo,
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(12.dp)
-
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.padding(bottom = 35.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Grupo")
             }
