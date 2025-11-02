@@ -17,8 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -123,43 +125,54 @@ public class UsuarioExclusaoService {
     }
 
     private Optional<Usuario> escolherNovoOwner(QuadroPlanejamento quadro, Long usuarioAtual) {
-        Set<Long> candidatos = new LinkedHashSet<>();
+        Map<Long, Usuario> candidatos = new LinkedHashMap<>();
 
         if (quadro.getContato() != null) {
-            Long idContato = quadro.getContato().getIdContato();
-            if (idContato != null && !Objects.equals(idContato, usuarioAtual)) {
-                candidatos.add(idContato);
-            }
+            localizarUsuarioDoContato(quadro.getContato())
+                    .filter(usuario -> !Objects.equals(usuario.getId(), usuarioAtual))
+                    .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
         }
 
-       if (quadro.getGrupo() != null) {
+        if (quadro.getGrupo() != null) {
             Long ownerId = quadro.getGrupo().getOwnerId();
             if (ownerId != null && !Objects.equals(ownerId, usuarioAtual)) {
-                candidatos.add(ownerId);
+                usuarioRepository.findById(ownerId)
+                        .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
             }
 
             if (quadro.getGrupo().getMembros() != null) {
                 quadro.getGrupo().getMembros().stream()
                         .filter(Objects::nonNull)
-                        .map(Contato::getIdContato)
-                        .filter(Objects::nonNull)
-                        .filter(id -> !Objects.equals(id, usuarioAtual))
-                        .forEach(candidatos::add);
+                        .map(this::localizarUsuarioDoContato)
+                        .flatMap(Optional::stream)
+                        .filter(usuario -> !Objects.equals(usuario.getId(), usuarioAtual))
+                        .forEach(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
+            
             }
         }
         
-        if (candidatos.isEmpty()) {
+       return candidatos.values().stream().findFirst();
+    }
+
+        private Optional<Usuario> localizarUsuarioDoContato(Contato contato) {
+        if (contato == null) {
             return Optional.empty();
         }
 
-        for (Long candidatoId : candidatos) {
-            Optional<Usuario> candidato = usuarioRepository.findById(candidatoId);
-            if (candidato.isPresent()) {
-                return candidato;
+         Long contatoUsuarioId = contato.getIdContato();
+        if (contatoUsuarioId != null) {
+            Optional<Usuario> porId = usuarioRepository.findById(contatoUsuarioId);
+            if (porId.isPresent()) {
+                return porId;
             }
         }
 
-        return Optional.empty();
+       String email = contato.getEmail();
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+
+        return usuarioRepository.findByEmailIgnoreCase(email);
     }
 
     private void removerContatos(Usuario usuario) {
