@@ -91,6 +91,8 @@ import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.notificacoes.ui.NotificacoesScreen
 import com.example.unihub.ui.Notificacoes.NotificacoesViewModelFactory
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 // Definição das telas e suas rotas
 sealed class Screen(val route: String) {
@@ -407,12 +409,23 @@ class MainActivity : ComponentActivity() {
 
                     // MANTER CONTA
                     composable(Screen.ManterConta.route) {
+                        val context = LocalContext.current
                         ManterContaScreen(
                             onVoltar = { navController.popBackStack() },
                             onNavigateToManterInstituicao = { nome, media, frequencia ->
                                 navController.navigate(
                                     Screen.ManterInstituicao.createRoute(nome, media, frequencia)
                                 )
+                            },
+                            onContaExcluida = {
+                                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+                                val client = GoogleSignIn.getClient(context, gso)
+                                client.signOut().addOnCompleteListener {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(0) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
                             }
                         )
                     }

@@ -163,6 +163,10 @@ class CompartilhamentoNotificationManager(context: Context) {
         notificationManager.cancel(notificationId)
     }
 
+    fun cancelAll() {
+        notificationManager.cancelAll()
+    }
+
     fun notificationId(notification: NotificacaoConviteUi): Int {
         val key: Long = notification.conviteId ?: notification.id
         return (key xor (key ushr 32)).toInt()

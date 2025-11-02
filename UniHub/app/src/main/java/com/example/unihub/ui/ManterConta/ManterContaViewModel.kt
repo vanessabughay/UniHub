@@ -17,7 +17,7 @@ import com.example.unihub.ui.Shared.NotaCampo
 import com.example.unihub.ui.Shared.PesoCampo
 
 
-class ManterContaViewModel(
+class   ManterContaViewModel(
     private val repository: InstituicaoRepository,
     private val authRepository: AuthRepository,
     private val context: Context
@@ -37,6 +37,13 @@ class ManterContaViewModel(
 
     var success by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
+
+    var exibindoDialogoExclusao by mutableStateOf(false)
+        private set
+    var excluindoConta by mutableStateOf(false)
+        private set
+    var contaExcluida by mutableStateOf(false)
+        private set
 
     private var nomeOriginal = ""
     private var emailOriginal = ""
@@ -92,6 +99,16 @@ class ManterContaViewModel(
         sugestoes = emptyList()
         mostrarCadastrar = false
         }
+
+    fun abrirDialogoExclusao() {
+        exibindoDialogoExclusao = true
+    }
+
+    fun fecharDialogoExclusao() {
+        if (!excluindoConta) {
+            exibindoDialogoExclusao = false
+        }
+    }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() {
@@ -166,5 +183,27 @@ class ManterContaViewModel(
                 errorMessage = e.message
             }
         }
+    }
+    fun deletarConta() {
+        if (excluindoConta) return
+        excluindoConta = true
+        viewModelScope.launch {
+            authRepository.deleteAccount(
+                context = context,
+                onSuccess = {
+                    exibindoDialogoExclusao = false
+                    excluindoConta = false
+                    contaExcluida = true
+                },
+                onError = { error ->
+                    excluindoConta = false
+                    errorMessage = error
+                }
+            )
+        }
+    }
+
+    fun consumirContaExcluida() {
+        contaExcluida = false
     }
 }

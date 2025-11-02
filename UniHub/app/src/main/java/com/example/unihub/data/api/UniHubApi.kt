@@ -9,6 +9,7 @@ import com.example.unihub.data.api.model.RedefinirSenhaRequest
 import com.example.unihub.data.api.model.GoogleLoginRequest
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -24,6 +25,11 @@ interface UniHubApi {
     suspend fun updateUser(
         @Header("Authorization") token: String,
         @Body request: UpdateUsuarioRequest
+    ): Response<Void>
+
+    @DELETE("usuarios/me")
+    suspend fun deleteUser(
+        @Header("Authorization") token: String
     ): Response<Void>
 
     @POST("api/auth/forgot-password")

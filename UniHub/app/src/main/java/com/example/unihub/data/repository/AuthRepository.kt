@@ -169,6 +169,48 @@ class AuthRepository(
         }
     }
 
+    suspend fun deleteAccount(
+        context: Context,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        withContext(Dispatchers.IO) {
+            val token = TokenManager.token
+            if (token.isNullOrBlank()) {
+                withContext(Dispatchers.Main) {
+                    onError("Token inválido. Faça login novamente.")
+                }
+                return@withContext
+            }
+
+            try {
+                val response = api.deleteUser("Bearer $token")
+                if (response.isSuccessful) {
+                    CompartilhamentoNotificationSynchronizer.getInstance(context).reset()
+                    TokenManager.clearToken(context)
+                    withContext(Dispatchers.Main) { onSuccess() }
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    withContext(Dispatchers.Main) {
+                        onError(errorBody ?: "Erro desconhecido ao excluir usuário.")
+                    }
+                }
+            } catch (e: HttpException) {
+                withContext(Dispatchers.Main) {
+                    onError("Erro de servidor: ${e.code()}")
+                }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    onError("Falha na conexão. Verifique sua rede.")
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError("Ocorreu um erro inesperado: ${e.message}")
+                }
+            }
+        }
+    }
+
     suspend fun solicitarRedefinicaoSenha(
         email: String,
         onSuccess: () -> Unit,

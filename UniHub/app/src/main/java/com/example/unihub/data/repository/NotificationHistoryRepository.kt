@@ -102,6 +102,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+    fun clear() {
+        synchronized(lock) {
+            _historyFlow.value = emptyList()
+            preferences.edit()
+                .remove(KEY_ENTRIES)
+                .remove(KEY_LAST_ID)
+                .apply()
+            lastId.set(0)
+        }
+    }
+
     private fun loadEntries(): List<NotificationEntry> {
         val json = preferences.getString(KEY_ENTRIES, null) ?: return emptyList()
 

@@ -78,6 +78,12 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
         removeInvite(inviteId)
     }
 
+    fun reset() {
+        historyRepository.clear()
+        notificationManager.cancelAll()
+        preferences.edit().remove(KEY_ACTIVE_INVITES).apply()
+    }
+
     private fun removeInvite(inviteId: Long) {
         notificationManager.cancelNotification(notificationManager.notificationIdForInvite(inviteId))
         val updated = loadActiveInviteIds() - inviteId

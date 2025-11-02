@@ -43,6 +43,7 @@ import androidx.compose.foundation.BorderStroke
 fun ManterContaScreen(
     onVoltar: () -> Unit,
     onNavigateToManterInstituicao: (String, String, String) -> Unit,
+    onContaExcluida: () -> Unit,
     viewModel: ManterContaViewModel = viewModel(factory = ManterContaViewModelFactory(LocalContext.current))) {
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -76,6 +77,49 @@ fun ManterContaScreen(
         }
     }
 
+    LaunchedEffect(viewModel.contaExcluida) {
+        if (viewModel.contaExcluida) {
+            viewModel.consumirContaExcluida()
+            onContaExcluida()
+        }
+    }
+
+    if (viewModel.exibindoDialogoExclusao) {
+        AlertDialog(
+            onDismissRequest = { viewModel.fecharDialogoExclusao() },
+            icon = { Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red) },
+            title = { Text("Excluir conta") },
+            text = {
+                Text(
+                    "Tem certeza de que deseja excluir sua conta? Essa ação não pode ser desfeita.",
+                    color = Color(0xFF1F2937)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.deletarConta() },
+                    enabled = !viewModel.excluindoConta
+                ) {
+                    if (viewModel.excluindoConta) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Excluir", color = Color.Red)
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.fecharDialogoExclusao() },
+                    enabled = !viewModel.excluindoConta
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -242,7 +286,8 @@ fun ManterContaScreen(
                                 text = viewModel.nomeInstituicao,
                                 fontWeight = FontWeight.Bold
                             )
-                            val mediaFormatada = viewModel.media.takeIf { it.isNotBlank() }?.let { NotaCampo.formatFieldText(it) } ?: "-"
+                            val mediaFormatada = viewModel.media.takeIf { it.isNotBlank() }
+                                ?.let { NotaCampo.formatFieldText(it) } ?: "-"
                             Text("Média de aprovação: $mediaFormatada")
                             Text("Frequência mínima: ${viewModel.frequencia}%")
                         }
@@ -263,8 +308,11 @@ fun ManterContaScreen(
                     }
                 }
 
+            }
+
                 TextButton(
-                    onClick = { /* deletar conta */ },
+                    onClick = { viewModel.abrirDialogoExclusao() },
+                    enabled = !viewModel.excluindoConta,
                     modifier = Modifier
                         .align(Alignment.Start)
                         .padding(top = 16.dp)
@@ -272,7 +320,6 @@ fun ManterContaScreen(
                     Icon(Icons.Default.Delete, contentDescription = null, tint = Color.Red)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text("Deletar conta", color = Color.Red)
-                }
 
             }
 
