@@ -26,10 +26,7 @@ import androidx.compose.material.icons.Icons.Outlined
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,16 +42,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -94,14 +87,20 @@ fun TelaInicial(
     val evaluationNotificationInfos = remember(avaliacoesDetalhadas) {
         avaliacoesDetalhadas.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
+            val disciplinaId = when (val rawId = avaliacao.disciplina?.id) {
+                is Number -> rawId.toLong()
+                is String -> rawId.toLongOrNull()
+                else -> null
+            }
             EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
-                disciplinaId = avaliacao.disciplina?.id,
+                disciplinaId = disciplinaId,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
-                receberNotificacoes = avaliacao.receberNotificacoes == true
+                receberNotificacoes = avaliacao.receberNotificacoes == true,
+                antecedenciaDias = Antecedencia.padrao.dias
             )
         }
     }

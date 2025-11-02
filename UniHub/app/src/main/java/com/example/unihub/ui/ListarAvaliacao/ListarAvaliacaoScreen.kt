@@ -70,10 +70,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
-import com.example.unihub.notifications.EvaluationNotificationScheduler
+import androidx.compose.material3.HorizontalDivider
+import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
-import androidx.compose.material3.HorizontalDivider
+import com.example.unihub.notifications.EvaluationNotificationScheduler
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -152,14 +153,13 @@ fun ListarAvaliacaoScreen(
             EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
-                disciplinaId = avaliacao.disciplina?.id,
-                descricao = avaliacao.descricao,
                 disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
 
-                receberNotificacoes = avaliacao.receberNotificacoes == true
+                receberNotificacoes = avaliacao.receberNotificacoes,
+                antecedenciaDias = Antecedencia.padrao.dias
 
             )
         }
