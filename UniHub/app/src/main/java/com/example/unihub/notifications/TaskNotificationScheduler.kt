@@ -5,8 +5,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.example.unihub.data.model.Prioridade
-import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -24,7 +22,6 @@ class TaskNotificationScheduler(private val context: Context) {
         val disciplinaId: Long?,
         val disciplinaNome: String?,
         val dataHoraIso: String?,
-        val prioridade: Prioridade?,
         val receberNotificacoes: Boolean
     )
 
@@ -53,8 +50,7 @@ class TaskNotificationScheduler(private val context: Context) {
             .filter { it.receberNotificacoes }
             .forEach { avaliacao ->
                 val triggerAtMillis = computeTriggerMillis(
-                    avaliacao.dataHoraIso,
-                    avaliacao.prioridade
+                    avaliacao.dataHoraIso
                 )
                     ?: return@forEach
 
@@ -156,27 +152,15 @@ class TaskNotificationScheduler(private val context: Context) {
 
         internal fun computeTriggerMillis(
             dateTimeString: String?,
-            prioridade: Prioridade?,
             zoneId: ZoneId = ZoneId.systemDefault(),
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
-            val reminderDateTime = zonedDateTime.minus(toReminderDuration(prioridade))
-            if (!reminderDateTime.isAfter(now)) {
+            if (!zonedDateTime.isAfter(now)) {
                 return null
             }
-            return reminderDateTime.toInstant().toEpochMilli()
-        }
+            return zonedDateTime.toInstant().toEpochMilli()
 
-        private fun toReminderDuration(prioridade: Prioridade?): Duration {
-            return when (prioridade) {
-                Prioridade.MUITO_BAIXA -> Duration.ofHours(1)
-                Prioridade.BAIXA -> Duration.ofHours(1)
-                Prioridade.MEDIA -> Duration.ofHours(1)
-                Prioridade.ALTA -> Duration.ofDays(1)
-                Prioridade.MUITO_ALTA -> Duration.ofDays(1)
-                null -> Duration.ofHours(1)
-            }
         }
 
         internal fun parseDateTime(

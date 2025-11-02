@@ -157,7 +157,7 @@ fun ListarAvaliacaoScreen(
                 disciplinaId = avaliacao.disciplina?.id,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                prioridade = avaliacao.prioridade,
+               // prioridade = avaliacao.prioridade,
                // receberNotificacoes = avaliacao.receberNotificacoes
                 receberNotificacoes = avaliacao.receberNotificacoes == true
 

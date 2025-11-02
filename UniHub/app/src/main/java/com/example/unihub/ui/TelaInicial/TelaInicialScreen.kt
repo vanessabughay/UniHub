@@ -126,7 +126,7 @@ fun TelaInicial(
                 disciplinaId = avaliacao.disciplina?.id,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                prioridade = avaliacao.prioridade,
+                //prioridade = avaliacao.prioridade,
                 receberNotificacoes = avaliacao.receberNotificacoes == true
             )
         }
