@@ -59,6 +59,9 @@ class TelaInicialViewModel(
     private val _estado = MutableStateFlow(criarEstadoInicial())
     val estado: StateFlow<EstadoTelaInicial> = _estado
 
+    private val _avaliacoesDetalhadas = MutableStateFlow<List<AvaliacaoReal>>(emptyList())
+    val avaliacoesDetalhadas: StateFlow<List<AvaliacaoReal>> = _avaliacoesDetalhadas
+
     private val _eventoNavegacao = MutableSharedFlow<String>()
     val eventoNavegacao: SharedFlow<String> = _eventoNavegacao
 
@@ -185,12 +188,16 @@ class TelaInicialViewModel(
             try {
                 avaliacaoRepository.getAvaliacao()
                     .collect { avaliacoesReais ->
+                        _avaliacoesDetalhadas.value = avaliacoesReais
+
                         val avaliacoesMapeadas = avaliacoesReais.mapNotNull { mapRealToLocal(it) }
                         _estado.update { it.copy(avaliacoes = avaliacoesMapeadas) }
                         filtrarAvaliacoesEValidarTarefas()
                     }
             } catch (e: Exception) {
                 _estado.update { it.copy(avaliacoes = emptyList()) }
+                _avaliacoesDetalhadas.value = emptyList()
+
             }
         }
     }

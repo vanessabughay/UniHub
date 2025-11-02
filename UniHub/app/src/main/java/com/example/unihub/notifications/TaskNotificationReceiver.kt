@@ -23,23 +23,24 @@ import kotlin.math.abs
 class TaskNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val taskId = intent.getLongExtra(EXTRA_TASK_ID, -1L)
-        if (taskId < 0) return
+        val avaliacaoId = intent.getLongExtra(EXTRA_AVALIACAO_ID, -1L)
+        if (avaliacaoId < 0) return
 
-        val descricao = intent.getStringExtra(EXTRA_TASK_DESCRICAO).orEmpty()
+
+        val descricao = intent.getStringExtra(EXTRA_AVALIACAO_DESCRICAO).orEmpty()
         val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L).takeIf { it >= 0 }
         val disciplina = intent.getStringExtra(EXTRA_DISCIPLINA_NOME)
-        val dataHoraIso = intent.getStringExtra(EXTRA_TASK_DATA_HORA)
+        val dataHoraIso = intent.getStringExtra(EXTRA_AVALIACAO_DATA_HORA)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
 
         createChannel(context)
 
-        val notificationId = abs((taskId.toString() + (dataHoraIso ?: "")).hashCode())
+        val notificationId = abs((avaliacaoId.toString() + (dataHoraIso ?: "")).hashCode())
 
         val visualizarIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MainActivity.EXTRA_TARGET_TASK_ID, taskId.toString())
-            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_TAREFA)
+            putExtra(MainActivity.EXTRA_TARGET_AVALIACAO_ID, avaliacaoId.toString())
+            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_AVALIACAO)
             disciplinaId?.let {
                 putExtra(MainActivity.EXTRA_TARGET_DISCIPLINA_ID, it.toString())
             }
@@ -148,11 +149,11 @@ class TaskNotificationReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val EXTRA_TASK_ID = "extra_task_id"
-        const val EXTRA_TASK_DESCRICAO = "extra_task_descricao"
+        const val EXTRA_AVALIACAO_ID = "extra_avaliacao_id"
+        const val EXTRA_AVALIACAO_DESCRICAO = "extra_avaliacao_descricao"
         const val EXTRA_DISCIPLINA_ID = "extra_disciplina_id"
         const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
-        const val EXTRA_TASK_DATA_HORA = "extra_task_data_hora"
+        const val EXTRA_AVALIACAO_DATA_HORA = "extra_avaliacao_data_hora"
         const val EXTRA_REQUEST_CODE = "extra_request_code"
 
         private const val CHANNEL_ID = "task_notifications"

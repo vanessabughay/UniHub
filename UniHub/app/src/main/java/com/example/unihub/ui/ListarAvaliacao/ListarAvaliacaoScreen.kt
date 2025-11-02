@@ -70,6 +70,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
 import androidx.compose.material3.HorizontalDivider
@@ -121,7 +122,8 @@ fun ListarAvaliacaoScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val scheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+    // val scheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+    val scheduler = remember { TaskNotificationScheduler(context.applicationContext) }
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -145,14 +147,20 @@ fun ListarAvaliacaoScreen(
     LaunchedEffect(avaliacoesState) {
         val infos = avaliacoesState.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
-            EvaluationNotificationScheduler.EvaluationInfo(
+            // EvaluationNotificationScheduler.EvaluationInfo(
+            TaskNotificationScheduler.TaskInfo(
+
                 id = id,
-                descricao = avaliacao.descricao,
+                // descricao = avaliacao.descricao,
+                descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
+
                 disciplinaId = avaliacao.disciplina?.id,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
-                receberNotificacoes = avaliacao.receberNotificacoes
+               // receberNotificacoes = avaliacao.receberNotificacoes
+                receberNotificacoes = avaliacao.receberNotificacoes == true
+
             )
         }
         scheduler.scheduleNotifications(infos)

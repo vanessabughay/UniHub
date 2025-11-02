@@ -53,6 +53,8 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.example.unihub.notifications.TaskNotificationScheduler
+
 
 
 /* ====== Paleta de cores (View) ====== */
@@ -75,8 +77,12 @@ fun TelaInicial(
     viewModel: TelaInicialViewModel = viewModel(factory = TelaInicialViewModelFactory())
 ) {
     val estado by viewModel.estado.collectAsStateWithLifecycle()
+    val avaliacoesDetalhadas by viewModel.avaliacoesDetalhadas.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    val taskNotificationScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
+
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -111,6 +117,21 @@ fun TelaInicial(
         }
     }
 
+    LaunchedEffect(avaliacoesDetalhadas) {
+        val infos = avaliacoesDetalhadas.mapNotNull { avaliacao ->
+            val id = avaliacao.id ?: return@mapNotNull null
+            TaskNotificationScheduler.TaskInfo(
+                id = id,
+                descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
+                disciplinaId = avaliacao.disciplina?.id,
+                disciplinaNome = avaliacao.disciplina?.nome,
+                dataHoraIso = avaliacao.dataEntrega,
+                prioridade = avaliacao.prioridade,
+                receberNotificacoes = avaliacao.receberNotificacoes == true
+            )
+        }
+        taskNotificationScheduler.scheduleNotifications(infos)
+    }
 
 
 

@@ -62,11 +62,11 @@ class TaskNotificationScheduler(private val context: Context) {
                 newRequestCodes.add(requestCode.toString())
 
                 val intent = Intent(baseIntent).apply {
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_ID, avaliacao.id)
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_DESCRICAO, avaliacao.descricao)
+                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_ID, avaliacao.id)
+                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_DESCRICAO, avaliacao.descricao)
                     putExtra(TaskNotificationReceiver.EXTRA_DISCIPLINA_ID, avaliacao.disciplinaId)
                     putExtra(TaskNotificationReceiver.EXTRA_DISCIPLINA_NOME, avaliacao.disciplinaNome)
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_DATA_HORA, avaliacao.dataHoraIso)
+                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_DATA_HORA, avaliacao.dataHoraIso)
                     putExtra(TaskNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
                 }
 
