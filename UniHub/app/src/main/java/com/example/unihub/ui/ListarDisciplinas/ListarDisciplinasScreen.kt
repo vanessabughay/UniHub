@@ -290,7 +290,7 @@ fun ListarDisciplinasScreen(
                         val msg = if (searchQuery.isBlank()) {
                             "Nenhuma disciplina cadastrada."
                         } else {
-                            "Nenhuma disciplina encontrada para "$searchQuery""
+                            "Nenhuma disciplina encontrada para \"$searchQuery\""
                         }
                         Text(
                             msg,
