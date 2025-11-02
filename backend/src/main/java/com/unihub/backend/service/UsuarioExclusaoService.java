@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -133,24 +132,34 @@ public class UsuarioExclusaoService {
             }
         }
 
-        if (quadro.getGrupo() != null && quadro.getGrupo().getMembros() != null) {
-            quadro.getGrupo().getMembros().stream()
-                    .filter(Objects::nonNull)
-                    .map(Contato::getIdContato)
-                    .filter(Objects::nonNull)
-                    .filter(id -> !Objects.equals(id, usuarioAtual))
-                    .forEach(candidatos::add);
-        }
+       if (quadro.getGrupo() != null) {
+            Long ownerId = quadro.getGrupo().getOwnerId();
+            if (ownerId != null && !Objects.equals(ownerId, usuarioAtual)) {
+                candidatos.add(ownerId);
+            }
 
+            if (quadro.getGrupo().getMembros() != null) {
+                quadro.getGrupo().getMembros().stream()
+                        .filter(Objects::nonNull)
+                        .map(Contato::getIdContato)
+                        .filter(Objects::nonNull)
+                        .filter(id -> !Objects.equals(id, usuarioAtual))
+                        .forEach(candidatos::add);
+            }
+        }
+        
         if (candidatos.isEmpty()) {
             return Optional.empty();
         }
 
-        List<Long> listaCandidatos = new ArrayList<>(candidatos);
-        int indice = ThreadLocalRandom.current().nextInt(listaCandidatos.size());
-        Long escolhidoId = listaCandidatos.get(indice);
+        for (Long candidatoId : candidatos) {
+            Optional<Usuario> candidato = usuarioRepository.findById(candidatoId);
+            if (candidato.isPresent()) {
+                return candidato;
+            }
+        }
 
-        return usuarioRepository.findById(escolhidoId);
+        return Optional.empty();
     }
 
     private void removerContatos(Usuario usuario) {
