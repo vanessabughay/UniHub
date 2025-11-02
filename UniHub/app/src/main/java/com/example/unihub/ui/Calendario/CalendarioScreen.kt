@@ -512,7 +512,7 @@ private fun BotaoNovaAvaliacao(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(44.dp),
+        modifier = modifier.height(44.dp).navigationBarsPadding(),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,

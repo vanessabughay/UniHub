@@ -187,7 +187,8 @@ private fun VisualizarQuadroContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 35.dp),
+                    .navigationBarsPadding()
+                    .padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Button(

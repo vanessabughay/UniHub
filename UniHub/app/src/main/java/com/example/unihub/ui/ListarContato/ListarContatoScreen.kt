@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -197,7 +198,7 @@ fun ListarContatoScreen(
                 containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                 contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.padding(bottom = 35.dp)
+                modifier = Modifier.navigationBarsPadding().padding(vertical = 16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Contato")
             }

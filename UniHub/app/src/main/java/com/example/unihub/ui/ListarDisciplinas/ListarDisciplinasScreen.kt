@@ -135,7 +135,7 @@ fun ListarDisciplinasScreen(
                 containerColor =  Color(0xFF5AB9D6),
                 contentColor = Color.White,
                 shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.padding(bottom = 35.dp)
+                modifier = Modifier.navigationBarsPadding().padding(vertical = 16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
