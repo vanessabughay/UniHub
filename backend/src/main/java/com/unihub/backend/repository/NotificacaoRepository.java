@@ -10,4 +10,6 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Long> 
     List<Notificacao> findByUsuarioIdOrderByCriadaEmDesc(Long usuarioId);
 
     List<Notificacao> findByConviteIdAndUsuarioId(Long conviteId, Long usuarioId);
+
+    void deleteByUsuarioId(Long usuarioId);
 }

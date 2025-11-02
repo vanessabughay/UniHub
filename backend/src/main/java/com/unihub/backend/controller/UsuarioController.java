@@ -6,6 +6,7 @@ import com.unihub.backend.dto.compartilhamento.UsuarioResumoResponse;
 import com.unihub.backend.model.Contato;
 import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
+import com.unihub.backend.service.UsuarioExclusaoService;
 import com.unihub.backend.service.CompartilhamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,8 @@ public class UsuarioController {
     @Autowired
     private CompartilhamentoService compartilhamentoService;
 
+    @Autowired
+    private UsuarioExclusaoService usuarioExclusaoService;
 
     @PutMapping("/me")
     public ResponseEntity<?> atualizarUsuario(@RequestBody UpdateUsuarioRequest request,
@@ -65,7 +68,13 @@ public class UsuarioController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
-private void atualizarEmailContatos(Long usuarioId, String emailAnterior, String novoEmail) {
+ @DeleteMapping("/me")
+    public ResponseEntity<Void> excluirUsuario(@AuthenticationPrincipal Long usuarioId) {
+        usuarioExclusaoService.excluirUsuario(usuarioId);
+        return ResponseEntity.noContent().build();
+    }
+
+    private void atualizarEmailContatos(Long usuarioId, String emailAnterior, String novoEmail) {
         if (novoEmail == null || novoEmail.isBlank()) {
             return;
         }

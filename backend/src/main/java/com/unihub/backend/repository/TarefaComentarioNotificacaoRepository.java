@@ -8,4 +8,6 @@ public interface TarefaComentarioNotificacaoRepository extends JpaRepository<Tar
     boolean existsByTarefaIdAndUsuarioId(Long tarefaId, Long usuarioId);
 
     void deleteByTarefaIdAndUsuarioId(Long tarefaId, Long usuarioId);
+
+    void deleteByUsuarioId(Long usuarioId);
 }

@@ -244,6 +244,94 @@ public class GrupoService {
         grupoRepository.save(grupo);
     }
 
+    @Transactional
+    public void processarRemocaoUsuario(Usuario usuario) {
+        if (usuario == null || usuario.getId() == null) {
+            return;
+        }
+
+        Long usuarioId = usuario.getId();
+        Set<Long> gruposProcessados = new HashSet<>();
+
+        grupoRepository.findByOwnerId(usuarioId).forEach(grupo -> {
+            processarRemocaoComoOwner(grupo, usuario);
+            gruposProcessados.add(grupo.getId());
+        });
+
+        grupoRepository.findDistinctByMembros_IdContatoIn(Set.of(usuarioId)).forEach(grupo -> {
+            if (grupo == null) {
+                return;
+            }
+            Long grupoId = grupo.getId();
+            if (grupoId != null && gruposProcessados.contains(grupoId)) {
+                return;
+            }
+            if (Objects.equals(grupo.getOwnerId(), usuarioId)) {
+                return;
+            }
+            processarRemocaoComoMembro(grupo, usuario);
+        });
+    }
+
+    private void processarRemocaoComoOwner(Grupo grupo, Usuario usuario) {
+        if (grupo == null) {
+            return;
+        }
+
+        if (grupo.getMembros() == null) {
+            grupo.setMembros(new ArrayList<>());
+        }
+
+        removerUsuarioDosMembros(grupo, usuario);
+
+        if (grupo.getMembros().isEmpty()) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+
+        Contato novoOwner = selecionarNovoOwner(grupo);
+        if (novoOwner == null) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+
+        if (!atualizarOwnerPorAdmin(grupo, novoOwner)) {
+            grupo.setOwnerId(novoOwner.getIdContato());
+        }
+
+        definirAdminContato(grupo, novoOwner, novoOwner, false);
+        grupoRepository.save(grupo);
+    }
+
+    private void processarRemocaoComoMembro(Grupo grupo, Usuario usuario) {
+        if (grupo == null) {
+            return;
+        }
+
+        if (grupo.getMembros() == null) {
+            grupo.setMembros(new ArrayList<>());
+        }
+
+        boolean removeu = removerUsuarioDosMembros(grupo, usuario);
+        if (!removeu) {
+            return;
+        }
+
+        if (grupo.getMembros().isEmpty()) {
+            grupoRepository.delete(grupo);
+            return;
+        }
+
+        Contato contatoPreferencial = localizarContatoDoOwner(grupo);
+        Contato contatoDoOwner = contatoPreferencial != null
+                ? contatoPreferencial
+                : buscarContatoDoUsuario(grupo.getOwnerId()).orElse(null);
+
+        definirAdminContato(grupo, contatoPreferencial, contatoDoOwner, false);
+        grupoRepository.save(grupo);
+    }
+
+
 
     @Transactional(readOnly = true)
     public List<Grupo> buscarPorNome(String nome, Long usuarioId) {

@@ -20,6 +20,10 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
 
     long countByColunaQuadroIdAndStatus(Long quadroId, TarefaStatus status);
 
+    List<TarefaPlanejamento> findDistinctByResponsaveis_IdContato(Long idContato);
+
+    List<TarefaPlanejamento> findDistinctByResponsaveis_Id(Long contatoId);
+
     @Query("SELECT t FROM TarefaPlanejamento t JOIN t.responsaveis r " +
             "WHERE r.idContato = :usuarioId " +
            "AND t.status != 'CONCLUIDA' " +

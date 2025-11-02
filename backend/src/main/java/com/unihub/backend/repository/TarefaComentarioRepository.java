@@ -12,4 +12,6 @@ public interface TarefaComentarioRepository extends JpaRepository<TarefaComentar
     List<TarefaComentario> findByTarefaOrderByDataCriacaoDesc(TarefaPlanejamento tarefa);
 
     Optional<TarefaComentario> findByIdAndTarefaId(Long id, Long tarefaId);
+
+    void deleteByAutorId(Long autorId);
 }

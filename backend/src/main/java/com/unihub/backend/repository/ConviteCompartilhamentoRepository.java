@@ -17,4 +17,6 @@ public interface ConviteCompartilhamentoRepository extends JpaRepository<Convite
 
     List<ConviteCompartilhamento> findByDestinatarioIdAndStatus(Long destinatarioId,
                                                                 StatusConviteCompartilhamento status);
+
+    void deleteByRemetenteIdOrDestinatarioId(Long remetenteId, Long destinatarioId);
 }
