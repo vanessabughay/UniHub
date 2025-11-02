@@ -30,9 +30,9 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
             LEFT JOIN grupo.membros membro
             LEFT JOIN q.contato contato
             LEFT JOIN t.responsaveis responsavel
+            LEFT JOIN q.usuario usuario
             WHERE t.status <> 'CONCLUIDA'
-              AND t.dataPrazo BETWEEN :dataInicio AND :dataFim
-              AND (
+                 AND (
                     q.usuario.id = :usuarioId
                  OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId)
                  OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId)
