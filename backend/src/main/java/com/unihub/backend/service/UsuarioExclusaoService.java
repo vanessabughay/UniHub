@@ -18,14 +18,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -63,7 +56,7 @@ public class UsuarioExclusaoService {
         this.conviteRepository = conviteRepository;
         this.grupoService = grupoService;
         this.grupoRepository = grupoRepository;
-    } 
+    }
 
     @Transactional
     public void excluirUsuario(Long usuarioId) {
@@ -71,156 +64,226 @@ public class UsuarioExclusaoService {
             throw new IllegalArgumentException("Usuário autenticado é obrigatório");
         }
 
+        // carrega o usuário COM a lista de quadros (porque ela é o lado forte do orphanRemoval)
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
+        // 1) remover o usuário das tarefas
         removerParticipacoesEmTarefas(usuario);
+
+        // 2) reatribuir quadros ENQUANTO ainda temos contatos e grupos
+        //    esse método devolve os IDs de quadros que foram transferidos
+        Set<Long> quadrosTransferidos = reatribuirQuadros(usuario);
+
+        // 3) IMPORTANTÍSSIMO: tirar esses quadros da lista do usuário
+        //    por causa do cascade = ALL + orphanRemoval = true
+        if (usuario.getQuadrosPlanejamento() != null && !usuario.getQuadrosPlanejamento().isEmpty()) {
+            usuario.getQuadrosPlanejamento()
+                    .removeIf(q -> q != null && quadrosTransferidos.contains(q.getId()));
+        }
+
+        // 4) agora podemos deixar o GrupoService fazer a faxina dele
+        grupoService.processarRemocaoUsuario(usuario);
+
+        // 5) apagar comentários e notificações de comentários
         tarefaComentarioRepository.deleteByAutorId(usuarioId);
         tarefaComentarioNotificacaoRepository.deleteByUsuarioId(usuarioId);
 
-        grupoService.processarRemocaoUsuario(usuario);
-        reatribuirQuadros(usuario);
-
+        // 6) apagar convites e notificações
         conviteRepository.deleteByRemetenteIdOrDestinatarioId(usuarioId, usuarioId);
         notificacaoRepository.deleteByUsuarioId(usuarioId);
 
+        // 7) apagar contatos ligados ao usuário
         removerContatos(usuario);
 
+        // 8) por fim, apagar o usuário
         usuarioRepository.delete(usuario);
     }
 
+    /**
+     * Remove o usuário (e contatos dele) de tarefas onde ele aparece como responsável.
+     */
     private void removerParticipacoesEmTarefas(Usuario usuario) {
         Long usuarioId = usuario.getId();
 
+        // tarefas em que o responsável é diretamente o usuário
         tarefaRepository.findDistinctByResponsaveis_IdContato(usuarioId).forEach(tarefa -> {
-            if (removerResponsaveis(tarefa, contato -> Objects.equals(contato.getIdContato(), usuarioId))) {
+            if (removerResponsaveis(tarefa, c -> Objects.equals(c.getIdContato(), usuarioId))) {
                 tarefaRepository.save(tarefa);
             }
         });
 
-        List<Contato> contatosRelacionados = coletarContatosParaRemocao(usuario);
-        contatosRelacionados.stream()
+        // tarefas em que o responsável é algum contato que pertence a esse usuário
+        List<Contato> contatosDoUsuario = coletarContatosParaRemocao(usuario);
+        contatosDoUsuario.stream()
                 .map(Contato::getId)
                 .filter(Objects::nonNull)
                 .forEach(contatoId -> tarefaRepository.findDistinctByResponsaveis_Id(contatoId).forEach(tarefa -> {
-                    if (removerResponsaveis(tarefa, contato -> Objects.equals(contato.getId(), contatoId))) {
+                    if (removerResponsaveis(tarefa, c -> Objects.equals(c.getId(), contatoId))) {
                         tarefaRepository.save(tarefa);
                     }
                 }));
     }
 
-    private void reatribuirQuadros(Usuario usuario) {
+    /**
+     * Reatribui ou apaga os quadros do usuário e devolve os IDs que foram transferidos
+     * para outro usuário (precisamos disso para remover da lista do usuário).
+     */
+    private Set<Long> reatribuirQuadros(Usuario usuario) {
         Long usuarioId = usuario.getId();
+        Set<Long> quadrosTransferidos = new HashSet<>();
 
+        // pega todos os quadros onde ele é dono
         List<QuadroPlanejamento> quadros = quadroRepository.findByUsuarioId(usuarioId);
         for (QuadroPlanejamento quadro : quadros) {
+
+            // tenta achar outro dono
             Optional<Usuario> novoOwner = escolherNovoOwner(quadro, usuarioId);
-            if (novoOwner.isEmpty()) {
-                quadroRepository.delete(quadro);
+
+            if (novoOwner.isPresent()) {
+                quadro.setUsuario(novoOwner.get());
+
+                // se o contato do quadro apontava pro usuário que saiu, a gente limpa
+                Contato contatoAtual = carregarContato(quadro.getContato());
+                if (contatoAtual != null &&
+                        (Objects.equals(contatoAtual.getIdContato(), usuarioId)
+                                || Objects.equals(contatoAtual.getOwnerId(), usuarioId))) {
+                    quadro.setContato(null);
+                }
+
+                quadroRepository.save(quadro);
+                quadrosTransferidos.add(quadro.getId());
                 continue;
             }
 
-            quadro.setUsuario(novoOwner.get());
-            Contato contatoAtual = quadro.getContato();
-            if (contatoAtual != null && Objects.equals(contatoAtual.getOwnerId(), usuarioId)) {
-                quadro.setContato(null);
+            // não achou outro dono → posso apagar?
+            boolean temOutrosIntegrantes = quadroTemOutrosIntegrantes(quadro, usuarioId);
+
+            if (!temOutrosIntegrantes) {
+                // não sobrou ninguém → apaga mesmo
+                quadroRepository.delete(quadro);
+            } else {
+                // sobrou gente mas não consegui converter pra usuario (caso muito específico)
+                // tenta pôr no dono do grupo
+                Grupo grupo = carregarGrupo(quadro.getGrupo());
+                if (grupo != null &&
+                        grupo.getOwnerId() != null &&
+                        !Objects.equals(grupo.getOwnerId(), usuarioId)) {
+
+                    usuarioRepository.findById(grupo.getOwnerId()).ifPresent(donoGrupo -> {
+                        quadro.setUsuario(donoGrupo);
+                        quadroRepository.save(quadro);
+                        quadrosTransferidos.add(quadro.getId());
+                    });
+
+                } else {
+                    // mantém vivo sem dono
+                    quadro.setUsuario(null);
+                    quadroRepository.save(quadro);
+                }
             }
-            quadroRepository.save(quadro);
         }
+
+        // garante que o UPDATE dos quadros foi pro banco antes do delete do usuário
+        quadroRepository.flush();
+
+        return quadrosTransferidos;
     }
 
+    /**
+     * 1. se tem contato no quadro e esse contato aponta pra outro usuário → ele é o novo dono
+     * 2. se tem grupo e o grupo tem owner diferente → ele é o novo dono
+     * 3. se tem grupo e membros com idContato diferente → pega o primeiro
+     */
     private Optional<Usuario> escolherNovoOwner(QuadroPlanejamento quadro, Long usuarioAtual) {
-         Map<Long, Usuario> candidatos = new LinkedHashMap<>();
-
-       adicionarCandidato(candidatos, localizarUsuarioDoContato(quadro.getContato()), usuarioAtual);
-
-        Grupo grupo = carregarGrupo(quadro.getGrupo());
-        if (grupo != null) {
-            adicionarCandidatoPorId(candidatos, grupo.getOwnerId(), usuarioAtual);
-
-            if (grupo.getMembros() != null) {
-                grupo.getMembros().stream()
-                        .filter(Objects::nonNull)
-                        .map(this::localizarUsuarioDoContato)
-                        .flatMap(Optional::stream)
-                        .forEach(usuario -> adicionarCandidato(candidatos, usuario, usuarioAtual));
+        // 1) contato direto
+        Contato contatoQuadro = carregarContato(quadro.getContato());
+        if (contatoQuadro != null && contatoQuadro.getIdContato() != null) {
+            Long novoId = contatoQuadro.getIdContato();
+            if (!Objects.equals(novoId, usuarioAtual)) {
+                return usuarioRepository.findById(novoId);
             }
         }
-        
-        return candidatos.values().stream().findFirst();
+
+        // 2) grupo
+        Grupo grupo = carregarGrupo(quadro.getGrupo());
+        if (grupo != null) {
+            // 2.1) dono do grupo
+            if (grupo.getOwnerId() != null && !Objects.equals(grupo.getOwnerId(), usuarioAtual)) {
+                return usuarioRepository.findById(grupo.getOwnerId());
+            }
+
+            // 2.2) qualquer membro do grupo com idContato diferente
+            if (grupo.getMembros() != null) {
+                for (Contato membro : grupo.getMembros()) {
+                    Contato m = carregarContato(membro);
+                    if (m == null) continue;
+                    Long membroUsuarioId = m.getIdContato();
+                    if (membroUsuarioId != null && !Objects.equals(membroUsuarioId, usuarioAtual)) {
+                        Optional<Usuario> u = usuarioRepository.findById(membroUsuarioId);
+                        if (u.isPresent()) {
+                            return u;
+                        }
+                    }
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    /**
+     * Checa se ainda existe alguém no quadro além do usuário que está saindo.
+     */
+    private boolean quadroTemOutrosIntegrantes(QuadroPlanejamento quadro, Long usuarioQueSaiu) {
+        // contato direto
+        Contato c = carregarContato(quadro.getContato());
+        if (c != null) {
+            boolean ehDoSaindo =
+                    Objects.equals(c.getIdContato(), usuarioQueSaiu) ||
+                    Objects.equals(c.getOwnerId(), usuarioQueSaiu);
+            if (!ehDoSaindo) {
+                return true;
+            }
+        }
+
+        // grupo
+        Grupo g = carregarGrupo(quadro.getGrupo());
+        if (g != null) {
+            // owner do grupo
+            if (g.getOwnerId() != null && !Objects.equals(g.getOwnerId(), usuarioQueSaiu)) {
+                return true;
+            }
+            // membros
+            if (g.getMembros() != null) {
+                for (Contato membro : g.getMembros()) {
+                    Contato m = carregarContato(membro);
+                    if (m == null) continue;
+                    if (m.getIdContato() != null && !Objects.equals(m.getIdContato(), usuarioQueSaiu)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     private Grupo carregarGrupo(Grupo grupo) {
-        if (grupo == null) {
-            return null;
-        }
-        Long grupoId = grupo.getId();
-        if (grupoId == null) {
-            return grupo;
-        }
-        return grupoRepository.findById(grupoId).orElse(grupo);
+        if (grupo == null) return null;
+        if (grupo.getId() == null) return grupo;
+        return grupoRepository.findById(grupo.getId()).orElse(grupo);
     }
 
-    private void adicionarCandidato(Map<Long, Usuario> candidatos, Optional<Usuario> possivel, Long usuarioAtual) {
-        possivel.ifPresent(usuario -> adicionarCandidato(candidatos, usuario, usuarioAtual));
-    }
-
-    private void adicionarCandidato(Map<Long, Usuario> candidatos, Usuario usuario, Long usuarioAtual) {
-        if (usuario == null || Objects.equals(usuario.getId(), usuarioAtual)) {
-            return;
-        }
-        candidatos.putIfAbsent(usuario.getId(), usuario);
-    }
-
-    private void adicionarCandidatoPorId(Map<Long, Usuario> candidatos, Long candidatoId, Long usuarioAtual) {
-        if (candidatoId == null || Objects.equals(candidatoId, usuarioAtual)) {
-            return;
-        }
-        if (candidatos.containsKey(candidatoId)) {
-            return;
-        }
-        usuarioRepository.findById(candidatoId)
-                .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
-    }
-
-    private Optional<Usuario> localizarUsuarioDoContato(Contato contato) {
-        if (contato == null) {
-            return Optional.empty();
-        }
-
-         Contato contatoBase = carregarContato(contato);
-
-        Long contatoUsuarioId = contatoBase.getIdContato();
-        if (contatoUsuarioId != null) {
-            Optional<Usuario> porId = usuarioRepository.findById(contatoUsuarioId);
-            if (porId.isPresent()) {
-                return porId;
-            }
-        }
-
-       String email = contatoBase.getEmail();
-        if (email == null || email.isBlank()) {
-            return Optional.empty();
-        }
-
-        return usuarioRepository.findByEmailIgnoreCase(email);
-    }
-
-     private Contato carregarContato(Contato contato) {
-        if (contato == null) {
-            return null;
-        }
-
+    private Contato carregarContato(Contato contato) {
+        if (contato == null) return null;
         if (contato.getId() != null) {
             return contatoRepository.findById(contato.getId()).orElse(contato);
         }
-
-        Long ownerId = contato.getOwnerId();
-        Long contatoUsuarioId = contato.getIdContato();
-        if (ownerId != null && contatoUsuarioId != null) {
-            return contatoRepository.findByOwnerIdAndIdContato(ownerId, contatoUsuarioId).orElse(contato);
+        if (contato.getOwnerId() != null && contato.getIdContato() != null) {
+            return contatoRepository.findByOwnerIdAndIdContato(contato.getOwnerId(), contato.getIdContato())
+                    .orElse(contato);
         }
-
         return contato;
     }
 
@@ -236,16 +299,17 @@ public class UsuarioExclusaoService {
         Set<Long> idsAdicionados = new LinkedHashSet<>();
         List<Contato> contatos = new ArrayList<>();
 
-        contatoRepository.findByOwnerId(usuarioId).forEach(contato -> adicionarContato(contatos, idsAdicionados, contato));
-        contatoRepository.findByIdContato(usuarioId).forEach(contato -> adicionarContato(contatos, idsAdicionados, contato));
+        contatoRepository.findByOwnerId(usuarioId)
+                .forEach(contato -> adicionarContato(contatos, idsAdicionados, contato));
+
+        contatoRepository.findByIdContato(usuarioId)
+                .forEach(contato -> adicionarContato(contatos, idsAdicionados, contato));
 
         return contatos;
     }
 
     private void adicionarContato(List<Contato> contatos, Set<Long> idsAdicionados, Contato contato) {
-        if (contato == null) {
-            return;
-        }
+        if (contato == null) return;
         Long id = contato.getId();
         if (id != null) {
             if (idsAdicionados.add(id)) {
