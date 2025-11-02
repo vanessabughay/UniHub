@@ -4,7 +4,14 @@ import com.example.unihub.data.model.Estado
 import com.example.unihub.data.model.Quadro
 
 data class DisciplinaResumoUi(val id: Long?, val nome: String?)
-data class ContatoResumoUi(val id: Long?, val nome: String?)
+
+data class ContatoResumoUi(
+    val id: Long?,
+    val nome: String?,
+    val email: String? = null,
+    val ownerId: Long? = null
+)
+
 data class GrupoResumoUi(val id: Long?, val nome: String?)
 
 data class GrupoDetalhesUi(

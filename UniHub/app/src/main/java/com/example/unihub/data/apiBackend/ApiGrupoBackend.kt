@@ -100,15 +100,34 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     override suspend fun deleteGrupoApi(id: Long): Boolean {
         try {
-            val response = api.delete(id) // Chama o método 'delete' da GrupoApi
-            if (!response.isSuccessful) {
-                Log.e("ApiGrupoBackend", "Erro ao deletar grupo $id: ${response.code()} - ${response.message()}")
+            val response = api.delete(id)
+            if (response.isSuccessful) {
+                return true
             }
-            return response.isSuccessful
+            val errorMessage = response.errorBody()?.string()?.takeIf { it.isNotBlank() }
+            if (response.code() == 409) {
+                val mensagem = errorMessage ?: "Não foi possível transferir a propriedade do grupo para outro membro."
+                Log.w("ApiGrupoBackend", "Falha ao remover grupo $id: $mensagem")
+                throw IllegalStateException(mensagem)
+            }
+
+            Log.e(
+                "ApiGrupoBackend",
+                "Erro ao deletar grupo $id: ${response.code()} - ${response.message()}${errorMessage?.let { ": $it" } ?: ""}"
+            )
+            throw HttpException(response)
+        } catch (e: IllegalStateException) {
+            throw e
+        } catch (e: HttpException) {
+            Log.e("ApiGrupoBackend", "HttpException ao deletar grupo $id", e)
+            throw e
+        } catch (e: IOException) {
+            Log.e("ApiGrupoBackend", "IOException ao deletar grupo $id", e)
+            throw e
         } catch (e: Exception) {
-            Log.e("ApiGrupoBackend", "Exceção ao deletar grupo $id", e)
-            // throw IOException("Erro ao deletar grupo $id: ${e.message}", e)
-            return false
+            Log.e("ApiGrupoBackend", "Exceção inesperada ao deletar grupo $id", e)
+            throw IOException("Erro ao deletar grupo $id: ${e.message}", e)
+
         }
     }
 }

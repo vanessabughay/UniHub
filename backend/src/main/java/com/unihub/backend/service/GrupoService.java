@@ -15,6 +15,7 @@ import com.unihub.backend.repository.UsuarioRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,15 +162,75 @@ public class GrupoService {
             return;
         }
 
-        Contato novoAdministrador = definirAdminContato(grupo, null, null, true);
-        if (novoAdministrador == null || !atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
-            grupoRepository.delete(grupo);
-            return;
+        Contato novoAdministrador = selecionarNovoOwner(grupo);
+        if (novoAdministrador == null) {
+            throw new IllegalStateException("Não foi possível transferir a propriedade do grupo para outro membro.");
         }
-        
+
+        if (!atualizarOwnerPorAdmin(grupo, novoAdministrador)) {
+            throw new IllegalStateException("Não foi possível definir um novo proprietário para o grupo.");
+        }
         definirAdminContato(grupo, novoAdministrador, novoAdministrador, false);
         grupoRepository.save(grupo);
     }
+
+    @Transactional
+    public void sairDoGrupo(Long id, Long usuarioId) {
+        Long usuarioAutenticado = requireUsuario(usuarioId);
+        Grupo grupo = buscarGrupoParticipante(id, usuarioAutenticado);
+
+        Usuario usuario = usuarioRepository.findById(usuarioAutenticado)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado com ID: " + usuarioAutenticado));
+
+        boolean ehOwner = Objects.equals(grupo.getOwnerId(), usuarioAutenticado);
+        if (grupo.getMembros() == null) {
+            grupo.setMembros(new ArrayList<>());
+        }
+
+        boolean removeu = removerUsuarioDosMembros(grupo, usuario);
+        if (ehOwner && !removeu) {
+            Contato contatoDoOwner = localizarContatoDoOwner(grupo);
+            if (contatoDoOwner != null) {
+                grupo.removeMembro(contatoDoOwner);
+                removeu = true;
+            }
+        }
+
+        if (!removeu && !ehOwner) {
+            throw new EntityNotFoundException("Usuário não pertence ao grupo informado.");
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            if (ehOwner) {
+                grupoRepository.delete(grupo);
+                return;
+            }
+            grupoRepository.save(grupo);
+            return;
+        }
+
+        if (ehOwner) {
+            Contato novoOwner = selecionarNovoOwner(grupo);
+            if (novoOwner == null) {
+                grupoRepository.delete(grupo);
+                return;
+            }
+            if (!atualizarOwnerPorAdmin(grupo, novoOwner)) {
+                throw new IllegalStateException("Não foi possível transferir a propriedade do grupo para outro membro.");
+            }
+            definirAdminContato(grupo, novoOwner, novoOwner, false);
+        } else {
+            Contato contatoPreferencial = localizarContatoDoOwner(grupo);
+            Contato contatoDoOwner = contatoPreferencial != null
+                    ? contatoPreferencial
+                    : buscarContatoDoUsuario(grupo.getOwnerId()).orElse(null);
+            definirAdminContato(grupo, contatoPreferencial, contatoDoOwner, false);
+        }
+
+        grupoRepository.save(grupo);
+    }
+
 
     @Transactional(readOnly = true)
     public List<Grupo> buscarPorNome(String nome, Long usuarioId) {
@@ -195,6 +256,64 @@ public class GrupoService {
 
         return new ArrayList<>(gruposVisiveis.values());
     }
+
+    private Grupo buscarGrupoParticipante(Long grupoId, Long usuarioId) {
+        Optional<Grupo> grupoOptional = grupoRepository.findByIdAndOwnerId(grupoId, usuarioId);
+
+        if (grupoOptional.isEmpty()) {
+            Set<Long> idsContatosAssociados = buscarIdsDeContatosDoUsuario(usuarioId);
+            if (!idsContatosAssociados.isEmpty()) {
+                grupoOptional = grupoRepository.findDistinctByIdAndMembros_IdContatoIn(grupoId, idsContatosAssociados);
+            }
+        }
+
+        return grupoOptional
+                .orElseThrow(() -> new EntityNotFoundException("Grupo não encontrado com ID: " + grupoId));
+    }
+
+    private boolean removerUsuarioDosMembros(Grupo grupo, Usuario usuario) {
+        if (grupo == null || usuario == null) {
+            return false;
+        }
+
+        List<Contato> membros = grupo.getMembros();
+        if (membros == null || membros.isEmpty()) {
+            return false;
+        }
+
+        boolean removeu = false;
+        Iterator<Contato> iterator = membros.iterator();
+        while (iterator.hasNext()) {
+            Contato membro = iterator.next();
+            if (representaUsuario(membro, usuario)) {
+                iterator.remove();
+                removeu = true;
+            }
+        }
+        return removeu;
+    }
+
+    private boolean representaUsuario(Contato contato, Usuario usuario) {
+        if (contato == null || usuario == null) {
+            return false;
+        }
+
+        Long usuarioId = usuario.getId();
+        if (usuarioId != null && Objects.equals(contato.getIdContato(), usuarioId)) {
+            return true;
+        }
+
+        String emailUsuario = usuario.getEmail();
+        if (emailUsuario != null && !emailUsuario.isBlank()) {
+            String emailContato = contato.getEmail();
+            if (emailContato != null && emailUsuario.equalsIgnoreCase(emailContato)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     private Set<Long> buscarIdsDeContatosDoUsuario(Long usuarioId) {
         Set<Long> ids = new HashSet<>();
@@ -338,6 +457,18 @@ public class GrupoService {
         }
 
         return candidato;
+    }
+
+    private Contato selecionarNovoOwner(Grupo grupo) {
+        if (grupo == null || grupo.getMembros() == null) {
+            return null;
+        }
+
+        return grupo.getMembros().stream()
+                .filter(Objects::nonNull)
+                .filter(contato -> localizarUsuarioDoContato(contato).isPresent())
+                .findFirst()
+                .orElse(null);
     }
 
     private Contato localizarContatoPorId(List<Contato> membros, Long contatoId) {

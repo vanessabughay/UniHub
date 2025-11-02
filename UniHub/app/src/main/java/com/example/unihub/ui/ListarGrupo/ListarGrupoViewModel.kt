@@ -10,6 +10,8 @@ import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.ContatoResumo
 import com.example.unihub.data.repository.GrupoRepository
 
+import java.io.IOException
+import retrofit2.HttpException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -114,20 +116,39 @@ class ListarGrupoViewModel(
                     return@launch
                 }
 
+                var delegouCarregamento = false
                 val deleteSuccess = repository.deleteGrupo(id.toString())
 
                 if (deleteSuccess) {
                     // Após a exclusão bem-sucedida, recarregue a lista de Grupos.
                     // loadGrupo() já define _isLoading.value = false no seu final.
+                    delegouCarregamento = true
                     loadGrupo()
                     onResult(true)
                 } else {
                     _errorMessage.value = "Falha ao excluir o Grupo no servidor/banco de dados."
-                    _isLoading.value = false
                     onResult(false)
                 }
+                if (!delegouCarregamento) {
+                    _isLoading.value = false
+                }
+            } catch (e: IllegalStateException) {
+                _errorMessage.value = e.message ?: "Não foi possível sair do grupo. Tente novamente mais tarde."
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: IllegalArgumentException) {
+                _errorMessage.value = e.message ?: "ID de Grupo inválido."
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: IOException) {
+                _errorMessage.value = "Erro de rede ao excluir Grupo: ${e.message}"
+                _isLoading.value = false
+                onResult(false)
+            } catch (e: HttpException) {
+                _errorMessage.value = "Erro do servidor (${e.code()}) ao excluir Grupo."
+                _isLoading.value = false
+                onResult(false)
             } catch (e: Exception) {
-                // Tratar exceções de rede, banco de dados, etc.
                 _errorMessage.value = "Erro ao excluir Grupo: ${e.message}"
                 _isLoading.value = false
                 onResult(false)

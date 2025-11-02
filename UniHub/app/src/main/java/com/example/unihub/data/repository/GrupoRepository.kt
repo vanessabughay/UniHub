@@ -83,13 +83,7 @@ class GrupoRepository(private val backend: Grupobackend) {
     //EXCLUSÃO Grupo
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun deleteGrupo(id: String): Boolean {
-        val longId = id.toLongOrNull() ?: throw Exception("ID inválido")
-        return try {
-            backend.deleteGrupoApi(longId)
-        } catch (e: IOException) {
-            throw Exception("Erro de rede: ${e.message}")
-        } catch (e: HttpException) {
-            throw Exception("Erro do servidor: ${e.code()}")
-        }
+        val longId = id.toLongOrNull() ?: throw IllegalArgumentException("ID de Grupo inválido.")
+        return backend.deleteGrupoApi(longId)
     }
 }
