@@ -43,7 +43,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalContext
 import com.example.unihub.data.model.Tarefa
-import com.example.unihub.notifications.TaskNotificationScheduler
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import androidx.compose.foundation.rememberScrollState
@@ -85,11 +84,46 @@ private fun OpcaoQuadroButton(item: OpcaoQuadro) {
 }
 
 private fun formatarPrazo(prazo: String?): String {
-    val zonedDateTime = TaskNotificationScheduler.parseDateTime(prazo)
+    val zonedDateTime = parseDeadline(prazo)
         ?: return "Sem prazo definido"
     val locale = Locale("pt", "BR")
     val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm", locale)
     return formatter.format(zonedDateTime)
+}
+
+private fun parseDeadline(
+    value: String?,
+    zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()
+): java.time.ZonedDateTime? {
+    val trimmed = value?.trim().orEmpty()
+    if (trimmed.isEmpty()) return null
+
+    runCatching { java.time.Instant.parse(trimmed) }.getOrNull()?.let {
+        return it.atZone(zoneId)
+    }
+
+    runCatching { java.time.ZonedDateTime.parse(trimmed) }.getOrNull()?.let { return it }
+    runCatching { java.time.OffsetDateTime.parse(trimmed) }.getOrNull()?.let {
+        return it.atZoneSameInstant(zoneId)
+    }
+
+    val localDateTimeFormatters = listOf(
+        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+    )
+
+    localDateTimeFormatters.forEach { formatter ->
+        runCatching { java.time.LocalDateTime.parse(trimmed, formatter) }
+            .getOrNull()
+            ?.let { return it.atZone(zoneId) }
+    }
+
+    runCatching { java.time.LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE) }
+        .getOrNull()
+        ?.let { return it.atStartOfDay(zoneId) }
+
+    return null
 }
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)

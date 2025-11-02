@@ -50,7 +50,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
 import androidx.navigation.NavHostController
 import com.example.unihub.data.config.TokenManager
-import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -78,7 +77,6 @@ fun TelaInicial(
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val taskScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -113,24 +111,7 @@ fun TelaInicial(
         }
     }
 
-    LaunchedEffect(estado.tarefas) {
-        val infos = estado.tarefas.mapNotNull { tarefa ->
-            val deadline = tarefa.prazoIso?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            val keyParts = buildList {
-                add(deadline)
-                tarefa.titulo.takeIf { it.isNotBlank() }?.let { add(it) }
-                tarefa.nomeQuadro?.takeIf { it.isNotBlank() }?.let { add(it) }
-            }
-            val uniqueKey = keyParts.joinToString("|")
-            TaskNotificationScheduler.TaskInfo(
-                uniqueKey = uniqueKey,
-                titulo = tarefa.titulo,
-                nomeQuadro = tarefa.nomeQuadro,
-                dataPrazoIso = deadline
-            )
-        }
-        taskScheduler.scheduleNotifications(infos)
-    }
+
 
 
     LaunchedEffect(Unit) {

@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoReal
 import com.example.unihub.data.dto.TarefaDto
 
@@ -213,7 +212,7 @@ class TelaInicialViewModel(
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
         val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: return null
-        val zonedDateTime = TaskNotificationScheduler.parseDateTime(rawPrazo) ?: return null
+        val zonedDateTime = parseDeadline(rawPrazo) ?: return null
         val data = zonedDateTime.toLocalDate()
         val localePtBr = Locale("pt", "BR")
         val nomeQuadro = real.nomeQuadro
@@ -250,5 +249,39 @@ class TelaInicialViewModel(
         return runCatching {
             LocalDate.parse(trimmed.take(10), DateTimeFormatter.ISO_LOCAL_DATE)
         }.getOrNull()
+    }
+    private fun parseDeadline(
+        value: String?,
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()
+    ): java.time.ZonedDateTime? {
+        val trimmed = value?.trim().orEmpty()
+        if (trimmed.isEmpty()) return null
+
+        runCatching { java.time.Instant.parse(trimmed) }.getOrNull()?.let {
+            return it.atZone(zoneId)
+        }
+
+        runCatching { java.time.ZonedDateTime.parse(trimmed) }.getOrNull()?.let { return it }
+        runCatching { java.time.OffsetDateTime.parse(trimmed) }.getOrNull()?.let {
+            return it.atZoneSameInstant(zoneId)
+        }
+
+        val localDateTimeFormatters = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )
+
+        localDateTimeFormatters.forEach { formatter ->
+            runCatching { java.time.LocalDateTime.parse(trimmed, formatter) }
+                .getOrNull()
+                ?.let { return it.atZone(zoneId) }
+        }
+
+        runCatching { LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE) }
+            .getOrNull()
+            ?.let { return it.atStartOfDay(zoneId) }
+
+        return null
     }
 }
