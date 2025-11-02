@@ -17,11 +17,9 @@ import kotlin.math.abs
 class TaskNotificationScheduler(private val context: Context) {
 
     data class TaskInfo(
-        val id: Long,
-        val descricao: String?,
-        val disciplinaId: Long?,
-        val disciplinaNome: String?,
-        val dataHoraIso: String?,
+        val titulo: String?,
+        val quadroNome: String?,
+        val prazoIso: String?,
         val receberNotificacoes: Boolean
     )
 
@@ -31,7 +29,7 @@ class TaskNotificationScheduler(private val context: Context) {
     private val preferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun scheduleNotifications(avaliacoes: List<TaskInfo>) {
+    fun scheduleNotifications(tarefas: List<TaskInfo>) {
         val manager = alarmManager ?: return
 
         val storedRequestCodes =
@@ -46,23 +44,21 @@ class TaskNotificationScheduler(private val context: Context) {
         val newRequestCodes = mutableSetOf<String>()
         val baseIntent = Intent(context, TaskNotificationReceiver::class.java)
 
-        avaliacoes
+        tarefas
             .filter { it.receberNotificacoes }
-            .forEach { avaliacao ->
+            .forEach { tarefa ->
                 val triggerAtMillis = computeTriggerMillis(
-                    avaliacao.dataHoraIso
+                    tarefa.prazoIso
                 )
                     ?: return@forEach
 
-                val requestCode = buildRequestCode(avaliacao.id, triggerAtMillis)
+                val requestCode = buildRequestCode(tarefa, triggerAtMillis)
                 newRequestCodes.add(requestCode.toString())
 
                 val intent = Intent(baseIntent).apply {
-                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_ID, avaliacao.id)
-                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_DESCRICAO, avaliacao.descricao)
-                    putExtra(TaskNotificationReceiver.EXTRA_DISCIPLINA_ID, avaliacao.disciplinaId)
-                    putExtra(TaskNotificationReceiver.EXTRA_DISCIPLINA_NOME, avaliacao.disciplinaNome)
-                    putExtra(TaskNotificationReceiver.EXTRA_AVALIACAO_DATA_HORA, avaliacao.dataHoraIso)
+                    putExtra(TaskNotificationReceiver.EXTRA_TASK_TITLE, tarefa.titulo)
+                    putExtra(TaskNotificationReceiver.EXTRA_TASK_BOARD_NAME, tarefa.quadroNome)
+                    putExtra(TaskNotificationReceiver.EXTRA_TASK_DEADLINE, tarefa.prazoIso)
                     putExtra(TaskNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
                 }
 
@@ -127,8 +123,13 @@ class TaskNotificationScheduler(private val context: Context) {
         }
     }
 
-    private fun buildRequestCode(id: Long, triggerAtMillis: Long): Int {
-        val raw = Objects.hash(id, triggerAtMillis)
+    private fun buildRequestCode(info: TaskInfo, triggerAtMillis: Long): Int {
+        val raw = Objects.hash(
+            info.titulo.orEmpty(),
+            info.quadroNome.orEmpty(),
+            info.prazoIso.orEmpty(),
+            triggerAtMillis
+        )
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
 

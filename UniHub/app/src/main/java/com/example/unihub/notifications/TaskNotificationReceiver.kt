@@ -23,27 +23,21 @@ import kotlin.math.abs
 class TaskNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        val avaliacaoId = intent.getLongExtra(EXTRA_AVALIACAO_ID, -1L)
-        if (avaliacaoId < 0) return
+        val titulo = intent.getStringExtra(EXTRA_TASK_TITLE).orEmpty()
+        if (titulo.isBlank()) return
 
-
-        val descricao = intent.getStringExtra(EXTRA_AVALIACAO_DESCRICAO).orEmpty()
-        val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L).takeIf { it >= 0 }
-        val disciplina = intent.getStringExtra(EXTRA_DISCIPLINA_NOME)
-        val dataHoraIso = intent.getStringExtra(EXTRA_AVALIACAO_DATA_HORA)
+        val quadroNome = intent.getStringExtra(EXTRA_TASK_BOARD_NAME)
+        val dataHoraIso = intent.getStringExtra(EXTRA_TASK_DEADLINE)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
 
         createChannel(context)
 
-        val notificationId = abs((avaliacaoId.toString() + (dataHoraIso ?: "")).hashCode())
+        val notificationId = abs((titulo + (dataHoraIso ?: "")).hashCode())
 
         val visualizarIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra(MainActivity.EXTRA_TARGET_AVALIACAO_ID, avaliacaoId.toString())
-            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_VISUALIZAR_AVALIACAO)
-            disciplinaId?.let {
-                putExtra(MainActivity.EXTRA_TARGET_DISCIPLINA_ID, it.toString())
-            }
+            putExtra(MainActivity.EXTRA_TARGET_SCREEN, MainActivity.TARGET_SCREEN_LISTAR_QUADROS)
+
         }
 
         val visualizarPendingIntent = TaskStackBuilder.create(context).run {
@@ -56,16 +50,16 @@ class TaskNotificationReceiver : BroadcastReceiver() {
 
         val formattedDateTime = formatDateTimeForDisplay(context, dataHoraIso)
         val promptText = context.getString(R.string.task_notification_prompt)
-        val disciplineText = disciplina?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.task_notification_discipline_format, it) }
+        val boardText = quadroNome?.takeIf { it.isNotBlank() }
+            ?.let { context.getString(R.string.task_notification_board_format, it) }
             .orEmpty()
 
         val locale = Locale("pt", "BR")
-        val notificationTitle = descricao.takeIf { it.isNotBlank() }
+        val notificationTitle = titulo.takeIf { it.isNotBlank() }
             ?.uppercase(locale)
             ?: context.getString(R.string.task_notification_default_title)
 
-        val historyMessage = listOfNotNull(promptText, formattedDateTime, disciplineText.takeIf { it.isNotBlank() })
+        val historyMessage = listOfNotNull(promptText, formattedDateTime, boardText.takeIf { it.isNotBlank() })
             .joinToString("\n")
 
         val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
@@ -74,8 +68,8 @@ class TaskNotificationReceiver : BroadcastReceiver() {
             setTextViewText(R.id.notification_message, promptText)
             setTextViewText(R.id.notification_time, formattedDateTime)
 
-            if (disciplineText.isNotEmpty()) {
-                setTextViewText(R.id.notification_absence_info, disciplineText)
+            if (boardText.isNotEmpty()) {
+                setTextViewText(R.id.notification_absence_info, boardText)
                 setViewVisibility(R.id.notification_absence_info, View.VISIBLE)
             } else {
                 setViewVisibility(R.id.notification_absence_info, View.GONE)
@@ -149,11 +143,9 @@ class TaskNotificationReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val EXTRA_AVALIACAO_ID = "extra_avaliacao_id"
-        const val EXTRA_AVALIACAO_DESCRICAO = "extra_avaliacao_descricao"
-        const val EXTRA_DISCIPLINA_ID = "extra_disciplina_id"
-        const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
-        const val EXTRA_AVALIACAO_DATA_HORA = "extra_avaliacao_data_hora"
+        const val EXTRA_TASK_TITLE = "extra_task_title"
+        const val EXTRA_TASK_BOARD_NAME = "extra_task_board_name"
+        const val EXTRA_TASK_DEADLINE = "extra_task_deadline"
         const val EXTRA_REQUEST_CODE = "extra_request_code"
 
         private const val CHANNEL_ID = "task_notifications"

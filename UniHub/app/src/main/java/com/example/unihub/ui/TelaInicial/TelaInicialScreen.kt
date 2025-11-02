@@ -54,6 +54,8 @@ import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.notifications.TaskNotificationScheduler
+import com.example.unihub.notifications.EvaluationNotificationScheduler
+
 
 
 
@@ -82,6 +84,8 @@ fun TelaInicial(
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val taskNotificationScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
+    val evaluationNotificationScheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+
 
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -120,14 +124,27 @@ fun TelaInicial(
     LaunchedEffect(avaliacoesDetalhadas) {
         val infos = avaliacoesDetalhadas.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
-            TaskNotificationScheduler.TaskInfo(
+            EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
                 disciplinaId = avaliacao.disciplina?.id,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                //prioridade = avaliacao.prioridade,
+                prioridade = avaliacao.prioridade,
                 receberNotificacoes = avaliacao.receberNotificacoes == true
+            )
+        }
+        evaluationNotificationScheduler.scheduleNotifications(infos)
+    }
+
+    LaunchedEffect(estado.tarefas) {
+        val infos = estado.tarefas.mapNotNull { tarefa ->
+            val prazoIso = tarefa.prazoIso ?: return@mapNotNull null
+            TaskNotificationScheduler.TaskInfo(
+                titulo = tarefa.titulo,
+                quadroNome = tarefa.nomeQuadro,
+                prazoIso = prazoIso,
+                receberNotificacoes = true
             )
         }
         taskNotificationScheduler.scheduleNotifications(infos)
