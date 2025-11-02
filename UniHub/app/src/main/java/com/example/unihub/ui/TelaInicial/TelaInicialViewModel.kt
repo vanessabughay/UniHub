@@ -1,6 +1,7 @@
 package com.example.unihub.ui.TelaInicial
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -218,13 +219,27 @@ class TelaInicialViewModel(
 
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
-        val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: return null
-        val zonedDateTime = parseDeadline(rawPrazo) ?: return null
+        val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: run {
+            Log.w(TAG, "Tarefa descartada: dataPrazo ausente (titulo=${real.titulo})")
+            return null
+        }
+        Log.d(TAG, "mapTarefaDtoToLocal: recebido dataPrazo=$rawPrazo (titulo=${real.titulo})")
+
+        val zonedDateTime = parseDeadline(rawPrazo) ?: run {
+            Log.w(TAG, "Tarefa descartada: parseDeadline falhou para dataPrazo=$rawPrazo (titulo=${real.titulo})")
+            return null
+        }
         val data = zonedDateTime.toLocalDate()
         val localePtBr = Locale("pt", "BR")
         val nomeQuadro = real.nomeQuadro
             .takeIf { it.isNotBlank() }
             ?: ""
+
+        val prazoIso = zonedDateTime.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        Log.d(
+            TAG,
+            "mapTarefaDtoToLocal: prazoIso gerado=$prazoIso (titulo=${real.titulo}, quadro=${nomeQuadro})"
+        )
 
         return Tarefa(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
@@ -232,7 +247,7 @@ class TelaInicialViewModel(
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
             titulo = real.titulo,
             descricao = nomeQuadro,
-            prazoIso = zonedDateTime.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+            prazoIso = prazoIso,
             nomeQuadro = nomeQuadro
         )
     }
@@ -291,4 +306,9 @@ class TelaInicialViewModel(
 
         return null
     }
+
+    companion object {
+        private const val TAG = "TelaInicialViewModel"
+    }
+
 }
