@@ -86,7 +86,35 @@ fun TelaInicial(
     val taskNotificationScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
     val evaluationNotificationScheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
 
+    val evaluationNotificationInfos = remember(avaliacoesDetalhadas) {
+        avaliacoesDetalhadas.mapNotNull { avaliacao ->
+            val id = avaliacao.id ?: return@mapNotNull null
+            EvaluationNotificationScheduler.EvaluationInfo(
+                id = id,
+                descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
+                disciplinaId = avaliacao.disciplina?.id,
+                disciplinaNome = avaliacao.disciplina?.nome,
+                dataHoraIso = avaliacao.dataEntrega,
+                prioridade = avaliacao.prioridade,
+                receberNotificacoes = avaliacao.receberNotificacoes == true
+            )
+        }
+    }
 
+    val taskNotificationInfos = remember(estado.tarefas) {
+        estado.tarefas.mapNotNull { tarefa ->
+            val prazoIso = tarefa.prazoIso ?: return@mapNotNull null
+            TaskNotificationScheduler.TaskInfo(
+                titulo = tarefa.titulo,
+                quadroNome = tarefa.nomeQuadro,
+                prazoIso = prazoIso,
+                receberNotificacoes = true
+            )
+        }
+    }
+
+    val latestEvaluationInfos by rememberUpdatedState(evaluationNotificationInfos)
+    val latestTaskInfos by rememberUpdatedState(taskNotificationInfos)
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -97,11 +125,13 @@ fun TelaInicial(
     }
 
 
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, latestEvaluationInfos, latestTaskInfos) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.atualizarNomeUsuario()
                 viewModel.refreshData()
+                evaluationNotificationScheduler.scheduleNotifications(latestEvaluationInfos)
+                taskNotificationScheduler.scheduleNotifications(latestTaskInfos)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -121,33 +151,12 @@ fun TelaInicial(
         }
     }
 
-    LaunchedEffect(avaliacoesDetalhadas) {
-        val infos = avaliacoesDetalhadas.mapNotNull { avaliacao ->
-            val id = avaliacao.id ?: return@mapNotNull null
-            EvaluationNotificationScheduler.EvaluationInfo(
-                id = id,
-                descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
-                disciplinaId = avaliacao.disciplina?.id,
-                disciplinaNome = avaliacao.disciplina?.nome,
-                dataHoraIso = avaliacao.dataEntrega,
-                prioridade = avaliacao.prioridade,
-                receberNotificacoes = avaliacao.receberNotificacoes == true
-            )
-        }
-        evaluationNotificationScheduler.scheduleNotifications(infos)
+    LaunchedEffect(evaluationNotificationInfos) {
+        evaluationNotificationScheduler.scheduleNotifications(evaluationNotificationInfos)
     }
 
-    LaunchedEffect(estado.tarefas) {
-        val infos = estado.tarefas.mapNotNull { tarefa ->
-            val prazoIso = tarefa.prazoIso ?: return@mapNotNull null
-            TaskNotificationScheduler.TaskInfo(
-                titulo = tarefa.titulo,
-                quadroNome = tarefa.nomeQuadro,
-                prazoIso = prazoIso,
-                receberNotificacoes = true
-            )
-        }
-        taskNotificationScheduler.scheduleNotifications(infos)
+    LaunchedEffect(taskNotificationInfos) {
+        taskNotificationScheduler.scheduleNotifications(taskNotificationInfos)
     }
 
 
