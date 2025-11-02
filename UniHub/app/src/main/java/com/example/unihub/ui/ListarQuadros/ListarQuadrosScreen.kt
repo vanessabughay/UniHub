@@ -339,6 +339,8 @@ private fun previewGrupoRepositoryListar() = GrupoRepository(object : Grupobacke
     override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
 
     override suspend fun deleteGrupoApi(id: Long): Boolean = true
+
+    override suspend fun leaveGrupoApi(id: Long): Boolean = true
 })
 
 class FakeListarQuadrosViewModelFactory : ViewModelProvider.Factory {

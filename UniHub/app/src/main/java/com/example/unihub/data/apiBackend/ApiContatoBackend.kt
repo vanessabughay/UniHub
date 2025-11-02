@@ -23,7 +23,8 @@ class ApiContatoBackend : Contatobackend {
                 nome = it.nome!!,
                 email = it.email!!,
                 pendente = it.pendente,
-                ownerId = it.ownerId
+                ownerId = it.ownerId,
+                registroId = it.id
             )
         }
     }
@@ -58,7 +59,8 @@ class ApiContatoBackend : Contatobackend {
                 nome = it.nome!!,
                 email = it.email!!,
                 pendente = it.pendente,
-                ownerId = it.ownerId
+                ownerId = it.ownerId,
+                registroId = it.id
             )
         }
     }

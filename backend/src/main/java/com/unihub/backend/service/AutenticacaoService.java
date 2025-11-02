@@ -6,17 +6,23 @@ import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.unihub.backend.dto.LoginResponse;
+import com.unihub.backend.model.Contato;
+import com.unihub.backend.repository.ContatoRepository;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
+import java.util.List;
 
 @Service
 public class AutenticacaoService {
 
     @Autowired
     private UsuarioRepository repository;
+
+     @Autowired
+    private ContatoRepository contatoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -31,7 +37,21 @@ public class AutenticacaoService {
         }
         // Se for cadastro nativo, senha vem preenchida; se for social, não chame este método.
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
-        return repository.save(usuario);
+        Usuario salvo = repository.save(usuario);
+
+        List<Contato> convitesPendentes = contatoRepository
+                .findByEmailIgnoreCaseAndPendenteTrue(salvo.getEmail());
+
+        if (!convitesPendentes.isEmpty()) {
+            for (Contato convite : convitesPendentes) {
+                convite.setIdContato(salvo.getId());
+                convite.setNome(salvo.getNomeUsuario());
+                convite.setEmail(salvo.getEmail());
+            }
+            contatoRepository.saveAll(convitesPendentes);
+        }
+
+        return salvo;
     }
 
     public LoginResponse login(String email, String senha) {

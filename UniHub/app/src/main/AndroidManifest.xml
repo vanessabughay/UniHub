@@ -56,6 +56,11 @@
 
 
 
+        <receiver
+            android:name=".notifications.CompartilhamentoNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
     </application>
 
 </manifest>

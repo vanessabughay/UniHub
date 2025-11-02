@@ -28,4 +28,18 @@
     <string name="task_notification_default_title">Tarefa</string>
     <string name="task_notification_button_details">Ver detalhes</string>
     <string name="task_notification_label">TAREFA</string>
+    <string name="share_notification_invite_channel_name">Convites de compartilhamento</string>
+    <string name="share_notification_invite_channel_description">Notificações para aceitar ou recusar convites de disciplinas compartilhadas.</string>
+    <string name="share_notification_response_channel_name">Atualizações de compartilhamento</string>
+    <string name="share_notification_response_channel_description">Notificações sobre respostas aos convites de compartilhamento.</string>
+    <string name="share_notification_invite_title">Convite para disciplina</string>
+    <string name="share_notification_response_title">Atualização de disciplina compartilhada</string>
+    <string name="share_notification_generic_title">Compartilhamento de disciplina</string>
+    <string name="share_notification_action_accept">Aceitar</string>
+    <string name="share_notification_action_reject">Recusar</string>
+    <string name="share_notification_history_title">Compartilhamento</string>
+    <string name="share_notification_history_accept">Você aceitou o compartilhamento.</string>
+    <string name="share_notification_history_reject">Você rejeitou o compartilhamento.</string>
+    <string name="share_notification_action_session_expired">Sessão expirada. Faça login novamente para responder convites.</string>
+    <string name="share_notification_action_error">Não foi possível atualizar o convite. Tente novamente.</string>
 </resources>

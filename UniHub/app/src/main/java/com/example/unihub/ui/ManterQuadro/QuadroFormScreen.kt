@@ -329,8 +329,8 @@ private val MOCK_DISCIPLINAS = listOf(
     DisciplinaResumo(id = 3, codigo = "CE003", nome = "Estatística II", receberNotificacoes = true, isAtiva = true)
 )
 private val MOCK_CONTATOS = listOf(
-    ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com", pendente = false, ownerId = 1L),
-    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com", pendente = false, ownerId = 1L)
+    ContatoResumo(id = 101, nome = "Ana Beatriz", email = "ana.b@email.com", pendente = false, ownerId = 1L, registroId = 201),
+    ContatoResumo(id = 102, nome = "Carlos Eduardo", email = "carlos.e@email.com", pendente = false, ownerId = 1L, registroId = 202)
 )
 // CÓDIGO CORRIGIDO
 private val MOCK_GRUPOS = listOf(
@@ -386,6 +386,7 @@ private fun createFakeGrupoRepository() = GrupoRepository(object : Grupobackend 
     override suspend fun addGrupoApi(grupo: Grupo) {} // Implementação vazia
     override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean = true
     override suspend fun deleteGrupoApi(id: Long): Boolean = true
+    override suspend fun leaveGrupoApi(id: Long): Boolean = true
 })
 
 private fun createFakeQuadroRepository() = QuadroRepository(object : _quadrobackend {

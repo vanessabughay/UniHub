@@ -99,7 +99,10 @@ class ManterAvaliacaoViewModel(
         viewModelScope.launch {
             _idIntegrantesSelecionados.collect { idsAtuais ->
                 val integrantesAtualizados = _uiState.value.todosOsContatosDisponiveis
-                    .filter { contato -> idsAtuais.contains(contato.id) }
+                    .filter { contato ->
+                        val registroId = contato.registroId
+                        registroId != null && idsAtuais.contains(registroId)
+                    }
                 _uiState.update { it.copy(integrantesDaAvaliacao = integrantesAtualizados) }
             }
         }
@@ -304,15 +307,17 @@ class ManterAvaliacaoViewModel(
                     lista
                         .filter { !it.pendente }
                         .mapNotNull { m ->
-                        m.id?.let { id ->
+                            val registroId = m.registroId ?: return@mapNotNull null
                             ContatoResumoUi(
-                                id = id,
-                                nome = m.nome ?: "",
-                                email = m.email ?: "",
-                                pendente = m.pendente
+                                id = m.id,
+                                nome = m.nome,
+                                email = m.email,
+                                pendente = m.pendente,
+                                registroId = registroId,
+                                ownerId = m.ownerId
                             )
                         }
-                    }.sortedBy { it.nome.lowercase() }
+                        .sortedBy { it.nome.lowercase() }
                 }
                 .catch { e ->
                     _uiState.update {

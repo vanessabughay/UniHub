@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import java.io.IOException
 import android.content.Context
+import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 
 class AuthRepository(
     private val api: UniHubApi = RetrofitClient.api // Assumindo uma classe para inicializar o Retrofit
@@ -72,6 +73,7 @@ class AuthRepository(
                             email = email,
                             usuarioId = authResponse.usuarioId
                         )
+                        CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
                         withContext(Dispatchers.Main) {
@@ -113,6 +115,7 @@ class AuthRepository(
                         email = null,
                         usuarioId = body.usuarioId
                     )
+                    CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
                     onSuccess()
                 } else onError("Resposta vazia do servidor")
             } else onError("Falha no login Google: ${resp.code()}")

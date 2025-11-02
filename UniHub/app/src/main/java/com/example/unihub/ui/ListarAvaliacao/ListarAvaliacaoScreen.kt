@@ -146,15 +146,19 @@ fun ListarAvaliacaoScreen(
     LaunchedEffect(avaliacoesState) {
         val infos = avaliacoesState.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
+
+            val disciplinaIdLong = (avaliacao.disciplina?.id as? String)?.toLongOrNull()
+
             EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
-                // descricao = avaliacao.descricao,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
                 disciplinaId = avaliacao.disciplina?.id,
+                descricao = avaliacao.descricao,
+                disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
-               // receberNotificacoes = avaliacao.receberNotificacoes
+
                 receberNotificacoes = avaliacao.receberNotificacoes == true
 
             )
@@ -340,7 +344,6 @@ fun ListarAvaliacaoScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                modifier = Modifier.navigationBarsPadding().padding (vertical =16.dp),
                 onClick = onAddAvaliacaoGeral,
                 containerColor = LilasButton,
                 contentColor = MaterialTheme.colorScheme.onPrimary,

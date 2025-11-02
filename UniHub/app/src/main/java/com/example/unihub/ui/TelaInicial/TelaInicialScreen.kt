@@ -29,6 +29,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,7 +49,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -172,7 +177,7 @@ fun TelaInicial(
                 "contatos" -> navController.navigate("lista_contato")
                 "grupos" -> navController.navigate("lista_grupo")
                 "historico_notificacoes" -> navController.navigate("historico_notificacoes")
-                //"configurar notificações" -> navController.navigate("configurar_notificacoes")
+                "gerenciar notificações" -> navController.navigate("gerenciar_notificacoes")
                 else -> {}
             }
         }
@@ -656,4 +661,65 @@ private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercas
     "configurar notificações" -> Outlined.Settings
     else -> Outlined.Circle
 
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Tela Inicial")
+@Composable
+private fun TelaInicialViewPreview() {
+    MaterialTheme {
+        TelaInicialView(
+            estado = EstadoTelaInicial(
+                usuario = Usuario(nome = "Maria Silva"),
+                avaliacoes = listOf(
+                    Avaliacao(
+                        diaSemana = "Segunda",
+                        dataCurta = "12/08",
+                        titulo = "Prova de Cálculo",
+                        descricao = "Cálculo I"
+                    ),
+                    Avaliacao(
+                        diaSemana = "Quarta",
+                        dataCurta = "14/08",
+                        titulo = "Trabalho de Física",
+                        descricao = "Laboratório"
+                    )
+                ),
+                tarefas = listOf(
+                    Tarefa(
+                        diaSemana = "Sexta",
+                        dataCurta = "16/08",
+                        titulo = "Entregar relatório",
+                        descricao = "Projeto Integrador"
+                    ),
+                    Tarefa(
+                        diaSemana = "Domingo",
+                        dataCurta = "18/08",
+                        titulo = "Revisar notas",
+                        descricao = "Planejamento semanal"
+                    )
+                ),
+                opcoesMenu = listOf(
+                    "Perfil",
+                    "Disciplinas",
+                    "Calendário",
+                    "Contatos",
+                    "Grupos",
+                    "Quadros",
+                    "Gerenciar notificações"
+                ),
+                atalhosRapidos = listOf("Quadros", "Calendário", "Disciplinas", "Avaliações"),
+                secaoAvaliacoesAberta = true,
+                secaoTarefasAberta = true
+            ),
+            onAbrirMenu = {},
+            onFecharMenu = {},
+            onAlternarMenu = {},
+            onClicarAtalho = {},
+            onClicarOpcaoMenu = {},
+            onAlternarSecaoAvaliacoes = {},
+            onAlternarSecaoTarefas = {},
+            onAbrirHistoricoNotificacoes = {},
+            onLogout = {}
+        )
+    }
 }

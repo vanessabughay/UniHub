@@ -1,9 +1,12 @@
 package com.unihub.backend.controller;
 
 import com.unihub.backend.dto.UpdateUsuarioRequest;
+import com.unihub.backend.dto.compartilhamento.NotificacaoResponse;
+import com.unihub.backend.dto.compartilhamento.UsuarioResumoResponse;
 import com.unihub.backend.model.Contato;
 import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
+import com.unihub.backend.service.CompartilhamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +31,10 @@ public class UsuarioController {
 
     @Autowired
     private ContatoRepository contatoRepository;
+
+    @Autowired
+    private CompartilhamentoService compartilhamentoService;
+
 
     @PutMapping("/me")
     public ResponseEntity<?> atualizarUsuario(@RequestBody UpdateUsuarioRequest request,
@@ -78,6 +85,26 @@ private void atualizarEmailContatos(Long usuarioId, String emailAnterior, String
 
         if (!contatosParaSalvar.isEmpty()) {
             contatoRepository.saveAll(contatosParaSalvar);
+        }
+    }
+    
+    @GetMapping("/{usuarioId}/contatos")
+    public List<UsuarioResumoResponse> listarContatosCompartilhamento(@PathVariable Long usuarioId,
+                                                                      @AuthenticationPrincipal Long usuarioAutenticado) {
+        validarUsuarioAutenticado(usuarioId, usuarioAutenticado);
+        return compartilhamentoService.listarContatos(usuarioId);
+    }
+
+    @GetMapping("/{usuarioId}/notificacoes")
+    public List<NotificacaoResponse> listarNotificacoes(@PathVariable Long usuarioId,
+                                                        @AuthenticationPrincipal Long usuarioAutenticado) {
+        validarUsuarioAutenticado(usuarioId, usuarioAutenticado);
+        return compartilhamentoService.listarNotificacoes(usuarioId);
+    }
+
+    private void validarUsuarioAutenticado(Long usuarioId, Long usuarioAutenticado) {
+        if (usuarioAutenticado == null || !usuarioAutenticado.equals(usuarioId)) {
+            throw new RuntimeException("Sem acesso");
         }
     }
 

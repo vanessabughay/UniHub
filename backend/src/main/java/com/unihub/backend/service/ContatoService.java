@@ -30,6 +30,9 @@ public class ContatoService {
     @Autowired
     private UsuarioRepository usuarioRepository;
 
+     @Autowired
+    private InvitationEmailService invitationEmailService;
+
     private Long currentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || auth.getPrincipal() == null) return null;
@@ -80,8 +83,33 @@ public class ContatoService {
                 contato.setDataConfirmacao(LocalDateTime.now());
             }
         }
-        contato.setOwnerId(currentUserId());
-        return repository.save(contato);
+        Long ownerId = currentUserId();
+        contato.setOwnerId(ownerId);
+
+        boolean novoContato = contato.getId() == null;
+        String emailNormalizado = contato.getEmail() != null ? contato.getEmail().trim() : null;
+        boolean deveEnviarConvite = false;
+        String nomeRemetente = null;
+
+        if (novoContato && emailNormalizado != null && !emailNormalizado.isBlank()) {
+            if (usuarioRepository.findByEmailIgnoreCase(emailNormalizado).isEmpty()) {
+                contato.setEmail(emailNormalizado);
+                deveEnviarConvite = true;
+                if (ownerId != null) {
+                    nomeRemetente = usuarioRepository.findById(ownerId)
+                            .map(Usuario::getNomeUsuario)
+                            .orElse(null);
+                }
+            }
+        }
+
+        Contato salvo = repository.save(contato);
+
+        if (deveEnviarConvite) {
+            invitationEmailService.enviarConvite(emailNormalizado, nomeRemetente);
+        }
+
+        return salvo;
     }
 
     private Contato mapearConviteParaDono(Contato conviteOriginal, Usuario dono) {

@@ -346,7 +346,7 @@ fun ListarContatoScreen(
                                     showDelete = !isConviteRecebido,
                                     onAcceptClick = if (isConviteRecebido) {
                                         {
-                                            viewModel.aceitarConvite(contato.id) { sucesso ->
+                                            viewModel.aceitarConvite(contato.registroId) { sucesso ->
                                                 if (sucesso) {
                                                     Toast.makeText(
                                                         context,
@@ -361,7 +361,7 @@ fun ListarContatoScreen(
                                     },
                                     onRejectClick = if (isConviteRecebido) {
                                         {
-                                            viewModel.rejeitarConvite(contato.id) { sucesso ->
+                                            viewModel.rejeitarConvite(contato.registroId) { sucesso ->
                                                 if (sucesso) {
                                                     Toast.makeText(
                                                         context,
