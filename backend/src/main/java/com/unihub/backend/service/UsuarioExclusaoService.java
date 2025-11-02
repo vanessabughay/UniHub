@@ -1,6 +1,7 @@
 package com.unihub.backend.service;
 
 import com.unihub.backend.model.Contato;
+import com.unihub.backend.model.Grupo;
 import com.unihub.backend.model.QuadroPlanejamento;
 import com.unihub.backend.model.TarefaPlanejamento;
 import com.unihub.backend.model.Usuario;
@@ -12,6 +13,7 @@ import com.unihub.backend.repository.TarefaComentarioNotificacaoRepository;
 import com.unihub.backend.repository.TarefaComentarioRepository;
 import com.unihub.backend.repository.TarefaPlanejamentoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
+import com.unihub.backend.repository.GrupoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,6 +41,7 @@ public class UsuarioExclusaoService {
     private final NotificacaoRepository notificacaoRepository;
     private final ConviteCompartilhamentoRepository conviteRepository;
     private final GrupoService grupoService;
+    private final GrupoRepository grupoRepository;
 
     public UsuarioExclusaoService(UsuarioRepository usuarioRepository,
                                   ContatoRepository contatoRepository,
@@ -48,7 +51,8 @@ public class UsuarioExclusaoService {
                                   TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository,
                                   NotificacaoRepository notificacaoRepository,
                                   ConviteCompartilhamentoRepository conviteRepository,
-                                  GrupoService grupoService) {
+                                  GrupoService grupoService,
+                                  GrupoRepository grupoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.contatoRepository = contatoRepository;
         this.quadroRepository = quadroRepository;
@@ -58,7 +62,8 @@ public class UsuarioExclusaoService {
         this.notificacaoRepository = notificacaoRepository;
         this.conviteRepository = conviteRepository;
         this.grupoService = grupoService;
-    }
+        this.grupoRepository = grupoRepository;
+    } 
 
     @Transactional
     public void excluirUsuario(Long usuarioId) {
@@ -125,41 +130,67 @@ public class UsuarioExclusaoService {
     }
 
     private Optional<Usuario> escolherNovoOwner(QuadroPlanejamento quadro, Long usuarioAtual) {
-        Map<Long, Usuario> candidatos = new LinkedHashMap<>();
+         Map<Long, Usuario> candidatos = new LinkedHashMap<>();
 
-        if (quadro.getContato() != null) {
-            localizarUsuarioDoContato(quadro.getContato())
-                    .filter(usuario -> !Objects.equals(usuario.getId(), usuarioAtual))
-                    .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
-        }
+       adicionarCandidato(candidatos, localizarUsuarioDoContato(quadro.getContato()), usuarioAtual);
 
-        if (quadro.getGrupo() != null) {
-            Long ownerId = quadro.getGrupo().getOwnerId();
-            if (ownerId != null && !Objects.equals(ownerId, usuarioAtual)) {
-                usuarioRepository.findById(ownerId)
-                        .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
-            }
+        Grupo grupo = carregarGrupo(quadro.getGrupo());
+        if (grupo != null) {
+            adicionarCandidatoPorId(candidatos, grupo.getOwnerId(), usuarioAtual);
 
-            if (quadro.getGrupo().getMembros() != null) {
-                quadro.getGrupo().getMembros().stream()
+            if (grupo.getMembros() != null) {
+                grupo.getMembros().stream()
                         .filter(Objects::nonNull)
                         .map(this::localizarUsuarioDoContato)
                         .flatMap(Optional::stream)
-                        .filter(usuario -> !Objects.equals(usuario.getId(), usuarioAtual))
-                        .forEach(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
-            
+                        .forEach(usuario -> adicionarCandidato(candidatos, usuario, usuarioAtual));
             }
         }
         
-       return candidatos.values().stream().findFirst();
+        return candidatos.values().stream().findFirst();
     }
 
-        private Optional<Usuario> localizarUsuarioDoContato(Contato contato) {
+    private Grupo carregarGrupo(Grupo grupo) {
+        if (grupo == null) {
+            return null;
+        }
+        Long grupoId = grupo.getId();
+        if (grupoId == null) {
+            return grupo;
+        }
+        return grupoRepository.findById(grupoId).orElse(grupo);
+    }
+
+    private void adicionarCandidato(Map<Long, Usuario> candidatos, Optional<Usuario> possivel, Long usuarioAtual) {
+        possivel.ifPresent(usuario -> adicionarCandidato(candidatos, usuario, usuarioAtual));
+    }
+
+    private void adicionarCandidato(Map<Long, Usuario> candidatos, Usuario usuario, Long usuarioAtual) {
+        if (usuario == null || Objects.equals(usuario.getId(), usuarioAtual)) {
+            return;
+        }
+        candidatos.putIfAbsent(usuario.getId(), usuario);
+    }
+
+    private void adicionarCandidatoPorId(Map<Long, Usuario> candidatos, Long candidatoId, Long usuarioAtual) {
+        if (candidatoId == null || Objects.equals(candidatoId, usuarioAtual)) {
+            return;
+        }
+        if (candidatos.containsKey(candidatoId)) {
+            return;
+        }
+        usuarioRepository.findById(candidatoId)
+                .ifPresent(usuario -> candidatos.putIfAbsent(usuario.getId(), usuario));
+    }
+
+    private Optional<Usuario> localizarUsuarioDoContato(Contato contato) {
         if (contato == null) {
             return Optional.empty();
         }
 
-         Long contatoUsuarioId = contato.getIdContato();
+         Contato contatoBase = carregarContato(contato);
+
+        Long contatoUsuarioId = contatoBase.getIdContato();
         if (contatoUsuarioId != null) {
             Optional<Usuario> porId = usuarioRepository.findById(contatoUsuarioId);
             if (porId.isPresent()) {
@@ -167,12 +198,30 @@ public class UsuarioExclusaoService {
             }
         }
 
-       String email = contato.getEmail();
+       String email = contatoBase.getEmail();
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
 
         return usuarioRepository.findByEmailIgnoreCase(email);
+    }
+
+     private Contato carregarContato(Contato contato) {
+        if (contato == null) {
+            return null;
+        }
+
+        if (contato.getId() != null) {
+            return contatoRepository.findById(contato.getId()).orElse(contato);
+        }
+
+        Long ownerId = contato.getOwnerId();
+        Long contatoUsuarioId = contato.getIdContato();
+        if (ownerId != null && contatoUsuarioId != null) {
+            return contatoRepository.findByOwnerIdAndIdContato(ownerId, contatoUsuarioId).orElse(contato);
+        }
+
+        return contato;
     }
 
     private void removerContatos(Usuario usuario) {
