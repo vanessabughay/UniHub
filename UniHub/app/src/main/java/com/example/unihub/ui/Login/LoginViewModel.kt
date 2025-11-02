@@ -22,7 +22,7 @@ open class AuthViewModel(
         errorMessage = null
         success = false
 
-        val cleanEmail = email.trim()
+        val cleanEmail = email.trim().lowercase()
         val cleanPassword = password.trim()
 
         if (cleanEmail.isEmpty() || cleanPassword.isEmpty()) {
