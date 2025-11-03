@@ -205,7 +205,7 @@ LaunchedEffect(quadroId) {
         if (isEditing) {
             tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
         } else {
-            tarefaViewModel.definirReceberNotificacoesLocal(false)
+            tarefaViewModel.definirReceberNotificacoesLocal(true)
         }
     }
 
