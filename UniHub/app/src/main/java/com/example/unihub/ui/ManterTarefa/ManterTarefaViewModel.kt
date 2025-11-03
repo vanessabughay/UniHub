@@ -68,7 +68,7 @@ class TarefaFormViewModel(
     private val _comentariosCarregando = MutableStateFlow(false)
     val comentariosCarregando: StateFlow<Boolean> = _comentariosCarregando.asStateFlow()
 
-    private val _receberNotificacoes = MutableStateFlow(false)
+    private val _receberNotificacoes = MutableStateFlow(true)
     val receberNotificacoes: StateFlow<Boolean> = _receberNotificacoes.asStateFlow()
 
     private val _comentarioResultado = MutableStateFlow<ComentarioActionResult?>(null)
@@ -266,6 +266,10 @@ class TarefaFormViewModel(
                 )
             }
         }
+    }
+
+    fun definirReceberNotificacoesLocal(receber: Boolean) {
+        _receberNotificacoes.value = receber
     }
 
     fun resetComentarioResultado() {

@@ -47,7 +47,7 @@ data class ManterAvaliacaoUiState(
 
     val modalidade: Modalidade = Modalidade.INDIVIDUAL,
     val prioridade: Prioridade = Prioridade.MEDIA,
-    val receberNotificacoes: Boolean = false,
+    val receberNotificacoes: Boolean = true,
 
     // agora usamos data + hora
     val dataEntrega: String = "", // "yyyy-MM-dd"
@@ -127,7 +127,7 @@ class ManterAvaliacaoViewModel(
                                     tipoAvaliacao = avaliacao.tipoAvaliacao ?: "",
                                     modalidade = avaliacao.modalidade ?: Modalidade.INDIVIDUAL,
                                     prioridade = avaliacao.prioridade ?: Prioridade.MEDIA,
-                                    receberNotificacoes = avaliacao.receberNotificacoes ?: false,
+                                    receberNotificacoes = avaliacao.receberNotificacoes != false,
 
                                     dataEntrega = dataUi,
                                     horaEntrega = horaUi,

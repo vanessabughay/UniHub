@@ -204,6 +204,8 @@ LaunchedEffect(quadroId) {
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
             tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
+        } else {
+            tarefaViewModel.definirReceberNotificacoesLocal(false)
         }
     }
 
@@ -611,14 +613,17 @@ LaunchedEffect(quadroId) {
 
                     }
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = receberNotificacoesTarefa,
-                        onCheckedChange = { marcado ->
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Checkbox(
+                    checked = receberNotificacoesTarefa,
+                    onCheckedChange = { marcado ->
+                        if (isEditing) {
                             tarefaId?.let { id ->
                                 tarefaViewModel.atualizarPreferenciaTarefa(
                                     quadroId,
@@ -627,11 +632,13 @@ LaunchedEffect(quadroId) {
                                     marcado
                                 )
                             }
-                        },
-                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
-                    )
-                    Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
-                }
+                        } else {
+                            tarefaViewModel.definirReceberNotificacoesLocal(marcado)
+                        }
+                    },
+                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
+                )
+                Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
             }
 
             comentarioParaExcluir?.let { idParaExcluir ->
