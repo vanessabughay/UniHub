@@ -121,7 +121,9 @@ class HistoricoNotificacoesViewModel(
                         } else {
                             appContext.getString(R.string.share_notification_history_reject)
                         },
-                        timestampMillis = System.currentTimeMillis()
+                        timestampMillis = System.currentTimeMillis(),
+                        syncWithBackend = false,
+                        type = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
                     )
                 }
 

@@ -15,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -23,6 +24,8 @@ import kotlin.math.abs
 class TaskNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        TokenManager.loadToken(context.applicationContext)
+
         val titulo = intent.getStringExtra(EXTRA_TASK_TITLE).orEmpty()
         if (titulo.isBlank()) return
 
@@ -103,7 +106,8 @@ class TaskNotificationReceiver : BroadcastReceiver() {
             .logNotification(
                 title = notificationTitle,
                 message = historyMessage,
-                timestampMillis = System.currentTimeMillis()
+                timestampMillis = System.currentTimeMillis(),
+                type = "TAREFA_PRAZO"
             )
 
         if (requestCode != -1) {

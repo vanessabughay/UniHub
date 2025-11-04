@@ -45,7 +45,13 @@ class CompartilhamentoNotificationActionReceiver : BroadcastReceiver() {
                             ACTION_REJECT -> appContext.getString(R.string.share_notification_history_reject)
                             else -> ""
                         },
-                        timestampMillis = System.currentTimeMillis()
+                        timestampMillis = System.currentTimeMillis(),
+                        syncWithBackend = false,
+                        type = when (action) {
+                            ACTION_ACCEPT -> "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+                            ACTION_REJECT -> "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+                            else -> null
+                        }
                     )
 
                     CompartilhamentoNotificationSynchronizer.getInstance(appContext)

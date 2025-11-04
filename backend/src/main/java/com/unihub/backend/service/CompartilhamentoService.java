@@ -216,10 +216,22 @@ public class CompartilhamentoService {
         Notificacao notificacao = new Notificacao();
         notificacao.setUsuario(usuario);
         notificacao.setConvite(convite);
+                notificacao.setTitulo(definirTituloNotificacao(tipo));
+
         notificacao.setMensagem(mensagem);
         notificacao.setTipo(tipo);
         notificacao.setCriadaEm(LocalDateTime.now());
         notificacaoRepository.save(notificacao);
+    }
+
+    private String definirTituloNotificacao(String tipo) {
+        if (TIPO_CONVITE.equals(tipo)) {
+            return "Convite de compartilhamento";
+        }
+        if (TIPO_RESPOSTA.equals(tipo)) {
+            return "Resposta de compartilhamento";
+        }
+        return tipo;
     }
 
     private Disciplina clonarDisciplina(Disciplina original, Usuario novoUsuario) {

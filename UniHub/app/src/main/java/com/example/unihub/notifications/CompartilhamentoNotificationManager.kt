@@ -65,8 +65,8 @@ class CompartilhamentoNotificationManager(context: Context) {
         ensureChannels()
 
         val notificationId = notificationIdForInvite(inviteId)
-        val title = appContext.getString(R.string.share_notification_invite_title)
-        val message = invite.mensagem ?: ""
+        val title = invite.titulo ?: appContext.getString(R.string.share_notification_invite_title)
+        val message = invite.mensagem
 
         val contentIntent = buildContentIntent(notificationId)
 
@@ -110,7 +110,9 @@ class CompartilhamentoNotificationManager(context: Context) {
             message = message,
             timestampMillis = System.currentTimeMillis(),
             shareInviteId = inviteId,
-            shareActionPending = true
+            shareActionPending = true,
+            syncWithBackend = false,
+            type = invite.tipo
         )
     }
 
@@ -130,8 +132,8 @@ class CompartilhamentoNotificationManager(context: Context) {
             else -> CHANNEL_RESPONSES to R.string.share_notification_generic_title
         }
 
-        val title = appContext.getString(titleRes)
-        val message = notification.mensagem ?: ""
+        val title = notification.titulo ?: appContext.getString(titleRes)
+        val message = notification.mensagem
 
         val contentIntent = buildContentIntent(notificationId)
 
@@ -153,7 +155,9 @@ class CompartilhamentoNotificationManager(context: Context) {
             message = message,
             timestampMillis = System.currentTimeMillis(),
             shareInviteId = notification.conviteId,
-            shareActionPending = false
+            shareActionPending = false,
+            syncWithBackend = false,
+            type = notification.tipo
         )
     }
 

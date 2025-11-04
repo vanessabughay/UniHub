@@ -23,6 +23,7 @@ data class ConviteCompartilhamentoResponse(
 
 data class NotificacaoResponse(
     val id: Long,
+    val titulo: String?,
     val mensagem: String,
     val lida: Boolean,
     val tipo: String?,

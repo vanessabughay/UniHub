@@ -1,8 +1,11 @@
 package com.unihub.backend.controller;
 
+import com.unihub.backend.dto.compartilhamento.NotificacaoResponse;
+import com.unihub.backend.dto.notificacoes.NotificacaoLogRequest;
 import com.unihub.backend.dto.notificacoes.NotificacoesConfigRequest;
 import com.unihub.backend.dto.notificacoes.NotificacoesConfigResponse;
 import com.unihub.backend.service.NotificacaoConfiguracaoService;
+import com.unihub.backend.service.NotificacaoService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +15,12 @@ import org.springframework.web.bind.annotation.*;
 public class NotificacoesController {
 
     private final NotificacaoConfiguracaoService notificacaoConfiguracaoService;
+    private final NotificacaoService notificacaoService;
 
-    public NotificacoesController(NotificacaoConfiguracaoService notificacaoConfiguracaoService) {
+    public NotificacoesController(NotificacaoConfiguracaoService notificacaoConfiguracaoService,
+                                  NotificacaoService notificacaoService) {
         this.notificacaoConfiguracaoService = notificacaoConfiguracaoService;
+        this.notificacaoService = notificacaoService;
     }
 
     @GetMapping("/config")
@@ -26,5 +32,11 @@ public class NotificacoesController {
     public NotificacoesConfigResponse salvar(@AuthenticationPrincipal Long usuarioId,
                                              @RequestBody NotificacoesConfigRequest request) {
         return notificacaoConfiguracaoService.salvar(usuarioId, request);
+    }
+
+    @PostMapping("/historico")
+    public NotificacaoResponse registrar(@AuthenticationPrincipal Long usuarioId,
+                                         @RequestBody NotificacaoLogRequest request) {
+        return notificacaoService.registrarNotificacao(usuarioId, request);
     }
 }

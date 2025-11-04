@@ -17,6 +17,7 @@ import retrofit2.HttpException
 
 data class NotificacaoConviteUi(
     val id: Long,
+    val titulo: String?,
     val mensagem: String,
     val conviteId: Long?,
     val tipo: String?,
@@ -176,6 +177,7 @@ class CompartilhamentoViewModel(
 
     private fun NotificacaoResponse.toUi(): NotificacaoConviteUi = NotificacaoConviteUi(
         id = id,
+        titulo = titulo,
         mensagem = mensagem,
         conviteId = conviteId,
         tipo = tipo,

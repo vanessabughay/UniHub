@@ -22,6 +22,9 @@ public class Notificacao {
     @JoinColumn(name = "convite_id")
     private ConviteCompartilhamento convite;
 
+     @Column(length = 150)
+    private String titulo;
+
     @Column(nullable = false, length = 500)
     private String mensagem;
 
@@ -60,6 +63,15 @@ public class Notificacao {
     public void setConvite(ConviteCompartilhamento convite) {
         this.convite = convite;
     }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+
 
     public String getMensagem() {
         return mensagem;
