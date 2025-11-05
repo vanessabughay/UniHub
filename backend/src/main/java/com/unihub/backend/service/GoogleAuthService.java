@@ -16,6 +16,8 @@ import com.unihub.backend.dto.LoginResponse;
 import com.unihub.backend.model.enums.AuthProvider;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
+import com.unihub.backend.repository.ContatoRepository;
+import com.unihub.backend.model.Contato;
 
 @Service
 public class GoogleAuthService {
@@ -25,11 +27,14 @@ public class GoogleAuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final AutenticacaoService autenticacaoService;
+    private final ContatoRepository contatoRepository;
 
     public GoogleAuthService(UsuarioRepository usuarioRepository,
-                             AutenticacaoService autenticacaoService) {
+                             AutenticacaoService autenticacaoService,
+                             ContatoRepository contatoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.autenticacaoService = autenticacaoService;
+        this.contatoRepository = contatoRepository;
     }
 
     public LoginResponse loginWithGoogle(String idTokenString) {
@@ -77,13 +82,27 @@ public class GoogleAuthService {
                 user.setEmailVerified(emailVerified);
             } catch (Exception ignored) {}
 
-            usuarioRepository.save(user);
+             Usuario salvo = usuarioRepository.save(user);
+
+            // Atualiza convites pendentes direcionados a este e-mail, assim como no cadastro nativo
+            if (salvo.getEmail() != null) {
+                var convitesPendentes = contatoRepository
+                        .findByEmailIgnoreCaseAndPendenteTrue(salvo.getEmail());
+                if (!convitesPendentes.isEmpty()) {
+                    for (Contato convite : convitesPendentes) {
+                        convite.setIdContato(salvo.getId());
+                        convite.setNome(salvo.getNomeUsuario());
+                        convite.setEmail(salvo.getEmail());
+                    }
+                    contatoRepository.saveAll(convitesPendentes);
+                }
+            }
 
             // gera jwt
             // Se seu AutenticacaoService gerar token por id:
-            String token = autenticacaoService.gerarToken(user.getId());
+            String token = autenticacaoService.gerarToken(salvo.getId());
 
-            return new LoginResponse(token, user.getNomeUsuario(), user.getId());
+            return new LoginResponse(token, salvo.getNomeUsuario(), salvo.getEmail(), salvo.getId());
         } catch (Exception e) {
             throw new RuntimeException("Falha ao validar token do Google: " + e.getMessage(), e);
         }

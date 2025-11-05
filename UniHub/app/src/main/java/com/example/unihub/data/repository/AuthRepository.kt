@@ -70,7 +70,7 @@ class AuthRepository(
                             context = context,
                             value = authResponse.token,
                             nome = authResponse.nomeUsuario,
-                            email = email,
+                            email = authResponse.email ?: email,
                             usuarioId = authResponse.usuarioId
                         )
                         CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
@@ -111,8 +111,7 @@ class AuthRepository(
                         context,
                         value = body.token,
                         nome = body.nomeUsuario,
-                        // o backend retorna email só no nativo; aqui pode ficar null
-                        email = null,
+                        email = body.email,
                         usuarioId = body.usuarioId
                     )
                     CompartilhamentoNotificationSynchronizer.triggerImmediate(context)

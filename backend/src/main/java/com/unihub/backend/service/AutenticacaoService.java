@@ -59,7 +59,7 @@ public class AutenticacaoService {
         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
             Usuario usuario = usuarioOpt.get();
             String token = gerarToken(usuario.getId()); // <- usa o novo método
-            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getId());
+            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getEmail(), usuario.getId());
         }
         return null;
     }
