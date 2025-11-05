@@ -42,4 +42,6 @@
     <string name="share_notification_history_reject">Você rejeitou o compartilhamento.</string>
     <string name="share_notification_action_session_expired">Sessão expirada. Faça login novamente para responder convites.</string>
     <string name="share_notification_action_error">Não foi possível atualizar o convite. Tente novamente.</string>
+    <string name="notification_history_default_title">Notificação</string>
+    <string name="notification_history_load_error">Não foi possível carregar o histórico de notificações.</string>
 </resources>

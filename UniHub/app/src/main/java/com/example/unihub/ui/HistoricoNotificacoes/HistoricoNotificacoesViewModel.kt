@@ -3,19 +3,22 @@ package com.example.unihub.ui.HistoricoNotificacoes
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.unihub.data.repository.NotificationHistoryRepository
+import com.example.unihub.data.model.NotificacaoResponse
 import com.example.unihub.data.repository.CompartilhamentoRepository
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 import com.example.unihub.R
 import java.time.Instant
+import java.time.LocalDateTime
+
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeParseException
+
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
@@ -39,7 +42,6 @@ data class HistoricoNotificacoesUiState(
 
 class HistoricoNotificacoesViewModel(
     application: Application,
-    private val repository: NotificationHistoryRepository,
     private val compartilhamentoRepository: CompartilhamentoRepository
 ) : AndroidViewModel(application) {
 
@@ -59,28 +61,49 @@ class HistoricoNotificacoesViewModel(
     private val appContext = application.applicationContext
 
     init {
-        observeHistory()
+        carregarHistorico(showLoading = true)
     }
 
-    private fun observeHistory() {
-        viewModelScope.launch {
-            repository.historyFlow.collect { entries ->
-                val models = entries.map { entry ->
-                    HistoricoNotificacaoUiModel(
-                        id = entry.id,
-                        titulo = entry.title,
-                        descricao = entry.message,
-                        dataHora = formatTimestamp(entry.timestampMillis),
-                        shareInviteId = entry.shareInviteId,
-                        shareActionPending = entry.shareActionPending
-                    )
-                }
+    private fun carregarHistorico(showLoading: Boolean = false) {
 
-                _uiState.value = HistoricoNotificacoesUiState(
-                    isLoading = false,
-                    notificacoes = models
-                )
+        viewModelScope.launch {
+            carregarHistoricoInterno(showLoading)
+        }
+    }
+
+    private suspend fun carregarHistoricoInterno(showLoading: Boolean = false) {
+        val previousState = _uiState.value
+        if (showLoading) {
+            _uiState.value = previousState.copy(isLoading = true)
+        }
+
+        TokenManager.loadToken(appContext)
+        val usuarioId = TokenManager.usuarioId
+        if (usuarioId == null || usuarioId <= 0) {
+            _uiState.value = HistoricoNotificacoesUiState(isLoading = false, notificacoes = emptyList())
+            _mensagens.emit(appContext.getString(R.string.share_notification_action_session_expired))
+            return
+        }
+
+        try {
+            val responses = withContext(Dispatchers.IO) {
+                compartilhamentoRepository.listarNotificacoes(usuarioId)
             }
+
+            val models = responses
+                .map { response -> criarUiModel(response) }
+                .sortedByDescending { it.timestampMillis }
+                .map { it.model }
+
+            _uiState.value = HistoricoNotificacoesUiState(
+                isLoading = false,
+                notificacoes = models
+            )
+        } catch (exception: Exception) {
+            _uiState.value = previousState.copy(isLoading = false)
+            _mensagens.emit(
+                exception.message ?: appContext.getString(R.string.notification_history_load_error)
+            )
         }
     }
 
@@ -93,6 +116,8 @@ class HistoricoNotificacoesViewModel(
     }
 
     private fun executarAcao(conviteId: Long, aceitar: Boolean) {
+        TokenManager.loadToken(appContext)
+
         val usuarioId = TokenManager.usuarioId
         if (usuarioId == null || usuarioId <= 0) {
             viewModelScope.launch {
@@ -114,21 +139,12 @@ class HistoricoNotificacoesViewModel(
                     CompartilhamentoNotificationSynchronizer.getInstance(appContext)
                         .completeInvite(conviteId)
 
-                    repository.logNotification(
-                        title = appContext.getString(R.string.share_notification_history_title),
-                        message = if (aceitar) {
-                            appContext.getString(R.string.share_notification_history_accept)
-                        } else {
-                            appContext.getString(R.string.share_notification_history_reject)
-                        },
-                        timestampMillis = System.currentTimeMillis(),
-                        syncWithBackend = false,
-                        type = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
-                    )
+
                 }
 
                 CompartilhamentoNotificationSynchronizer.triggerImmediate(appContext)
                 CompartilhamentoNotificationSynchronizer.broadcastRefresh(appContext)
+                carregarHistoricoInterno()
 
                 _mensagens.emit(
                     if (aceitar) {
@@ -160,5 +176,51 @@ class HistoricoNotificacoesViewModel(
         val zonedDateTime = Instant.ofEpochMilli(timestampMillis)
             .atZone(ZoneId.systemDefault())
         return dateFormatter.format(zonedDateTime)
+    }
+    private fun criarUiModel(response: NotificacaoResponse): UiModelWithOrder {
+        val timestamp = parseTimestamp(response.criadaEm)
+        val title = response.titulo?.takeIf { it.isNotBlank() }
+            ?: appContext.getString(R.string.notification_history_default_title)
+
+        val pendingAction = response.conviteId != null && !response.lida &&
+                response.tipo.equals(TIPO_CONVITE, ignoreCase = true)
+
+        return UiModelWithOrder(
+            timestamp,
+            HistoricoNotificacaoUiModel(
+                id = response.id,
+                titulo = title,
+                descricao = response.mensagem,
+                dataHora = formatTimestamp(timestamp),
+                shareInviteId = response.conviteId,
+                shareActionPending = pendingAction
+            )
+        )
+    }
+
+    private fun parseTimestamp(raw: String?): Long {
+        if (raw.isNullOrBlank()) {
+            return System.currentTimeMillis()
+        }
+
+        return try {
+            val localDateTime = LocalDateTime.parse(raw, DateTimeFormatter.ISO_DATE_TIME)
+            localDateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (firstError: DateTimeParseException) {
+            try {
+                Instant.parse(raw).toEpochMilli()
+            } catch (_: Exception) {
+                System.currentTimeMillis()
+            }
+        }
+    }
+
+    private data class UiModelWithOrder(
+        val timestampMillis: Long,
+        val model: HistoricoNotificacaoUiModel
+    )
+
+    companion object {
+        private const val TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO"
     }
 }
