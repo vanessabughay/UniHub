@@ -5,4 +5,5 @@ data class AuthResponse(
     val nomeUsuario: String = "",
     val email: String? = null,
     val usuarioId: Long? = null,
+    val googleCalendarLinked: Boolean = false,
 )

@@ -20,13 +20,16 @@ public class AvaliacaoService {
     private final AvaliacaoRepository avaliacaoRepository;
     private final ContatoRepository contatoRepository;
     private final DisciplinaRepository disciplinaRepository;
+    private final GoogleCalendarSyncService googleCalendarSyncService;
 
     public AvaliacaoService(AvaliacaoRepository avaliacaoRepository,
                             ContatoRepository contatoRepository,
-                            DisciplinaRepository disciplinaRepository) {
+                            DisciplinaRepository disciplinaRepository,
+                            GoogleCalendarSyncService googleCalendarSyncService) {
         this.avaliacaoRepository = avaliacaoRepository;
         this.contatoRepository = contatoRepository;
         this.disciplinaRepository = disciplinaRepository;
+        this.googleCalendarSyncService = googleCalendarSyncService;
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +50,9 @@ public class AvaliacaoService {
                 validarUsuario(usuarioId);
         Avaliacao a = new Avaliacao();
         aplicar(req, a, usuarioId);
-        return avaliacaoRepository.save(a).getId();
+         Avaliacao salvo = avaliacaoRepository.save(a);
+        googleCalendarSyncService.syncEvaluation(salvo.getId(), usuarioId);
+        return salvo.getId();
     }
 
     @Transactional
@@ -58,6 +63,7 @@ public class AvaliacaoService {
         Avaliacao a = opt.get();
         aplicar(req, a, usuarioId);
         avaliacaoRepository.save(a);
+        googleCalendarSyncService.syncEvaluation(a.getId(), usuarioId);
         return true;
     }
 
@@ -118,6 +124,7 @@ public class AvaliacaoService {
     @Transactional
     public void excluir(Long id, Long usuarioId) {
         Avaliacao a = buscarPorId(id, usuarioId);
+         googleCalendarSyncService.removeFromCalendar(id, usuarioId);
         avaliacaoRepository.delete(a);
     }
 

@@ -77,6 +77,9 @@ public class Avaliacao {
 
     private Integer dificuldade; // Pode ser nulo, Integer para objetos, int para primitivos
     private boolean receberNotificacoes;
+
+    @Column(name = "google_calendar_event_id", length = 512)
+    private String googleCalendarEventId;
     // --- Construtores ---
 
     /**
@@ -198,6 +201,14 @@ public class Avaliacao {
 
     public void setModalidade(Modalidade modalidade) {
         this.modalidade = modalidade;
+    }
+
+    public String getGoogleCalendarEventId() {
+        return googleCalendarEventId;
+    }
+
+    public void setGoogleCalendarEventId(String googleCalendarEventId) {
+        this.googleCalendarEventId = googleCalendarEventId;
     }
 
     public EstadoAvaliacao getEstado() {

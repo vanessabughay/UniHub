@@ -1,11 +1,14 @@
 package com.example.unihub.ui.Calendario
 
+import android.content.Context
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.repository.AvaliacaoRepository
+import com.example.unihub.data.repository.GoogleCalendarRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,22 +17,29 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 class CalendarioViewModel(
     private val repository: AvaliacaoRepository,
+    private val calendarRepository: GoogleCalendarRepository,
+    private val appContext: Context,
     initialMonth: YearMonth = YearMonth.now()
 ) : ViewModel() {
 
     private val mesSelecionado = MutableStateFlow(initialMonth)
     private val visualizacao = MutableStateFlow(VisualizacaoCalendario.GRID)
     private val forceRefreshTick = MutableStateFlow(0)
+    private val calendarState = MutableStateFlow(CalendarIntegrationState(linked = TokenManager.googleCalendarLinked))
 
     private val tituloFormatter = DateTimeFormatter.ofPattern("MMMM 'de' yyyy", Locale("pt", "BR"))
+    private val lastSyncFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+    private val zoneId: ZoneId = ZoneId.systemDefault()
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private val avaliacoesFlow = forceRefreshTick.flatMapLatest {
@@ -38,7 +48,7 @@ class CalendarioViewModel(
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     val uiState: StateFlow<CalendarioUiState> =
-        combine(mesSelecionado, avaliacoesFlow, visualizacao) { mes, avaliacoes, viz ->
+        combine(mesSelecionado, avaliacoesFlow, visualizacao, calendarState) { mes, avaliacoes, viz, calendar ->
             val tituloFormatado = mes.format(tituloFormatter)
                 .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
 
@@ -49,15 +59,22 @@ class CalendarioViewModel(
                 } else null
             }.sortedBy { it.second }
 
-
             val diasGrid = montarGridCompleto(mes, avsDoMes.map { it.first })
+            val lastSyncLabel = calendar.lastSyncedAt?.let { lastSyncFormatter.withZone(zoneId).format(it) }
 
             CalendarioUiState(
                 titulo = tituloFormatado,
                 diasGrid = diasGrid,
                 avaliacoesDoMes = avsDoMes.map { it.first },
                 visualizacao = viz,
-                isLoading = false
+                isLoading = false,
+                calendarLinked = calendar.linked,
+                calendarRequiresReauth = calendar.requiresReauth,
+                calendarLastSyncedLabel = lastSyncLabel,
+                isCalendarLinking = calendar.isLinking,
+                isCalendarSyncing = calendar.isSyncing,
+                calendarMessage = calendar.message,
+                calendarError = calendar.error
             )
         }.stateIn(
             scope = viewModelScope,
@@ -91,6 +108,106 @@ class CalendarioViewModel(
         }
     }
 
+    fun refreshCalendarStatus() {
+        viewModelScope.launch {
+            calendarState.value = calendarState.value.copy(isLinking = true, error = null, message = null)
+            try {
+                val status = calendarRepository.fetchStatus(appContext)
+                calendarState.value = calendarState.value.copy(
+                    linked = status.linked,
+                    lastSyncedAt = status.lastSyncedAt,
+                    requiresReauth = status.requiresReauth,
+                    isLinking = false
+                )
+            } catch (e: Exception) {
+                calendarState.value = calendarState.value.copy(
+                    isLinking = false,
+                    error = e.message ?: "Falha ao consultar o status do Google Agenda"
+                )
+            }
+        }
+    }
+
+    fun linkGoogleCalendar(authCode: String) {
+        viewModelScope.launch {
+            calendarState.value = calendarState.value.copy(isLinking = true, error = null, message = null)
+            try {
+                val status = calendarRepository.link(appContext, authCode)
+                calendarState.value = calendarState.value.copy(
+                    linked = status.linked,
+                    lastSyncedAt = status.lastSyncedAt,
+                    requiresReauth = status.requiresReauth,
+                    isLinking = false,
+                    message = "Integração com o Google Agenda ativada."
+                )
+            } catch (e: Exception) {
+                calendarState.value = calendarState.value.copy(
+                    isLinking = false,
+                    error = e.message ?: "Não foi possível vincular ao Google Agenda."
+                )
+            }
+        }
+    }
+
+    fun unlinkGoogleCalendar() {
+        viewModelScope.launch {
+            calendarState.value = calendarState.value.copy(isLinking = true, error = null, message = null)
+            try {
+                val status = calendarRepository.unlink(appContext)
+                calendarState.value = calendarState.value.copy(
+                    linked = status.linked,
+                    lastSyncedAt = status.lastSyncedAt,
+                    requiresReauth = status.requiresReauth,
+                    isLinking = false,
+                    message = "Integração com o Google Agenda removida."
+                )
+            } catch (e: Exception) {
+                calendarState.value = calendarState.value.copy(
+                    isLinking = false,
+                    error = e.message ?: "Não foi possível remover a integração com o Google Agenda."
+                )
+            }
+        }
+    }
+
+    fun syncGoogleCalendar() {
+        if (!calendarState.value.linked) return
+        viewModelScope.launch {
+            calendarState.value = calendarState.value.copy(isSyncing = true, error = null, message = null)
+            try {
+                val result = calendarRepository.sync(appContext)
+                calendarState.value = calendarState.value.copy(
+                    isSyncing = false,
+                    lastSyncedAt = result.lastSyncedAt,
+                    message = buildString {
+                        append("Sincronização concluída: ")
+                        append(result.synced)
+                        append(" evento(s) enviado(s)")
+                        if (result.failures > 0) {
+                            append(" e ")
+                            append(result.failures)
+                            append(" falha(s)")
+                        }
+                        append('.')
+                    }
+                )
+            } catch (e: Exception) {
+                calendarState.value = calendarState.value.copy(
+                    isSyncing = false,
+                    error = e.message ?: "Não foi possível sincronizar com o Google Agenda."
+                )
+            }
+        }
+    }
+
+    fun reportCalendarError(message: String) {
+        calendarState.value = calendarState.value.copy(error = message)
+    }
+
+    fun clearCalendarMessages() {
+        calendarState.value = calendarState.value.copy(message = null, error = null)
+    }
+
     private fun parseToLocalDate(dataString: String?): LocalDate? {
         if (dataString.isNullOrBlank()) return null
         return try {
@@ -99,7 +216,6 @@ class CalendarioViewModel(
             null
         }
     }
-
 
     private fun montarGridCompleto(mes: YearMonth, avs: List<Avaliacao>): List<DiaUi> {
         val avsDoMes: List<Pair<LocalDate, Avaliacao>> = avs.mapNotNull { a ->
@@ -127,4 +243,14 @@ class CalendarioViewModel(
         }
         return dias
     }
+
+    private data class CalendarIntegrationState(
+        val linked: Boolean = false,
+        val lastSyncedAt: Instant? = null,
+        val requiresReauth: Boolean = false,
+        val isLinking: Boolean = false,
+        val isSyncing: Boolean = false,
+        val message: String? = null,
+        val error: String? = null
+    )
 }

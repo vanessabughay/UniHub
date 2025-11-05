@@ -5,12 +5,14 @@ public class LoginResponse {
     private String nomeUsuario;
     private String email;
     private Long usuarioId;
+    private boolean googleCalendarLinked;
 
-    public LoginResponse(String token, String nomeUsuario, String email, Long usuarioId) {
+    public LoginResponse(String token, String nomeUsuario, String email, Long usuarioId, boolean googleCalendarLinked) {
         this.token = token;
         this.nomeUsuario = nomeUsuario;
         this.email = email;
         this.usuarioId = usuarioId;
+        this.googleCalendarLinked = googleCalendarLinked;
     }
 
     public String getToken() {
@@ -27,5 +29,9 @@ public class LoginResponse {
 
     public Long getUsuarioId() {
         return usuarioId;
+    }
+    
+    public boolean isGoogleCalendarLinked() {
+        return googleCalendarLinked;
     }
 }

@@ -63,6 +63,9 @@ public class Usuario {
     @JsonManagedReference("usuario-avaliacoes")
     private List<Avaliacao> avaliacoes = new ArrayList<>();
 
+    @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private GoogleCalendarCredential googleCalendarCredential;
+
     public Long getId() {
         return id;
     }
@@ -153,4 +156,13 @@ public class Usuario {
     
     public List<Avaliacao> getAvaliacoes() { return avaliacoes; }
     public void setAvaliacoes(List<Avaliacao> avaliacoes) { this.avaliacoes = avaliacoes; }
+
+    
+    public GoogleCalendarCredential getGoogleCalendarCredential() {
+        return googleCalendarCredential;
+    }
+
+    public void setGoogleCalendarCredential(GoogleCalendarCredential googleCalendarCredential) {
+        this.googleCalendarCredential = googleCalendarCredential;
+    }
 }

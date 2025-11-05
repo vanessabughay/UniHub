@@ -27,6 +27,9 @@ public class AutenticacaoService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private GoogleCalendarCredentialService googleCalendarCredentialService;
+
     // Armazena token -> usuarioId (STATeless de verdade exigiria JWT; aqui mantém seu fluxo atual)
     private final Map<String, Long> tokens = new ConcurrentHashMap<>();
 
@@ -59,7 +62,8 @@ public class AutenticacaoService {
         if (usuarioOpt.isPresent() && passwordEncoder.matches(senha, usuarioOpt.get().getSenha())) {
             Usuario usuario = usuarioOpt.get();
             String token = gerarToken(usuario.getId()); // <- usa o novo método
-            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getEmail(), usuario.getId());
+            boolean calendarLinked = googleCalendarCredentialService.isLinked(usuario.getId());
+            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getEmail(), usuario.getId(), calendarLinked);
         }
         return null;
     }

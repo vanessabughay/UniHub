@@ -28,5 +28,12 @@ data class CalendarioUiState(
     val avaliacoesDoMes: List<Avaliacao> = emptyList(),
     val visualizacao: VisualizacaoCalendario = VisualizacaoCalendario.GRID,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val calendarLinked: Boolean = false,
+    val calendarRequiresReauth: Boolean = false,
+    val calendarLastSyncedLabel: String? = null,
+    val isCalendarLinking: Boolean = false,
+    val isCalendarSyncing: Boolean = false,
+    val calendarMessage: String? = null,
+    val calendarError: String? = null
 )

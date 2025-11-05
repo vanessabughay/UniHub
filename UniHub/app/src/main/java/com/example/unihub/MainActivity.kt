@@ -48,6 +48,7 @@ import com.example.unihub.ui.ListarQuadros.ListarQuadrosScreen
 import com.example.unihub.ui.ListarQuadros.ListarQuadrosViewModelFactory
 import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.apiBackend.ApiGrupoBackend
+import com.example.unihub.data.repository.GoogleCalendarRepository
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
@@ -835,8 +836,14 @@ class MainActivity : ComponentActivity() {
 
                     // CALENDARIO
                     composable(Screen.Calendario.route) {
+                        val context = LocalContext.current
                         val avaliacaoRepository = AvaliacaoRepository(ApiAvaliacaoBackend())
-                        val factory = CalendarioViewModelFactory(avaliacaoRepository)
+                        val googleCalendarRepository = GoogleCalendarRepository()
+                        val factory = CalendarioViewModelFactory(
+                            avaliacaoRepository,
+                            googleCalendarRepository,
+                            context
+                        )
                         val viewModel: CalendarioViewModel = viewModel(factory = factory)
 
                         CalendarioRoute(

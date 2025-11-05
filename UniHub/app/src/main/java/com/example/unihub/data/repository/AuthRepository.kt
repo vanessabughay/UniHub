@@ -71,7 +71,8 @@ class AuthRepository(
                             value = authResponse.token,
                             nome = authResponse.nomeUsuario,
                             email = authResponse.email ?: email,
-                            usuarioId = authResponse.usuarioId
+                            usuarioId = authResponse.usuarioId,
+                            calendarLinked = authResponse.googleCalendarLinked
                         )
                         CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
                         withContext(Dispatchers.Main) { onSuccess() }
@@ -112,7 +113,8 @@ class AuthRepository(
                         value = body.token,
                         nome = body.nomeUsuario,
                         email = body.email,
-                        usuarioId = body.usuarioId
+                        usuarioId = body.usuarioId,
+                        calendarLinked = body.googleCalendarLinked
                     )
                     CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
                     onSuccess()
@@ -149,7 +151,9 @@ class AuthRepository(
                         value = token,
                         nome = name,
                         email = email,
-                        usuarioId = TokenManager.usuarioId
+                        usuarioId = TokenManager.usuarioId,
+                        calendarLinked = TokenManager.googleCalendarLinked
+
                     )
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {
@@ -262,5 +266,4 @@ class AuthRepository(
             }
         }
     }
-
 }

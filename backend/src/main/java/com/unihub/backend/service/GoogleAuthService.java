@@ -28,13 +28,16 @@ public class GoogleAuthService {
     private final UsuarioRepository usuarioRepository;
     private final AutenticacaoService autenticacaoService;
     private final ContatoRepository contatoRepository;
+    private final GoogleCalendarCredentialService googleCalendarCredentialService;
 
     public GoogleAuthService(UsuarioRepository usuarioRepository,
                              AutenticacaoService autenticacaoService,
-                             ContatoRepository contatoRepository) {
+                             ContatoRepository contatoRepository,
+                             GoogleCalendarCredentialService googleCalendarCredentialService) {
         this.usuarioRepository = usuarioRepository;
         this.autenticacaoService = autenticacaoService;
         this.contatoRepository = contatoRepository;
+        this.googleCalendarCredentialService = googleCalendarCredentialService;
     }
 
     public LoginResponse loginWithGoogle(String idTokenString) {
@@ -102,7 +105,8 @@ public class GoogleAuthService {
             // Se seu AutenticacaoService gerar token por id:
             String token = autenticacaoService.gerarToken(salvo.getId());
 
-            return new LoginResponse(token, salvo.getNomeUsuario(), salvo.getEmail(), salvo.getId());
+            boolean calendarLinked = googleCalendarCredentialService.isLinked(salvo.getId());
+            return new LoginResponse(token, salvo.getNomeUsuario(), salvo.getEmail(), salvo.getId(), calendarLinked);
         } catch (Exception e) {
             throw new RuntimeException("Falha ao validar token do Google: " + e.getMessage(), e);
         }
