@@ -36,7 +36,7 @@ public class GoogleCalendarCredentialService {
     @Value("${google.oauth.client-secret:}")
     private String clientSecret;
 
-    @Value("${google.oauth.calendar-redirect-uri:postmessage}")
+    @Value("${google.oauth.calendar-redirect-uri:}")
     private String redirectUri;
 
     @Value("${google.calendar.application-name:UniHub}")
