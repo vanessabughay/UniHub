@@ -2,15 +2,13 @@ package com.example.unihub.data.repository
 
 import com.example.unihub.data.api.TarefaApi
 import com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
-import com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
+import com.example.unihub.data.dto.TarefaNotificacaoRequestDto
 import com.example.unihub.data.dto.ComentarioRequestDto
 import com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
 import com.example.unihub.data.model.Comentario
 import com.example.unihub.data.model.Tarefa
-import com.example.unihub.data.model.ComentarioPreferenciaResponse
+import com.example.unihub.data.model.TarefaPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
-import java.time.Instant
-import java.time.ZoneId
 import com.example.unihub.data.dto.TarefaDto
 
 open class TarefaRepository(private val apiService: TarefaApi) {
@@ -72,17 +70,17 @@ open class TarefaRepository(private val apiService: TarefaApi) {
         apiService.deleteComentario(quadroId, colunaId, tarefaId, comentarioId)
     }
 
-    open suspend fun atualizarPreferenciaComentarios(
+    open suspend fun atualizarPreferenciaTarefa(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
         receberNotificacoes: Boolean
-    ): ComentarioPreferenciaResponse {
-        return apiService.updateComentarioPreference(
+    ): TarefaPreferenciaResponse {
+        return apiService.updateTarefaPreference(
             quadroId,
             colunaId,
             tarefaId,
-            ComentarioNotificacaoRequestDto(receberNotificacoes)
+            TarefaNotificacaoRequestDto(receberNotificacoes)
         )
     }
 
@@ -90,18 +88,14 @@ open class TarefaRepository(private val apiService: TarefaApi) {
         return apiService.getProximasTarefas()
     }
 
-
 }
 
 private fun Tarefa.toPlanejamentoRequest(): TarefaPlanejamentoRequestDto {
-    val prazoLocalDate = Instant.ofEpochMilli(this.prazo)
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
 
     return TarefaPlanejamentoRequestDto(
         titulo = this.titulo,
         descricao = this.descricao,
-        dataPrazo = prazoLocalDate,
+        dataPrazo = this.prazo?.takeUnless { it.isBlank() },
         responsavelIds = this.responsaveisIds
     )
 }
@@ -111,9 +105,7 @@ private fun Tarefa.toAtualizarRequest(): AtualizarTarefaPlanejamentoRequestDto {
         titulo = this.titulo,
         descricao = this.descricao,
         status = this.status.name,
-        prazo = this.prazo,
-        dataInicio = this.dataInicio,
-        dataFim = this.dataFim,
+        prazo = this.prazo?.takeUnless { it.isBlank() },
         responsavelIds = this.responsaveisIds
     )
 }

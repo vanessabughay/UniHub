@@ -69,17 +69,7 @@ class VisualizarQuadroViewModel(
                 _uiState.update { it.copy(error = null) }
 
                 val novoStatus = if (isChecked) Status.CONCLUIDA else Status.INICIADA
-                val tarefaParaSalvar = when {
-                    novoStatus == Status.CONCLUIDA && tarefa.status != Status.CONCLUIDA -> {
-                        tarefa.copy(status = novoStatus, dataFim = tarefa.dataFim ?: System.currentTimeMillis())
-                    }
-
-                    novoStatus == Status.INICIADA && tarefa.status == Status.CONCLUIDA -> {
-                        tarefa.copy(status = novoStatus, dataFim = null)
-                    }
-
-                    else -> tarefa.copy(status = novoStatus)
-                }
+                val tarefaParaSalvar = tarefa.copy(status = novoStatus)
 
                 val tarefaAtualizada = tarefaRepository.updateTarefa(quadroId, colunaId, tarefaParaSalvar)
 

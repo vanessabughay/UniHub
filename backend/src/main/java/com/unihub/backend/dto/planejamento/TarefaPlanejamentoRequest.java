@@ -1,13 +1,12 @@
 package com.unihub.backend.dto.planejamento;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public class TarefaPlanejamentoRequest {
 
     private String titulo;
     private String descricao;
-    private LocalDate dataPrazo;
+    private String dataPrazo;
     private List<Long> responsavelIds;
     
     public String getTitulo() {
@@ -26,11 +25,11 @@ public class TarefaPlanejamentoRequest {
         this.descricao = descricao;
     }
 
-    public LocalDate getDataPrazo() {
+     public String getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
+    public void setDataPrazo(String dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

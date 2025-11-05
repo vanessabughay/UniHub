@@ -1,8 +1,15 @@
 package com.unihub.backend.dto.planejamento;
 
-public class AtualizarPreferenciaComentarioRequest {
-
+public class PreferenciaTarefaResponse {
+    
     private boolean receberNotificacoes;
+
+    public PreferenciaTarefaResponse() {
+    }
+
+    public PreferenciaTarefaResponse(boolean receberNotificacoes) {
+        this.receberNotificacoes = receberNotificacoes;
+    }
 
     public boolean isReceberNotificacoes() {
         return receberNotificacoes;

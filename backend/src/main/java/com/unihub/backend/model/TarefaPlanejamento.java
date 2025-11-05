@@ -2,11 +2,12 @@ package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.unihub.backend.model.enums.TarefaStatus;
 import jakarta.persistence.*;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -33,12 +34,7 @@ public class TarefaPlanejamento {
     @Column(nullable = false)
     private TarefaStatus status = TarefaStatus.PENDENTE;
 
-    @Column(nullable = false)
-    private LocalDateTime dataCriacao = LocalDateTime.now();
-
-    private LocalDate dataPrazo;
-
-    private LocalDateTime dataConclusao;
+    private LocalDateTime dataPrazo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "coluna_id", nullable = false)
@@ -63,8 +59,8 @@ public class TarefaPlanejamento {
 
     @OneToMany(mappedBy = "tarefa", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<TarefaComentarioNotificacao> notificacoesComentario = new LinkedHashSet<>();
-
+    private Set<TarefaNotificacao> notificacoes = new LinkedHashSet<>();
+    
     public Long getId() {
         return id;
     }
@@ -97,29 +93,17 @@ public class TarefaPlanejamento {
         this.status = status;
     }
 
-    public LocalDateTime getDataCriacao() {
-        return dataCriacao;
-    }
-
-    public void setDataCriacao(LocalDateTime dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
-
-    public LocalDate getDataPrazo() {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public LocalDateTime getDataPrazo() {
         return dataPrazo;
     }
 
-    public void setDataPrazo(LocalDate dataPrazo) {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public void setDataPrazo(LocalDateTime dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 
-    public LocalDateTime getDataConclusao() {
-        return dataConclusao;
-    }
-
-    public void setDataConclusao(LocalDateTime dataConclusao) {
-        this.dataConclusao = dataConclusao;
-    }
+    
 
     public ColunaPlanejamento getColuna() {
         return coluna;
@@ -181,11 +165,11 @@ public class TarefaPlanejamento {
         this.comentarios = comentarios;
     }
 
-    public Set<TarefaComentarioNotificacao> getNotificacoesComentario() {
-        return notificacoesComentario;
+    public Set<TarefaNotificacao> getNotificacoes() {
+        return notificacoes;
     }
 
-    public void setNotificacoesComentario(Set<TarefaComentarioNotificacao> notificacoesComentario) {
-        this.notificacoesComentario = notificacoesComentario;
+    public void setNotificacoes(Set<TarefaNotificacao> notificacoes) {
+        this.notificacoes = notificacoes;
     }
 }

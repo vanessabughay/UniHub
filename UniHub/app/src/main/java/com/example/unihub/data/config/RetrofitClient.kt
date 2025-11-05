@@ -4,12 +4,14 @@ package com.example.unihub.data.config
 import com.example.unihub.BuildConfig
 import com.example.unihub.data.api.UniHubApi // Importa a sua interface de API
 import com.example.unihub.data.util.LocalDateAdapter
+import com.example.unihub.data.util.LocalDateTimeAdapter
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
@@ -20,6 +22,7 @@ object RetrofitClient {
     // GsonBuilder para lidar com a conversão de LocalDate.
     private val gson = GsonBuilder()
         .registerTypeAdapter(LocalDate::class.java, LocalDateAdapter())
+        .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeAdapter())
         .create()
 
     private val logging = HttpLoggingInterceptor().apply {

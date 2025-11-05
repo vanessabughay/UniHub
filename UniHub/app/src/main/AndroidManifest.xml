@@ -50,6 +50,13 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notifications.TaskNotificationReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+
+
+        <receiver
             android:name=".notifications.CompartilhamentoNotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />

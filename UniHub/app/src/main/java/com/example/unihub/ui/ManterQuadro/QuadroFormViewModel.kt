@@ -344,7 +344,6 @@ class QuadroFormViewModel(
                     contatoId = (currentState.integranteSelecionado as? ContatoIntegranteUi)?.id,
                     grupoId = (currentState.integranteSelecionado as? GrupoIntegranteUi)?.id,
                     estado = currentState.estado,
-                    dataInicio = existingQuadro?.dataInicio ?: System.currentTimeMillis(),
                     dataFim = currentState.prazo,
                     donoId = existingQuadro?.donoId,
                     colunas = existingQuadro?.colunas ?: emptyList()
@@ -352,7 +351,6 @@ class QuadroFormViewModel(
 
                 if (existingQuadro != null) {
                     quadroToSave = quadroToSave.copy(
-                        dataInicio = existingQuadro.dataInicio,
                         donoId = existingQuadro.donoId
                     )
                 }

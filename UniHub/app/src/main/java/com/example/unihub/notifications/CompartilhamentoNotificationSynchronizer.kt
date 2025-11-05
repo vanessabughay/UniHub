@@ -105,6 +105,7 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
 
     private fun NotificacaoResponse.toUi(): NotificacaoConviteUi = NotificacaoConviteUi(
         id = id,
+        titulo = titulo,
         mensagem = mensagem,
         conviteId = conviteId,
         tipo = tipo,

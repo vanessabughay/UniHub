@@ -106,7 +106,7 @@ class ListarAvaliacaoViewModel(
         // Fallbacks seguros (caso algum campo venha nulo do backend)
         val modalidade = av.modalidade ?: Modalidade.INDIVIDUAL
         val prioridade = av.prioridade ?: Prioridade.MEDIA
-        val receberNotificacoes = av.receberNotificacoes ?: false
+        val receberNotificacoes = av.receberNotificacoes != false
 
         val disciplinaDto = av.disciplina?.id?.let { DisciplinaIdDto(it) }
         val integrantesDto = av.integrantes.orEmpty()
@@ -169,7 +169,7 @@ class ListarAvaliacaoViewModel(
             prioridade = av.prioridade ?: Prioridade.MEDIA,
             estado = av.estado ?: EstadoAvaliacao.A_REALIZAR,
             dificuldade = av.dificuldade,
-            receberNotificacoes = av.receberNotificacoes ?: false
+            receberNotificacoes = av.receberNotificacoes != false
         )
 
         viewModelScope.launch {

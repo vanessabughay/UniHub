@@ -30,6 +30,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
     private val _historyFlow: MutableStateFlow<List<NotificationEntry>>
 
+    private val remoteLogger = NotificationRemoteLogger(context)
+
     private val lastId = AtomicLong(0)
 
     init {
@@ -48,7 +50,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         message: String,
         timestampMillis: Long,
         shareInviteId: Long? = null,
-        shareActionPending: Boolean = false
+        shareActionPending: Boolean = false,
+        syncWithBackend: Boolean = true,
+        type: String? = null
     ) {
         synchronized(lock) {
             val existingEntry = shareInviteId?.let { id ->
@@ -81,6 +85,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
             saveEntries(updatedHistory)
             preferences.edit().putLong(KEY_LAST_ID, lastId.get()).apply()
         }
+
+        if (syncWithBackend) {
+            remoteLogger.logNotification(
+                title = title,
+                message = message,
+                timestampMillis = timestampMillis,
+                type = type,
+                referenceId = shareInviteId
+            )
+        }
+
     }
 
     fun markShareInviteHandled(inviteId: Long) {

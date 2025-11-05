@@ -17,7 +17,7 @@ data class Avaliacao(
     var prioridade: Prioridade,
     var estado: EstadoAvaliacao,
     var dificuldade: Int? = null,
-    var receberNotificacoes: Boolean = false
+    var receberNotificacoes: Boolean = true
 
     )
 

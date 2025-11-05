@@ -35,10 +35,10 @@ import com.example.unihub.components.CampoCombobox
 import com.example.unihub.components.CampoDropdownMultiSelect
 import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoFormulario
+import com.example.unihub.components.CampoHorario
 
 import com.example.unihub.data.model.Status
 import com.example.unihub.data.model.Comentario
-import com.example.unihub.data.model.ComentarioPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import com.example.unihub.data.model.Tarefa
 import java.text.SimpleDateFormat
@@ -57,18 +57,104 @@ import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.model.Quadro
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.Locale
 import com.example.unihub.components.CabecalhoAlternativo
 
 
-private fun getDefaultPrazoForUI(): Long {
-    return Calendar.getInstance().apply {
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
+
+private val TIME_FORMATTER: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+private fun splitBackendDateTime(raw: String?): Pair<String, String> {
+    val trimmed = raw?.trim().orEmpty()
+    if (trimmed.isEmpty()) return "" to ""
+
+    val dateTimeFormats = listOf(
+        DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"),
+        DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+    )
+
+    dateTimeFormats.forEach { formatter ->
+        runCatching { LocalDateTime.parse(trimmed, formatter) }.getOrNull()?.let { ldt ->
+            val date = ldt.toLocalDate().toString()
+            val time = ldt.toLocalTime().format(TIME_FORMATTER)
+            return date to time
+        }
+    }
+
+    runCatching { LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE) }
+        .getOrNull()
+        ?.let { return it.toString() to "" }
+
+    return trimmed to ""
+}
+
+private fun stringDateToMillis(isoDate: String?): Long {
+    if (isoDate.isNullOrBlank()) return 0L
+    return try {
+        val parts = isoDate.split("-")
+        if (parts.size != 3) return 0L
+        val cal = Calendar.getInstance().apply {
+            set(Calendar.YEAR, parts[0].toInt())
+            set(Calendar.MONTH, parts[1].toInt() - 1)
+            set(Calendar.DAY_OF_MONTH, parts[2].toInt())
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        cal.timeInMillis
+    } catch (_: Exception) {
+        0L
+    }
+}
+
+private fun millisToIsoDate(millis: Long): String {
+    if (millis <= 0L) return ""
+    val cal = Calendar.getInstance().apply { timeInMillis = millis }
+    val y = cal.get(Calendar.YEAR)
+    val m = cal.get(Calendar.MONTH) + 1
+    val d = cal.get(Calendar.DAY_OF_MONTH)
+    return String.format("%04d-%02d-%02d", y, m, d)
+}
+
+private fun stringTimeToMinutes(hhmm: String?): Int {
+    if (hhmm.isNullOrBlank()) return -1
+    return try {
+        val (h, m) = hhmm.split(":").map { it.toInt() }
+        (h.coerceIn(0, 23) * 60) + m.coerceIn(0, 59)
+    } catch (_: Exception) {
+        -1
+    }
+}
+
+private fun minutesToHHmm(total: Int): String {
+    val h = (total / 60).coerceIn(0, 23)
+    val m = (total % 60).coerceIn(0, 59)
+    return "%02d:%02d".format(h, m)
+}
+
+private fun combineDateAndTime(dateIso: String, time: String): String? {
+    if (dateIso.isBlank() || time.isBlank()) return null
+    return try {
+        val date = LocalDate.parse(dateIso, DateTimeFormatter.ISO_LOCAL_DATE)
+        val localTime = LocalTime.parse(time, TIME_FORMATTER)
+        "${date}T${localTime.format(TIME_FORMATTER)}:00"
+    } catch (_: Exception) {
+        null
+    }
+}
+
+private fun formatIsoDateToLocale(dateIso: String, locale: Locale): String {
+    if (dateIso.isBlank()) return ""
+    val millis = stringDateToMillis(dateIso)
+    if (millis <= 0L) return ""
+    return formatDateToLocale(millis, locale)
 }
 
 @Composable
@@ -91,13 +177,14 @@ fun TarefaFormScreen(
     val responsaveisSelecionados by tarefaViewModel.responsaveisSelecionados.collectAsState()
     val comentarios by tarefaViewModel.comentarios.collectAsState()
     val comentariosCarregando by tarefaViewModel.comentariosCarregando.collectAsState()
-    val receberNotificacoesComentarios by tarefaViewModel.receberNotificacoes.collectAsState()
+    val receberNotificacoesTarefa by tarefaViewModel.receberNotificacoes.collectAsState()
     val comentarioResultado by tarefaViewModel.comentarioResultado.collectAsState()
 
     var titulo by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var statusSelecionado by remember { mutableStateOf(Status.INICIADA) }
-    var prazo by remember { mutableStateOf(getDefaultPrazoForUI()) }
+    var prazoData by remember { mutableStateOf("") }
+    var prazoHora by remember { mutableStateOf("") }
     var ultimaAcao by remember { mutableStateOf<TarefaFormAction?>(null) }
     var novoComentario by remember { mutableStateOf("") }
     var comentarioEmEdicaoId by remember { mutableStateOf<String?>(null) }
@@ -105,7 +192,6 @@ fun TarefaFormScreen(
     var comentarioParaExcluir by remember { mutableStateOf<String?>(null) }
 
 val locale = remember { Locale("pt", "BR") }
-val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", locale) }
 val comentarioDateFormat = remember { SimpleDateFormat("dd/MM/yy - HH:mm", locale) }
 
 
@@ -118,6 +204,8 @@ LaunchedEffect(quadroId) {
     LaunchedEffect(key1 = tarefaId) {
         if (isEditing) {
             tarefaViewModel.carregarTarefa(quadroId, colunaId, tarefaId!!)
+        } else {
+            tarefaViewModel.definirReceberNotificacoesLocal(true)
         }
     }
 
@@ -133,7 +221,9 @@ LaunchedEffect(quadroId) {
                 titulo = loadedTarefa.titulo
                 descricao = loadedTarefa.descricao ?: ""
                 statusSelecionado = loadedTarefa.status
-                prazo = loadedTarefa.prazo
+                val (dataIso, horaIso) = splitBackendDateTime(loadedTarefa.prazo)
+                prazoData = dataIso
+                prazoHora = horaIso
                 tarefaViewModel.atualizarResponsaveisSelecionados(loadedTarefa.responsaveisIds.toSet())
             }
         }
@@ -185,10 +275,6 @@ LaunchedEffect(quadroId) {
         }
     }
 
-    val showDatePicker = {
-        showLocalizedDatePicker(context, prazo, locale) { prazo = it }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -233,16 +319,32 @@ LaunchedEffect(quadroId) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
-            ){
-            CampoData(
-                label = "Prazo",
-                value = formatDateToLocale(prazo, locale),
-                onClick = showDatePicker
-            )}
+            val prazoDataMillis = remember(prazoData) { stringDateToMillis(prazoData) }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                CampoData(
+                    label = "Data",
+                    value = formatIsoDateToLocale(prazoData, locale),
+                    onClick = {
+                        showLocalizedDatePicker(context, prazoDataMillis, locale) { selectedDate ->
+                            prazoData = millisToIsoDate(selectedDate)
+                        }
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                CampoHorario(
+                    label = "Horário",
+                    value = stringTimeToMinutes(prazoHora).takeIf { it >= 0 },
+                    onTimeSelected = { minutosSelecionados ->
+                        prazoHora = minutesToHHmm(minutosSelecionados)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -511,27 +613,32 @@ LaunchedEffect(quadroId) {
 
                     }
                 }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Checkbox(
-                        checked = receberNotificacoesComentarios,
-                        onCheckedChange = { marcado ->
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Checkbox(
+                    checked = receberNotificacoesTarefa,
+                    onCheckedChange = { marcado ->
+                        if (isEditing) {
                             tarefaId?.let { id ->
-                                tarefaViewModel.atualizarPreferenciaComentarios(
+                                tarefaViewModel.atualizarPreferenciaTarefa(
                                     quadroId,
                                     colunaId,
                                     id,
                                     marcado
                                 )
                             }
-                        },
-                        colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
-                    )
-                    Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
-                }
+                        } else {
+                            tarefaViewModel.definirReceberNotificacoesLocal(marcado)
+                        }
+                    },
+                    colors = CheckboxDefaults.colors(checkedColor = Color(0xFF28A745))
+                )
+                Text("Receber notificações", style = MaterialTheme.typography.bodyMedium)
             }
 
             comentarioParaExcluir?.let { idParaExcluir ->
@@ -574,20 +681,40 @@ LaunchedEffect(quadroId) {
 
         BotoesFormulario(
             modifier = Modifier
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp).navigationBarsPadding(),
             onConfirm = {
                 if (titulo.isBlank()) {
                     Toast.makeText(context, "O título da tarefa é obrigatório.", Toast.LENGTH_SHORT).show()
                     return@BotoesFormulario
                 }
 
+                val prazoFinal = when {
+                    prazoData.isBlank() && prazoHora.isBlank() -> null
+                    prazoData.isBlank() || prazoHora.isBlank() -> {
+                        Toast.makeText(
+                            context,
+                            "Para definir o prazo informe data e horário.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@BotoesFormulario
+                    }
+                    else -> combineDateAndTime(prazoData, prazoHora) ?: run {
+                        Toast.makeText(
+                            context,
+                            "Formato de prazo inválido. Use data AAAA-MM-DD e hora HH:MM.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@BotoesFormulario
+                    }
+                }
+
+
                 if (!isEditing) {
                     val novaTarefa = Tarefa(
                         titulo = titulo,
                         descricao = if (descricao.isBlank()) null else descricao,
                         status = Status.INICIADA, // Novas tarefas sempre iniciam com este status
-                        prazo = prazo,
-                        dataInicio = System.currentTimeMillis()
+                        prazo = prazoFinal
                     )
                     ultimaAcao = TarefaFormAction.CREATE
                     tarefaViewModel.cadastrarTarefa(quadroId, colunaId, novaTarefa)
@@ -597,7 +724,7 @@ LaunchedEffect(quadroId) {
                             titulo = titulo,
                             descricao = if (descricao.isBlank()) null else descricao,
                             status = statusSelecionado,
-                            prazo = prazo
+                            prazo = prazoFinal
                         )
                         ultimaAcao = TarefaFormAction.UPDATE
                         tarefaViewModel.atualizarTarefa(quadroId, colunaId, tarefaAtualizada)
@@ -611,6 +738,7 @@ LaunchedEffect(quadroId) {
                 }
             } else null
         )
+        Spacer(modifier = Modifier.height(16.dp))
         }
     }
 

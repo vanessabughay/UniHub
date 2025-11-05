@@ -25,6 +25,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
 
                 //quadro 
+                .requestMatchers("/api/notificacoes/**").authenticated()
                 .requestMatchers("/api/quadros-planejamento/**").authenticated()
                 
                 .anyRequest().authenticated()

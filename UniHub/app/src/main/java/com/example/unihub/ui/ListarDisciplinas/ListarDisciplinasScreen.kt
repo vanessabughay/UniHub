@@ -19,10 +19,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme.colorScheme
 import androidx.compose.runtime.*
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,6 +45,7 @@ import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.CompartilhamentoNotificationActionReceiver
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 
+
 // Cores definidas
 val CardBackgroundColor = Color(0xFFD9EDF6)
 
@@ -54,6 +59,7 @@ fun ListarDisciplinasScreen(
 ) {
     val context = LocalContext.current
     val disciplinasState by viewModel.disciplinas.collectAsState()
+
     val errorMessage by viewModel.errorMessage.collectAsState()
 
     val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
@@ -116,6 +122,7 @@ fun ListarDisciplinasScreen(
         viewModel.loadDisciplinas()
     }
 
+
     LaunchedEffect(notificacoes) {
         notificationSynchronizer.synchronize(notificacoes)
     }
@@ -140,7 +147,6 @@ fun ListarDisciplinasScreen(
             context.unregisterReceiver(receiver)
         }
     }
-
     errorMessage?.let { message ->
         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
     }
@@ -158,12 +164,44 @@ fun ListarDisciplinasScreen(
         compartilhamentoViewModel.consumirStatus()
     }
 
-    val disciplinasFiltradas = if (searchQuery.isBlank()) {
-        disciplinasState
-    } else {
-        disciplinasState.filter {
-            it.nome.contains(searchQuery, ignoreCase = true) ||
-                    it.codigo.contains(searchQuery, ignoreCase = true)
+    val disciplinasComBusca by remember(disciplinasState, searchQuery) {
+        derivedStateOf {
+            val filtradas = if (searchQuery.isBlank()) {
+                disciplinasState
+            } else {
+                disciplinasState.filter {
+                    it.nome.contains(searchQuery, ignoreCase = true) ||
+                            it.codigo.contains(searchQuery, ignoreCase = true)
+                }
+            }
+            filtradas.sortedBy { it.nome }
+        }
+    }
+
+
+    val disciplinasAtivas by remember(disciplinasComBusca) {
+        derivedStateOf { disciplinasComBusca.filter { it.isAtiva } }
+    }
+
+    val disciplinasInativas by remember(disciplinasComBusca) {
+        derivedStateOf { disciplinasComBusca.filter { !it.isAtiva } }
+    }
+
+    var ativasExpandidas by rememberSaveable { mutableStateOf(true) }
+    var inativasExpandidas by rememberSaveable { mutableStateOf(false) }
+
+    val onShareDisciplina: (DisciplinaResumoUi) -> Unit = { disciplina ->
+        Toast.makeText(
+            context,
+            "Compartilhar ${disciplina.nome}",
+            Toast.LENGTH_SHORT
+        ).show()
+        val usuarioId = usuarioIdState
+        if (usuarioId != null) {
+            disciplinaParaCompartilhar = disciplina
+            compartilhamentoViewModel.carregarContatos(usuarioId)
+        } else {
+            Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -173,7 +211,8 @@ fun ListarDisciplinasScreen(
                 onClick = onAddDisciplina,
                 containerColor =  Color(0xFF5AB9D6),
                 contentColor = Color.White,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.navigationBarsPadding().padding(vertical = 16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
@@ -195,7 +234,7 @@ fun ListarDisciplinasScreen(
             CampoBusca(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                placeholder = "Buscar por nome ou id",
+                placeholder = "Buscar por nome",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp)
@@ -206,30 +245,59 @@ fun ListarDisciplinasScreen(
                     .fillMaxWidth()
                     .weight(1f)
                     .padding(horizontal = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                items(disciplinasFiltradas) { disciplina ->
-                    DisciplinaItem(
-                        disciplina = disciplina,
-                        onViewDisciplina = {
-                            onDisciplinaClick(disciplina.id.toString())
-                        },
-                        onShareClicked = { d ->
-                            Toast.makeText(
-                                context,
-                                "Compartilhar ${d.nome}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            val usuarioId = usuarioIdState
-                            if (usuarioId != null) {
-                                disciplinaParaCompartilhar = d
-                                compartilhamentoViewModel.carregarContatos(usuarioId)
-                            } else {
-                                Toast.makeText(context, "Usuário não autenticado", Toast.LENGTH_LONG).show()
-                            }
+                if (disciplinasAtivas.isNotEmpty()) {
+                    item {
+                        TituloDeSecao(
+                            titulo = "Disciplinas Ativas (${disciplinasAtivas.size})",
+                            setaAbaixo = ativasExpandidas,
+                            onClick = { ativasExpandidas = !ativasExpandidas }
+                        )
+                    }
+                    if (ativasExpandidas) {
+                        items(disciplinasAtivas, key = { it.id }) { disciplina ->
+                            DisciplinaItem(
+                                disciplina = disciplina,
+                                onViewDisciplina = { onDisciplinaClick(disciplina.id.toString()) },
+                                onShareClicked = onShareDisciplina
+                            )
                         }
-                    )
+                    }
+                }
+
+                if (disciplinasInativas.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        TituloDeSecao(
+                            titulo = "Disciplinas Inativas (${disciplinasInativas.size})",
+                            setaAbaixo = inativasExpandidas,
+                            onClick = { inativasExpandidas = !inativasExpandidas }
+                        )
+                    }
+                    if (inativasExpandidas) {
+                        items(disciplinasInativas, key = { it.id }) { disciplina ->
+                            DisciplinaItem(
+                                disciplina = disciplina,
+                                onViewDisciplina = { onDisciplinaClick(disciplina.id.toString()) },
+                                onShareClicked = onShareDisciplina
+                            )
+                        }
+                    }
+                }
+                if (disciplinasAtivas.isEmpty() && disciplinasInativas.isEmpty()) {
+                    item {
+                        val msg = if (searchQuery.isBlank()) {
+                            "Nenhuma disciplina cadastrada."
+                        } else {
+                            "Nenhuma disciplina encontrada para \"$searchQuery\""
+                        }
+                        Text(
+                            msg,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 16.dp)
+                        )
+                    }
                 }
             }
         }
@@ -260,7 +328,8 @@ fun ListarDisciplinasScreen(
     }
 }
 
-// -------- Item da lista --------
+
+
 
 @Composable
 fun DisciplinaItem(
@@ -360,6 +429,38 @@ fun DisciplinaItem(
     }
 }
 
+
+
+@Composable
+private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+                .clickable(onClick = onClick),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = if (setaAbaixo) Icons.Outlined.ExpandMore else Icons.Outlined.ChevronRight,
+                contentDescription = null,
+                tint = colorScheme.onSurface
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = titulo,
+                color = colorScheme.onSurface,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 10.dp),
+            thickness = DividerDefaults.Thickness,
+            color = colorScheme.onSurface.copy(alpha = 0.1f)
+        )
+    }
+}
 @Composable
 fun CompartilharDisciplinaDialog(
     disciplina: DisciplinaResumoUi,

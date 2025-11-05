@@ -3,11 +3,13 @@ package com.unihub.backend.model;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.unihub.backend.model.enums.QuadroStatus;
 import jakarta.persistence.*;
-import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,11 +28,8 @@ public class QuadroPlanejamento {
     @Column(nullable = false)
     private QuadroStatus status = QuadroStatus.ATIVO;
 
-    @Column(name = "data_criacao", nullable = false)
-    private Instant dataCriacao = Instant.now();
-
     @Column(name = "data_prazo")
-    private Instant dataPrazo;
+    private LocalDateTime dataPrazo;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id", nullable = false)
@@ -87,27 +86,17 @@ public class QuadroPlanejamento {
         this.status = status;
     }
 
-    @JsonProperty("dataInicio")
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    public Instant getDataCriacao() {
-        return dataCriacao;
-    }
-
-    @JsonProperty("dataInicio")
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    public void setDataCriacao(Instant dataCriacao) {
-        this.dataCriacao = dataCriacao;
-    }
+    
 
     @JsonProperty("dataFim")
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    public Instant getDataPrazo() {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public LocalDateTime getDataPrazo() {
         return dataPrazo;
     }
 
     @JsonProperty("dataFim")
-    @JsonFormat(shape = JsonFormat.Shape.NUMBER)
-    public void setDataPrazo(Instant dataPrazo) {
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    public void setDataPrazo(LocalDateTime dataPrazo) {
         this.dataPrazo = dataPrazo;
     }
 

@@ -19,6 +19,15 @@
     <string name="evaluation_notification_default_title">Avaliação</string>
     <string name="evaluation_notification_button_details">Ver detalhes</string>
     <string name="evaluation_notification_label">AVALIAÇÃO</string>
+    <string name="task_channel_name">Lembretes de tarefas</string>
+    <string name="task_channel_description">Notificações para tarefas agendadas.</string>
+    <string name="task_notification_prompt">Confira os detalhes da tarefa.</string>
+    <string name="task_notification_schedule_format">Marcada para %1$s.</string>
+    <string name="task_notification_schedule_unknown">Data e horário não informados</string>
+    <string name="task_notification_board_format">Quadro: %1$s</string>
+    <string name="task_notification_default_title">Tarefa</string>
+    <string name="task_notification_button_details">Ver detalhes</string>
+    <string name="task_notification_label">TAREFA</string>
     <string name="share_notification_invite_channel_name">Convites de compartilhamento</string>
     <string name="share_notification_invite_channel_description">Notificações para aceitar ou recusar convites de disciplinas compartilhadas.</string>
     <string name="share_notification_response_channel_name">Atualizações de compartilhamento</string>
@@ -33,4 +42,6 @@
     <string name="share_notification_history_reject">Você rejeitou o compartilhamento.</string>
     <string name="share_notification_action_session_expired">Sessão expirada. Faça login novamente para responder convites.</string>
     <string name="share_notification_action_error">Não foi possível atualizar o convite. Tente novamente.</string>
+    <string name="notification_history_default_title">Notificação</string>
+    <string name="notification_history_load_error">Não foi possível carregar o histórico de notificações.</string>
 </resources>

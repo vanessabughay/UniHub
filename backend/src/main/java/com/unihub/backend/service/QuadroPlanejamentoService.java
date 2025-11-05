@@ -1,10 +1,10 @@
 package com.unihub.backend.service;
 
-import com.unihub.backend.dto.planejamento.AtualizarPreferenciaComentarioRequest;
+import com.unihub.backend.dto.planejamento.AtualizarPreferenciaTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarStatusTarefaRequest;
 import com.unihub.backend.dto.planejamento.AtualizarTarefaPlanejamentoRequest;
 import com.unihub.backend.dto.planejamento.ColunaPlanejamentoRequest;
-import com.unihub.backend.dto.planejamento.PreferenciaComentarioResponse;
+import com.unihub.backend.dto.planejamento.PreferenciaTarefaResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoDetalhesResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoListaResponse;
 import com.unihub.backend.dto.planejamento.QuadroPlanejamentoRequest;
@@ -26,13 +26,17 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.unihub.backend.dto.planejamento.TarefaDto; 
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +65,7 @@ public class QuadroPlanejamentoService {
     @Autowired
     private TarefaComentarioRepository tarefaComentarioRepository;
     @Autowired
-    private TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository;
+    private TarefaNotificacaoRepository tarefaNotificacaoRepository;
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
         String tituloNormalizado = titulo != null ? titulo.trim() : null;
@@ -116,9 +120,9 @@ public class QuadroPlanejamentoService {
             quadro.setGrupo(grupo);
         }
 
-        quadro.setDataCriacao(Instant.now());
+
         if (dto.getDataFim() != null) {
-            quadro.setDataPrazo(Instant.ofEpochMilli(dto.getDataFim()));
+            quadro.setDataPrazo(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getDataFim()), ZoneId.systemDefault()));
         }
         ajustarStatus(quadro, null); 
         
@@ -138,7 +142,7 @@ public class QuadroPlanejamentoService {
 
         existente.setTitulo(dto.getNome());
         if (dto.getDataFim() != null) {
-            existente.setDataPrazo(Instant.ofEpochMilli(dto.getDataFim()));
+            existente.setDataPrazo(LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getDataFim()), ZoneId.systemDefault()));
         } else {
             existente.setDataPrazo(null);
         }
@@ -197,7 +201,6 @@ public class QuadroPlanejamentoService {
         response.setId(quadro.getId());
         response.setNome(quadro.getTitulo());
         response.setEstado(quadro.getStatus());
-        response.setDataInicio(quadro.getDataCriacao());
         response.setDataFim(quadro.getDataPrazo());
         response.setDonoId(quadro.getDonoId());
         
@@ -289,7 +292,11 @@ public class QuadroPlanejamentoService {
         TarefaPlanejamento tarefa = new TarefaPlanejamento();
         tarefa.setTitulo(request.getTitulo());
         tarefa.setDescricao(request.getDescricao());
-        tarefa.setDataPrazo(request.getDataPrazo());
+        if (request.getDataPrazo() != null && !request.getDataPrazo().isBlank()) {
+            tarefa.setDataPrazo(parsePrazo(request.getDataPrazo()));
+        } else {
+            tarefa.setDataPrazo(null);
+        }
         tarefa.setColuna(coluna);
 
         tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
@@ -309,18 +316,16 @@ public class QuadroPlanejamentoService {
 
         tarefa.setDescricao(request.getDescricao());
 
-        if (request.getPrazo() != null) {
-            tarefa.setDataPrazo(convertEpochToLocalDate(request.getPrazo()));
+        if (request.getPrazo() != null && !request.getPrazo().isBlank()) {
+            tarefa.setDataPrazo(parsePrazo(request.getPrazo()));
         } else {
             tarefa.setDataPrazo(null);
         }
 
         if ("CONCLUIDA".equalsIgnoreCase(request.getStatus())) {
             tarefa.setStatus(TarefaStatus.CONCLUIDA);
-            tarefa.setDataConclusao(convertEpochToLocalDateTime(request.getDataFim(), LocalDateTime.now()));
         } else {
             tarefa.setStatus(TarefaStatus.PENDENTE);
-            tarefa.setDataConclusao(null);
         }
 
         if (request.getResponsavelIds() != null) {
@@ -340,10 +345,8 @@ public class QuadroPlanejamentoService {
 
         if (request.isConcluida()) {
             tarefa.setStatus(TarefaStatus.CONCLUIDA);
-            tarefa.setDataConclusao(LocalDateTime.now());
         } else {
             tarefa.setStatus(TarefaStatus.PENDENTE);
-            tarefa.setDataConclusao(null);
         }
 
         return tarefaRepository.save(tarefa);
@@ -364,8 +367,8 @@ public class QuadroPlanejamentoService {
                 .map(comentario -> toComentarioResponse(comentario, usuarioId))
                 .collect(Collectors.toList());
 
-        boolean receberNotificacoes = tarefaComentarioNotificacaoRepository
-                .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+        boolean receberNotificacoes = tarefaNotificacaoRepository
+            .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
 
         TarefaComentariosResponse response = new TarefaComentariosResponse();
         response.setComentarios(comentarios);
@@ -427,30 +430,30 @@ public class QuadroPlanejamentoService {
     }
 
     @Transactional
-    public PreferenciaComentarioResponse atualizarPreferenciaComentario(Long quadroId, Long colunaId, Long tarefaId,
-                                                                        AtualizarPreferenciaComentarioRequest request,
-                                                                        Long usuarioId) {
+    public PreferenciaTarefaResponse atualizarPreferenciaTarefa(Long quadroId, Long colunaId, Long tarefaId,
+                                                                AtualizarPreferenciaTarefaRequest request,
+                                                                Long usuarioId) {
         TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
 
         boolean desejaReceber = request.isReceberNotificacoes();
         if (desejaReceber) {
-            boolean jaExiste = tarefaComentarioNotificacaoRepository
+                        boolean jaExiste = tarefaNotificacaoRepository
                     .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
             if (!jaExiste) {
                 Usuario usuario = usuarioRepository.findById(usuarioId)
                         .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
-                TarefaComentarioNotificacao notificacao = new TarefaComentarioNotificacao();
+                TarefaNotificacao notificacao = new TarefaNotificacao();
                 notificacao.setTarefa(tarefa);
                 notificacao.setUsuario(usuario);
-                tarefaComentarioNotificacaoRepository.save(notificacao);
+                tarefaNotificacaoRepository.save(notificacao);
             }
         } else {
-            tarefaComentarioNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+            tarefaNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
         }
 
-        boolean estadoAtual = tarefaComentarioNotificacaoRepository
+        boolean estadoAtual = tarefaNotificacaoRepository
                 .existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
-        return new PreferenciaComentarioResponse(estadoAtual);
+                return new PreferenciaTarefaResponse(estadoAtual);
     }
 
 
@@ -466,7 +469,7 @@ public class QuadroPlanejamentoService {
         }
 
         if (quadro.getStatus() == QuadroStatus.ENCERRADO && quadro.getDataPrazo() == null) {
-            quadro.setDataPrazo(Instant.now());
+            quadro.setDataPrazo(LocalDateTime.now());
         }
     }
 
@@ -494,9 +497,7 @@ public class QuadroPlanejamentoService {
         response.setTitulo(tarefa.getTitulo());
         response.setDescricao(tarefa.getDescricao());
         response.setStatus(tarefa.getStatus() == TarefaStatus.CONCLUIDA ? "CONCLUIDA" : "INICIADA");
-        response.setPrazo(convertLocalDateToEpoch(tarefa.getDataPrazo()));
-        response.setDataInicio(convertLocalDateTimeToEpoch(tarefa.getDataCriacao()));
-        response.setDataFim(convertLocalDateTimeToEpoch(tarefa.getDataConclusao()));
+        response.setPrazo(formatDateTimeToIso(tarefa.getDataPrazo()));
         response.setResponsavelIds(tarefa.getResponsaveisIds());
         response.setResponsaveis(tarefa.getResponsaveisIdsRegistrados());
         return response;
@@ -522,30 +523,55 @@ public class QuadroPlanejamentoService {
     }
 
 
-    private Long convertLocalDateToEpoch(LocalDate date) {
-        if (date == null) {
-            return null;
-        }
-        return date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
-    }
-
-    private Long convertLocalDateTimeToEpoch(LocalDateTime dateTime) {
+    private String formatDateTimeToIso(LocalDateTime dateTime) {
         if (dateTime == null) {
             return null;
         }
-        return dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+        return dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
     }
 
-    private LocalDate convertEpochToLocalDate(Long epochMillis) {
-        return Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()).toLocalDate();
-    }
-
-    private LocalDateTime convertEpochToLocalDateTime(Long epochMillis, LocalDateTime defaultValue) {
-        if (epochMillis == null) {
-            return defaultValue;
+    private LocalDateTime parsePrazo(String valor) {
+        if (valor == null || valor.isBlank()) {
+            return null;
         }
-        return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+
+        String trimmed = valor.trim();
+
+        try {
+            Instant instant = Instant.parse(trimmed);
+            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        } catch (DateTimeParseException ignored) {
+        }
+        try {
+            return OffsetDateTime.parse(trimmed).toLocalDateTime();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            long epochMillis = Long.parseLong(trimmed);
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+        } catch (NumberFormatException ignored) {
+        }
+
+        String normalized = trimmed.replace(' ', 'T');
+        if (normalized.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
+            normalized = normalized + ":00";
+        }
+
+        try {
+            return LocalDateTime.parse(normalized);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            LocalDate date = LocalDate.parse(trimmed);
+            return date.atStartOfDay();
+        } catch (DateTimeParseException ignored) {
+        }
+
+        throw new IllegalArgumentException("Formato de prazo inválido: " + valor);
     }
+
 
     private Contato buscarContato(Long quadroId, Long usuarioContatoId, Long usuarioId) {
         QuadroPlanejamento quadro = buscarPorId(quadroId, usuarioId);
@@ -689,13 +715,14 @@ public class QuadroPlanejamentoService {
     @Transactional(readOnly = true)
     public List<TarefaDto> getProximasTarefas(Long usuarioId) {
 
-        LocalDate dataInicio = LocalDate.now();
-        LocalDate dataFim = dataInicio.plusDays(15);
+        ZoneId zone = ZoneId.systemDefault();
+        LocalDateTime inicio = LocalDate.now(zone).atStartOfDay();
+        LocalDateTime fim = inicio.plusDays(15).with(LocalTime.MAX);
 
-        List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorResponsavel(
-                usuarioId, 
-                dataInicio,
-                dataFim
+        List<TarefaPlanejamento> tarefas = tarefaRepository.findProximasTarefasPorParticipante(
+                usuarioId,
+                inicio,
+                fim
         );
 
         return tarefas.stream()
@@ -704,10 +731,7 @@ public class QuadroPlanejamentoService {
     }
 
     private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
-        String dataPrazoFormatada = null;
-        if (tarefa.getDataPrazo() != null) {
-            dataPrazoFormatada = tarefa.getDataPrazo().format(DateTimeFormatter.ISO_LOCAL_DATE);
-        }
+        String prazo = formatDateTimeToIso(tarefa.getDataPrazo());
 
         String nomeQuadro = "Sem quadro";
         if (tarefa.getColuna() != null && tarefa.getColuna().getQuadro() != null) {
@@ -717,7 +741,7 @@ public class QuadroPlanejamentoService {
 
         return new TarefaDto(
                 tarefa.getTitulo(),
-                dataPrazoFormatada,
+                prazo,
                 nomeQuadro
         );
     }

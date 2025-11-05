@@ -7,7 +7,7 @@ enum class Antecedencia(val dias: Int, val label: String) {
     TRES_DIAS(3, "3 dias antes"),
     UMA_SEMANA(7, "1 semana antes");
     companion object {
-        val padrao = UM_DIA
+        val padrao = NO_DIA
         val todas = listOf(NO_DIA, UM_DIA, DOIS_DIAS, TRES_DIAS, UMA_SEMANA)
     }
 }

@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,13 +25,39 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
     List<TarefaPlanejamento> findDistinctByResponsaveis_Id(Long contatoId);
 
     @Query("SELECT t FROM TarefaPlanejamento t JOIN t.responsaveis r " +
-            "WHERE r.idContato = :usuarioId " +
-           "AND t.status != 'CONCLUIDA' " +
+           "WHERE r.idContato = :usuarioId " +
+           "AND t.status <> 'CONCLUIDA' " +
            "AND t.dataPrazo BETWEEN :dataInicio AND :dataFim " +
            "ORDER BY t.dataPrazo ASC")
     List<TarefaPlanejamento> findProximasTarefasPorResponsavel(
             @Param("usuarioId") Long usuarioId,
-            @Param("dataInicio") LocalDate dataInicio,
-            @Param("dataFim") LocalDate dataFim
+            @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim
+    );
+
+    @Query("SELECT DISTINCT t " +
+           "FROM TarefaPlanejamento t " +
+           "JOIN t.coluna c " +
+           "JOIN c.quadro q " +
+           "JOIN t.notificacoes notificacao " +
+           "LEFT JOIN q.grupo grupo " +
+           "LEFT JOIN grupo.membros membro " +
+           "LEFT JOIN q.contato contato " +
+           "LEFT JOIN t.responsaveis responsavel " +
+           "WHERE t.status <> 'CONCLUIDA' " +
+           "AND t.dataPrazo IS NOT NULL " +
+           "AND t.dataPrazo BETWEEN :dataInicio AND :dataFim " +
+           "AND notificacao.usuario.id = :usuarioId " +
+           "AND (" +
+           "    q.usuario.id = :usuarioId " +
+           "    OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId) " +
+           "    OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId) " +
+           "    OR (membro.idContato IS NOT NULL AND membro.idContato = :usuarioId)" +
+           ") " +
+           "ORDER BY t.dataPrazo ASC")
+    List<TarefaPlanejamento> findProximasTarefasPorParticipante(
+            @Param("usuarioId") Long usuarioId,
+            @Param("dataInicio") LocalDateTime dataInicio,
+            @Param("dataFim") LocalDateTime dataFim
     );
 }

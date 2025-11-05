@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import kotlin.math.abs
 import java.util.Locale
@@ -21,6 +22,8 @@ import java.util.Locale
 class AttendanceNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        TokenManager.loadToken(context.applicationContext)
+
         val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L)
         val disciplinaNome = intent.getStringExtra(EXTRA_DISCIPLINA_NOME) ?: return
         val dia = intent.getStringExtra(EXTRA_AULA_DIA).orEmpty()
@@ -119,7 +122,8 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             .logNotification(
                 title = notificationTitle,
                 message = historyMessage,
-                timestampMillis = System.currentTimeMillis()
+                timestampMillis = System.currentTimeMillis(),
+                type = "PRESENCA_AULA"
             )
 
 

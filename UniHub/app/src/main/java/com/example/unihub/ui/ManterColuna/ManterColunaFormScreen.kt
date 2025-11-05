@@ -125,6 +125,7 @@ fun ColunaFormScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             BotoesFormulario(
+                modifier = Modifier.navigationBarsPadding().padding (vertical =16.dp),
                 onConfirm = {
                     if (titulo.isNotBlank()) {
                         val colunaParaSalvar = Coluna(

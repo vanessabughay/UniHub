@@ -17,7 +17,8 @@ data class DisciplinaResumo( // conteudo resumo
     val aulas: List<HorarioAula> = emptyList(),
     val receberNotificacoes: Boolean = true,
     val totalAusencias: Int = 0,
-    val ausenciasPermitidas: Int? = null
+    val ausenciasPermitidas: Int? = null,
+    val isAtiva: Boolean
 )
 
 //SUBTSTITUIR BACKEND

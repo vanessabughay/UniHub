@@ -6,6 +6,9 @@ import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeParseException
 
@@ -23,7 +26,41 @@ private fun parseFlexibleLong(value: String): Long {
         try {
             OffsetDateTime.parse(cleaned).toInstant().toEpochMilli()
         } catch (offsetEx: DateTimeParseException) {
-            throw JsonParseException("Não foi possível converter '$value' em Long", offsetEx)
+            try {
+
+                LocalDateTime.parse(cleaned)
+
+                    .atZone(ZoneId.systemDefault())
+
+                    .toInstant()
+
+                    .toEpochMilli()
+
+            } catch (localDateTimeEx: DateTimeParseException) {
+
+                try {
+
+                    LocalDate.parse(cleaned)
+
+                        .atStartOfDay(ZoneId.systemDefault())
+
+                        .toInstant()
+
+                        .toEpochMilli()
+
+                } catch (localDateEx: DateTimeParseException) {
+
+                    throw JsonParseException(
+
+                        "Não foi possível converter '$value' em Long",
+
+                        localDateEx
+
+                    )
+
+                }
+
+            }
         }
     }
 }

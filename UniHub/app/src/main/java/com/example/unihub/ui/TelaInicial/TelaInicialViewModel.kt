@@ -1,6 +1,7 @@
 package com.example.unihub.ui.TelaInicial
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresExtension
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -44,7 +45,9 @@ data class Tarefa(
     val diaSemana: String,
     val dataCurta: String,
     val titulo: String,
-    val descricao: String
+    val descricao: String,
+    val prazoIso: String? = null,
+    val nomeQuadro: String? = null
 )
 
 /* ====== ViewModel ====== */
@@ -56,6 +59,9 @@ class TelaInicialViewModel(
 
     private val _estado = MutableStateFlow(criarEstadoInicial())
     val estado: StateFlow<EstadoTelaInicial> = _estado
+
+    private val _avaliacoesDetalhadas = MutableStateFlow<List<AvaliacaoReal>>(emptyList())
+    val avaliacoesDetalhadas: StateFlow<List<AvaliacaoReal>> = _avaliacoesDetalhadas
 
     private val _eventoNavegacao = MutableSharedFlow<String>()
     val eventoNavegacao: SharedFlow<String> = _eventoNavegacao
@@ -131,17 +137,16 @@ class TelaInicialViewModel(
             .map { it.first }
 
         val tarefasFiltradas = _estado.value.tarefas.mapNotNull { tarefa ->
-            try {
-                val dataTarefa = LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter)
-                if (!dataTarefa.isBefore(dataAtual) && !dataTarefa.isAfter(dataLimite)) {
-                    tarefa to dataTarefa
-                } else {
-                    null
+            val dataTarefa = tarefa.prazoIso?.let { parseToLocalDate(it) }
+                ?: run {
+                    runCatching { LocalDate.parse("${tarefa.dataCurta}/$anoAtual", formatter) }
+                        .getOrNull()
                 }
-            } catch (e: Exception) {
-                null
-            }
-        }.sortedBy { it.second }
+
+            dataTarefa?.takeIf { !it.isBefore(dataAtual) && !it.isAfter(dataLimite) }
+                ?.let { tarefa to it }
+        }
+            .sortedBy { it.second }
             .map { it.first }
 
         _estado.update {
@@ -184,12 +189,16 @@ class TelaInicialViewModel(
             try {
                 avaliacaoRepository.getAvaliacao()
                     .collect { avaliacoesReais ->
+                        _avaliacoesDetalhadas.value = avaliacoesReais
+
                         val avaliacoesMapeadas = avaliacoesReais.mapNotNull { mapRealToLocal(it) }
                         _estado.update { it.copy(avaliacoes = avaliacoesMapeadas) }
                         filtrarAvaliacoesEValidarTarefas()
                     }
             } catch (e: Exception) {
                 _estado.update { it.copy(avaliacoes = emptyList()) }
+                _avaliacoesDetalhadas.value = emptyList()
+
             }
         }
     }
@@ -210,25 +219,100 @@ class TelaInicialViewModel(
 
     /** Converte o modelo TarefaDto para o modelo Tarefa local */
     private fun mapTarefaDtoToLocal(real: TarefaDto): Tarefa? {
-        val data = parseToLocalDate(real.dataPrazo) ?: return null
+        val rawPrazo = real.dataPrazo?.takeIf { it.isNotBlank() } ?: run {
+            Log.w(PRAZO_LOG_TAG, "Tarefa descartada: dataPrazo ausente (titulo=${real.titulo})")
+            return null
+        }
+        Log.i(PRAZO_LOG_TAG, "mapTarefaDtoToLocal: recebido dataPrazo=$rawPrazo (titulo=${real.titulo})")
+
+        val zonedDateTime = parseDeadline(rawPrazo) ?: run {
+            Log.w(
+                PRAZO_LOG_TAG,
+                "Tarefa descartada: parseDeadline falhou para dataPrazo=$rawPrazo (titulo=${real.titulo})"
+            )
+            return null
+        }
+        val data = zonedDateTime.toLocalDate()
         val localePtBr = Locale("pt", "BR")
+        val nomeQuadro = real.nomeQuadro
+            .takeIf { it.isNotBlank() }
+            ?: ""
+
+        val prazoIso = zonedDateTime.toLocalDateTime().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        Log.i(
+            PRAZO_LOG_TAG,
+            "mapTarefaDtoToLocal: prazoIso gerado=$prazoIso (titulo=${real.titulo}, quadro=${nomeQuadro})"
+        )
 
         return Tarefa(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
                 .replaceFirstChar { it.titlecase(localePtBr) },
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
             titulo = real.titulo,
-            descricao = real.nomeQuadro
+            descricao = nomeQuadro,
+            prazoIso = prazoIso,
+            nomeQuadro = nomeQuadro
         )
     }
 
     /** Converte a string de data do backend para LocalDate */
     private fun parseToLocalDate(dataString: String?): LocalDate? {
         if (dataString.isNullOrBlank()) return null
-        return try {
-            LocalDate.parse(dataString.substring(0, 10), DateTimeFormatter.ISO_LOCAL_DATE)
-        } catch (e: Exception) {
-            null
+        val trimmed = dataString.trim()
+        val dateTimeFormatters = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )
+
+        dateTimeFormatters.forEach { formatter ->
+            runCatching { java.time.LocalDateTime.parse(trimmed, formatter) }
+                .getOrNull()
+                ?.let { return it.toLocalDate() }
         }
+        return runCatching {
+            LocalDate.parse(trimmed.take(10), DateTimeFormatter.ISO_LOCAL_DATE)
+        }.getOrNull()
     }
+    private fun parseDeadline(
+        value: String?,
+        zoneId: java.time.ZoneId = java.time.ZoneId.systemDefault()
+    ): java.time.ZonedDateTime? {
+        val trimmed = value?.trim().orEmpty()
+        if (trimmed.isEmpty()) return null
+
+        runCatching { java.time.Instant.parse(trimmed) }.getOrNull()?.let {
+            return it.atZone(zoneId)
+        }
+
+        runCatching { java.time.ZonedDateTime.parse(trimmed) }.getOrNull()?.let { return it }
+        runCatching { java.time.OffsetDateTime.parse(trimmed) }.getOrNull()?.let {
+            return it.atZoneSameInstant(zoneId)
+        }
+
+        val localDateTimeFormatters = listOf(
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME,
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        )
+
+        localDateTimeFormatters.forEach { formatter ->
+            runCatching { java.time.LocalDateTime.parse(trimmed, formatter) }
+                .getOrNull()
+                ?.let { return it.atZone(zoneId) }
+        }
+
+        runCatching { LocalDate.parse(trimmed, DateTimeFormatter.ISO_LOCAL_DATE) }
+            .getOrNull()
+            ?.let { return it.atStartOfDay(zoneId) }
+
+        return null
+    }
+
+    companion object {
+        private const val TAG = "TelaInicialViewModel"
+        private const val PRAZO_LOG_TAG = "UniHubPrazo"
+    }
+
 }

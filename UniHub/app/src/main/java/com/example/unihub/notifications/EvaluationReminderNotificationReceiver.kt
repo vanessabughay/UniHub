@@ -15,6 +15,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -22,7 +23,9 @@ import kotlin.math.abs
 
 class EvaluationNotificationReceiver : BroadcastReceiver() {
 
+
     override fun onReceive(context: Context, intent: Intent) {
+        TokenManager.loadToken(context.applicationContext)
         val avaliacaoId = intent.getLongExtra(EXTRA_AVALIACAO_ID, -1L)
         if (avaliacaoId < 0) return
 
@@ -108,7 +111,8 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
             .logNotification(
                 title = notificationTitle,
                 message = historyMessage,
-                timestampMillis = System.currentTimeMillis()
+                timestampMillis = System.currentTimeMillis(),
+                type = "AVALIACAO_LEMBRETE"
             )
 
         if (requestCode != -1) {

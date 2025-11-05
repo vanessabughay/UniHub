@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 public class NotificacaoResponse {
 
     private Long id;
+    private String titulo;
     private String mensagem;
     private boolean lida;
     private String tipo;
@@ -16,6 +17,7 @@ public class NotificacaoResponse {
     public static NotificacaoResponse fromEntity(Notificacao notificacao) {
         NotificacaoResponse response = new NotificacaoResponse();
         response.setId(notificacao.getId());
+        response.setTitulo(notificacao.getTitulo());
         response.setMensagem(notificacao.getMensagem());
         response.setLida(notificacao.isLida());
         response.setTipo(notificacao.getTipo());
@@ -30,6 +32,14 @@ public class NotificacaoResponse {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getTitulo() {
+        return titulo;
+    }
+
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
     }
 
     public String getMensagem() {

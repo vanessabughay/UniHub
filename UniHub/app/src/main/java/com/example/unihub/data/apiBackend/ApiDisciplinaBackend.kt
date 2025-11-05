@@ -29,7 +29,8 @@ class ApiDisciplinaBackend : _disciplinabackend {
                 aulas = d.aulas,
                 receberNotificacoes = d.receberNotificacoes,
                 totalAusencias = d.ausencias?.size ?: 0,
-                ausenciasPermitidas = d.ausenciasPermitidas
+                ausenciasPermitidas = d.ausenciasPermitidas,
+                isAtiva = d.isAtiva
             )
         }
     }

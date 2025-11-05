@@ -68,7 +68,7 @@ class TarefaFormViewModel(
     private val _comentariosCarregando = MutableStateFlow(false)
     val comentariosCarregando: StateFlow<Boolean> = _comentariosCarregando.asStateFlow()
 
-    private val _receberNotificacoes = MutableStateFlow(false)
+    private val _receberNotificacoes = MutableStateFlow(true)
     val receberNotificacoes: StateFlow<Boolean> = _receberNotificacoes.asStateFlow()
 
     private val _comentarioResultado = MutableStateFlow<ComentarioActionResult?>(null)
@@ -115,18 +115,9 @@ class TarefaFormViewModel(
             _isLoading.value = true
             try {
                 val tarefaAtual = _tarefaState.value
-                var tarefaParaSalvar = tarefaAtualizada
-
-                tarefaParaSalvar = if (tarefaAtualizada.status == Status.CONCLUIDA && tarefaAtual?.dataFim == null) {
-                    tarefaAtualizada.copy(dataFim = System.currentTimeMillis())
-                } else if (tarefaAtual?.status == Status.CONCLUIDA && tarefaAtualizada.status != Status.CONCLUIDA) {
-                    tarefaAtualizada.copy(dataFim = null)
-                } else {
-                    tarefaAtualizada
-                }
 
                 val responsaveisOrdenados = ordenarResponsaveisSelecionados()
-                tarefaParaSalvar = tarefaParaSalvar.copy(responsaveisIds = responsaveisOrdenados)
+                val tarefaParaSalvar = tarefaAtualizada.copy(responsaveisIds = responsaveisOrdenados)
 
                 val tarefaSalva = repository.updateTarefa(quadroId, colunaId, tarefaParaSalvar)
                 _tarefaState.value = tarefaSalva
@@ -247,7 +238,7 @@ class TarefaFormViewModel(
         }
     }
 
-    fun atualizarPreferenciaComentarios(
+    fun atualizarPreferenciaTarefa(
         quadroId: String,
         colunaId: String,
         tarefaId: String,
@@ -255,7 +246,7 @@ class TarefaFormViewModel(
     ) {
         viewModelScope.launch {
             try {
-                val resposta = repository.atualizarPreferenciaComentarios(
+                val resposta = repository.atualizarPreferenciaTarefa(
                     quadroId,
                     colunaId,
                     tarefaId,
@@ -275,6 +266,10 @@ class TarefaFormViewModel(
                 )
             }
         }
+    }
+
+    fun definirReceberNotificacoesLocal(receber: Boolean) {
+        _receberNotificacoes.value = receber
     }
 
     fun resetComentarioResultado() {
@@ -407,6 +402,8 @@ class TarefaFormViewModel(
             }
         }
     }
+
+
 
     private fun construirResponsavelOption(
         contato: Contato?,

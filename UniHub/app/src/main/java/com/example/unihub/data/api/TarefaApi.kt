@@ -1,12 +1,12 @@
 package com.example.unihub.data.api
 
 import com.example.unihub.data.dto.AtualizarTarefaPlanejamentoRequestDto
-import com.example.unihub.data.dto.ComentarioNotificacaoRequestDto
+import com.example.unihub.data.dto.TarefaNotificacaoRequestDto
 import com.example.unihub.data.dto.ComentarioRequestDto
 import com.example.unihub.data.dto.TarefaPlanejamentoRequestDto
 import com.example.unihub.data.model.Tarefa
 import com.example.unihub.data.model.Comentario
-import com.example.unihub.data.model.ComentarioPreferenciaResponse
+import com.example.unihub.data.model.TarefaPreferenciaResponse
 import com.example.unihub.data.model.ComentariosResponse
 import com.example.unihub.data.dto.TarefaDto
 
@@ -81,13 +81,13 @@ interface TarefaApi {
         @Path("comentarioId") comentarioId: String
     )
 
-    @PUT("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}/comentarios/preferencias")
-    suspend fun updateComentarioPreference(
+    @PUT("quadros-planejamento/{quadroId}/colunas/{colunaId}/tarefas/{tarefaId}/preferencias")
+    suspend fun updateTarefaPreference(
         @Path("quadroId") quadroId: String,
         @Path("colunaId") colunaId: String,
         @Path("tarefaId") tarefaId: String,
-        @Body request: ComentarioNotificacaoRequestDto
-    ): ComentarioPreferenciaResponse
+        @Body request: TarefaNotificacaoRequestDto
+    ): TarefaPreferenciaResponse
 
     @GET("quadros-planejamento/tarefas/proximas")
     suspend fun getProximasTarefas(): List<TarefaDto>

@@ -81,6 +81,7 @@ fun AnotacoesView(
                     onClick = vm::novaAnotacao,
                     modifier = Modifier
                         .fillMaxWidth()
+                        .navigationBarsPadding()
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(

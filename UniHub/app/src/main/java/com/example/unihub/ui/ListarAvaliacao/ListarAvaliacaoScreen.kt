@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -69,10 +70,11 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
-import com.example.unihub.notifications.EvaluationNotificationScheduler
+import androidx.compose.material3.HorizontalDivider
+import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
-import androidx.compose.material3.HorizontalDivider
+import com.example.unihub.notifications.EvaluationNotificationScheduler
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -150,13 +152,17 @@ fun ListarAvaliacaoScreen(
 
             EvaluationNotificationScheduler.EvaluationInfo(
                 id = id,
-                descricao = avaliacao.descricao,
+                descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
                 disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
                 prioridade = avaliacao.prioridade,
-                receberNotificacoes = avaliacao.receberNotificacoes,
-                antecedenciaDias = 2 
+
+                // receberNotificacoes = avaliacao.receberNotificacoes,
+                // antecedenciaDias = Antecedencia.padrao.dias
+                receberNotificacoes = avaliacao.receberNotificacoes
+
+
             )
         }
         scheduler.scheduleNotifications(infos)
