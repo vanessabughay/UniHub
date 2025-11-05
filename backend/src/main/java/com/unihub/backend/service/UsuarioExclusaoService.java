@@ -9,7 +9,7 @@ import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.ConviteCompartilhamentoRepository;
 import com.unihub.backend.repository.NotificacaoRepository;
 import com.unihub.backend.repository.QuadroPlanejamentoRepository;
-import com.unihub.backend.repository.TarefaComentarioNotificacaoRepository;
+import com.unihub.backend.repository.TarefaNotificacaoRepository;
 import com.unihub.backend.repository.TarefaComentarioRepository;
 import com.unihub.backend.repository.TarefaPlanejamentoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
@@ -30,7 +30,7 @@ public class UsuarioExclusaoService {
     private final QuadroPlanejamentoRepository quadroRepository;
     private final TarefaPlanejamentoRepository tarefaRepository;
     private final TarefaComentarioRepository tarefaComentarioRepository;
-    private final TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository;
+    private final TarefaNotificacaoRepository tarefaComentarioNotificacaoRepository;
     private final NotificacaoRepository notificacaoRepository;
     private final ConviteCompartilhamentoRepository conviteRepository;
     private final GrupoService grupoService;
@@ -41,7 +41,7 @@ public class UsuarioExclusaoService {
                                   QuadroPlanejamentoRepository quadroRepository,
                                   TarefaPlanejamentoRepository tarefaRepository,
                                   TarefaComentarioRepository tarefaComentarioRepository,
-                                  TarefaComentarioNotificacaoRepository tarefaComentarioNotificacaoRepository,
+                                  TarefaNotificacaoRepository tarefaComentarioNotificacaoRepository,
                                   NotificacaoRepository notificacaoRepository,
                                   ConviteCompartilhamentoRepository conviteRepository,
                                   GrupoService grupoService,
