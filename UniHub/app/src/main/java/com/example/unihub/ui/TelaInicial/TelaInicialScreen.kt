@@ -53,6 +53,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
+import com.example.unihub.Screen
 
 
 
@@ -80,6 +82,25 @@ fun TelaInicial(
     val avaliacoesDetalhadas by viewModel.avaliacoesDetalhadas.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val instituicaoRepository = remember { InstituicaoRepositoryProvider.getRepository(context) }
+
+    LaunchedEffect(Unit) {
+        val instituicao = runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
+        if (instituicao == null) {
+            val mensagemObrigatoria = "instituição deve ser informada para o funcionamento correto do app"
+            navController.navigate(
+                Screen.ManterInstituicao.createRoute(
+                    nome = "",
+                    media = "",
+                    frequencia = "",
+                    mensagem = mensagemObrigatoria,
+                    forcarPreenchimento = true
+                )
+            ) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     val taskNotificationScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
     val evaluationNotificationScheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }

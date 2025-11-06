@@ -23,7 +23,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun CabecalhoAlternativo(
     titulo: String,
-    onVoltar: () -> Unit
+    onVoltar: () -> Unit,
+    habilitarVoltar: Boolean = true
 ) {
     Row(
         modifier = Modifier
@@ -36,7 +37,10 @@ fun CabecalhoAlternativo(
             modifier = Modifier.size(48.dp),
             contentAlignment = Alignment.Center
         ) {
-            IconButton(onClick = onVoltar) {
+            IconButton(
+                onClick = onVoltar,
+                enabled = habilitarVoltar
+            ) {
                 Icon(
                     imageVector = Icons.Default.ChevronLeft,
                     contentDescription = "Voltar",
