@@ -31,10 +31,20 @@ public class AutenticacaoService {
     private final Map<String, Long> tokens = new ConcurrentHashMap<>();
 
     public Usuario registrar(Usuario usuario) {
-        Optional<Usuario> existente = repository.findByEmail(usuario.getEmail());
+        String email = Optional.ofNullable(usuario.getEmail())
+                .map(String::trim)
+                .orElse("");
+
+        if (email.isEmpty()) {
+            throw new IllegalArgumentException("E-mail é obrigatório");
+        }
+
+        Optional<Usuario> existente = repository.findByEmailIgnoreCase(email);
+
         if (existente.isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
+        usuario.setEmail(email);
         // Se for cadastro nativo, senha vem preenchida; se for social, não chame este método.
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         Usuario salvo = repository.save(usuario);
