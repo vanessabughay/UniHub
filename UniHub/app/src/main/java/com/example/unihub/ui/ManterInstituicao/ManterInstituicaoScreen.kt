@@ -208,6 +208,8 @@ fun ManterInstituicaoScreen(
                 )
             }
 
+            val podeSalvar = viewModel.isFormularioValido()
+
             Button(
                 onClick = { viewModel.salvar(onVoltar) },
                 shape = RoundedCornerShape(12.dp),
@@ -218,7 +220,8 @@ fun ManterInstituicaoScreen(
                 contentPadding = PaddingValues(vertical = 14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = 16.dp),
+                enabled = podeSalvar
             ) {
                 Text(
                     "Salvar",
