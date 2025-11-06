@@ -6,15 +6,19 @@ public class TarefaDto {
     private String titulo;
     private String dataPrazo;
     private String nomeQuadro;
+        private boolean receberNotificacoes;
+
 
     public TarefaDto() {
     }
 
     // Construtor
-    public TarefaDto(String titulo, String dataPrazo, String nomeQuadro) {
-        this.titulo = titulo;
+    public TarefaDto(String titulo, String dataPrazo, String nomeQuadro, boolean receberNotificacoes) {
+    this.titulo = titulo;
         this.dataPrazo = dataPrazo;
         this.nomeQuadro = nomeQuadro;
+                this.receberNotificacoes = receberNotificacoes;
+
     }
 
     // Getters e Setters
@@ -40,5 +44,13 @@ public class TarefaDto {
 
     public void setNomeQuadro(String nomeQuadro) {
         this.nomeQuadro = nomeQuadro;
+    }
+
+    public boolean isReceberNotificacoes() {
+        return receberNotificacoes;
+    }
+
+    public void setReceberNotificacoes(boolean receberNotificacoes) {
+        this.receberNotificacoes = receberNotificacoes;
     }
 }

@@ -114,7 +114,7 @@ fun TelaInicial(
                 titulo = tarefa.titulo,
                 quadroNome = tarefa.nomeQuadro,
                 prazoIso = prazoIso,
-                receberNotificacoes = true
+                receberNotificacoes = tarefa.receberNotificacoes
             )
         }
     }

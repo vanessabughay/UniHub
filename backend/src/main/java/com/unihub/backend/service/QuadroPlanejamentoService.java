@@ -726,11 +726,11 @@ public class QuadroPlanejamentoService {
         );
 
         return tarefas.stream()
-                .map(this::mapEntidadeParaDto)
+                .map(tarefa -> mapEntidadeParaDto(tarefa, usuarioId))
                 .collect(Collectors.toList());
     }
 
-    private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa) {
+    private TarefaDto mapEntidadeParaDto(TarefaPlanejamento tarefa, Long usuarioId) {
         String prazo = formatDateTimeToIso(tarefa.getDataPrazo());
 
         String nomeQuadro = "Sem quadro";
@@ -739,10 +739,17 @@ public class QuadroPlanejamentoService {
             nomeQuadro = tarefa.getColuna().getQuadro().getTitulo();
         }
 
+        boolean receberNotificacoes = tarefa.getNotificacoes().stream()
+                .anyMatch(notificacao ->
+                        notificacao.getUsuario() != null
+                                && Objects.equals(notificacao.getUsuario().getId(), usuarioId)
+                );
+
         return new TarefaDto(
                 tarefa.getTitulo(),
                 prazo,
-                nomeQuadro
+               nomeQuadro,
+                receberNotificacoes
         );
     }
 }

@@ -47,7 +47,8 @@ data class Tarefa(
     val titulo: String,
     val descricao: String,
     val prazoIso: String? = null,
-    val nomeQuadro: String? = null
+    val nomeQuadro: String? = null,
+    val receberNotificacoes: Boolean = true
 )
 
 /* ====== ViewModel ====== */
@@ -251,7 +252,8 @@ class TelaInicialViewModel(
             titulo = real.titulo,
             descricao = nomeQuadro,
             prazoIso = prazoIso,
-            nomeQuadro = nomeQuadro
+            nomeQuadro = nomeQuadro,
+            receberNotificacoes = real.receberNotificacoes
         )
     }
 
