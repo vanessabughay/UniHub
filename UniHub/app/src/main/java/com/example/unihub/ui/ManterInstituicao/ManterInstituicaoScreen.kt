@@ -2,6 +2,7 @@ package com.example.unihub.ui.ManterInstituicao
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -43,15 +44,32 @@ fun ManterInstituicaoScreen(
     nome: String = "",
     media: String = "",
     frequencia: String = "",
+    mensagemObrigatoria: String = "",
+    bloquearSaida: Boolean = false,
     viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory(LocalContext.current))) {
 
     val context = LocalContext.current
+
+    val mensagemBloqueio = remember(mensagemObrigatoria, bloquearSaida) {
+        if (mensagemObrigatoria.isNotBlank()) mensagemObrigatoria
+        else "Informe a instituição para continuar"
+    }
+
+    BackHandler(enabled = bloquearSaida) {
+        Toast.makeText(context, mensagemBloqueio, Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(nome, media, frequencia) {
         if (nome.isNotBlank()) {
             viewModel.nomeInstituicao = nome
             viewModel.onMediaChange(media)
             viewModel.onFrequenciaChange(frequencia)
+        }
+    }
+
+    LaunchedEffect(mensagemObrigatoria) {
+        if (mensagemObrigatoria.isNotBlank()) {
+            Toast.makeText(context, mensagemObrigatoria, Toast.LENGTH_LONG).show()
         }
     }
 
@@ -62,7 +80,11 @@ fun ManterInstituicaoScreen(
             .fillMaxSize()
             .background(color = Color(0xFFF2F2F2))
     ) {
-        CabecalhoAlternativo(titulo = "Instituição", onVoltar = onVoltar)
+        CabecalhoAlternativo(
+            titulo = "Instituição",
+            onVoltar = onVoltar,
+            habilitarVoltar = !bloquearSaida
+        )
 
         Column(
             modifier = Modifier
@@ -71,6 +93,24 @@ fun ManterInstituicaoScreen(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
+            if (mensagemObrigatoria.isNotBlank()) {
+                Surface(
+                    color = Color(0xFFFFE9E9),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = mensagemObrigatoria,
+                        color = Color(0xFFB00020),
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(16.dp),
+                        fontSize = 16.sp
+                    )
+                }
+            }
 
             Icon(
                 imageVector = Icons.Default.School,
@@ -168,6 +208,8 @@ fun ManterInstituicaoScreen(
                 )
             }
 
+            val podeSalvar = viewModel.isFormularioValido()
+
             Button(
                 onClick = { viewModel.salvar(onVoltar) },
                 shape = RoundedCornerShape(12.dp),
@@ -178,12 +220,25 @@ fun ManterInstituicaoScreen(
                 contentPadding = PaddingValues(vertical = 14.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = 16.dp),
+                enabled = podeSalvar
             ) {
                 Text(
                     "Salvar",
                     color = Color.White,
                     fontSize = 16.sp
+                )
+            }
+
+            viewModel.errorMessage?.let { error ->
+                Text(
+                    text = error,
+                    color = Color(0xFFB00020),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 24.dp)
                 )
             }
         }

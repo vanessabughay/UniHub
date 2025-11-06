@@ -17,6 +17,8 @@ import com.example.unihub.R
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import kotlin.math.abs
+import com.example.unihub.components.formatMinutesToTime
+
 import java.util.Locale
 
 class AttendanceNotificationReceiver : BroadcastReceiver() {
@@ -152,12 +154,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun formatMinutes(totalMinutes: Int): String {
-        if (totalMinutes < 0) return ""
-        val hours = totalMinutes / 60
-        val minutes = totalMinutes % 60
-        return String.format("%02d:%02d", hours, minutes)
-    }
+    private fun formatMinutes(totalMinutes: Int): String = formatMinutesToTime(totalMinutes)
 
     private fun buildScheduleText(context: Context, dayLabel: String, formattedTime: String): String {
         val locale = Locale("pt", "BR")

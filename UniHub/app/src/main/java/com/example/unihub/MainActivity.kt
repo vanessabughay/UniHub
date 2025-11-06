@@ -155,9 +155,15 @@ sealed class Screen(val route: String) {
     object ManterConta : Screen("manter_conta")
 
     object ManterInstituicao :
-        Screen("manter_instituicao?nome={nome}&media={media}&frequencia={frequencia}") {
-        fun createRoute(nome: String, media: String, frequencia: String) =
-            "manter_instituicao?nome=${Uri.encode(nome)}&media=${Uri.encode(media)}&frequencia=${Uri.encode(frequencia)}"
+        Screen("manter_instituicao?nome={nome}&media={media}&frequencia={frequencia}&mensagem={mensagem}&forcar={forcar}") {
+        fun createRoute(
+            nome: String,
+            media: String,
+            frequencia: String,
+            mensagem: String = "",
+            forcarPreenchimento: Boolean = false
+        ) =
+            "manter_instituicao?nome=${Uri.encode(nome)}&media=${Uri.encode(media)}&frequencia=${Uri.encode(frequencia)}&mensagem=${Uri.encode(mensagem)}&forcar=$forcarPreenchimento"
     }
 
     object ListarContato : Screen("lista_contato")
@@ -439,18 +445,24 @@ class MainActivity : ComponentActivity() {
                             navArgument("media") { type = NavType.StringType; defaultValue = "" },
                             navArgument("frequencia") {
                                 type = NavType.StringType; defaultValue = ""
-                            }
+                            },
+                            navArgument("mensagem") { type = NavType.StringType; defaultValue = "" },
+                            navArgument("forcar") { type = NavType.BoolType; defaultValue = false }
                         )
                     ) { backStackEntry ->
                         val nomeArg = backStackEntry.arguments?.getString("nome") ?: ""
                         val mediaArg = backStackEntry.arguments?.getString("media") ?: ""
                         val frequenciaArg = backStackEntry.arguments?.getString("frequencia") ?: ""
 
+                        val mensagemArg = backStackEntry.arguments?.getString("mensagem") ?: ""
+                        val forcarArg = backStackEntry.arguments?.getBoolean("forcar") ?: false
                         ManterInstituicaoScreen(
                             onVoltar = { navController.popBackStack() },
                             nome = nomeArg,
                             media = mediaArg,
-                            frequencia = frequenciaArg
+                            frequencia = frequenciaArg,
+                            mensagemObrigatoria = mensagemArg,
+                            bloquearSaida = forcarArg
                         )
                     }
 

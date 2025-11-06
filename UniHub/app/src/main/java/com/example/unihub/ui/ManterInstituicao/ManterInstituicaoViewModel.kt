@@ -40,6 +40,7 @@ class ManterInstituicaoViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun onNomeInstituicaoChange(text: String) {
         nomeInstituicao = text
+        errorMessage = null
         if (text.isBlank()) {
             sugestoes = emptyList()
             mostrarCadastrar = false
@@ -58,26 +59,42 @@ class ManterInstituicaoViewModel(
         frequencia = PesoCampo.fromDouble(inst.frequenciaMinima.toDouble())
         sugestoes = emptyList()
         mostrarCadastrar = false
+
     }
 
     fun onMediaChange(text: String) {
         val normalizado = text.replace('.', ',')
         media = NotaCampo.sanitize(normalizado)
+        errorMessage = null
     }
 
     fun onFrequenciaChange(text: String) {
         frequencia = PesoCampo.sanitize(text)
+        errorMessage = null
+    }
+
+    fun isFormularioValido(): Boolean {
+        val mediaValor = NotaCampo.toDouble(media)
+        val frequenciaValor = PesoCampo.toDouble(frequencia)
+        return nomeInstituicao.isNotBlank() && mediaValor != null && frequenciaValor != null
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar(onSaved: () -> Unit) {
         viewModelScope.launch {
             try {
+                val mediaValor = NotaCampo.toDouble(media)
+                val frequenciaValor = PesoCampo.toDouble(frequencia)
+
+                if (nomeInstituicao.isBlank() || mediaValor == null || frequenciaValor == null) {
+                    errorMessage = "Preencha todos os campos obrigatórios."
+                    return@launch
+                }
                 val inst = Instituicao(
                     id = instituicaoId,
                     nome = nomeInstituicao,
-                    mediaAprovacao = NotaCampo.toDouble(media) ?: 0.0,
-                    frequenciaMinima = PesoCampo.toDouble(frequencia)?.toInt() ?: 0
+                    mediaAprovacao = mediaValor,
+                    frequenciaMinima = frequenciaValor.toInt()
                 )
                 repository.salvarInstituicao(inst)
                 instituicaoId = repository.instituicaoUsuario()?.id

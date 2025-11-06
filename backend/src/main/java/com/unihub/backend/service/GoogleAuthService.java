@@ -56,13 +56,16 @@ public class GoogleAuthService {
 
             Payload payload = idToken.getPayload();
             String email = payload.getEmail();
+            if (email != null) {
+                email = email.trim();
+            }
             boolean emailVerified = Boolean.TRUE.equals(payload.getEmailVerified());
             String name = (String) payload.get("name");
             String pictureUrl = (String) payload.get("picture");
             String sub = payload.getSubject(); // providerId estável do Google
 
             // Upsert por e-mail
-            Usuario user = usuarioRepository.findByEmail(email).orElse(null);
+Usuario user = email == null ? null : usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
             if (user == null) {
                 user = new Usuario();
                 user.setEmail(email);

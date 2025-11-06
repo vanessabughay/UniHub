@@ -20,6 +20,8 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
 
     long countByColunaQuadroIdAndStatus(Long quadroId, TarefaStatus status);
 
+
+
     List<TarefaPlanejamento> findDistinctByResponsaveis_IdContato(Long idContato);
 
     List<TarefaPlanejamento> findDistinctByResponsaveis_Id(Long contatoId);
@@ -35,26 +37,30 @@ public interface TarefaPlanejamentoRepository extends JpaRepository<TarefaPlanej
             @Param("dataFim") LocalDateTime dataFim
     );
 
-    @Query("SELECT DISTINCT t " +
-           "FROM TarefaPlanejamento t " +
-           "JOIN t.coluna c " +
-           "JOIN c.quadro q " +
-           "JOIN t.notificacoes notificacao " +
-           "LEFT JOIN q.grupo grupo " +
-           "LEFT JOIN grupo.membros membro " +
-           "LEFT JOIN q.contato contato " +
-           "LEFT JOIN t.responsaveis responsavel " +
-           "WHERE t.status <> 'CONCLUIDA' " +
-           "AND t.dataPrazo IS NOT NULL " +
-           "AND t.dataPrazo BETWEEN :dataInicio AND :dataFim " +
-           "AND notificacao.usuario.id = :usuarioId " +
-           "AND (" +
-           "    q.usuario.id = :usuarioId " +
-           "    OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId) " +
-           "    OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId) " +
-           "    OR (membro.idContato IS NOT NULL AND membro.idContato = :usuarioId)" +
-           ") " +
-           "ORDER BY t.dataPrazo ASC")
+    
+
+    @Query("""
+            SELECT DISTINCT t
+            FROM TarefaPlanejamento t
+            JOIN t.coluna c
+            JOIN c.quadro q
+            LEFT JOIN t.notificacoes notificacao
+            LEFT JOIN q.grupo grupo
+            LEFT JOIN grupo.membros membro
+            LEFT JOIN q.contato contato
+            LEFT JOIN t.responsaveis responsavel
+            WHERE t.status <> 'CONCLUIDA'
+              AND t.dataPrazo IS NOT NULL
+              AND t.dataPrazo BETWEEN :dataInicio AND :dataFim
+              AND (
+                    q.usuario.id = :usuarioId
+                 OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId)
+                 OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId)
+                 OR (membro.idContato IS NOT NULL AND membro.idContato = :usuarioId)
+                 OR (notificacao.usuario.id IS NOT NULL AND notificacao.usuario.id = :usuarioId)
+              )
+            ORDER BY t.dataPrazo ASC
+            """)
     List<TarefaPlanejamento> findProximasTarefasPorParticipante(
             @Param("usuarioId") Long usuarioId,
             @Param("dataInicio") LocalDateTime dataInicio,
