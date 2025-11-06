@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import com.example.unihub.components.formatMinutesToTime
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -141,7 +143,12 @@ fun ListarDisciplinasScreen(
             context.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
             @Suppress("DEPRECATION")
-            context.registerReceiver(receiver, filter)
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
         }
         onDispose {
             context.unregisterReceiver(receiver)
@@ -555,8 +562,4 @@ fun CompartilharDisciplinaDialog(
     )
 }
 
-private fun formatHorario(horario: Int): String {
-    val horas = horario / 100
-    val minutos = horario % 100
-    return String.format("%02d:%02d", horas, minutos)
-}
+private fun formatHorario(horario: Int): String = formatMinutesToTime(horario)
