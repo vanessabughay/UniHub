@@ -484,7 +484,13 @@ private fun ConteudoAbaixoDoTopo(
                     )
                 } else {
                     estado.avaliacoes.forEachIndexed { i, a ->
-                        CartaoAvaliacao(a.diaSemana, a.dataCurta, a.titulo, a.descricao)
+                        CartaoAvaliacao(
+                            diaSemana = a.diaSemana,
+                            dataCurta = a.dataCurta,
+                            horaCurta = a.horaCurta,
+                            titulo = a.titulo,
+                            descricao = a.descricao
+                        )
                         if (i != estado.avaliacoes.lastIndex) Spacer(Modifier.height(14.dp))
                     }
                 }
@@ -510,7 +516,13 @@ private fun ConteudoAbaixoDoTopo(
                     )
                 } else {
                     estado.tarefas.forEachIndexed { i, t ->
-                        CartaoAvaliacao(t.diaSemana, t.dataCurta, t.titulo, t.descricao)
+                        CartaoAvaliacao(
+                            diaSemana = t.diaSemana,
+                            dataCurta = t.dataCurta,
+                            horaCurta = t.horaCurta,
+                            titulo = t.titulo,
+                            descricao = t.descricao
+                        )
                         if (i != estado.tarefas.lastIndex) Spacer(Modifier.height(14.dp))
                     }
                 }
@@ -550,7 +562,13 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
 
 
 @Composable
-private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String, descricao: String) {
+private fun CartaoAvaliacao(
+    diaSemana: String,
+    dataCurta: String,
+    horaCurta: String?,
+    titulo: String,
+    descricao: String
+) {
     Surface(
         color = CoresApp.AzulCartao,
         shape = RoundedCornerShape(16.dp),
@@ -575,6 +593,15 @@ private fun CartaoAvaliacao(diaSemana: String, dataCurta: String, titulo: String
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(text = dataCurta, color = CoresApp.TextoSecundario, fontSize = 16.sp)
+                if (!horaCurta.isNullOrBlank()) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = horaCurta,
+                        color = CoresApp.TextoSecundario,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
             HorizontalDivider(
                 modifier = Modifier
@@ -696,12 +723,14 @@ private fun TelaInicialViewPreview() {
                     Avaliacao(
                         diaSemana = "Segunda",
                         dataCurta = "12/08",
+                        horaCurta = "10:00",
                         titulo = "Prova de Cálculo",
                         descricao = "Cálculo I"
                     ),
                     Avaliacao(
                         diaSemana = "Quarta",
                         dataCurta = "14/08",
+                        horaCurta = "08:30",
                         titulo = "Trabalho de Física",
                         descricao = "Laboratório"
                     )
@@ -710,12 +739,15 @@ private fun TelaInicialViewPreview() {
                     Tarefa(
                         diaSemana = "Sexta",
                         dataCurta = "16/08",
+                        horaCurta = "23:59",
                         titulo = "Entregar relatório",
                         descricao = "Projeto Integrador"
                     ),
                     Tarefa(
                         diaSemana = "Domingo",
                         dataCurta = "18/08",
+                        horaCurta = "18:00",
+
                         titulo = "Revisar notas",
                         descricao = "Planejamento semanal"
                     )
