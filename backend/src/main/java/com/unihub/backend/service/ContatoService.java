@@ -82,6 +82,10 @@ public class ContatoService {
             } else if (contato.getDataConfirmacao() == null) {
                 contato.setDataConfirmacao(LocalDateTime.now());
             }
+            } else {
+            repository.findById(contato.getId())
+                    .map(Contato::getEmail)
+                    .ifPresent(contato::setEmail);
         }
         Long ownerId = currentUserId();
         contato.setOwnerId(ownerId);
