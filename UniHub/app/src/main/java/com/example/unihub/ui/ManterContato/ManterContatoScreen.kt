@@ -144,21 +144,41 @@ fun ManterContatoScreen(
                         )
                     )
 
+                    val emailFieldColors = if (isNovoContato) {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    } else {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            focusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            cursorColor = Color.Transparent
+                        )
+                    }
+
                     OutlinedTextField(
                         value = emailState,
                         onValueChange = { if (isNovoContato) emailState = it },
                         label = { Text("E-mail do Contato") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused && !isNovoContato) {
+                                    Toast.makeText(
+                                        context,
+                                        "Não é permitido editar o e-mail do contato.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
                         singleLine = true,
-                        enabled = isNovoContato,
                         readOnly = !isNovoContato,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            disabledBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                            disabledLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                            disabledTextColor = MaterialTheme.colorScheme.onSurface
-                        )
+                        colors = emailFieldColors
                     )
                 }
             }
