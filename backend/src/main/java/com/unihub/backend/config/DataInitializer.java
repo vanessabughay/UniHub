@@ -102,7 +102,7 @@ public class DataInitializer {
                 "DS340A", "Banco de Dados III", "João Marynowski",
                 "2025/2", 30, 16,4, LocalDate.of(2025,8,4), LocalDate.of(2025,11,26),
                 "jeugenio@ufpr.br", "TEAMS e UFPR Virtual", "(41)99999-9999", "B0", true, true,
-                new HorarioAula[]{criarHorarioAula("segunda-feira", "A13", 1140, 2240)});
+                new HorarioAula[]{criarHorarioAula("segunda-feira", "A13", 1140, 1360)});
 
         Disciplina saob22 = criarDisciplinaSeNaoExistir(usuario,
                 "SAOB22", "Modelagem de Novos Negócios", "Cleverson Renan da Cunha",
