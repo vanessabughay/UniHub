@@ -10,6 +10,8 @@ import androidx.compose.foundation.verticalScroll // Para rolagem
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.focus.onFocusChanged
+
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,6 +108,7 @@ fun ManterContatoScreen(
         ) {
             var nomeState by remember(uiState.nome) { mutableStateOf(uiState.nome) }
             var emailState by remember(uiState.email) { mutableStateOf(uiState.email) }
+            val isNovoContato = contatoId == null
 
             LaunchedEffect(uiState.nome) { nomeState = uiState.nome }
             LaunchedEffect(uiState.email) { emailState = uiState.email }
@@ -141,16 +144,41 @@ fun ManterContatoScreen(
                         )
                     )
 
-                    OutlinedTextField(
-                        value = emailState,
-                        onValueChange = { emailState = it },
-                        label = { Text("E-mail do Contato") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
+                    val emailFieldColors = if (isNovoContato) {
+                        OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         )
+                    } else {
+                        OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+                            focusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            cursorColor = Color.Transparent
+                        )
+                    }
+
+                    OutlinedTextField(
+                        value = emailState,
+                        onValueChange = { if (isNovoContato) emailState = it },
+                        label = { Text("E-mail do Contato") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused && !isNovoContato) {
+                                    Toast.makeText(
+                                        context,
+                                        "Não é permitido editar o e-mail do contato.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            },
+                        singleLine = true,
+                        readOnly = !isNovoContato,
+                        colors = emailFieldColors
                     )
                 }
             }

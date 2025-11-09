@@ -115,10 +115,9 @@ class ContatoRepository(private val backend: Contatobackend) {
 
     //EXCLUSÃO CONTATO
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun deleteContato(id: String): Boolean {
-        val longId = id.toLongOrNull() ?: throw Exception("ID inválido")
+    suspend fun deleteContato(id: Long): Boolean {
         return try {
-            backend.deleteContatoApi(longId)
+            backend.deleteContatoApi(id)
         } catch (e: IOException) {
             throw Exception("Erro de rede: ${e.message}")
         } catch (e: HttpException) {

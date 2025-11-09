@@ -26,6 +26,7 @@ data class Usuario(val nome: String)
 data class Avaliacao(
     val diaSemana: String,
     val dataCurta: String,
+    val horaCurta: String?,
     val titulo: String,
     val descricao: String
 )
@@ -44,6 +45,7 @@ data class EstadoTelaInicial(
 data class Tarefa(
     val diaSemana: String,
     val dataCurta: String,
+    val horaCurta: String?,
     val titulo: String,
     val descricao: String,
     val prazoIso: String? = null,
@@ -206,13 +208,27 @@ class TelaInicialViewModel(
 
     /** Converte o modelo AvaliacaoReal para o modelo Avaliacao local */
     private fun mapRealToLocal(real: AvaliacaoReal): Avaliacao? {
-        val data = parseToLocalDate(real.dataEntrega) ?: return null
+        val rawDataEntrega = real.dataEntrega
+        val zonedDateTime = parseDeadline(rawDataEntrega)
+        val data = zonedDateTime?.toLocalDate()
+            ?: parseToLocalDate(rawDataEntrega)
+            ?: return null
         val localePtBr = Locale("pt", "BR")
+        val possuiHorarioInformado = rawDataEntrega?.let { it.contains(":") && (it.contains("T") || it.contains(" ")) } == true
+        val horaCurta = zonedDateTime?.toLocalTime()?.let {
+            if (possuiHorarioInformado) {
+                it.format(DateTimeFormatter.ofPattern("HH:mm", localePtBr))
+            } else {
+                null
+            }
+        }
+
 
         return Avaliacao(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
                 .replaceFirstChar { it.titlecase(localePtBr) },
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
+            horaCurta = horaCurta,
             titulo = real.tipoAvaliacao?.takeIf { it.isNotBlank() } ?: (real.descricao ?: "Avaliação"),
             descricao = real.disciplina?.nome ?: ""
         )
@@ -245,10 +261,20 @@ class TelaInicialViewModel(
             "mapTarefaDtoToLocal: prazoIso gerado=$prazoIso (titulo=${real.titulo}, quadro=${nomeQuadro})"
         )
 
+        val possuiHorarioInformado = rawPrazo.contains(":")
+        val horaCurta = zonedDateTime.toLocalTime().let { localTime ->
+            if (possuiHorarioInformado) {
+                localTime.format(DateTimeFormatter.ofPattern("HH:mm", localePtBr))
+            } else {
+                null
+            }
+        }
+
         return Tarefa(
             diaSemana = data.format(DateTimeFormatter.ofPattern("EEEE", localePtBr))
                 .replaceFirstChar { it.titlecase(localePtBr) },
             dataCurta = data.format(DateTimeFormatter.ofPattern("dd/MM", localePtBr)),
+            horaCurta = horaCurta,
             titulo = real.titulo,
             descricao = nomeQuadro,
             prazoIso = prazoIso,

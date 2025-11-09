@@ -82,6 +82,10 @@ public class ContatoService {
             } else if (contato.getDataConfirmacao() == null) {
                 contato.setDataConfirmacao(LocalDateTime.now());
             }
+            } else {
+            repository.findById(contato.getId())
+                    .map(Contato::getEmail)
+                    .ifPresent(contato::setEmail);
         }
         Long ownerId = currentUserId();
         contato.setOwnerId(ownerId);
@@ -165,7 +169,9 @@ public class ContatoService {
         }
 
         convite.setPendente(false);
-        convite.setNome(usuarioAtual.getNomeUsuario());
+        if (convite.getNome() == null || convite.getNome().isBlank()) {
+            convite.setNome(usuarioAtual.getNomeUsuario());
+        }
         convite.setEmail(usuarioAtual.getEmail());
         convite.setIdContato(usuarioAtual.getId());
         convite.setDataConfirmacao(LocalDateTime.now());

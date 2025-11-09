@@ -456,13 +456,26 @@ class MainActivity : ComponentActivity() {
 
                         val mensagemArg = backStackEntry.arguments?.getString("mensagem") ?: ""
                         val forcarArg = backStackEntry.arguments?.getBoolean("forcar") ?: false
+                        val context = LocalContext.current
+
                         ManterInstituicaoScreen(
                             onVoltar = { navController.popBackStack() },
                             nome = nomeArg,
                             media = mediaArg,
                             frequencia = frequenciaArg,
                             mensagemObrigatoria = mensagemArg,
-                            bloquearSaida = forcarArg
+                            bloquearSaida = forcarArg,
+                            onLogout = {
+                                TokenManager.clearToken(context)
+                                val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+                                val client = GoogleSignIn.getClient(context, gso)
+                                client.signOut().addOnCompleteListener {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(0) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
                         )
                     }
 

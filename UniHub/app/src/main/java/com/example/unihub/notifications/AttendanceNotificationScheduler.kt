@@ -194,13 +194,12 @@ class AttendanceNotificationScheduler(private val context: Context) {
         internal fun mapDayOfWeekInternal(label: String): DayOfWeek? {
             val normalized = normalizeDayLabel(label)
             return when (normalized) {
-                "segunda-feira" -> DayOfWeek.MONDAY
-                "terça-feira", "terca-feira" -> DayOfWeek.TUESDAY
-                "quarta-feira" -> DayOfWeek.WEDNESDAY
-                "quinta-feira" -> DayOfWeek.THURSDAY
-                "sexta-feira" -> DayOfWeek.FRIDAY
-                "sábado", "sabado" -> DayOfWeek.SATURDAY
-                "domingo" -> DayOfWeek.SUNDAY
+                "segundafeira", "segunda" -> DayOfWeek.MONDAY
+                "tercafeira", "terca" -> DayOfWeek.TUESDAY
+                "quartafeira", "quarta" -> DayOfWeek.WEDNESDAY
+                "quintafeira", "quinta" -> DayOfWeek.THURSDAY
+                "sextafeira", "sexta" -> DayOfWeek.FRIDAY
+                "sabado" -> DayOfWeek.SATURDAY
                 else -> null
             }
         }

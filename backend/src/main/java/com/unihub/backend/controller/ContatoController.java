@@ -44,7 +44,6 @@ public class ContatoController {
     public Contato atualizar(@PathVariable Long id, @RequestBody Contato novoContato) {
         Contato existente = service.buscarPorId(id); 
         existente.setNome(novoContato.getNome());
-        existente.setEmail(novoContato.getEmail());
         existente.setPendente(novoContato.getPendente());
         return service.salvar(existente);
     }

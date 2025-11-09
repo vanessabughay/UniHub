@@ -27,11 +27,21 @@ class ManterInstituicaoViewModel(
     var errorMessage by mutableStateOf<String?>(null)
 
     var instituicaoId: Long? = null
+    var possuiInstituicaoCadastrada by mutableStateOf(false)
+        private set
+    var carregamentoInicialConcluido by mutableStateOf(false)
+        private set
 
     init {
         viewModelScope.launch {
-            repository.instituicaoUsuario()?.let { instit ->
-                instituicaoId = instit.id
+            try {
+                val instituicao = repository.instituicaoUsuario()
+                instituicaoId = instituicao?.id
+                possuiInstituicaoCadastrada = instituicao != null
+            } catch (_: Exception) {
+                possuiInstituicaoCadastrada = false
+            } finally {
+                carregamentoInicialConcluido = true
             }
         }
     }
@@ -59,7 +69,7 @@ class ManterInstituicaoViewModel(
         frequencia = PesoCampo.fromDouble(inst.frequenciaMinima.toDouble())
         sugestoes = emptyList()
         mostrarCadastrar = false
-
+        errorMessage = null
     }
 
     fun onMediaChange(text: String) {
@@ -77,6 +87,14 @@ class ManterInstituicaoViewModel(
         val mediaValor = NotaCampo.toDouble(media)
         val frequenciaValor = PesoCampo.toDouble(frequencia)
         return nomeInstituicao.isNotBlank() && mediaValor != null && frequenciaValor != null
+    }
+
+    fun isFormularioVazio(): Boolean {
+        return nomeInstituicao.isBlank() && media.isBlank() && frequencia.isBlank()
+    }
+
+    fun deveMostrarBotaoLogout(): Boolean {
+        return carregamentoInicialConcluido && !possuiInstituicaoCadastrada && isFormularioVazio()
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
