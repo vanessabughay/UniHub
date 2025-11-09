@@ -165,7 +165,9 @@ public class ContatoService {
         }
 
         convite.setPendente(false);
-        convite.setNome(usuarioAtual.getNomeUsuario());
+        if (convite.getNome() == null || convite.getNome().isBlank()) {
+            convite.setNome(usuarioAtual.getNomeUsuario());
+        }
         convite.setEmail(usuarioAtual.getEmail());
         convite.setIdContato(usuarioAtual.getId());
         convite.setDataConfirmacao(LocalDateTime.now());

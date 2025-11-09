@@ -179,9 +179,12 @@ public class CompartilhamentoService {
                         return null;
                     }
                     Usuario usuario = usuarios.get(contatoId);
-                    String nome = usuario != null ? usuario.getNomeUsuario() : contato.getNome();
+String nomeContato = contato.getNome();
+                    if (nomeContato == null || nomeContato.isBlank()) {
+                        nomeContato = usuario != null ? usuario.getNomeUsuario() : contato.getEmail();
+                    }
                     String email = usuario != null ? usuario.getEmail() : contato.getEmail();
-                    return new UsuarioResumoResponse(contatoId, nome, email);
+                    return new UsuarioResumoResponse(contatoId, nomeContato, email);
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
