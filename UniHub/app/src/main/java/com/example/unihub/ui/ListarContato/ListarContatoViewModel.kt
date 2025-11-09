@@ -112,13 +112,13 @@ class ListarContatoViewModel(
      * @param onResult Callback que informa o resultado da operação (true para sucesso, false para falha).
      */
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    fun deleteContato(contatoId: String, onResult: (sucesso: Boolean) -> Unit) {
+    fun deleteContato(registroId: Long?, onResult: (sucesso: Boolean) -> Unit) {
         viewModelScope.launch {
             _isLoading.value = true // Mostrar indicador de carregamento durante a exclusão
             _errorMessage.value = null // Limpar mensagens de erro antigas
 
             try {
-                val id = contatoId.toLongOrNull()
+                val id = registroId
                 if (id == null) {
                     _errorMessage.value = "ID de contato inválido."
                     _isLoading.value = false
@@ -126,7 +126,7 @@ class ListarContatoViewModel(
                     return@launch
                 }
 
-                val deleteSuccess = repository.deleteContato(id.toString())
+                val deleteSuccess = repository.deleteContato(id)
 
                 if (deleteSuccess) {
                     // Após a exclusão bem-sucedida, recarregue a lista de contatos.

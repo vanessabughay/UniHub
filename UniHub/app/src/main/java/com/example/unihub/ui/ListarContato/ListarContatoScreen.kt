@@ -156,7 +156,7 @@ fun ListarContatoScreen(
                     onClick = {
                         contatoParaExcluir?.let {
                             // Chame a função de exclusão no ViewModel
-                            viewModel.deleteContato(it.id.toString()) { sucesso ->
+                            viewModel.deleteContato(it.registroId) { sucesso ->
                                 if (sucesso) {
                                     Toast.makeText(context, "Contato excluído!", Toast.LENGTH_SHORT).show()
                                     // A lista deve ser recarregada pelo ViewModel após a exclusão

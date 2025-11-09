@@ -63,6 +63,7 @@ class ManterContatoViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun createContato(nome: String, email: String) {
         if (nome.isBlank() || email.isBlank()) {
             _uiState.value = _uiState.value.copy(erro = "Nome e E-mail são obrigatórios.")
@@ -81,6 +82,7 @@ class ManterContatoViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun updateContato(id: String, nome: String, email: String) {
         val longId = id.toLongOrNull()
         if (longId == null) {
@@ -107,11 +109,17 @@ class ManterContatoViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun deleteContato(id: String) {
+        val longId = id.toLongOrNull()
+        if (longId == null) {
+            _uiState.value = _uiState.value.copy(erro = "ID de contato inválido para exclusão.")
+            return
+        }
         _uiState.value = _uiState.value.copy(isLoading = true, erro = null, isExclusao = true)
         viewModelScope.launch {
             try {
-                val result = repository.deleteContato(id) // deleteContato retorna Boolean
+                val result = repository.deleteContato(longId) // deleteContato retorna Boolean
                 _uiState.value = _uiState.value.copy(sucesso = result, isLoading = false)
                 if (!result) {
                     _uiState.value = _uiState.value.copy(erro = "Falha ao excluir o contato.")
