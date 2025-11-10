@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresExtension
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -20,6 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarViewMonth
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -163,6 +166,16 @@ fun CalendarioScreen(
                 onVoltar = onVoltar
             )
         },
+
+        bottomBar = {
+            BotaoNovaAvaliacao(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .navigationBarsPadding(), // Adiciona padding para a barra de navegação
+                onClick = onNovaAvaliacao
+            )
+        },
         containerColor = Color(0xFFF6F7FB)
     ) { inner ->
         Column(
@@ -170,22 +183,24 @@ fun CalendarioScreen(
                 .fillMaxSize()
                 .padding(inner)
         ) {
+            GoogleCalendarExpandableSection(
+                state = state,
+                onConnect = onLinkGoogleCalendar,
+                onDisconnect = onUnlinkGoogleCalendar,
+                onSync = onSyncGoogleCalendar,
+                onDismissMessage = onDismissCalendarMessage,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
             ControleVisualizacaoEMes(
                 state = state,
                 onAlterarVisualizacao = onAlterarVisualizacao,
                 onAbrirSeletorMes = { showMonthPicker = true }
             )
 
-            GoogleCalendarIntegrationCard(
-                state = state,
-                onConnect = onLinkGoogleCalendar,
-                onDisconnect = onUnlinkGoogleCalendar,
-                onSync = onSyncGoogleCalendar,
-                onDismissMessage = onDismissCalendarMessage
-            )
-
             var dragAmount by remember { mutableFloatStateOf(0f) }
             Box(
+
                 modifier = Modifier
                     .weight(1f)
                     .pointerInput(Unit) {
@@ -215,12 +230,6 @@ fun CalendarioScreen(
                 }
             }
 
-            BotaoNovaAvaliacao(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                onClick = onNovaAvaliacao
-            )
         }
     }
 }
@@ -263,87 +272,106 @@ private fun ControleVisualizacaoEMes(
     }
 }
 
+
 @Composable
-private fun GoogleCalendarIntegrationCard(
+private fun GoogleCalendarExpandableSection(
+    state: CalendarioUiState,
+    onConnect: () -> Unit,
+    onDisconnect: () -> Unit,
+    onSync: () -> Unit,
+    onDismissMessage: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = MaterialTheme.colorScheme.tertiary,
+                    shape = if (isExpanded)
+                        RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)
+                    else
+                        RoundedCornerShape(12.dp)
+                )
+                .clickable { isExpanded = !isExpanded }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Google Agenda",
+                color = MaterialTheme.colorScheme.onTertiary,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Icon(
+                imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                contentDescription = if (isExpanded) "Recolher" else "Expandir",
+                tint = MaterialTheme.colorScheme.onTertiary
+            )
+        }
+
+
+        AnimatedVisibility(visible = isExpanded) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                // Forma se encaixa com o cabeçalho
+                shape = RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                // Conteúdo original do card foi movido para este Composable
+                GoogleCalendarCardContent(
+                    state = state,
+                    onConnect = onConnect,
+                    onDisconnect = onDisconnect,
+                    onSync = onSync,
+                    onDismissMessage = onDismissMessage
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
+private fun GoogleCalendarCardContent(
     state: CalendarioUiState,
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
     onSync: () -> Unit,
     onDismissMessage: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            if (state.calendarLinked) {
-                Text(
-                    text = "Google Agenda conectado",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
+    Column(modifier = Modifier.padding(16.dp)) {
+        if (state.calendarLinked) {
+            Text(
+                text = "Google Agenda conectado",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Última sincronização: ${state.calendarLastSyncedLabel ?: "nunca"}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (state.calendarRequiresReauth) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Última sincronização: ${state.calendarLastSyncedLabel ?: "nunca"}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "É necessário conceder acesso novamente para continuar sincronizando.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
                 )
-                if (state.calendarRequiresReauth) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "É necessário conceder acesso novamente para continuar sincronizando.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Button(
-                        onClick = onSync,
-                        enabled = !state.isCalendarSyncing && !state.isCalendarLinking,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        if (state.isCalendarSyncing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .padding(end = 8.dp),
-                                strokeWidth = 2.dp
-                            )
-                        }
-                        Text("Sincronizar agora")
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    TextButton(
-                        onClick = onDisconnect,
-                        enabled = !state.isCalendarSyncing && !state.isCalendarLinking
-                    ) {
-                        Text("Desconectar")
-                    }
-                }
-            } else {
-                Text(
-                    text = "Sincronize com o Google Agenda",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Permita que suas tarefas, atividades e provas apareçam automaticamente no Google Agenda.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(
-                    onClick = onConnect,
-                    enabled = !state.isCalendarLinking,
-                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onSync,
+                    enabled = !state.isCalendarSyncing && !state.isCalendarLinking,
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    if (state.isCalendarLinking) {
+                    if (state.isCalendarSyncing) {
                         CircularProgressIndicator(
                             modifier = Modifier
                                 .size(18.dp)
@@ -351,36 +379,75 @@ private fun GoogleCalendarIntegrationCard(
                             strokeWidth = 2.dp
                         )
                     }
-                    Text("Conectar ao Google Agenda")
+                    Text("Sincronizar agora")
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                TextButton(
+                    onClick = onDisconnect,
+                    enabled = !state.isCalendarSyncing && !state.isCalendarLinking
+                ) {
+                    Text("Desconectar")
                 }
             }
-
-            if (state.calendarError != null || state.calendarMessage != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                val isError = state.calendarError != null
-                val message = state.calendarError ?: state.calendarMessage.orEmpty()
-                Surface(
-                    color = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
+        } else {
+            Text(
+                text = "Sincronize com o Google Agenda",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Permita que suas tarefas, atividades e provas apareçam automaticamente no Google Agenda.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onConnect,
+                enabled = !state.isCalendarLinking,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.tertiary,
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                if (state.isCalendarLinking) {
+                    CircularProgressIndicator(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = message,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.weight(1f)
+                            .size(18.dp)
+                            .padding(end = 8.dp),
+                        strokeWidth = 2.dp
+                    )
+                }
+                Text("Conectar ao Google Agenda")
+            }
+        }
+
+        if (state.calendarError != null || state.calendarMessage != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            val isError = state.calendarError != null
+            val message = state.calendarError ?: state.calendarMessage.orEmpty()
+            Surface(
+                color = if (isError) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+                contentColor = if (isError) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onDismissMessage) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Fechar mensagem"
                         )
-                        IconButton(onClick = onDismissMessage) {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = "Fechar mensagem"
-                            )
-                        }
                     }
                 }
             }
@@ -425,7 +492,7 @@ private fun CalendarioGridView(
                 CircularProgressIndicator()
             }
         } else {
-            // Container das Semanas (estica para preencher)
+
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.SpaceEvenly
@@ -577,7 +644,7 @@ private fun SeletorDeMesAnoDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { mesSelecionado = mes }
-                                .background(if (mes == mesSelecionado) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent)
+                                .background(if (mes == mesSelecionado) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f) else Color.Transparent)
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
                             textAlign = TextAlign.Center
                         )
@@ -590,7 +657,7 @@ private fun SeletorDeMesAnoDialog(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { anoSelecionado = ano }
-                                .background(if (ano == anoSelecionado) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f) else Color.Transparent)
+                                .background(if (ano == anoSelecionado) MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f) else Color.Transparent)
                                 .padding(vertical = 8.dp, horizontal = 16.dp),
                             textAlign = TextAlign.Center
                         )
@@ -696,6 +763,7 @@ private fun EventoChip(
     }
 }
 
+
 @Composable
 private fun BotaoNovaAvaliacao(
     modifier: Modifier = Modifier,
@@ -703,7 +771,7 @@ private fun BotaoNovaAvaliacao(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(44.dp).navigationBarsPadding(),
+        modifier = modifier.height(44.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White,
@@ -713,7 +781,9 @@ private fun BotaoNovaAvaliacao(
             width = 1.dp,
             brush = SolidColor(Color(0xFFD1D5DB))
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
+
+        contentPadding = PaddingValues(vertical = 4.dp, horizontal = 16.dp)
     ) {
         Text(
             text = "Nova avaliação",
