@@ -30,8 +30,10 @@ data class HistoricoNotificacaoUiModel(
     val titulo: String,
     val descricao: String,
     val dataHora: String,
-    val shareInviteId: Long?,
-    val shareActionPending: Boolean
+    val referenceId: Long?,
+    val hasPendingInteraction: Boolean,
+    val tipo: String?,
+    val categoria: String?
 )
 
 
@@ -182,8 +184,12 @@ class HistoricoNotificacoesViewModel(
         val title = response.titulo?.takeIf { it.isNotBlank() }
             ?: appContext.getString(R.string.notification_history_default_title)
 
-        val pendingAction = response.conviteId != null && !response.lida &&
-                response.tipo.equals(TIPO_CONVITE, ignoreCase = true)
+        val referenceId = response.referenciaId ?: response.conviteId
+        val pendingAction = response.interacaoPendente || (
+                referenceId != null &&
+                        !response.lida &&
+                        response.tipo.equals(TIPO_CONVITE, ignoreCase = true)
+                )
 
         return UiModelWithOrder(
             timestamp,
@@ -192,8 +198,10 @@ class HistoricoNotificacoesViewModel(
                 titulo = title,
                 descricao = response.mensagem,
                 dataHora = formatTimestamp(timestamp),
-                shareInviteId = response.conviteId,
-                shareActionPending = pendingAction
+                referenceId = referenceId,
+                hasPendingInteraction = pendingAction,
+                tipo = response.tipo,
+                categoria = response.categoria
             )
         )
     }

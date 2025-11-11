@@ -19,8 +19,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val title: String,
         val message: String,
         val timestampMillis: Long,
-        val shareInviteId: Long? = null,
-        val shareActionPending: Boolean = false
+        val type: String? = null,
+        val category: String? = null,
+        val referenceId: Long? = null,
+        val hasPendingInteraction: Boolean = false,
+        val metadataJson: String? = null
     )
 
     private val preferences =
@@ -49,22 +52,48 @@ class NotificationHistoryRepository private constructor(context: Context) {
         title: String,
         message: String,
         timestampMillis: Long,
-        shareInviteId: Long? = null,
-        shareActionPending: Boolean = false,
+        type: String? = null,
+        category: String? = null,
+        referenceId: Long? = null,
+        hasPendingInteraction: Boolean = false,
+        metadata: Map<String, Any?>? = null,
         syncWithBackend: Boolean = true,
-        type: String? = null
     ) {
+        val normalizedType = type?.takeIf { it.isNotBlank() }
+        val normalizedCategory = category?.takeIf { it.isNotBlank() }
+        val metadataPayload = metadata?.takeIf { it.isNotEmpty() }
+
         synchronized(lock) {
-            val existingEntry = shareInviteId?.let { id ->
-                _historyFlow.value.firstOrNull { it.shareInviteId == id }
+            val existingEntry = when {
+                referenceId != null && normalizedType != null -> {
+                    _historyFlow.value.firstOrNull {
+                        it.referenceId == referenceId && it.type == normalizedType
+                    }
+                }
+                referenceId != null -> {
+                    _historyFlow.value.firstOrNull { it.referenceId == referenceId }
+                }
+                else -> null
             }
 
             val entryId = existingEntry?.id ?: lastId.incrementAndGet()
 
-            val effectiveTimestamp = if (existingEntry != null && shareInviteId != null) {
+            val effectiveTimestamp = if (existingEntry != null && referenceId != null) {
                 existingEntry.timestampMillis
             } else {
                 timestampMillis
+            }
+
+            val metadataJson = metadataPayload?.let { serializeMetadata(it) }
+                ?: existingEntry?.metadataJson
+
+            val resolvedReferenceId = referenceId ?: existingEntry?.referenceId
+            val resolvedType = normalizedType ?: existingEntry?.type
+            val resolvedCategory = normalizedCategory ?: existingEntry?.category
+            val resolvedPending = when {
+                resolvedReferenceId != null -> hasPendingInteraction
+                existingEntry != null -> existingEntry.hasPendingInteraction
+                else -> false
             }
 
             val entry = NotificationEntry(
@@ -72,8 +101,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 title = title,
                 message = message,
                 timestampMillis = effectiveTimestamp,
-                shareInviteId = shareInviteId,
-                shareActionPending = if (shareInviteId != null) shareActionPending else false
+                type = resolvedType,
+                category = resolvedCategory,
+                referenceId = resolvedReferenceId,
+                hasPendingInteraction = resolvedPending,
+                metadataJson = metadataJson
             )
 
             val filteredHistory = _historyFlow.value.filterNot { it.id == entryId }
@@ -91,8 +123,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 title = title,
                 message = message,
                 timestampMillis = timestampMillis,
-                type = type,
-                referenceId = shareInviteId
+                type = normalizedType,
+                category = normalizedCategory,
+                referenceId = referenceId,
+                hasPendingInteraction = hasPendingInteraction,
+                metadata = metadataPayload
             )
         }
 
@@ -101,13 +136,16 @@ class NotificationHistoryRepository private constructor(context: Context) {
     fun markShareInviteHandled(inviteId: Long) {
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
-            val index = currentHistory.indexOfFirst { it.shareInviteId == inviteId }
+            val index = currentHistory.indexOfFirst { entry ->
+                entry.referenceId == inviteId &&
+                        (entry.type == SHARE_INVITE_TYPE || entry.category == SHARE_CATEGORY)
+            }
             if (index == -1) return
 
             val entry = currentHistory[index]
-            if (!entry.shareActionPending) return
+            if (!entry.hasPendingInteraction) return
 
-            currentHistory[index] = entry.copy(shareActionPending = false)
+            currentHistory[index] = entry.copy(hasPendingInteraction = false)
             val updatedHistory = currentHistory
                 .sortedByDescending { it.timestampMillis }
                 .take(MAX_ENTRIES)
@@ -140,16 +178,24 @@ class NotificationHistoryRepository private constructor(context: Context) {
                     val title = obj.optString(JSON_TITLE, null)
                     val message = obj.optString(JSON_MESSAGE, null)
                     val timestamp = obj.optLong(JSON_TIMESTAMP, -1L)
-                    val inviteId = if (obj.has(JSON_SHARE_INVITE_ID)) {
-                        obj.optLong(JSON_SHARE_INVITE_ID, -1L).takeIf { it >= 0 }
-                    } else {
-                        null
+                    val type = obj.optString(JSON_TYPE, null)?.takeIf { it.isNotBlank() }
+                    val category = obj.optString(JSON_CATEGORY, null)?.takeIf { it.isNotBlank() }
+                    val referenceId = when {
+                        obj.has(JSON_REFERENCE_ID) && !obj.isNull(JSON_REFERENCE_ID) -> {
+                            obj.optLong(JSON_REFERENCE_ID, Long.MIN_VALUE)
+                                .takeIf { it != Long.MIN_VALUE }
+                        }
+                        obj.has(JSON_SHARE_INVITE_ID) && !obj.isNull(JSON_SHARE_INVITE_ID) -> {
+                            obj.optLong(JSON_SHARE_INVITE_ID, -1L).takeIf { it >= 0 }
+                        }
+                        else -> null
                     }
-                    val pending = if (obj.has(JSON_SHARE_ACTION_PENDING)) {
-                        obj.optBoolean(JSON_SHARE_ACTION_PENDING, false)
-                    } else {
-                        false
+                    val pending = when {
+                        obj.has(JSON_PENDING_INTERACTION) -> obj.optBoolean(JSON_PENDING_INTERACTION, false)
+                        obj.has(JSON_SHARE_ACTION_PENDING) -> obj.optBoolean(JSON_SHARE_ACTION_PENDING, false)
+                        else -> false
                     }
+                    val metadataJson = obj.optString(JSON_METADATA, null)?.takeIf { it.isNotBlank() }
 
                     if (id >= 0 && !title.isNullOrBlank() && !message.isNullOrBlank() && timestamp >= 0) {
                         add(
@@ -158,8 +204,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
                                 title = title,
                                 message = message,
                                 timestampMillis = timestamp,
-                                shareInviteId = inviteId,
-                                shareActionPending = pending
+                                type = type,
+                                category = category,
+                                referenceId = referenceId,
+                                hasPendingInteraction = pending,
+                                metadataJson = metadataJson
                             )
                         )
                     }
@@ -176,10 +225,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 put(JSON_TITLE, entry.title)
                 put(JSON_MESSAGE, entry.message)
                 put(JSON_TIMESTAMP, entry.timestampMillis)
-                entry.shareInviteId?.let { inviteId ->
-                    put(JSON_SHARE_INVITE_ID, inviteId)
-                    put(JSON_SHARE_ACTION_PENDING, entry.shareActionPending)
+                entry.type?.let { put(JSON_TYPE, it) }
+                entry.category?.let { put(JSON_CATEGORY, it) }
+                entry.referenceId?.let { reference ->
+                    put(JSON_REFERENCE_ID, reference)
+                    if (entry.type == SHARE_INVITE_TYPE || entry.category == SHARE_CATEGORY) {
+                        put(JSON_SHARE_INVITE_ID, reference)
+                        put(JSON_SHARE_ACTION_PENDING, entry.hasPendingInteraction)
+                    }
                 }
+                put(JSON_PENDING_INTERACTION, entry.hasPendingInteraction)
+                entry.metadataJson?.let { put(JSON_METADATA, it) }
             }
             array.put(obj)
         }
@@ -196,8 +252,15 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_TITLE = "title"
         private const val JSON_MESSAGE = "message"
         private const val JSON_TIMESTAMP = "timestamp"
+        private const val JSON_TYPE = "type"
+        private const val JSON_CATEGORY = "category"
+        private const val JSON_REFERENCE_ID = "reference_id"
         private const val JSON_SHARE_INVITE_ID = "share_invite_id"
         private const val JSON_SHARE_ACTION_PENDING = "share_action_pending"
+        private const val JSON_PENDING_INTERACTION = "pending_interaction"
+        private const val JSON_METADATA = "metadata"
+        private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+        private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
 
         @Volatile
         private var instance: NotificationHistoryRepository? = null
@@ -209,5 +272,12 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 }
             }
         }
+    }
+    private fun serializeMetadata(metadata: Map<String, Any?>): String {
+        val jsonObject = JSONObject()
+        metadata.forEach { (key, value) ->
+            jsonObject.put(key, value)
+        }
+        return jsonObject.toString()
     }
 }

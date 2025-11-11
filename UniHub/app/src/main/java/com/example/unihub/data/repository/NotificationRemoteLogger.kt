@@ -21,7 +21,10 @@ class NotificationRemoteLogger(context: Context) {
         message: String,
         timestampMillis: Long,
         type: String?,
-        referenceId: Long?
+        category: String?,
+        referenceId: Long?,
+        hasPendingInteraction: Boolean,
+        metadata: Map<String, Any?>?
     ) {
         scope.launch {
             try {
@@ -32,7 +35,10 @@ class NotificationRemoteLogger(context: Context) {
                     titulo = title,
                     mensagem = message,
                     tipo = type,
+                    categoria = category,
                     referenciaId = referenceId,
+                    interacaoPendente = hasPendingInteraction,
+                    metadata = metadata,
                     timestamp = timestampMillis
                 )
                 api.logNotification(authHeader, request)

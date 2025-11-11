@@ -46,12 +46,15 @@ class CompartilhamentoNotificationActionReceiver : BroadcastReceiver() {
                             else -> ""
                         },
                         timestampMillis = System.currentTimeMillis(),
-                        syncWithBackend = false,
                         type = when (action) {
-                            ACTION_ACCEPT -> "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
-                            ACTION_REJECT -> "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+                            ACTION_ACCEPT -> CompartilhamentoNotificationManager.TIPO_RESPOSTA
+                            ACTION_REJECT -> CompartilhamentoNotificationManager.TIPO_RESPOSTA
                             else -> null
-                        }
+                        },
+                        category = CATEGORY_COMPARTILHAMENTO,
+                        referenceId = conviteId,
+                        hasPendingInteraction = false,
+                        syncWithBackend = false,
                     )
 
                     CompartilhamentoNotificationSynchronizer.getInstance(appContext)
@@ -83,5 +86,6 @@ class CompartilhamentoNotificationActionReceiver : BroadcastReceiver() {
         const val ACTION_REFRESH = "com.example.unihub.action.REFRESH_SHARE_NOTIFICATIONS"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
         const val EXTRA_CONVITE_ID = "extra_convite_id"
+        private const val CATEGORY_COMPARTILHAMENTO = "COMPARTILHAMENTO"
     }
 }

@@ -120,9 +120,16 @@ private fun HistoricoNotificacoesScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(uiState.notificacoes) { notificacao ->
+                        val inviteId = notificacao.referenceId?.takeIf {
+                            notificacao.tipo.equals(SHARE_INVITE_TYPE, ignoreCase = true)
+                        }
+                        val showInviteActions = inviteId != null && notificacao.hasPendingInteraction
+                        val isProcessing = inviteId?.let(convitesProcessando::contains) == true
                         HistoricoNotificacaoCard(
                             notificacao = notificacao,
-                            isProcessing = notificacao.shareInviteId?.let(convitesProcessando::contains) == true,
+                            inviteId = inviteId,
+                            showInviteActions = showInviteActions,
+                            isProcessing = isProcessing,
                             onAcceptInvite = onAcceptInvite,
                             onRejectInvite = onRejectInvite
                         )
@@ -136,6 +143,8 @@ private fun HistoricoNotificacoesScreenContent(
 @Composable
 private fun HistoricoNotificacaoCard(
     notificacao: HistoricoNotificacaoUiModel,
+    inviteId: Long?,
+    showInviteActions: Boolean,
     isProcessing: Boolean,
     onAcceptInvite: (Long) -> Unit,
     onRejectInvite: (Long) -> Unit
@@ -163,14 +172,14 @@ private fun HistoricoNotificacaoCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (notificacao.shareInviteId != null && notificacao.shareActionPending) {
+            if (showInviteActions && inviteId != null) {
                 Spacer(modifier = Modifier.size(16.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Button(
-                        onClick = { onAcceptInvite(notificacao.shareInviteId) },
+                        onClick = { onAcceptInvite(inviteId) },
                         enabled = !isProcessing,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
@@ -179,7 +188,7 @@ private fun HistoricoNotificacaoCard(
                         Text(text = stringResource(id = R.string.share_notification_action_accept))
                     }
                     OutlinedButton(
-                        onClick = { onRejectInvite(notificacao.shareInviteId) },
+                        onClick = { onAcceptInvite(inviteId) },
                         enabled = !isProcessing
                     ) {
                         Text(text = stringResource(id = R.string.share_notification_action_reject))
@@ -212,16 +221,20 @@ fun HistoricoNotificacoesScreenPreview() {
                         titulo = "Comentário em tarefa",
                         descricao = "Ana deixou um novo comentário na tarefa de Pesquisa de Mercado.",
                         dataHora = "12/05/2024 às 14:37",
-                        shareInviteId = null,
-                        shareActionPending = false
+                        referenceId = null,
+                        hasPendingInteraction = false,
+                        tipo = "TAREFA_COMENTARIO",
+                        categoria = "TAREFA"
                     ),
                     HistoricoNotificacaoUiModel(
                         id = 2L,
                         titulo = "Convite de disciplina",
                         descricao = "João convidou você para compartilhar Física I.",
                         dataHora = "11/05/2024 às 18:00",
-                        shareInviteId = 42L,
-                        shareActionPending = true
+                        referenceId = 42L,
+                        hasPendingInteraction = true,
+                        tipo = SHARE_INVITE_TYPE,
+                        categoria = "COMPARTILHAMENTO"
                     )
                 )
             ),
@@ -231,4 +244,6 @@ fun HistoricoNotificacoesScreenPreview() {
             onRejectInvite = {}
         )
     }
+
+    private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
 }

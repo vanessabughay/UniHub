@@ -109,10 +109,11 @@ class CompartilhamentoNotificationManager(context: Context) {
             title = title,
             message = message,
             timestampMillis = System.currentTimeMillis(),
-            shareInviteId = inviteId,
-            shareActionPending = true,
+            type = invite.tipo,
+            category = SHARE_CATEGORY,
+            referenceId = inviteId,
+            hasPendingInteraction = true,
             syncWithBackend = false,
-            type = invite.tipo
         )
     }
 
@@ -154,10 +155,11 @@ class CompartilhamentoNotificationManager(context: Context) {
             title = title,
             message = message,
             timestampMillis = System.currentTimeMillis(),
-            shareInviteId = notification.conviteId,
-            shareActionPending = false,
+            type = notification.tipo,
+            category = SHARE_CATEGORY,
+            referenceId = notification.conviteId,
+            hasPendingInteraction = false,
             syncWithBackend = false,
-            type = notification.tipo
         )
     }
 
@@ -250,5 +252,6 @@ class CompartilhamentoNotificationManager(context: Context) {
         private const val CHANNEL_RESPONSES = "compartilhamento_responses"
         private const val TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO"
         const val TIPO_RESPOSTA = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+        private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
     }
 }

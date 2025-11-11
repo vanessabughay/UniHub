@@ -27,6 +27,11 @@ data class NotificacaoResponse(
     val mensagem: String,
     val lida: Boolean,
     val tipo: String?,
+    val categoria: String?,
     val conviteId: Long?,
-    val criadaEm: String?
+    val referenciaId: Long?,
+    val interacaoPendente: Boolean,
+    val metadataJson: String?,
+    val criadaEm: String?,
+    val atualizadaEm: String?,
 )

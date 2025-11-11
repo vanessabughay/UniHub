@@ -110,16 +110,22 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
         conviteId = conviteId,
         tipo = tipo,
         lida = lida,
-        criadaEm = criadaEm
+        criadaEm = criadaEm,
+        categoria = categoria,
+        referenciaId = referenciaId,
+        interacaoPendente = interacaoPendente,
+        metadataJson = metadataJson,
+        atualizadaEm = atualizadaEm
     )
 
     private fun NotificacaoConviteUi.isPendingInvite(): Boolean {
-        return tipo == TIPO_CONVITE && conviteId != null && !lida
+        return tipo == TIPO_CONVITE && conviteId != null && (interacaoPendente || !lida)
     }
 
     private fun NotificacaoConviteUi.isInviteAlreadyHandled(): Boolean {
-        return tipo == TIPO_CONVITE && conviteId != null && lida
+        return tipo == TIPO_CONVITE && conviteId != null && !interacaoPendente && lida
     }
+
 
     companion object {
         private const val PREFS_NAME = "share_notification_synchronizer"

@@ -22,7 +22,12 @@ data class NotificacaoConviteUi(
     val conviteId: Long?,
     val tipo: String?,
     val lida: Boolean,
-    val criadaEm: String?
+    val criadaEm: String?,
+    val categoria: String?,
+    val referenciaId: Long?,
+    val interacaoPendente: Boolean,
+    val metadataJson: String?,
+    val atualizadaEm: String?
 )
 
 class CompartilhamentoViewModel(
@@ -182,7 +187,12 @@ class CompartilhamentoViewModel(
         conviteId = conviteId,
         tipo = tipo,
         lida = lida,
-        criadaEm = criadaEm
+        criadaEm = criadaEm,
+        categoria = categoria,
+        referenciaId = referenciaId,
+        interacaoPendente = interacaoPendente,
+        metadataJson = metadataJson,
+        atualizadaEm = atualizadaEm
     )
 }
 
