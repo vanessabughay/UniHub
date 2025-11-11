@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.Contacts
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.Person
@@ -80,6 +81,7 @@ data class MenuActions(
 val LocalMenuActions = staticCompositionLocalOf { MenuActions.Disabled }
 
 private val DefaultMenuOptions = listOf(
+    "Tela inicial",
     "Perfil",
     "Disciplinas",
     "Calendário",
@@ -171,6 +173,7 @@ private fun rememberMenuActions(state: MutableState<Boolean>): MenuActions {
 
 private fun navegarParaOpcao(navController: NavHostController, rotulo: String) {
     val destino = when (rotulo.lowercase(Locale.getDefault())) {
+        "tela inicial" -> Screen.TelaInicial.route
         "quadros" -> Screen.ListarQuadros.route
         "calendário", "calendario" -> "calendario"
         "disciplinas" -> Screen.ListarDisciplinas.route
@@ -285,6 +288,7 @@ private fun ItemMenu(
 }
 
 fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercase(Locale.getDefault())) {
+    "tela inicial" -> Icons.Outlined.Home
     "quadros" -> Icons.Outlined.Groups
     "calendário", "calendario" -> Icons.Outlined.CalendarMonth
     "disciplinas" -> Icons.Outlined.MenuBook
