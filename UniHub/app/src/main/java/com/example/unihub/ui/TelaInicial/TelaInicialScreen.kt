@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Outlined
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,7 +31,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,7 +44,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.components.MenuLateral
+import com.example.unihub.components.iconeParaRotulo
 import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -651,66 +652,6 @@ private fun LinhaListaSimples(titulo: String, onClick: () -> Unit) {
 }
 
 
-@Composable
-private fun MenuLateral(
-    opcoes: List<String>,
-    onFechar: () -> Unit,
-    onClicarOpcao: (String) -> Unit,
-    onLogout: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier,
-        color = CoresApp.AzulMenu,
-        shape = RoundedCornerShape(topStart = 18.dp, bottomStart = 18.dp),
-        shadowElevation = 8.dp
-    ) {
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 22.dp, vertical = 22.dp)) {
-            Text(text = "Menu", color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.ExtraBold)
-            Spacer(Modifier.height(14.dp))
-
-            opcoes.forEach { rotulo ->
-                ItemMenu(rotulo, iconeParaRotulo(rotulo), onClick = { onClicarOpcao(rotulo) })
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            TextButton(onClick = onLogout) {
-                Text(text = "Sair", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
-            }
-        }
-    }
-}
-
-@Composable
-private fun ItemMenu(texto: String, icone: ImageVector, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp)
-            .clickable(onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(icone, contentDescription = texto, tint = Color.White.copy(alpha = 0.95f))
-        Spacer(Modifier.width(12.dp))
-        Text(text = texto, color = Color.White.copy(alpha = 0.95f), fontSize = 20.sp)
-    }
-}
-
-private fun iconeParaRotulo(rotulo: String): ImageVector = when (rotulo.lowercase()) {
-    "quadros" -> Outlined.Groups
-    "calendário" -> Outlined.CalendarMonth
-    "disciplinas" -> Icons.AutoMirrored.Outlined.MenuBook
-    "avaliações" -> Outlined.RateReview
-    "perfil" -> Outlined.Person
-    "contatos" -> Outlined.Contacts
-    "grupos" -> Outlined.Groups
-    "configurar notificações" -> Outlined.Settings
-    else -> Outlined.Circle
-
-}
 
 @Preview(showBackground = true, showSystemUi = true, name = "Tela Inicial")
 @Composable
