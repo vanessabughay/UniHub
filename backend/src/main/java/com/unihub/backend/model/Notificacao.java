@@ -34,8 +34,24 @@ public class Notificacao {
     @Column(length = 100)
     private String tipo;
 
+    @Column(length = 100)
+    private String categoria;
+
+    @Column(name = "referencia_id")
+    private Long referenciaId;
+
+    @Column(nullable = false)
+    private boolean interacaoPendente = false;
+
+    @Lob
+    @Column(name = "metadata_json")
+    private String metadataJson;
+
     @Column(name = "criada_em", nullable = false)
     private LocalDateTime criadaEm;
+
+    @Column(name = "atualizada_em", nullable = false)
+    private LocalDateTime atualizadaEm;
 
     public Notificacao() {
     }
@@ -97,11 +113,52 @@ public class Notificacao {
         this.tipo = tipo;
     }
 
+    public String getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(String categoria) {
+        this.categoria = categoria;
+    }
+
+    public Long getReferenciaId() {
+        return referenciaId;
+    }
+
+    public void setReferenciaId(Long referenciaId) {
+        this.referenciaId = referenciaId;
+    }
+
+    public boolean isInteracaoPendente() {
+        return interacaoPendente;
+    }
+
+    public void setInteracaoPendente(boolean interacaoPendente) {
+        this.interacaoPendente = interacaoPendente;
+    }
+
+    public String getMetadataJson() {
+        return metadataJson;
+    }
+
+    public void setMetadataJson(String metadataJson) {
+        this.metadataJson = metadataJson;
+    }
+
     public LocalDateTime getCriadaEm() {
         return criadaEm;
     }
 
     public void setCriadaEm(LocalDateTime criadaEm) {
         this.criadaEm = criadaEm;
+    }
+
+    
+    public LocalDateTime getAtualizadaEm() {
+        return atualizadaEm;
+    }
+
+    public void setAtualizadaEm(LocalDateTime atualizadaEm) {
+        this.atualizadaEm = atualizadaEm;
     }
 }

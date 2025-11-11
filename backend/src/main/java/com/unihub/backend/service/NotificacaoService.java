@@ -1,5 +1,7 @@
 package com.unihub.backend.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unihub.backend.dto.compartilhamento.NotificacaoResponse;
 import com.unihub.backend.dto.notificacoes.NotificacaoLogRequest;
 import com.unihub.backend.exceptions.ResourceNotFoundException;
@@ -23,11 +25,14 @@ public class NotificacaoService {
 
     private final NotificacaoRepository notificacaoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ObjectMapper objectMapper;
 
     public NotificacaoService(NotificacaoRepository notificacaoRepository,
-                              UsuarioRepository usuarioRepository) {
+                              UsuarioRepository usuarioRepository,
+                              ObjectMapper objectMapper) {
         this.notificacaoRepository = notificacaoRepository;
         this.usuarioRepository = usuarioRepository;
+        this.objectMapper = objectMapper;
     }
 
     public NotificacaoResponse registrarNotificacao(Long usuarioId, NotificacaoLogRequest request) {
@@ -44,22 +49,58 @@ public class NotificacaoService {
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .orElse(DEFAULT_TIPO);
+        String categoria = Optional.ofNullable(request.getCategoria())
+                .map(String::trim)  
+                .filter(value -> !value.isEmpty())
+                .orElse(null);
         String titulo = Optional.ofNullable(request.getTitulo())
                 .map(String::trim)
                 .filter(value -> !value.isEmpty())
                 .orElse(null);
+        Long referenciaId = request.getReferenciaId();
+        boolean interacaoPendente = Boolean.TRUE.equals(request.getInteracaoPendente());
+        String metadataJson = serializeMetadata(request.getMetadata());
 
-        Optional<Notificacao> existente = notificacaoRepository
-                .findByUsuarioIdAndTipoAndMensagemAndCriadaEm(usuarioId, tipo, mensagem, criadaEm);
+        Optional<Notificacao> existente = Optional.empty();
+
+         if (referenciaId != null) {
+            if (categoria != null) {
+                existente = notificacaoRepository
+                        .findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(usuarioId, tipo, categoria, referenciaId);
+            }
+
+            if (existente.isEmpty()) {
+                existente = notificacaoRepository
+                        .findByUsuarioIdAndTipoAndReferenciaId(usuarioId, tipo, referenciaId);
+            }
+        }
+
+        if (existente.isEmpty()) {
+            existente = notificacaoRepository
+                    .findByUsuarioIdAndTipoAndMensagemAndCriadaEm(usuarioId, tipo, mensagem, criadaEm);
+        }
 
         Notificacao notificacao = existente.orElseGet(Notificacao::new);
+        boolean novaNotificacao = notificacao.getId() == null;
         notificacao.setUsuario(usuario);
         notificacao.setConvite(null);
         notificacao.setTitulo(titulo);
         notificacao.setMensagem(mensagem);
         notificacao.setTipo(tipo);
-        notificacao.setCriadaEm(criadaEm);
-        notificacao.setLida(false);
+        notificacao.setCategoria(categoria);
+        notificacao.setReferenciaId(referenciaId);
+        if (interacaoPendente) {
+            notificacao.setLida(false);
+        }
+        notificacao.setInteracaoPendente(interacaoPendente);
+        if (metadataJson != null) {
+            notificacao.setMetadataJson(metadataJson);
+        }
+        if (novaNotificacao) {
+            notificacao.setCriadaEm(criadaEm);
+            notificacao.setLida(false);
+        }
+        notificacao.setAtualizadaEm(LocalDateTime.now());
 
         Notificacao salvo = notificacaoRepository.save(notificacao);
         return NotificacaoResponse.fromEntity(salvo);
@@ -73,6 +114,17 @@ public class NotificacaoService {
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
         } catch (Exception ex) {
             return LocalDateTime.now();
+        }
+    }
+    
+    private String serializeMetadata(java.util.Map<String, Object> metadata) {
+        if (metadata == null || metadata.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException exception) {
+            return null;
         }
     }
 }

@@ -24,6 +24,7 @@ public class CompartilhamentoService {
 
     private static final String TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO";
     private static final String TIPO_RESPOSTA = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA";
+    private static final String CATEGORIA_COMPARTILHAMENTO = "COMPARTILHAMENTO";
 
     private final ConviteCompartilhamentoRepository conviteRepository;
     private final DisciplinaRepository disciplinaRepository;
@@ -216,14 +217,40 @@ String nomeContato = contato.getNome();
         if (usuario == null) {
             return;
         }
+        
+        Long usuarioId = usuario.getId();
+        Long referenciaId = convite != null ? convite.getId() : null;
+        if (usuarioId != null && referenciaId != null) {
+            Optional<Notificacao> existente = notificacaoRepository
+                    .findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(usuarioId, tipo,
+                            CATEGORIA_COMPARTILHAMENTO, referenciaId);
+            if (existente.isPresent()) {
+                Notificacao notificacaoExistente = existente.get();
+                notificacaoExistente.setTitulo(definirTituloNotificacao(tipo));
+                notificacaoExistente.setMensagem(mensagem);
+                boolean pendente = TIPO_CONVITE.equals(tipo) && !notificacaoExistente.isLida();
+                notificacaoExistente.setInteracaoPendente(pendente);
+                if (pendente) {
+                    notificacaoExistente.setLida(false);
+                }
+                notificacaoExistente.setAtualizadaEm(LocalDateTime.now());
+                notificacaoRepository.save(notificacaoExistente);
+                return;
+            }
+        }
+
         Notificacao notificacao = new Notificacao();
         notificacao.setUsuario(usuario);
         notificacao.setConvite(convite);
-                notificacao.setTitulo(definirTituloNotificacao(tipo));
-
+        notificacao.setTitulo(definirTituloNotificacao(tipo));
         notificacao.setMensagem(mensagem);
         notificacao.setTipo(tipo);
+        notificacao.setCategoria(CATEGORIA_COMPARTILHAMENTO);
+        notificacao.setReferenciaId(referenciaId);
+        notificacao.setInteracaoPendente(TIPO_CONVITE.equals(tipo));
         notificacao.setCriadaEm(LocalDateTime.now());
+        notificacao.setAtualizadaEm(LocalDateTime.now());
+        notificacao.setLida(false);
         notificacaoRepository.save(notificacao);
     }
 

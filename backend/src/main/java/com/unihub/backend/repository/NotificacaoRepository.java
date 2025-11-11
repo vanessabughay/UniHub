@@ -20,4 +20,13 @@ public interface NotificacaoRepository extends JpaRepository<Notificacao, Long> 
                                                                        String tipo,
                                                                        String mensagem,
                                                                        LocalDateTime criadaEm);
+                                                            
+    Optional<Notificacao> findByUsuarioIdAndTipoAndReferenciaId(Long usuarioId,
+                                                                String tipo,
+                                                                Long referenciaId);
+
+    Optional<Notificacao> findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(Long usuarioId,
+                                                                            String tipo,
+                                                                            String categoria,
+                                                                            Long referenciaId);
 }
