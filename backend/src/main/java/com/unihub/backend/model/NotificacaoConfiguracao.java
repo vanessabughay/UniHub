@@ -19,14 +19,38 @@ public class NotificacaoConfiguracao {
     @JoinColumn(name = "usuario_id", nullable = false, unique = true)
     private Usuario usuario;
 
+    // --- Seção Disciplinas (Existente) ---
     @Column(name = "notificacao_de_presenca", nullable = false)
     private boolean notificacaoDePresenca = true;
 
     @Column(name = "avaliacoes_ativas", nullable = false)
     private boolean avaliacoesAtivas = true;
 
+    @Column(name = "compartilhamento_disciplina", nullable = false)
+    private boolean compartilhamentoDisciplina = true;
+
+    // --- Seção Quadros/Tarefas (NOVOS CAMPOS) ---
+    @Column(name = "incluir_em_quadro", nullable = false)
+    private boolean incluirEmQuadro = true;
+
+    @Column(name = "prazo_tarefa", nullable = false)
+    private boolean prazoTarefa = true;
+
+    @Column(name = "comentario_tarefa", nullable = false)
+    private boolean comentarioTarefa = true;
+
+    // --- Seção Contatos/Grupos (NOVOS CAMPOS) ---
+    @Column(name = "convite_contato", nullable = false)
+    private boolean conviteContato = true;
+
+    @Column(name = "incluso_em_grupo", nullable = false)
+    private boolean inclusoEmGrupo = true;
+
+
     @OneToMany(mappedBy = "configuracao", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<NotificacaoConfiguracaoAntecedencia> antecedencias = new LinkedHashSet<>();
+
+    // --- Getters e Setters ---
 
     public Long getId() {
         return id;
@@ -58,6 +82,54 @@ public class NotificacaoConfiguracao {
 
     public void setAvaliacoesAtivas(boolean avaliacoesAtivas) {
         this.avaliacoesAtivas = avaliacoesAtivas;
+    }
+
+    public boolean isCompartilhamentoDisciplina() {
+        return compartilhamentoDisciplina;
+    }
+
+    public void setCompartilhamentoDisciplina(boolean compartilhamentoDisciplina) {
+        this.compartilhamentoDisciplina = compartilhamentoDisciplina;
+    }
+
+    public boolean isIncluirEmQuadro() {
+        return incluirEmQuadro;
+    }
+
+    public void setIncluirEmQuadro(boolean incluirEmQuadro) {
+        this.incluirEmQuadro = incluirEmQuadro;
+    }
+
+    public boolean isPrazoTarefa() {
+        return prazoTarefa;
+    }
+
+    public void setPrazoTarefa(boolean prazoTarefa) {
+        this.prazoTarefa = prazoTarefa;
+    }
+
+    public boolean isComentarioTarefa() {
+        return comentarioTarefa;
+    }
+
+    public void setComentarioTarefa(boolean comentarioTarefa) {
+        this.comentarioTarefa = comentarioTarefa;
+    }
+
+    public boolean isConviteContato() {
+        return conviteContato;
+    }
+
+    public void setConviteContato(boolean conviteContato) {
+        this.conviteContato = conviteContato;
+    }
+
+    public boolean isInclusoEmGrupo() {
+        return inclusoEmGrupo;
+    }
+
+    public void setInclusoEmGrupo(boolean inclusoEmGrupo) {
+        this.inclusoEmGrupo = inclusoEmGrupo;
     }
 
     public Set<NotificacaoConfiguracaoAntecedencia> getAntecedencias() {

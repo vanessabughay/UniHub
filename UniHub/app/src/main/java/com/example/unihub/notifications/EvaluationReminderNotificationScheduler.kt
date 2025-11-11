@@ -5,7 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.example.unihub.data.model.Prioridade
+// MUDANÇA AQUI: Importa o java.time.Duration
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -24,11 +24,8 @@ class EvaluationNotificationScheduler(private val context: Context) {
         val disciplinaId: Long?,
         val disciplinaNome: String?,
         val dataHoraIso: String?,
-        val prioridade: Prioridade?,
-       // val receberNotificacoes: Boolean,
-       // val antecedenciaDias: Int // NOVO CAMPO
+        val reminderDuration: Duration,
         val receberNotificacoes: Boolean
-
     )
 
     private val alarmManager: AlarmManager? =
@@ -57,9 +54,7 @@ class EvaluationNotificationScheduler(private val context: Context) {
             .forEach { avaliacao ->
                 val triggerAtMillis = computeTriggerMillis(
                     avaliacao.dataHoraIso,
-                    // avaliacao.antecedenciaDias // USANDO NOVO CAMPO
-                    avaliacao.prioridade
-
+                    avaliacao.reminderDuration
                 )
                     ?: return@forEach
 
@@ -79,16 +74,6 @@ class EvaluationNotificationScheduler(private val context: Context) {
             }
 
         preferences.edit().putStringSet(KEY_REQUEST_CODES, newRequestCodes).apply()
-    }
-
-    /**
-     * Cancela todos os alarmes agendados e remove o registro das preferências.
-     */
-    fun cancelAllNotifications() {
-        val manager = alarmManager ?: return
-        val storedRequestCodes = preferences.getStringSet(KEY_REQUEST_CODES, emptySet()).orEmpty()
-        cancelStored(manager, storedRequestCodes)
-        preferences.edit().remove(KEY_REQUEST_CODES).apply()
     }
 
     private fun cancelStored(manager: AlarmManager, storedCodes: Set<String>) {
@@ -127,7 +112,6 @@ class EvaluationNotificationScheduler(private val context: Context) {
                     pendingIntent
                 )
             }
-
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT -> {
                 manager.setExact(
                     AlarmManager.RTC_WAKEUP,
@@ -135,7 +119,6 @@ class EvaluationNotificationScheduler(private val context: Context) {
                     pendingIntent
                 )
             }
-
             else -> {
                 manager.set(
                     AlarmManager.RTC_WAKEUP,
@@ -171,17 +154,13 @@ class EvaluationNotificationScheduler(private val context: Context) {
 
         internal fun computeTriggerMillis(
             dateTimeString: String?,
-            // antecedenciaDias: Int, // MUDOU AQUI
-            prioridade: Prioridade?,
+            reminderDuration: Duration,
             zoneId: ZoneId = ZoneId.systemDefault(),
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
 
-            // Lógica alterada para usar Antecedência em dias
-           // val reminderDuration = Duration.ofDays(antecedenciaDias.toLong())
-            val reminderDuration = prioridade?.let { toReminderDuration(it) }
-                ?: Duration.ofHours(12)
+            // Lógica alterada para usar a Duration recebida
             val reminderDateTime = zonedDateTime.minus(reminderDuration)
 
             if (!reminderDateTime.isAfter(now)) {
@@ -190,15 +169,6 @@ class EvaluationNotificationScheduler(private val context: Context) {
             return reminderDateTime.toInstant().toEpochMilli()
         }
 
-        private fun toReminderDuration(prioridade: Prioridade): Duration {
-            return when (prioridade) {
-                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
-                Prioridade.BAIXA -> Duration.ofHours(12)
-                Prioridade.MEDIA -> Duration.ofDays(1)
-                Prioridade.ALTA -> Duration.ofDays(2)
-                Prioridade.MUITO_ALTA -> Duration.ofDays(3)
-            }
-        }
 
         internal fun parseDateTime(
             dateTimeString: String?,
@@ -234,6 +204,6 @@ class EvaluationNotificationScheduler(private val context: Context) {
             return null
         }
 
-        private fun immutableFlag(): Int = AttendanceNotificationScheduler.immutableFlag()
+        internal fun immutableFlag(): Int = AttendanceNotificationScheduler.immutableFlag()
     }
 }
