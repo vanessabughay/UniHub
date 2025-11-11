@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.AvaliacaoRepository
+import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.data.repository.TarefaRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,7 +58,8 @@ data class Tarefa(
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 class TelaInicialViewModel(
     private val avaliacaoRepository: AvaliacaoRepository,
-    private val tarefaRepository: TarefaRepository
+    private val tarefaRepository: TarefaRepository,
+    private val notificationHistoryRepository: NotificationHistoryRepository
 ) : ViewModel() {
 
     private val _estado = MutableStateFlow(criarEstadoInicial())
@@ -69,9 +71,23 @@ class TelaInicialViewModel(
     private val _eventoNavegacao = MutableSharedFlow<String>()
     val eventoNavegacao: SharedFlow<String> = _eventoNavegacao
 
+    private val _temNotificacoesPendentes = MutableStateFlow(false)
+    val temNotificacoesPendentes: StateFlow<Boolean> = _temNotificacoesPendentes
+
+
     init {
         carregarAvaliacoesReais()
         carregarTarefasReais()
+        observarHistoricoNotificacoes()
+    }
+
+    private fun observarHistoricoNotificacoes() {
+        viewModelScope.launch {
+            notificationHistoryRepository.historyFlow.collect { entries ->
+                val possuiPendencias = entries.any { it.hasPendingInteraction }
+                _temNotificacoesPendentes.value = possuiPendencias
+            }
+        }
     }
 
     private fun carregarTarefasReais() {

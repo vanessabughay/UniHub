@@ -75,12 +75,14 @@ private object CoresApp {
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
 fun TelaInicial(
-    navController: NavHostController,
-    viewModel: TelaInicialViewModel = viewModel(factory = TelaInicialViewModelFactory())
+    navController: NavHostController
 ) {
+    val context = LocalContext.current
+    val factory = remember(context) { TelaInicialViewModelFactory(context.applicationContext) }
+    val viewModel: TelaInicialViewModel = viewModel(factory = factory)
     val estado by viewModel.estado.collectAsStateWithLifecycle()
     val avaliacoesDetalhadas by viewModel.avaliacoesDetalhadas.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val temNotificacoesPendentes by viewModel.temNotificacoesPendentes.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val instituicaoRepository = remember { InstituicaoRepositoryProvider.getRepository(context) }
 
@@ -207,6 +209,7 @@ fun TelaInicial(
 
     TelaInicialView(
         estado = estado,
+        temNotificacoesPendentes = temNotificacoesPendentes,
         onAbrirMenu = { viewModel.abrirMenu() },
         onFecharMenu = { viewModel.fecharMenu() },
         onAlternarMenu = { viewModel.alternarMenu() },
@@ -233,6 +236,7 @@ fun TelaInicial(
 @Composable
 fun TelaInicialView(
     estado: EstadoTelaInicial,
+    temNotificacoesPendentes: Boolean,
     onAbrirMenu: () -> Unit,
     onFecharMenu: () -> Unit,
     onAlternarMenu: () -> Unit,
@@ -251,6 +255,7 @@ fun TelaInicialView(
     ) {
         ConteudoPrincipal(
             estado = estado,
+            temNotificacoesPendentes = temNotificacoesPendentes,
             onAbrirMenu = onAbrirMenu,
             onAlternarSecaoAvaliacoes = onAlternarSecaoAvaliacoes,
             onAlternarSecaoTarefas = onAlternarSecaoTarefas,
@@ -306,6 +311,7 @@ fun TelaInicialView(
 @Composable
 private fun ConteudoPrincipal(
     estado: EstadoTelaInicial,
+    temNotificacoesPendentes: Boolean,
     onAbrirMenu: () -> Unit,
     onClicarAtalho: (String) -> Unit,
     onAlternarSecaoAvaliacoes: () -> Unit,
@@ -319,6 +325,7 @@ private fun ConteudoPrincipal(
         CabecalhoPerfil(
             nome = estado.usuario.nome,
             atalhos = estado.atalhosRapidos,
+            temNotificacoesPendentes = temNotificacoesPendentes,
             onAbrirMenu = onAbrirMenu,
             onClicarAtalho = onClicarAtalho,
             onAbrirHistoricoNotificacoes = onAbrirHistoricoNotificacoes
@@ -336,6 +343,7 @@ private fun ConteudoPrincipal(
 private fun CabecalhoPerfil(
     nome: String,
     atalhos: List<String>,
+    temNotificacoesPendentes: Boolean,
     onAbrirMenu: () -> Unit,
     onClicarAtalho: (String) -> Unit,
     onAbrirHistoricoNotificacoes: () -> Unit
@@ -381,12 +389,23 @@ private fun CabecalhoPerfil(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                IconButton(onClick = onAbrirHistoricoNotificacoes) {
-                    Icon(
-                        Outlined.Notifications,
-                        contentDescription = "Notificações",
-                        tint = CoresApp.AzulIcone
-                    )
+                Box {
+                    IconButton(onClick = onAbrirHistoricoNotificacoes) {
+                        Icon(
+                            Outlined.Notifications,
+                            contentDescription = "Notificações",
+                            tint = CoresApp.AzulIcone
+                        )
+                    }
+                    if (temNotificacoesPendentes) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.error)
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -765,6 +784,7 @@ private fun TelaInicialViewPreview() {
                 secaoAvaliacoesAberta = true,
                 secaoTarefasAberta = true
             ),
+            temNotificacoesPendentes = true,
             onAbrirMenu = {},
             onFecharMenu = {},
             onAlternarMenu = {},

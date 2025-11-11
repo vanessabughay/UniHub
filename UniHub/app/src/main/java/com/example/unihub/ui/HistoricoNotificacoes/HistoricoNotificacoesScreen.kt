@@ -188,7 +188,7 @@ private fun HistoricoNotificacaoCard(
                         Text(text = stringResource(id = R.string.share_notification_action_accept))
                     }
                     OutlinedButton(
-                        onClick = { onAcceptInvite(inviteId) },
+                        onClick = { onRejectInvite(inviteId) },
                         enabled = !isProcessing
                     ) {
                         Text(text = stringResource(id = R.string.share_notification_action_reject))
@@ -244,6 +244,4 @@ fun HistoricoNotificacoesScreenPreview() {
             onRejectInvite = {}
         )
     }
-
-    private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
-}
+} private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
