@@ -121,6 +121,10 @@ class HistoricoNotificacoesViewModel(
                     .refreshFromBackend(usuarioId)
             }
 
+            _uiState.update { current ->
+                current.copy(isLoading = false)
+            }
+
         } catch (exception: Exception) {
             _uiState.update { it.copy(isLoading = false) }
             _mensagens.emit(
