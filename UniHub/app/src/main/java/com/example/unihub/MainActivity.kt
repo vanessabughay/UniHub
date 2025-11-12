@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
                 val baseColorScheme = MaterialTheme.colorScheme
                 val typography = MaterialTheme.typography
                 val shapes = MaterialTheme.shapes
-                val authenticatedSurfaceColor = Color(0xFFD3CED3)
+                val authenticatedSurfaceColor = Color(0xFFF1F0F0)
                 val colorSchemeForRoute = remember(activeRoute, baseColorScheme) {
                     if (activeRoute in excludedBackgroundRoutes) {
                         baseColorScheme

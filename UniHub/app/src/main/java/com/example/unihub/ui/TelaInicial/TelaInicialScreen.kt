@@ -247,7 +247,7 @@ fun TelaInicialView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(CoresApp.Fundo)
+            .background(MaterialTheme.colorScheme.background)
             .systemBarsPadding()
     ) {
         ConteudoPrincipal(

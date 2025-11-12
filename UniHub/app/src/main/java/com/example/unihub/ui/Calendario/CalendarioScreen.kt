@@ -165,7 +165,7 @@ fun CalendarioScreen(
                 onVoltar = onVoltar
             )
         },
-        containerColor = Color(0xFFF6F7FB),
+        containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = ZeroInsets
     ) { inner ->
         Column(
