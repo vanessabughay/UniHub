@@ -1,8 +1,25 @@
 package com.example.unihub.data.api
 
 import com.example.unihub.data.model.NotificacoesConfig
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.Header
+import retrofit2.http.PUT
+import retrofit2.http.Path
 
 interface NotificacoesApi {
-    suspend fun carregar(): NotificacoesConfig
-    suspend fun salvar(config: NotificacoesConfig)
+
+    @GET("api/usuarios/{usuarioId}/notificacoes-config")
+    suspend fun carregar(
+        @Header("Authorization") authHeader: String,
+        @Path("usuarioId") usuarioId: Long
+    ): NotificacoesConfig
+
+
+    @PUT("api/usuarios/{usuarioId}/notificacoes-config")
+    suspend fun salvar(
+        @Header("Authorization") authHeader: String,
+        @Path("usuarioId") usuarioId: Long,
+        @Body config: NotificacoesConfig
+    ): NotificacoesConfig // O backend retorna a configuração salva
 }

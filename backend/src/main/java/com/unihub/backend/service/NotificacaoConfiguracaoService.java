@@ -42,11 +42,16 @@ public class NotificacaoConfiguracaoService {
 
         NotificacaoConfiguracao configuracao = obterOuCriarPadrao(usuarioId);
 
-        boolean notificacaoPresenca = Boolean.TRUE.equals(request.getNotificacaoDePresenca());
-        boolean avaliacoesAtivas = Boolean.TRUE.equals(request.getAvaliacoesAtivas());
-
-        configuracao.setNotificacaoDePresenca(notificacaoPresenca);
-        configuracao.setAvaliacoesAtivas(avaliacoesAtivas);
+    
+        configuracao.setNotificacaoDePresenca(Boolean.TRUE.equals(request.getNotificacaoDePresenca()));
+        configuracao.setAvaliacoesAtivas(Boolean.TRUE.equals(request.getAvaliacoesAtivas()));
+        configuracao.setCompartilhamentoDisciplina(Boolean.TRUE.equals(request.getCompartilhamentoDisciplina()));
+        configuracao.setIncluirEmQuadro(Boolean.TRUE.equals(request.getIncluirEmQuadro()));
+        configuracao.setPrazoTarefa(Boolean.TRUE.equals(request.getPrazoTarefa()));
+        configuracao.setComentarioTarefa(Boolean.TRUE.equals(request.getComentarioTarefa()));
+        configuracao.setConviteContato(Boolean.TRUE.equals(request.getConviteContato()));
+        configuracao.setInclusoEmGrupo(Boolean.TRUE.equals(request.getInclusoEmGrupo()));
+    
 
         atualizarAntecedencias(configuracao, request.getAvaliacoesConfig());
 
@@ -69,8 +74,17 @@ public class NotificacaoConfiguracaoService {
 
         NotificacaoConfiguracao configuracao = new NotificacaoConfiguracao();
         configuracao.setUsuario(usuario);
+        
+        // Define os padrões (true) para todos os campos na criação
         configuracao.setNotificacaoDePresenca(true);
         configuracao.setAvaliacoesAtivas(true);
+        configuracao.setCompartilhamentoDisciplina(true);
+        configuracao.setIncluirEmQuadro(true);
+        configuracao.setPrazoTarefa(true);
+        configuracao.setComentarioTarefa(true);
+        configuracao.setConviteContato(true);
+        configuracao.setInclusoEmGrupo(true);
+
 
         for (Prioridade prioridade : Prioridade.values()) {
             NotificacaoConfiguracaoAntecedencia antecedencia = new NotificacaoConfiguracaoAntecedencia();
@@ -112,6 +126,12 @@ public class NotificacaoConfiguracaoService {
         NotificacoesConfigResponse response = new NotificacoesConfigResponse();
         response.setNotificacaoDePresenca(configuracao.isNotificacaoDePresenca());
         response.setAvaliacoesAtivas(configuracao.isAvaliacoesAtivas());
+        response.setCompartilhamentoDisciplina(configuracao.isCompartilhamentoDisciplina());
+        response.setIncluirEmQuadro(configuracao.isIncluirEmQuadro());
+        response.setPrazoTarefa(configuracao.isPrazoTarefa());
+        response.setComentarioTarefa(configuracao.isComentarioTarefa());
+        response.setConviteContato(configuracao.isConviteContato());
+        response.setInclusoEmGrupo(configuracao.isInclusoEmGrupo());
 
         AvaliacoesConfigDto avaliacoesConfig = new AvaliacoesConfigDto();
         Map<Prioridade, Antecedencia> periodicidade = new EnumMap<>(Prioridade.class);

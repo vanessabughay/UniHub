@@ -311,7 +311,7 @@ private fun Content(
                     Spacer(Modifier.height(10.dp))
                     ToggleRow(
                         titulo = "Compartilhamento de disciplina",
-                        checked = state.compartilhamentoDisciplina,
+                        checked = state.edit.compartilhamentoDisciplina,
                         onCheckedChange = onSetCompartilhamentoDisciplina
                     )
 
@@ -380,21 +380,21 @@ private fun Content(
 
                     ToggleRow(
                         titulo = "Inclusão em um quadro",
-                        checked = state.incluirEmQuadro,
+                        checked = state.edit.incluirEmQuadro,
                         onCheckedChange = onSetIncluirEmQuadro
                     )
                     Spacer(Modifier.height(10.dp))
 
                     ToggleRow(
                         titulo = "Prazo de entrega de tarefa",
-                        checked = state.prazoTarefa,
+                        checked =state.edit.prazoTarefa,
                         onCheckedChange = onSetPrazoTarefa
                     )
                     Spacer(Modifier.height(10.dp))
 
                     ToggleRow(
                         titulo = "Comentários de tarefa",
-                        checked = state.comentarioTarefa,
+                        checked = state.edit.comentarioTarefa,
                         onCheckedChange = onSetComentarioTarefa
                     )
                 }
@@ -421,7 +421,7 @@ private fun Content(
 
                     ToggleRow(
                         titulo = "Convite como contato",
-                        checked = state.conviteContato,
+                        checked = state.edit.conviteContato,
                         onCheckedChange = onSetConviteContato
                     )
                     Spacer(Modifier.height(10.dp))
@@ -429,7 +429,7 @@ private fun Content(
 
                     ToggleRow(
                         titulo = "Inclusão em grupo",
-                        checked = state.inclusoEmGrupo,
+                        checked = state.edit.inclusoEmGrupo,
                         onCheckedChange = onSetInclusoEmGrupo
                     )
                 }

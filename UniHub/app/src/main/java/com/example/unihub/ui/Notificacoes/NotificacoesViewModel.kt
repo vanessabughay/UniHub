@@ -23,13 +23,7 @@ data class NotificacoesUiState(
     val disciplinasExpandido: Boolean = true,
     val quadrosExpandido: Boolean = false,
     val contatosExpandido: Boolean = false,
-    val botaoSalvarHabilitado: Boolean = false,
-    val compartilhamentoDisciplina: Boolean = true, // Notificação de Compartilhamento
-    val incluirEmQuadro: Boolean = true, // Notificação de Inclusão em Quadro
-    val prazoTarefa: Boolean = true, // Notificação de Prazo de Tarefa
-    val comentarioTarefa: Boolean = true, // Notificação de Comentário em Tarefa
-    val conviteContato: Boolean = true, // Notificação de Convite de Contato
-    val inclusoEmGrupo: Boolean = true // Notificação de Inclusão em Grupo
+    val botaoSalvarHabilitado: Boolean = false
 )
 
 class NotificacoesViewModel(
@@ -54,13 +48,8 @@ class NotificacoesViewModel(
                 disciplinasExpandido = false,
                 quadrosExpandido = false,
                 contatosExpandido = false,
-                botaoSalvarHabilitado = false,
-                compartilhamentoDisciplina = true,
-                incluirEmQuadro = true,
-                prazoTarefa = true,
-                comentarioTarefa = true,
-                conviteContato = true,
-                inclusoEmGrupo = true
+                botaoSalvarHabilitado = false
+
             )
         } catch (t: Throwable) {
             _ui.value = _ui.value.copy(isLoading = false, error = t.message ?: "Erro ao carregar")
@@ -80,6 +69,7 @@ class NotificacoesViewModel(
         _ui.value = _ui.value.copy(contatosExpandido = !_ui.value.contatosExpandido)
     }
 
+
     fun setPresenca(ativo: Boolean) = update { it.copy(notificacaoDePresenca = ativo) }
 
     fun setAvaliacoesAtivas(ativo: Boolean) = update { it.copy(avaliacoesAtivas = ativo) }
@@ -90,12 +80,12 @@ class NotificacoesViewModel(
         it.copy(avaliacoesConfig = AvaliacoesConfig(periodicidade = novoMapa))
     }
 
-    fun setCompartilhamentoDisciplina(ativo: Boolean) = _ui.update { it.copy(compartilhamentoDisciplina = ativo, botaoSalvarHabilitado = true) }
-    fun setIncluirEmQuadro(ativo: Boolean) = _ui.update { it.copy(incluirEmQuadro = ativo, botaoSalvarHabilitado = true) }
-    fun setPrazoTarefa(ativo: Boolean) = _ui.update { it.copy(prazoTarefa = ativo, botaoSalvarHabilitado = true) }
-    fun setComentarioTarefa(ativo: Boolean) = _ui.update { it.copy(comentarioTarefa = ativo, botaoSalvarHabilitado = true) }
-    fun setConviteContato(ativo: Boolean) = _ui.update { it.copy(conviteContato = ativo, botaoSalvarHabilitado = true) }
-    fun setInclusoEmGrupo(ativo: Boolean) = _ui.update { it.copy(inclusoEmGrupo = ativo, botaoSalvarHabilitado = true) }
+    fun setCompartilhamentoDisciplina(ativo: Boolean) = update { it.copy(compartilhamentoDisciplina = ativo) }
+    fun setIncluirEmQuadro(ativo: Boolean) = update { it.copy(incluirEmQuadro = ativo) }
+    fun setPrazoTarefa(ativo: Boolean) = update { it.copy(prazoTarefa = ativo) }
+    fun setComentarioTarefa(ativo: Boolean) = update { it.copy(comentarioTarefa = ativo) }
+    fun setConviteContato(ativo: Boolean) = update { it.copy(conviteContato = ativo) }
+    fun setInclusoEmGrupo(ativo: Boolean) = update { it.copy(inclusoEmGrupo = ativo) }
 
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
@@ -103,6 +93,7 @@ class NotificacoesViewModel(
         val edit = _ui.value.edit
         _ui.value = _ui.value.copy(isLoading = true, error = null)
         try {
+            // O 'edit' (NotificacoesConfig) agora contém TODOS os toggles
             repository.salvarConfig(edit)
             _ui.value = _ui.value.copy(
                 isLoading = false,
@@ -114,6 +105,10 @@ class NotificacoesViewModel(
         }
     }
 
+    /**
+     * Helper que atualiza o estado 'edit' e calcula se o botão 'Salvar'
+     * deve ficar habilitado (comparando 'edit' com 'original').
+     */
     private fun update(block: (NotificacoesConfig) -> NotificacoesConfig) {
         val next = block(_ui.value.edit)
         val changed = next != _ui.value.original

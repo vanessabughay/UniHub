@@ -3,36 +3,54 @@ package com.example.unihub.data.repository
 import android.os.Build
 import androidx.annotation.RequiresExtension
 import com.example.unihub.data.api.NotificacoesApi
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.NotificacoesConfig
-import com.example.unihub.data.model.Prioridade
 import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoModel
+import com.example.unihub.data.dto.TarefaDto
+import com.example.unihub.data.model.Prioridade
 import kotlinx.coroutines.flow.first
+import java.time.Duration
 
 class NotificacoesRepository(
     private val api: NotificacoesApi,
     private val attendanceScheduler: AttendanceNotificationScheduler,
     private val evaluationScheduler: EvaluationNotificationScheduler,
+    private val taskScheduler: TaskNotificationScheduler,
     private val disciplinaRepository: DisciplinaRepository,
-    private val avaliacaoRepository: AvaliacaoRepository
+    private val avaliacaoRepository: AvaliacaoRepository,
+    private val tarefaRepository: TarefaRepository
 ) {
 
     suspend fun carregarConfig(): NotificacoesConfig {
-        return api.carregar()
+        val (authHeader, usuarioId) = getAuthData()
+        return api.carregar(authHeader, usuarioId)
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun salvarConfig(config: NotificacoesConfig) {
-        // 1. Persiste a nova configuração
-        api.salvar(config)
+        val (authHeader, usuarioId) = getAuthData()
+
+        // 1. Persiste a nova configuração no backend real
+        api.salvar(authHeader, usuarioId, config)
+
         // 2. Re-agenda as notificações com base na nova configuração
         reagendarTodasNotificacoes(config)
     }
 
+    private fun getAuthData(): Pair<String, Long> {
+        val token = TokenManager.token ?: throw IllegalStateException("Token de autenticação não encontrado")
+        val usuarioId = TokenManager.usuarioId ?: throw IllegalStateException("ID do usuário não encontrado")
+        val authHeader = "Bearer $token"
+        return Pair(authHeader, usuarioId)
+    }
+
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun reagendarTodasNotificacoes(config: NotificacoesConfig) {
+
         // *** Lógica de Presença/Aula ***
         if (config.notificacaoDePresenca) {
             val disciplinasResumo = getDisciplinasResumoSuspend()
@@ -60,12 +78,22 @@ class NotificacoesRepository(
                 .filter { it.receberNotificacoes }
                 .mapNotNull { avaliacao ->
                     val disciplinaNome = avaliacao.disciplina?.nome ?: return@mapNotNull null
-
                     val disciplinaId = (avaliacao.disciplina?.id as? String)?.toLongOrNull() ?: return@mapNotNull null
-
                     val avaliacaoId = avaliacao.id ?: return@mapNotNull null
 
-                    // val antecedenciaDias = getAntecedenciaDias(avaliacao.prioridade, config)
+
+
+                    val prioridade = avaliacao.prioridade
+
+                    val antecedenciaEscolhida: Antecedencia? = config.avaliacoesConfig.periodicidade[prioridade]
+
+                    val reminderDuration: Duration
+
+                    if (antecedenciaEscolhida == null || antecedenciaEscolhida == Antecedencia.padrao) {
+                        reminderDuration = getDefaultDuration(prioridade)
+                    } else {
+                        reminderDuration = Duration.ofDays(antecedenciaEscolhida.dias.toLong())
+                    }
 
                     EvaluationNotificationScheduler.EvaluationInfo(
                         id = avaliacaoId,
@@ -73,25 +101,44 @@ class NotificacoesRepository(
                         disciplinaId = disciplinaId,
                         disciplinaNome = disciplinaNome,
                         dataHoraIso = avaliacao.dataEntrega,
-                        prioridade = avaliacao.prioridade,
-                       // receberNotificacoes = avaliacao.receberNotificacoes,
-                       // antecedenciaDias = antecedenciaDias
+                        reminderDuration = reminderDuration,
                         receberNotificacoes = avaliacao.receberNotificacoes
-
                     )
                 }
             evaluationScheduler.scheduleNotifications(evaluationInfoList)
         } else {
-            evaluationScheduler.cancelAllNotifications()
+            evaluationScheduler.scheduleNotifications(emptyList())
+        }
+
+        // *** Lógica de Tarefas/Quadros ***
+        if (config.prazoTarefa) {
+            val tarefasAtivas = getTarefasAtivasSuspend()
+            val taskInfoList = tarefasAtivas
+                .filter { it.receberNotificacoes }
+                .map { tarefaDto ->
+                    TaskNotificationScheduler.TaskInfo(
+                        titulo = tarefaDto.titulo,
+                        quadroNome = tarefaDto.nomeQuadro,
+                        prazoIso = tarefaDto.dataPrazo,
+                        receberNotificacoes = tarefaDto.receberNotificacoes
+                    )
+                }
+            taskScheduler.scheduleNotifications(taskInfoList)
+        } else {
+            taskScheduler.scheduleNotifications(emptyList())
         }
     }
-/*
-    private fun getAntecedenciaDias(prioridade: Prioridade, config: NotificacoesConfig): Int {
-        val antecedencia: Antecedencia = config.avaliacoesConfig.periodicidade[prioridade]
-            ?: Antecedencia.padrao
-        return antecedencia.dias
+
+    private fun getDefaultDuration(prioridade: Prioridade): Duration {
+        // Usa o enum Prioridade do seu arquivo Avaliacao.kt
+        return when (prioridade) {
+            Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
+            Prioridade.BAIXA -> Duration.ofHours(12)
+            Prioridade.MEDIA -> Duration.ofDays(1)
+            Prioridade.ALTA -> Duration.ofDays(2)
+            Prioridade.MUITO_ALTA -> Duration.ofDays(3)
+        }
     }
-*/
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun getDisciplinasResumoSuspend(): List<DisciplinaResumo> {
@@ -101,5 +148,10 @@ class NotificacoesRepository(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun getAvaliacoesAtivasSuspend(): List<AvaliacaoModel> {
         return avaliacaoRepository.getAvaliacao().first()
+    }
+
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
+    private suspend fun getTarefasAtivasSuspend(): List<TarefaDto> {
+        return tarefaRepository.getProximasTarefas()
     }
 }

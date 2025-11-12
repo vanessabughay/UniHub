@@ -91,6 +91,10 @@ import com.example.unihub.data.repository.NotificacoesRepository
 import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.notificacoes.ui.NotificacoesScreen
+import com.example.unihub.data.api.NotificacoesApi
+import com.example.unihub.data.api.TarefaApi
+import com.example.unihub.data.config.RetrofitClient
+import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.ui.Notificacoes.NotificacoesViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -822,9 +826,17 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.GerenciarNotificacoes.route) {
                         val context = LocalContext.current
 
-                        val notificacoesApi = NotificacoesApiBackend()
+                        val notificacoesApi = RetrofitClient.create(NotificacoesApi::class.java)
+                        val tarefaApi = RetrofitClient.create(TarefaApi::class.java)
+
+                        val tarefaRepository = TarefaRepository(tarefaApi)
+
+                        // Schedulers
                         val attendanceScheduler = AttendanceNotificationScheduler(context)
                         val evaluationScheduler = EvaluationNotificationScheduler(context)
+                        val taskScheduler = TaskNotificationScheduler(context)
+
+                        // Repositórios
                         val disciplinaRepository = DisciplinaRepository(ApiDisciplinaBackend())
                         val avaliacaoRepository = AvaliacaoRepository(ApiAvaliacaoBackend())
 
@@ -832,8 +844,10 @@ class MainActivity : ComponentActivity() {
                             api = notificacoesApi,
                             attendanceScheduler = attendanceScheduler,
                             evaluationScheduler = evaluationScheduler,
+                            taskScheduler = taskScheduler, // Passando o scheduler de tarefa
                             disciplinaRepository = disciplinaRepository,
-                            avaliacaoRepository = avaliacaoRepository
+                            avaliacaoRepository = avaliacaoRepository,
+                            tarefaRepository = tarefaRepository // Passando o repositório de tarefa
                         )
 
                         val factory = NotificacoesViewModelFactory(notificacoesRepository)
