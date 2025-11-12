@@ -92,7 +92,7 @@ class QuadroFormViewModel(
                         quadroSendoEditado = quadro,
                         nome = quadro?.nome ?: "",
                         estado = quadro?.estado ?: Estado.ATIVO,
-                        prazo = quadro?.dataFim ?: System.currentTimeMillis(),
+                        prazo = quadro?.dataFim,
                         disciplinaSelecionada = disciplinaSel,
                         integranteSelecionado = integranteSel,
                         integrantesDoQuadro = integrantesDoQuadro
@@ -119,7 +119,7 @@ class QuadroFormViewModel(
 
     fun onNomeChange(nome: String) { _uiState.update { it.copy(nome = nome) } }
     fun onEstadoChange(estado: Estado) { _uiState.update { it.copy(estado = estado) } }
-    fun onPrazoChange(prazo: Long) { _uiState.update { it.copy(prazo = prazo) } }
+    fun onPrazoChange(prazo: Long?) { _uiState.update { it.copy(prazo = prazo) } }
     fun onDisciplinaSelecionada(disciplina: DisciplinaResumoUi?) { _uiState.update { it.copy(disciplinaSelecionada = disciplina) } }
     fun onIntegranteSelecionado(integrante: IntegranteUi?) {
         viewModelScope.launch {
