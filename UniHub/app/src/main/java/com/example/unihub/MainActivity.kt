@@ -53,6 +53,7 @@ import com.example.unihub.data.apiBackend.ApiQuadroBackend
 import com.example.unihub.data.apiBackend.ApiGrupoBackend
 import com.example.unihub.data.repository.GoogleCalendarRepository
 import com.example.unihub.data.repository.GrupoRepository
+import androidx.compose.ui.graphics.Color
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.ui.ManterQuadro.QuadroFormScreen
 import com.example.unihub.ui.ManterQuadro.QuadroFormViewModelFactory
@@ -223,47 +224,83 @@ class MainActivity : ComponentActivity() {
         navigationIntentFlow.value = intent
 
         setContent {
-            navController = rememberNavController()
-            val startDest = if (TokenManager.token.isNullOrBlank())
-                Screen.Login.route
-            else
-                Screen.TelaInicial.route
+            MaterialTheme {
+                navController = rememberNavController()
+                val startDest = if (TokenManager.token.isNullOrBlank())
+                    Screen.Login.route
+                else
+                    Screen.TelaInicial.route
 
-            val navIntent by navigationIntentFlow.collectAsState()
-
-            LaunchedEffect(navIntent) {
-                navIntent?.let { pendingIntent ->
-                    navController.handleDeepLink(pendingIntent)
-                    handleNotificationIntent(pendingIntent, navController)
-                    navigationIntentFlow.value = null
-                }
+                val navIntent by navigationIntentFlow.collectAsState()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val excludedBackgroundRoutes = remember {
+                setOf(
+                    Screen.Login.route,
+                    Screen.Register.route,
+                    Screen.EsqueciSenha.route
+                )
             }
+            val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("?")
+                val activeRoute = currentRoute ?: startDest.substringBefore("?")
 
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val routesWithoutMenu = remember {
-                    setOf(
-                        Screen.Login.route,
-                        Screen.Register.route,
-                        Screen.TelaInicial.route,
-                        Screen.EsqueciSenha.route,
-                        Screen.RedefinirSenha.route.substringBefore("?")
-                    )
+                val baseColorScheme = MaterialTheme.colorScheme
+                val typography = MaterialTheme.typography
+                val shapes = MaterialTheme.shapes
+                val authenticatedSurfaceColor = Color(0xFFD3CED3)
+                val colorSchemeForRoute = remember(activeRoute, baseColorScheme) {
+                    if (activeRoute in excludedBackgroundRoutes) {
+                        baseColorScheme
+                    } else {
+                        baseColorScheme.copy(
+                            background = authenticatedSurfaceColor,
+                            surface = authenticatedSurfaceColor,
+                            surfaceDim = authenticatedSurfaceColor,
+                            surfaceBright = authenticatedSurfaceColor,
+                            surfaceContainerLowest = authenticatedSurfaceColor,
+                            surfaceContainerLow = authenticatedSurfaceColor,
+                            surfaceContainer = authenticatedSurfaceColor,
+                            surfaceContainerHigh = authenticatedSurfaceColor,
+                            surfaceContainerHighest = authenticatedSurfaceColor
+                        )
+                    }
                 }
-                val currentRoute = navBackStackEntry?.destination?.route?.substringBefore("?")
-                val menuEnabled = currentRoute != null && currentRoute !in routesWithoutMenu
 
-                MenuLayout(
-                    navController = navController,
-                    enabled = menuEnabled
+                MaterialTheme(
+                    colorScheme = colorSchemeForRoute,
+                    typography = typography,
+                    shapes = shapes
+                ){
+                    LaunchedEffect(navIntent) {
+                        navIntent?.let { pendingIntent ->
+                            navController.handleDeepLink(pendingIntent)
+                            handleNotificationIntent(pendingIntent, navController)
+                            navigationIntentFlow.value = null
+                        }
+                    }
+                    Surface(
+                            modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    NavHost(
+                    val routesWithoutMenu = remember {
+                        setOf(
+                            Screen.Login.route,
+                            Screen.Register.route,
+                            Screen.TelaInicial.route,
+                            Screen.EsqueciSenha.route,
+                            Screen.RedefinirSenha.route.substringBefore("?")
+                        )
+                    }
+                    val currentMenuRoute = navBackStackEntry?.destination?.route?.substringBefore("?")
+                    val menuEnabled = currentMenuRoute != null && currentMenuRoute !in routesWithoutMenu
+
+                    MenuLayout(
                         navController = navController,
-                        startDestination = startDest
+                        enabled = menuEnabled
                     ) {
+                        NavHost(
+                            navController = navController,
+                            startDestination = startDest
+                        ) {
                         // LOGIN
                         composable(Screen.Login.route) {
                             LoginScreen(navController = navController)
