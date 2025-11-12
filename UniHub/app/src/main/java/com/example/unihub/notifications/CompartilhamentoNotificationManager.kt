@@ -247,7 +247,7 @@ class CompartilhamentoNotificationManager(context: Context) {
         manager.createNotificationChannel(responseChannel)
     }
 
-    private companion object {
+    companion object {
         private const val CHANNEL_INVITES = "compartilhamento_invites"
         private const val CHANNEL_RESPONSES = "compartilhamento_responses"
         private const val TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO"

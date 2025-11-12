@@ -121,7 +121,7 @@ fun TelaInicial(
                 disciplinaId = disciplinaId,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                prioridade = avaliacao.prioridade,
+                reminderDuration = EvaluationNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
                 // receberNotificacoes = avaliacao.receberNotificacoes == true,
                 // antecedenciaDias = Antecedencia.padrao.dias
                 receberNotificacoes = avaliacao.receberNotificacoes == true

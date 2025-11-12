@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 // MUDANÇA AQUI: Importa o java.time.Duration
+import com.example.unihub.data.model.Prioridade
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -205,5 +206,16 @@ class EvaluationNotificationScheduler(private val context: Context) {
         }
 
         internal fun immutableFlag(): Int = AttendanceNotificationScheduler.immutableFlag()
+
+        fun defaultReminderDuration(priority: Prioridade?): Duration {
+            return when (priority) {
+                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
+                Prioridade.BAIXA -> Duration.ofHours(12)
+                Prioridade.MEDIA -> Duration.ofDays(1)
+                Prioridade.ALTA -> Duration.ofDays(2)
+                Prioridade.MUITO_ALTA -> Duration.ofDays(3)
+                null -> Duration.ofDays(1)
+            }
+        }
     }
 }

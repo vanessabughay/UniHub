@@ -156,7 +156,7 @@ fun ListarAvaliacaoScreen(
                 disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                prioridade = avaliacao.prioridade,
+                reminderDuration = EvaluationNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
 
                 // receberNotificacoes = avaliacao.receberNotificacoes,
                 // antecedenciaDias = Antecedencia.padrao.dias

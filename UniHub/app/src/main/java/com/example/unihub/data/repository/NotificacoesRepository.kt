@@ -11,7 +11,6 @@ import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoModel
 import com.example.unihub.data.dto.TarefaDto
-import com.example.unihub.data.model.Prioridade
 import kotlinx.coroutines.flow.first
 import java.time.Duration
 
@@ -87,13 +86,12 @@ class NotificacoesRepository(
 
                     val antecedenciaEscolhida: Antecedencia? = config.avaliacoesConfig.periodicidade[prioridade]
 
-                    val reminderDuration: Duration
-
-                    if (antecedenciaEscolhida == null || antecedenciaEscolhida == Antecedencia.padrao) {
-                        reminderDuration = getDefaultDuration(prioridade)
-                    } else {
-                        reminderDuration = Duration.ofDays(antecedenciaEscolhida.dias.toLong())
-                    }
+                    val reminderDuration: Duration =
+                        if (antecedenciaEscolhida == null || antecedenciaEscolhida == Antecedencia.padrao) {
+                            EvaluationNotificationScheduler.defaultReminderDuration(prioridade)
+                        } else {
+                            Duration.ofDays(antecedenciaEscolhida.dias.toLong())
+                        }
 
                     EvaluationNotificationScheduler.EvaluationInfo(
                         id = avaliacaoId,
@@ -129,16 +127,7 @@ class NotificacoesRepository(
         }
     }
 
-    private fun getDefaultDuration(prioridade: Prioridade): Duration {
-        // Usa o enum Prioridade do seu arquivo Avaliacao.kt
-        return when (prioridade) {
-            Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
-            Prioridade.BAIXA -> Duration.ofHours(12)
-            Prioridade.MEDIA -> Duration.ofDays(1)
-            Prioridade.ALTA -> Duration.ofDays(2)
-            Prioridade.MUITO_ALTA -> Duration.ofDays(3)
-        }
-    }
+
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun getDisciplinasResumoSuspend(): List<DisciplinaResumo> {
