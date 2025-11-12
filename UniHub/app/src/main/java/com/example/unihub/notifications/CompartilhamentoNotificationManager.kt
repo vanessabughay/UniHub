@@ -16,6 +16,8 @@ import com.example.unihub.MainActivity
 import com.example.unihub.R
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.ui.ListarDisciplinas.NotificacaoConviteUi
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 class CompartilhamentoNotificationManager(context: Context) {
 
@@ -64,13 +66,15 @@ class CompartilhamentoNotificationManager(context: Context) {
         val title = invite.titulo ?: appContext.getString(R.string.share_notification_invite_title)
         val message = invite.mensagem
 
+        val historyReference = invite.referenciaId ?: inviteId
+
         historyRepository.logNotification(
             title = title,
             message = message,
-            timestampMillis = System.currentTimeMillis(),
+            timestampMillis = invite.historyTimestampMillis(),
             type = invite.tipo,
             category = SHARE_CATEGORY,
-            referenceId = inviteId,
+            referenceId = historyReference,
             hasPendingInteraction = true,
             syncWithBackend = false,
         )
@@ -124,10 +128,6 @@ class CompartilhamentoNotificationManager(context: Context) {
      */
 
     fun showGenericNotification(notification: NotificacaoConviteUi) {
-        if (notification.tipo == TIPO_CONVITE && notification.lida) return
-        if (!hasPostNotificationsPermission()) return
-
-        ensureChannels()
 
         val notificationId = notificationId(notification)
         val (channelId, titleRes) = when (notification.tipo) {
@@ -137,6 +137,23 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         val title = notification.titulo ?: appContext.getString(titleRes)
         val message = notification.mensagem
+        val historyReference = notification.referenciaId ?: notification.conviteId ?: notification.id
+
+        historyRepository.logNotification(
+            title = title,
+            message = message,
+            timestampMillis = notification.historyTimestampMillis(),
+            type = notification.tipo,
+            category = SHARE_CATEGORY,
+            referenceId = historyReference,
+            hasPendingInteraction = false,
+            syncWithBackend = false,
+        )
+
+        if (notification.tipo == TIPO_CONVITE && notification.lida) return
+        if (!hasPostNotificationsPermission()) return
+
+        ensureChannels()
 
         val contentIntent = buildContentIntent(notificationId)
 
@@ -153,16 +170,6 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         safeNotify(notificationId, builder)
 
-        historyRepository.logNotification(
-            title = title,
-            message = message,
-            timestampMillis = System.currentTimeMillis(),
-            type = notification.tipo,
-            category = SHARE_CATEGORY,
-            referenceId = notification.conviteId,
-            hasPendingInteraction = false,
-            syncWithBackend = false,
-        )
     }
 
     // ============ Utilitários públicos ============
@@ -223,6 +230,20 @@ class CompartilhamentoNotificationManager(context: Context) {
                 PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
             )
         }
+    }
+
+    private fun NotificacaoConviteUi.historyTimestampMillis(): Long {
+        val isoString = atualizadaEm ?: criadaEm
+        if (isoString.isNullOrBlank()) {
+            return System.currentTimeMillis()
+        }
+
+        return runCatching {
+            LocalDateTime.parse(isoString)
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli()
+        }.getOrElse { System.currentTimeMillis() }
     }
 
     private fun ensureChannels() {

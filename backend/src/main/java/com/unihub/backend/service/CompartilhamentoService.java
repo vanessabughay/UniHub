@@ -208,7 +208,12 @@ String nomeContato = contato.getNome();
         if (notificacoes.isEmpty()) {
             return;
         }
-        notificacoes.forEach(notificacao -> notificacao.setLida(true));
+        LocalDateTime agora = LocalDateTime.now();
+        notificacoes.forEach(notificacao -> {
+            notificacao.setLida(true);
+            notificacao.setInteracaoPendente(false);
+            notificacao.setAtualizadaEm(agora);
+        });
         notificacaoRepository.saveAll(notificacoes);
     }
 

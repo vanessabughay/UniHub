@@ -59,12 +59,10 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
             notificationManager.showInviteNotification(invite)
         }
 
-        // 6) Mostra o restante de forma genérica
-        if (notificationManager.canNotify()) {
-            val otherNotifications = filteredNotifications.filterNot { it.isPendingInvite() }
-            otherNotifications.forEach { notif ->
-                notificationManager.showGenericNotification(notif)
-            }
+        // 6) Mostra o restante de forma genérica e registra no histórico
+        val otherNotifications = filteredNotifications.filterNot { it.isPendingInvite() }
+        otherNotifications.forEach { notif ->
+            notificationManager.showGenericNotification(notif)
         }
 
         // 7) Persiste os convites ativos do momento
