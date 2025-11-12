@@ -50,6 +50,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.util.*
 import kotlin.math.abs
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Composable
@@ -176,7 +178,8 @@ fun CalendarioScreen(
                 onClick = onNovaAvaliacao
             )
         },
-        containerColor = Color(0xFFF6F7FB)
+        containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = ZeroInsets
     ) { inner ->
         Column(
             modifier = Modifier

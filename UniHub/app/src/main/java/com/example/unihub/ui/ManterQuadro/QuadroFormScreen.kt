@@ -202,16 +202,32 @@ fun QuadroFormScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Box(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(Color(0xE9CFE5D0), shape = RoundedCornerShape(8.dp))
-                ){
-                CampoData(
-                    label = "Prazo (Data de Fim)",
-                    value = formatDateToLocale(uiState.prazo, locale),
-                    onClick = showDatePicker
-                )}
+                        .padding(vertical = 4.dp)
+                ) {
+                    CampoData(
+                        label = "Prazo (Opcional)",
+                        value = formatDateToLocale(uiState.prazo, locale),
+                        onClick = showDatePicker
+                    )
+
+                    if (uiState.prazo != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { viewModel.onPrazoChange(null) }) {
+                                Text("Remover data")
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
                 

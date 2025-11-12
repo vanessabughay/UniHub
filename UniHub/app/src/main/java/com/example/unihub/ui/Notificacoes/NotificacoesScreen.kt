@@ -25,6 +25,8 @@ import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Prioridade
 import com.example.unihub.ui.Notificacoes.NotificacoesUiState
 import com.example.unihub.ui.Notificacoes.NotificacoesViewModel
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 @Composable
 fun CardContainer(
@@ -202,7 +204,8 @@ fun NotificacoesScreen(
                 enabled = state.botaoSalvarHabilitado && !state.isLoading,
                 onSalvar = { viewModel.salvar() }
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { inner ->
         Box(Modifier.padding(inner)) {
             if (state.isLoading && state.original == state.edit) {

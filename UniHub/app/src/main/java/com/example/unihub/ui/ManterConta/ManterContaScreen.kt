@@ -123,9 +123,8 @@ fun ManterContaScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background (
-                color = Color(0xFFF2F2F2),
-            )
+            .background(MaterialTheme.colorScheme.background)
+
     ) {
         CabecalhoAlternativo(titulo = "Perfil", onVoltar = onVoltar)
 

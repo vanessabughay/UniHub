@@ -61,6 +61,8 @@ import kotlin.text.contains
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 
 //Cores
@@ -203,6 +205,8 @@ fun ListarContatoScreen(
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Contato")
             }
         },
+        contentWindowInsets = ZeroInsets,
+
         content = { paddingValues ->
             Column(
                 modifier = Modifier

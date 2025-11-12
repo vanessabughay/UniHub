@@ -65,6 +65,8 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Contato
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.ContatoResumo
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 //Cores
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0)
@@ -224,6 +226,7 @@ fun ListarGrupoScreen(
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Grupo")
             }
         },
+        contentWindowInsets = ZeroInsets,
         content = { paddingValues ->
             Column(
                 modifier = Modifier

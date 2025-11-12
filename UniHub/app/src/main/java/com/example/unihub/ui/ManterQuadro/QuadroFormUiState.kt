@@ -34,7 +34,7 @@ data class GrupoIntegranteUi(override val id: Long?, override val nome: String?)
 data class QuadroFormUiState(
     val nome: String = "",
     val estado: Estado = Estado.ATIVO,
-    val prazo: Long = System.currentTimeMillis(),
+    val prazo: Long? = null,
     val disciplinaSelecionada: DisciplinaResumoUi? = null,
     val integranteSelecionado: IntegranteUi? = null,
     val disciplinasDisponiveis: List<DisciplinaResumoUi> = emptyList(),

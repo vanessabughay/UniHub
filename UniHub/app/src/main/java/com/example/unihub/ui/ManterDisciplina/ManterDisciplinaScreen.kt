@@ -32,6 +32,8 @@ import com.example.unihub.components.CampoData
 import com.example.unihub.components.CampoHorario
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 val FormCardColor = Color(0xFFD9EDF6)
 val ButtonConfirmColor = Color(0xFF5AB9D6)
@@ -220,7 +222,8 @@ fun ManterDisciplinaScreen(
                 titulo = if (disciplinaId == null) "Nova Disciplina" else "Editar Disciplina",
                 onVoltar = onVoltar
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         if (showDialog) {
             AlertDialog(

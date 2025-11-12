@@ -14,7 +14,7 @@ import java.util.Locale
 
 fun showLocalizedDatePicker(
     context: Context,
-    currentValue: Long,
+    currentValue: Long?,
     locale: Locale = Locale("pt", "BR"),
     onDateSelected: (Long) -> Unit
 ) {
@@ -40,8 +40,9 @@ fun showLocalizedDatePicker(
     Locale.setDefault(locale)
 
     val calendar = Calendar.getInstance(locale).apply {
-        if (currentValue != 0L) {
-            timeInMillis = currentValue
+        val initialValue = currentValue?.takeIf { it > 0 } ?: 0L
+        if (initialValue != 0L) {
+            timeInMillis = initialValue
         }
     }
 
@@ -74,10 +75,9 @@ fun showLocalizedDatePicker(
 }
 
 fun formatDateToLocale(
-    value: Long,
+    value: Long?,
     locale: Locale = Locale("pt", "BR")
 ): String {
-    if (value == 0L) return ""
-
-    return SimpleDateFormat("dd/MM/yyyy (EEEE)", locale).format(Date(value))
+    val sanitizedValue = value?.takeIf { it > 0 } ?: return ""
+    return SimpleDateFormat("dd/MM/yyyy (EEEE)", locale).format(Date(sanitizedValue))
 }

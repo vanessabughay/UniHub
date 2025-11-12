@@ -57,6 +57,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import com.example.unihub.ui.ListarContato.ContatoResumoUi
 import com.example.unihub.data.config.TokenManager
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 val CardDefaultBackgroundColor = Color(0xFFF0F0F0) // Cor de fundo do Card
 val DeleteButtonErrorColor = Color(0xFFB00020) // Uma cor de erro típica para o botão excluir
@@ -157,7 +159,8 @@ fun ManterGrupoScreen(
                 titulo = if (grupoId == null) "Novo Grupo" else "Editar Grupo",
                 onVoltar = onVoltar
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
 
         if (isUsuarioAdministrador && showDeleteDialog) { // Diálogo de exclusão do grupo (mantido)

@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.R
+import com.example.unihub.ui.Shared.ZeroInsets
+
 import kotlinx.coroutines.launch
 
 @Composable
@@ -82,7 +84,8 @@ private fun HistoricoNotificacoesScreenContent(
                 titulo = "Histórico de Notificações",
                 onVoltar = onVoltar
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         when {
             uiState.isLoading -> {

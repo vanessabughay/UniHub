@@ -37,6 +37,8 @@ import com.example.unihub.data.repository._quadrobackend
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.unihub.Screen
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +118,8 @@ fun ListarQuadrosScreen(
                     Text("Novo Quadro", modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         Column(
             modifier = Modifier
