@@ -10,7 +10,7 @@ data class Tarefa(
     val titulo: String = "",
     val descricao: String? = null,
     val status: Status = Status.INICIADA,
-    @SerializedName("responsavelIds")
+    @SerializedName(value = "responsaveisIds", alternate = ["responsavelIds"])
     val responsaveisIds: List<Long> = emptyList(),
     @SerializedName(value = "dataPrazo", alternate = ["prazo"])
     val prazo: String? = null,
