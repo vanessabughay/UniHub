@@ -31,6 +31,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import androidx.compose.runtime.remember
+import com.example.unihub.data.repository.InstituicaoRepositoryProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun LoginScreen(
@@ -45,12 +49,35 @@ fun LoginScreen(
         }
     }
 
+    val instituicaoRepository = remember { InstituicaoRepositoryProvider.getRepository(context) }
+
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
             Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
             viewModel.success = false
-            navController.navigate(Screen.TelaInicial.route) {
-                popUpTo(Screen.Login.route) { inclusive = true }
+            val instituicao = withContext(Dispatchers.IO) {
+                runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
+            }
+
+            if (instituicao == null) {
+                val mensagemObrigatoria = context.getString(R.string.instituicao_obrigatoria_message)
+                navController.navigate(
+                    Screen.ManterInstituicao.createRoute(
+                        nome = "",
+                        media = "",
+                        frequencia = "",
+                        mensagem = mensagemObrigatoria,
+                        forcarPreenchimento = true
+                    )
+                ) {
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                    launchSingleTop = true
+                }
+            } else {
+                navController.navigate(Screen.TelaInicial.route) {
+                    popUpTo(Screen.Login.route) { inclusive = true }
+                    launchSingleTop = true
+                }
             }
         }
     }

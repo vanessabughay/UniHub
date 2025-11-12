@@ -45,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.components.MenuLateral
 import com.example.unihub.components.iconeParaRotulo
@@ -56,6 +57,7 @@ import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import com.example.unihub.Screen
+import com.example.unihub.R
 
 
 
@@ -87,10 +89,11 @@ fun TelaInicial(
     val lifecycleOwner = LocalLifecycleOwner.current
     val instituicaoRepository = remember { InstituicaoRepositoryProvider.getRepository(context) }
 
+    val mensagemObrigatoria = stringResource(R.string.instituicao_obrigatoria_message)
+
     LaunchedEffect(Unit) {
         val instituicao = runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
         if (instituicao == null) {
-            val mensagemObrigatoria = "instituição deve ser informada para o funcionamento correto do app"
             navController.navigate(
                 Screen.ManterInstituicao.createRoute(
                     nome = "",
