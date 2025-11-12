@@ -14,19 +14,8 @@ class ApiContatoBackend : Contatobackend {
 
 
     override suspend fun getContatoResumoApi(): List<ContatoResumo> {
-        return api.list().map {
-            val contatoId = it.idContato ?: it.id
-            requireNotNull(contatoId) { "Contato sem identificador disponível" }
-
-            ContatoResumo(
-                id = contatoId,
-                nome = it.nome!!,
-                email = it.email!!,
-                pendente = it.pendente,
-                ownerId = it.ownerId,
-                registroId = it.id
-            )
-        }
+        return api.list()
+            .mapNotNull { it.toContatoResumoOrNull() }
     }
 
     override suspend fun getContatoByIdApi(id: String): Contato? {
@@ -51,18 +40,8 @@ class ApiContatoBackend : Contatobackend {
     }
 
     override suspend fun getConvitesPendentesPorEmail(email: String): List<ContatoResumo> {
-        return api.listPendentes(email).map {
-            val contatoId = it.idContato ?: it.id
-            requireNotNull(contatoId) { "Convite sem identificador disponível" }
-            ContatoResumo(
-                id = contatoId,
-                nome = it.nome!!,
-                email = it.email!!,
-                pendente = it.pendente,
-                ownerId = it.ownerId,
-                registroId = it.id
-            )
-        }
+        return api.listPendentes(email)
+            .mapNotNull { it.toContatoResumoOrNull() }
     }
 
     override suspend fun acceptInvitation(id: Long) {
@@ -72,4 +51,19 @@ class ApiContatoBackend : Contatobackend {
     override suspend fun rejectInvitation(id: Long) {
         api.rejectInvite(id)
     }
+}
+
+private fun Contato.toContatoResumoOrNull(): ContatoResumo? {
+    val contatoId = idContato ?: id ?: return null
+    val safeEmail = email?.takeIf { it.isNotBlank() } ?: ""
+    val safeName = nome?.takeIf { it.isNotBlank() } ?: safeEmail.ifBlank { "Contato sem nome" }
+
+    return ContatoResumo(
+        id = contatoId,
+        nome = safeName,
+        email = safeEmail,
+        pendente = pendente,
+        ownerId = ownerId,
+        registroId = id
+    )
 }
