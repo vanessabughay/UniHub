@@ -123,10 +123,13 @@ private fun HistoricoNotificacoesScreenContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(uiState.notificacoes) { notificacao ->
-                        val inviteId = notificacao.referenceId?.takeIf {
-                            notificacao.tipo.equals(SHARE_INVITE_TYPE, ignoreCase = true)
-                        }
-                        val showInviteActions = inviteId != null && notificacao.hasPendingInteraction
+                        val isShareInvite = notificacao.tipo.equals(SHARE_INVITE_TYPE, ignoreCase = true) ||
+                                notificacao.categoria.equals(SHARE_CATEGORY, ignoreCase = true)
+                        val isContactInvite = notificacao.tipo.equals(CONTACT_INVITE_TYPE, ignoreCase = true) ||
+                                notificacao.categoria.equals(CONTACT_CATEGORY, ignoreCase = true)
+                        val inviteId = notificacao.referenceId?.takeIf { isShareInvite || isContactInvite }
+                        val showInviteActions = inviteId != null && notificacao.hasPendingInteraction &&
+                                (isShareInvite || isContactInvite)
                         val isProcessing = inviteId?.let(convitesProcessando::contains) == true
                         HistoricoNotificacaoCard(
                             notificacao = notificacao,
@@ -247,4 +250,8 @@ fun HistoricoNotificacoesScreenPreview() {
             onRejectInvite = {}
         )
     }
-} private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+}
+private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
+private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
+private const val CONTACT_CATEGORY = "CONTATO"

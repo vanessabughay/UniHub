@@ -1,13 +1,18 @@
 package com.example.unihub.ui.HistoricoNotificacoes
 
 import android.app.Application
+import android.os.Build
+import androidx.annotation.RequiresExtension
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.R
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.CompartilhamentoRepository
+import com.example.unihub.data.repository.ContatoRepository
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
+import com.example.unihub.notifications.ContatoNotificationManager
+import com.example.unihub.notifications.ContatoNotificationSynchronizer
 import java.time.Instant
 
 
@@ -45,7 +50,8 @@ data class HistoricoNotificacoesUiState(
 
 class HistoricoNotificacoesViewModel(
     application: Application,
-    private val compartilhamentoRepository: CompartilhamentoRepository
+    private val compartilhamentoRepository: CompartilhamentoRepository,
+    private val contatoRepository: ContatoRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(HistoricoNotificacoesUiState(isLoading = true))
@@ -119,6 +125,8 @@ class HistoricoNotificacoesViewModel(
             withContext(Dispatchers.IO) {
                 CompartilhamentoNotificationSynchronizer.getInstance(appContext)
                     .refreshFromBackend(usuarioId)
+                ContatoNotificationSynchronizer.getInstance(appContext)
+                    .refreshFromBackend(usuarioId)
             }
 
             _uiState.update { current ->
@@ -133,10 +141,12 @@ class HistoricoNotificacoesViewModel(
         }
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun aceitarConvite(conviteId: Long) {
         executarAcao(conviteId, aceitar = true)
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun rejeitarConvite(conviteId: Long) {
         executarAcao(conviteId, aceitar = false)
     }
@@ -153,12 +163,80 @@ class HistoricoNotificacoesViewModel(
 
         atualizarProcessamento(conviteId, true)
         viewModelScope.launch {
+            val historyEntry = historyRepository.historyFlow.value.firstOrNull { entry ->
+                entry.referenceId == conviteId
+            }
+            val isShareInvite = historyEntry?.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true ||
+                    historyEntry?.category?.equals(SHARE_CATEGORY, ignoreCase = true) == true
+            val isContactInvite = historyEntry?.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
+                    historyEntry?.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true
+            var successMessageRes: Int? = null
             try {
                 withContext(Dispatchers.IO) {
-                    if (aceitar) {
-                        compartilhamentoRepository.aceitarConvite(conviteId, usuarioId)
-                    } else {
-                        compartilhamentoRepository.rejeitarConvite(conviteId, usuarioId)
+                    when {
+                        isShareInvite -> {
+                            if (aceitar) {
+                                compartilhamentoRepository.aceitarConvite(conviteId, usuarioId)
+                            } else {
+                                compartilhamentoRepository.rejeitarConvite(conviteId, usuarioId)
+                            }
+
+                            val historyTitle = historyEntry?.title
+                                ?: appContext.getString(R.string.share_notification_history_title)
+                            val historyMessageRes = if (aceitar) {
+                                R.string.share_notification_history_accept
+                            } else {
+                                R.string.share_notification_history_reject
+                            }
+
+                            historyRepository.logNotification(
+                                title = historyTitle,
+                                message = appContext.getString(historyMessageRes),
+                                timestampMillis = System.currentTimeMillis(),
+                                type = historyEntry?.type,
+                                category = historyEntry?.category,
+                                referenceId = conviteId,
+                                hasPendingInteraction = false,
+                                syncWithBackend = false,
+                            )
+
+                            CompartilhamentoNotificationSynchronizer.getInstance(appContext)
+                                .completeInvite(conviteId)
+                            successMessageRes = historyMessageRes
+                        }
+
+                        isContactInvite -> {
+                            if (aceitar) {
+                                contatoRepository.acceptInvitation(conviteId)
+                            } else {
+                                contatoRepository.rejectInvitation(conviteId)
+                            }
+
+                            val historyTitle = historyEntry?.title
+                                ?: appContext.getString(R.string.contact_notification_history_title)
+                            val historyMessageRes = if (aceitar) {
+                                R.string.contact_notification_history_accept
+                            } else {
+                                R.string.contact_notification_history_reject
+                            }
+
+                            historyRepository.logNotification(
+                                title = historyTitle,
+                                message = appContext.getString(historyMessageRes),
+                                timestampMillis = System.currentTimeMillis(),
+                                type = ContatoNotificationManager.TIPO_RESPOSTA,
+                                category = CONTACT_CATEGORY,
+                                referenceId = conviteId,
+                                hasPendingInteraction = false,
+                                syncWithBackend = false,
+                            )
+
+                            ContatoNotificationSynchronizer.getInstance(appContext)
+                                .completeInvite(conviteId)
+                            successMessageRes = historyMessageRes
+                        }
+
+                        else -> throw IllegalStateException("Notificação não suportada para ação")
                     }
 
                     val historyEntry = historyRepository.historyFlow.value.firstOrNull { entry ->
@@ -167,43 +245,31 @@ class HistoricoNotificacoesViewModel(
                                         entry.category?.equals(SHARE_CATEGORY, ignoreCase = true) == true)
                     }
 
-                    val historyTitle = historyEntry?.title
-                        ?: appContext.getString(R.string.share_notification_history_title)
-                    val historyMessageRes = if (aceitar) {
-                        R.string.share_notification_history_accept
-                    } else {
-                        R.string.share_notification_history_reject
-                    }
 
-                    historyRepository.logNotification(
-                        title = historyTitle,
-                        message = appContext.getString(historyMessageRes),
-                        timestampMillis = System.currentTimeMillis(),
-                        type = historyEntry?.type,
-                        category = historyEntry?.category,
-                        referenceId = conviteId,
-                        hasPendingInteraction = false,
-                        syncWithBackend = false,
-                    )
-
-                    CompartilhamentoNotificationSynchronizer.getInstance(appContext)
-                        .completeInvite(conviteId)
                 }
 
-                CompartilhamentoNotificationSynchronizer.triggerImmediate(appContext)
-                CompartilhamentoNotificationSynchronizer.broadcastRefresh(appContext)
+                if (isShareInvite) {
+                    CompartilhamentoNotificationSynchronizer.triggerImmediate(appContext)
+                    CompartilhamentoNotificationSynchronizer.broadcastRefresh(appContext)
+                }
+                if (isContactInvite) {
+                    ContatoNotificationSynchronizer.triggerImmediate(appContext)
+                    ContatoNotificationSynchronizer.broadcastRefresh(appContext)
+                }
                 carregarHistoricoInterno()
 
-                _mensagens.emit(
-                    if (aceitar) {
-                        appContext.getString(R.string.share_notification_history_accept)
-                    } else {
-                        appContext.getString(R.string.share_notification_history_reject)
-                    }
-                )
+                successMessageRes?.let { resId ->
+                    _mensagens.emit(appContext.getString(resId))
+                }
             } catch (exception: Exception) {
                 _mensagens.emit(
-                    exception.message ?: appContext.getString(R.string.share_notification_action_error)
+                    exception.message ?: appContext.getString(
+                        if (isContactInvite) {
+                            R.string.contact_notification_action_error
+                        } else {
+                            R.string.share_notification_action_error
+                        }
+                    )
                 )
             } finally {
                 atualizarProcessamento(conviteId, false)
@@ -229,3 +295,5 @@ class HistoricoNotificacoesViewModel(
 
 private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
 private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
+private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
+private const val CONTACT_CATEGORY = "CONTATO"

@@ -54,6 +54,7 @@ import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
+import com.example.unihub.notifications.ContatoNotificationSynchronizer
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.ui.Anotacoes.AnotacoesView
@@ -212,6 +213,7 @@ class MainActivity : ComponentActivity() {
         TokenManager.loadToken(applicationContext)
         if (TokenManager.usuarioId != null) {
             CompartilhamentoNotificationSynchronizer.triggerImmediate(applicationContext)
+            ContatoNotificationSynchronizer.triggerImmediate(applicationContext)
         }
         navigationIntentFlow.value = intent
 

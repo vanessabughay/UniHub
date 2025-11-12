@@ -15,6 +15,7 @@ import retrofit2.HttpException
 import java.io.IOException
 import android.content.Context
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
+import com.example.unihub.notifications.ContatoNotificationSynchronizer
 
 class AuthRepository(
     private val api: UniHubApi = RetrofitClient.api // Assumindo uma classe para inicializar o Retrofit
@@ -75,6 +76,7 @@ class AuthRepository(
                             calendarLinked = authResponse.googleCalendarLinked
                         )
                         CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
+                        ContatoNotificationSynchronizer.triggerImmediate(context)
                         withContext(Dispatchers.Main) { onSuccess() }
                     } else {
                         withContext(Dispatchers.Main) {
@@ -117,6 +119,7 @@ class AuthRepository(
                         calendarLinked = body.googleCalendarLinked
                     )
                     CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
+                    ContatoNotificationSynchronizer.triggerImmediate(context)
                     onSuccess()
                 } else onError("Resposta vazia do servidor")
             } else onError("Falha no login Google: ${resp.code()}")
@@ -190,6 +193,7 @@ class AuthRepository(
                 val response = api.deleteUser("Bearer $token")
                 if (response.isSuccessful) {
                     CompartilhamentoNotificationSynchronizer.getInstance(context).reset()
+                    ContatoNotificationSynchronizer.getInstance(context).reset()
                     TokenManager.clearToken(context)
                     withContext(Dispatchers.Main) { onSuccess() }
                 } else {

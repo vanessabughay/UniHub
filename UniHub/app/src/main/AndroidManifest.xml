@@ -60,6 +60,10 @@
             android:name=".notifications.CompartilhamentoNotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />
+        <receiver
+            android:name=".notifications.ContatoNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
 
     </application>
 

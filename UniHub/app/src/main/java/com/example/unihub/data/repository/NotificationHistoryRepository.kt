@@ -155,6 +155,29 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+    fun markContactInviteHandled(inviteId: Long) {
+        synchronized(lock) {
+            val currentHistory = _historyFlow.value.toMutableList()
+            val index = currentHistory.indexOfFirst { entry ->
+                entry.referenceId == inviteId &&
+                        (entry.type == CONTACT_INVITE_TYPE || entry.category == CONTACT_CATEGORY)
+            }
+            if (index == -1) return
+
+            val entry = currentHistory[index]
+            if (!entry.hasPendingInteraction) return
+
+            currentHistory[index] = entry.copy(hasPendingInteraction = false)
+            val updatedHistory = currentHistory
+                .sortedByDescending { it.timestampMillis }
+                .take(MAX_ENTRIES)
+
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory)
+        }
+    }
+
+
     fun clear() {
         synchronized(lock) {
             _historyFlow.value = emptyList()
@@ -188,11 +211,15 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         obj.has(JSON_SHARE_INVITE_ID) && !obj.isNull(JSON_SHARE_INVITE_ID) -> {
                             obj.optLong(JSON_SHARE_INVITE_ID, -1L).takeIf { it >= 0 }
                         }
+                        obj.has(JSON_CONTACT_INVITE_ID) && !obj.isNull(JSON_CONTACT_INVITE_ID) -> {
+                            obj.optLong(JSON_CONTACT_INVITE_ID, -1L).takeIf { it >= 0 }
+                        }
                         else -> null
                     }
                     val pending = when {
                         obj.has(JSON_PENDING_INTERACTION) -> obj.optBoolean(JSON_PENDING_INTERACTION, false)
                         obj.has(JSON_SHARE_ACTION_PENDING) -> obj.optBoolean(JSON_SHARE_ACTION_PENDING, false)
+                        obj.has(JSON_CONTACT_ACTION_PENDING) -> obj.optBoolean(JSON_CONTACT_ACTION_PENDING, false)
                         else -> false
                     }
                     val metadataJson = obj.optString(JSON_METADATA, null)?.takeIf { it.isNotBlank() }
@@ -233,6 +260,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         put(JSON_SHARE_INVITE_ID, reference)
                         put(JSON_SHARE_ACTION_PENDING, entry.hasPendingInteraction)
                     }
+                    if (entry.type == CONTACT_INVITE_TYPE || entry.category == CONTACT_CATEGORY) {
+                        put(JSON_CONTACT_INVITE_ID, reference)
+                        put(JSON_CONTACT_ACTION_PENDING, entry.hasPendingInteraction)
+                    }
                 }
                 put(JSON_PENDING_INTERACTION, entry.hasPendingInteraction)
                 entry.metadataJson?.let { put(JSON_METADATA, it) }
@@ -257,10 +288,14 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_REFERENCE_ID = "reference_id"
         private const val JSON_SHARE_INVITE_ID = "share_invite_id"
         private const val JSON_SHARE_ACTION_PENDING = "share_action_pending"
+        private const val JSON_CONTACT_INVITE_ID = "contact_invite_id"
+        private const val JSON_CONTACT_ACTION_PENDING = "contact_action_pending"
         private const val JSON_PENDING_INTERACTION = "pending_interaction"
         private const val JSON_METADATA = "metadata"
         private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
         private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
+        private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
+        private const val CONTACT_CATEGORY = "CONTATO"
 
         @Volatile
         private var instance: NotificationHistoryRepository? = null

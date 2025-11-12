@@ -44,4 +44,17 @@
     <string name="share_notification_action_error">Não foi possível atualizar o convite. Tente novamente.</string>
     <string name="notification_history_default_title">Notificação</string>
     <string name="notification_history_load_error">Não foi possível carregar o histórico de notificações.</string>
+
+
+    <string name="contact_notification_invite_channel_name">Solicitações de contato</string>
+    <string name="contact_notification_invite_channel_description">Notificações para aceitar ou rejeitar solicitações de contato.</string>
+    <string name="contact_notification_response_channel_name">Respostas de contato</string>
+    <string name="contact_notification_response_channel_description">Notificações sobre o resultado das suas solicitações de contato.</string>
+    <string name="contact_notification_invite_title">Solicitação de contato</string>
+    <string name="contact_notification_response_title">Atualização de contato</string>
+    <string name="contact_notification_generic_title">Contato</string>
+    <string name="contact_notification_history_title">Solicitação de contato</string>
+    <string name="contact_notification_history_accept">Solicitação de contato aceita.</string>
+    <string name="contact_notification_history_reject">Solicitação de contato rejeitada.</string>
+    <string name="contact_notification_action_error">Não foi possível processar a solicitação de contato.</string>
 </resources>
