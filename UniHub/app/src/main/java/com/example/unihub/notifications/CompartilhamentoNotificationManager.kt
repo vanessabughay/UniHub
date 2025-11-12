@@ -60,13 +60,25 @@ class CompartilhamentoNotificationManager(context: Context) {
     fun showInviteNotification(invite: NotificacaoConviteUi) {
         val inviteId = invite.conviteId ?: return
         if (invite.lida) return
+        val notificationId = notificationIdForInvite(inviteId)
+        val title = invite.titulo ?: appContext.getString(R.string.share_notification_invite_title)
+        val message = invite.mensagem
+
+        historyRepository.logNotification(
+            title = title,
+            message = message,
+            timestampMillis = System.currentTimeMillis(),
+            type = invite.tipo,
+            category = SHARE_CATEGORY,
+            referenceId = inviteId,
+            hasPendingInteraction = true,
+            syncWithBackend = false,
+        )
+
         if (!hasPostNotificationsPermission()) return
 
         ensureChannels()
 
-        val notificationId = notificationIdForInvite(inviteId)
-        val title = invite.titulo ?: appContext.getString(R.string.share_notification_invite_title)
-        val message = invite.mensagem
 
         val contentIntent = buildContentIntent(notificationId)
 
@@ -105,16 +117,6 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         safeNotify(notificationId, builder)
 
-        historyRepository.logNotification(
-            title = title,
-            message = message,
-            timestampMillis = System.currentTimeMillis(),
-            type = invite.tipo,
-            category = SHARE_CATEGORY,
-            referenceId = inviteId,
-            hasPendingInteraction = true,
-            syncWithBackend = false,
-        )
     }
 
     /**

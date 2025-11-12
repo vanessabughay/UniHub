@@ -157,6 +157,31 @@ class HistoricoNotificacoesViewModel(
                         compartilhamentoRepository.rejeitarConvite(conviteId, usuarioId)
                     }
 
+                    val historyEntry = historyRepository.historyFlow.value.firstOrNull { entry ->
+                        entry.referenceId == conviteId &&
+                                (entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true ||
+                                        entry.category?.equals(SHARE_CATEGORY, ignoreCase = true) == true)
+                    }
+
+                    val historyTitle = historyEntry?.title
+                        ?: appContext.getString(R.string.share_notification_history_title)
+                    val historyMessageRes = if (aceitar) {
+                        R.string.share_notification_history_accept
+                    } else {
+                        R.string.share_notification_history_reject
+                    }
+
+                    historyRepository.logNotification(
+                        title = historyTitle,
+                        message = appContext.getString(historyMessageRes),
+                        timestampMillis = System.currentTimeMillis(),
+                        type = historyEntry?.type,
+                        category = historyEntry?.category,
+                        referenceId = conviteId,
+                        hasPendingInteraction = false,
+                        syncWithBackend = false,
+                    )
+
                     CompartilhamentoNotificationSynchronizer.getInstance(appContext)
                         .completeInvite(conviteId)
                 }
@@ -197,3 +222,6 @@ class HistoricoNotificacoesViewModel(
         return dateFormatter.format(zonedDateTime)
     }
 }
+
+private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+private const val SHARE_CATEGORY = "COMPARTILHAMENTO"

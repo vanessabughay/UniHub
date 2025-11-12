@@ -55,10 +55,8 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
         }
 
         // 5) Mostra convites com UI especial
-        if (notificationManager.canNotify()) {
-            pendingInvites.forEach { invite ->
-                notificationManager.showInviteNotification(invite)
-            }
+        pendingInvites.forEach { invite ->
+            notificationManager.showInviteNotification(invite)
         }
 
         // 6) Mostra o restante de forma genérica
