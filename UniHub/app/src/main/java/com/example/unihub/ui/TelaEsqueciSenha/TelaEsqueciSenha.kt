@@ -1,6 +1,8 @@
 package com.example.unihub.ui.TelaEsqueciSenha
 
 import android.widget.Toast
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +30,9 @@ fun TelaEsqueciSenha(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .background(Color(0xFFE7F1F6))
+            .padding(horizontal = 24.dp)
+            .padding(top = 96.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -37,7 +41,7 @@ fun TelaEsqueciSenha(
             fontWeight = FontWeight.SemiBold
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
         OutlinedTextField(
             value = email,
@@ -47,7 +51,7 @@ fun TelaEsqueciSenha(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(24.dp))
 
         Button(
             enabled = !carregando && email.isNotBlank(),
