@@ -137,8 +137,9 @@ public class TarefaPlanejamento {
 
     private void atualizarResponsaveisIds() {
         String idsConcatenados = responsaveis.stream()
-                .map(Contato::getIdContato)
+                .map(this::resolverIdResponsavel)
                 .filter(Objects::nonNull)
+                .distinct()
                 .map(String::valueOf)
                 .collect(Collectors.joining(","));
 
@@ -152,9 +153,26 @@ public class TarefaPlanejamento {
     @JsonProperty("responsaveisIds")
     public List<Long> getResponsaveisIds() {
         return responsaveis.stream()
-                .map(Contato::getIdContato)
+                .map(this::resolverIdResponsavel)
                 .filter(Objects::nonNull)
+                .distinct()
                 .collect(Collectors.toList());
+    }
+
+    private Long resolverIdResponsavel(Contato contato) {
+        if (contato == null) {
+            return null;
+        }
+
+        if (contato.getIdContato() != null) {
+            return contato.getIdContato();
+        }
+
+        if (contato.getOwnerId() != null) {
+            return contato.getOwnerId();
+        }
+
+        return contato.getId();
     }
 
     public List<TarefaComentario> getComentarios() {

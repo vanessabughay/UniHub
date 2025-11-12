@@ -51,6 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.ui.Shared.ZeroInsets
+import com.example.unihub.data.config.TokenManager
+
 
 
 data class OpcaoQuadro(
@@ -181,6 +183,18 @@ private fun VisualizarQuadroContent(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var usuarioLogadoId by remember {
+        mutableStateOf<Long?>(TokenManager.usuarioId)
+    }
+
+    LaunchedEffect(Unit) {
+        if (usuarioLogadoId == null) {
+            TokenManager.loadToken(context.applicationContext)
+            usuarioLogadoId = TokenManager.usuarioId
+        }
+    }
+
+
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { mensagem ->
@@ -213,7 +227,8 @@ private fun VisualizarQuadroContent(
     }
 
     var secaoAtivaExpandida by remember { mutableStateOf(true) }
-    var secaoConcluidaExpandida by remember { mutableStateOf(false) }
+    var secaoConcluidaExpandida by remember { mutableStateOf(false)}
+    var mostrarSomenteResponsavel by rememberSaveable(quadroId) { mutableStateOf(false) }
 
     val colunasAtivas = uiState.colunas
         .filter { it.status != Status.CONCLUIDA }
@@ -287,6 +302,30 @@ private fun VisualizarQuadroContent(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                Checkbox(
+                    checked = mostrarSomenteResponsavel,
+                    onCheckedChange = { checked ->
+                        if (usuarioLogadoId != null) {
+                            mostrarSomenteResponsavel = checked
+                        }
+                    },
+                    enabled = usuarioLogadoId != null
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Mostrar apenas minhas tarefas",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
 
             if (uiState.isLoading) {
@@ -307,6 +346,8 @@ private fun VisualizarQuadroContent(
                                 items(colunasAtivas, key = { it.id }) { coluna ->
                                     ColunaCard(
                                         coluna = coluna,
+                                        mostrarSomenteResponsavel = mostrarSomenteResponsavel && usuarioLogadoId != null,
+                                        usuarioLogadoId = usuarioLogadoId,
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
                                         onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
@@ -334,6 +375,8 @@ private fun VisualizarQuadroContent(
                                 items(colunasConcluidas, key = { it.id }) { coluna ->
                                     ColunaCard(
                                         coluna = coluna,
+                                        mostrarSomenteResponsavel = mostrarSomenteResponsavel && usuarioLogadoId != null,
+                                        usuarioLogadoId = usuarioLogadoId,
                                         onEditColuna = { onNavigateToEditarColuna(quadroId, coluna.id) },
                                         onEditTarefa = { tarefaId -> onNavigateToEditarTarefa(quadroId, coluna.id, tarefaId) },
                                         onNewTarefa = { onNavigateToNovaTarefa(quadroId, coluna.id) },
@@ -388,6 +431,8 @@ private fun TituloDeSecao(titulo: String, setaAbaixo: Boolean, onClick: () -> Un
 @Composable
 private fun ColunaCard(
     coluna: Coluna,
+    mostrarSomenteResponsavel: Boolean,
+    usuarioLogadoId: Long?,
     onEditColuna: () -> Unit,
     onEditTarefa: (tarefaId: String) -> Unit,
     onNewTarefa: () -> Unit,
@@ -395,6 +440,14 @@ private fun ColunaCard(
 ) {
     val cardColor = colorScheme.tertiary.copy(alpha = 0.1f)
     val contentColor = colorScheme.onSurface
+    val tarefasDaColuna = remember(coluna.tarefas, mostrarSomenteResponsavel, usuarioLogadoId) {
+        if (mostrarSomenteResponsavel && usuarioLogadoId != null) {
+            coluna.tarefas.filter { tarefa -> usuarioLogadoId in tarefa.responsaveisIds }
+        } else {
+            coluna.tarefas
+        }
+    }
+
 
     Box(
         modifier = Modifier
@@ -421,15 +474,16 @@ private fun ColunaCard(
 
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Tarefas: ${coluna.tarefas.size}",
+                    text = "Tarefas: ${tarefasDaColuna.size}",
                     style = MaterialTheme.typography.bodySmall,
                     color = contentColor.copy(alpha = 0.7f)
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            val tarefasEmAndamento = coluna.tarefas.filter { it.status != Status.CONCLUIDA }
-            val tarefasConcluidas = coluna.tarefas.filter { it.status == Status.CONCLUIDA }
+            val tarefasEmAndamento = tarefasDaColuna.filter { it.status != Status.CONCLUIDA }
+            val tarefasConcluidas = tarefasDaColuna.filter { it.status == Status.CONCLUIDA }
+
 
             var andamentoExpandido by rememberSaveable(coluna.id, "andamento") { mutableStateOf(true) }
             var concluidasExpandidas by rememberSaveable(coluna.id, "concluidas") { mutableStateOf(false) }
@@ -461,7 +515,7 @@ private fun ColunaCard(
 
                 if (tarefasEmAndamento.isEmpty() && tarefasConcluidas.isEmpty()) {
                     Text(
-                        text = "Nenhuma tarefa cadastrada",
+                        text = if (mostrarSomenteResponsavel) "Nenhuma tarefa atribuída a você" else "Nenhuma tarefa cadastrada",
                         style = MaterialTheme.typography.bodyMedium,
                         color = contentColor.copy(alpha = 0.7f)
                     )
