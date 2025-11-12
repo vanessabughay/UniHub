@@ -16,12 +16,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -97,9 +102,18 @@ fun MenuLayout(
     enabled: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val safeAreaContent: @Composable () -> Unit = {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+        ) {
+            content()
+        }
+    }
     if (!enabled) {
         CompositionLocalProvider(LocalMenuActions provides MenuActions.Disabled) {
-            content()
+            safeAreaContent()
         }
         return
     }
@@ -110,7 +124,7 @@ fun MenuLayout(
 
     CompositionLocalProvider(LocalMenuActions provides menuActions) {
         Box(modifier = Modifier.fillMaxSize()) {
-            content()
+            safeAreaContent()
 
             AnimatedVisibility(
                 visible = menuOpenState.value,
@@ -144,6 +158,9 @@ fun MenuLayout(
                     .fillMaxHeight()
                     .width(280.dp)
                     .align(Alignment.TopEnd)
+                    .windowInsetsPadding(
+                        WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical)
+                    )
             ) {
                 MenuLateral(
                     opcoes = DefaultMenuOptions,

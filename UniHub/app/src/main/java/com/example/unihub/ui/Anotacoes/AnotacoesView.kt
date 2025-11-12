@@ -31,6 +31,8 @@ import com.example.unihub.components.CabecalhoAlternativo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.unihub.components.CampoBusca
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 private val Beige = Color(0xFFF8F0E7)
 private val BeigeContainer = Color(0x2FE1C4A1)
@@ -92,7 +94,8 @@ fun AnotacoesView(
                     Text("Nova anotação", fontWeight = FontWeight.SemiBold)
                 }
             }
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         Column(
             modifier = Modifier

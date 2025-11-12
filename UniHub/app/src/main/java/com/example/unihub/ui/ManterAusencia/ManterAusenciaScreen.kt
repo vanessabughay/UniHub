@@ -43,6 +43,8 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 //cores
 private val AusenciasCardColor = Color(0xFFF3E4F8)
@@ -123,7 +125,8 @@ fun ManterAusenciaScreen(
                 titulo = if (ausenciaId == null) "Registrar Ausência" else "Editar Ausência",
                 onVoltar = onVoltar
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         Column(
             modifier = Modifier

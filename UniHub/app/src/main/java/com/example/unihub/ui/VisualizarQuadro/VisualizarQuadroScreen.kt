@@ -50,6 +50,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 data class OpcaoQuadro(
     val title: String,
@@ -245,7 +247,8 @@ private fun VisualizarQuadroContent(
                     Text("Nova Coluna", modifier = Modifier.padding(vertical = 8.dp))
                 }
             }
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         Column(
             modifier = Modifier

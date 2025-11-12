@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.example.unihub.components.formatMinutesToTime
+import com.example.unihub.ui.Shared.ZeroInsets
 
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -223,7 +224,8 @@ fun ListarDisciplinasScreen(
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Disciplina")
             }
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
         Column(
             modifier = Modifier

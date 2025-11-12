@@ -36,6 +36,8 @@ import java.time.format.DateTimeFormatter
 import com.example.unihub.ui.Shared.NotaCampo
 import java.time.LocalDate
 import java.time.LocalDateTime
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 
 private val AvaliacoesCardColor = Color(0xFFE0E1F8)
@@ -544,7 +546,8 @@ fun VisualizarDisciplinaScreen(
                     titulo = disc.nome.orEmpty(),
                     onVoltar = onVoltar
                 )
-            }
+            },
+            contentWindowInsets = ZeroInsets
         ) { paddingValues ->
             LazyColumn(
                 modifier = Modifier

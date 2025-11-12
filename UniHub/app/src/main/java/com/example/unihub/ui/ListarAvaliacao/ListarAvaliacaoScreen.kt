@@ -75,6 +75,8 @@ import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.ui.Shared.ZeroInsets
+
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -354,6 +356,8 @@ fun ListarAvaliacaoScreen(
                 Icon(Icons.Default.Add, contentDescription = "Adicionar Avaliação")
             }
         },
+        contentWindowInsets = ZeroInsets,
+
         content = { paddingValues ->
             Column(
                 modifier = Modifier

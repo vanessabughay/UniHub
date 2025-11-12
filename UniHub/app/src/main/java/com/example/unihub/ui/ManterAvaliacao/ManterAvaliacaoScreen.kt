@@ -43,6 +43,8 @@ import com.example.unihub.ui.ManterContato.DeleteButtonErrorColor
 import java.util.Calendar
 import java.util.Locale
 import com.example.unihub.ui.Shared.NotaCampo
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 
 @OptIn(ExperimentalMaterial3Api::class) // Para ExposedDropdownMenuBox
@@ -105,7 +107,8 @@ fun ManterAvaliacaoScreen(
                 titulo = if (avaliacaoId == null) "Nova Avaliação" else "Editar Avaliação",
                 onVoltar = onVoltar
             )
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { paddingValues ->
 
         if (showDeleteDialog) {

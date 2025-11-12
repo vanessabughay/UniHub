@@ -32,6 +32,8 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.ui.Shared.NotaCampo
 import com.example.unihub.ui.Shared.PesoCampo
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 
 //Cores
@@ -162,7 +164,8 @@ fun ManterPesoNotasScreen(
                 onVoltar = onVoltar
             )
             Spacer(Modifier.height(16.dp))
-        }
+        },
+        contentWindowInsets = ZeroInsets
     ) { padding ->
         Column(
             modifier = Modifier

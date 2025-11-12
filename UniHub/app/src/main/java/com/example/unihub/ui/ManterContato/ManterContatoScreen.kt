@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo // Seu componente de cabeçalho
+import com.example.unihub.ui.Shared.ZeroInsets
+
 
 // Cores e constantes da ListarContatoScreen que queremos replicar
 val CardDefaultBackgroundColor = Color(0xFFFFC1C1) // Cor de fundo do Card
@@ -75,6 +77,8 @@ fun ManterContatoScreen(
 
             )
         },
+        contentWindowInsets = ZeroInsets
+
 
     ) { paddingValues ->
 
