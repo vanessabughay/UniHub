@@ -54,7 +54,6 @@ fun LoginScreen(
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
             Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
-            viewModel.success = false
             val instituicao = withContext(Dispatchers.IO) {
                 runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
             }
@@ -79,6 +78,7 @@ fun LoginScreen(
                     launchSingleTop = true
                 }
             }
+            viewModel.success = false
         }
     }
 
