@@ -1,6 +1,7 @@
 package com.example.unihub.data.repository
 
 import android.content.Context
+import com.example.unihub.data.config.TokenManager
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.max
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +27,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val metadataJson: String? = null
     )
 
+    private val appContext = context.applicationContext
     private val preferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val lock = Any()
 
@@ -35,13 +37,18 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
     private val remoteLogger = NotificationRemoteLogger(context)
 
+    private var currentUserId: Long? = null
+
     private val lastId = AtomicLong(0)
 
     init {
-        val storedEntries = loadEntries()
+        TokenManager.loadToken(appContext)
+        currentUserId = TokenManager.usuarioId
+
+        val storedEntries = loadEntries(currentUserId)
         _historyFlow = MutableStateFlow(storedEntries)
 
-        val persistedLastId = preferences.getLong(KEY_LAST_ID, 0L)
+        val persistedLastId = preferences.getLong(lastIdKey(currentUserId), 0L)
         val currentMaxId = storedEntries.maxOfOrNull { it.id } ?: 0L
         lastId.set(max(persistedLastId, currentMaxId))
     }
@@ -63,7 +70,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val normalizedCategory = category?.takeIf { it.isNotBlank() }
         val metadataPayload = metadata?.takeIf { it.isNotEmpty() }
 
+        refreshUserContext()
+
         synchronized(lock) {
+            val activeUserId = currentUserId
             val existingEntry = when {
                 referenceId != null && normalizedType != null -> {
                     _historyFlow.value.firstOrNull {
@@ -114,8 +124,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 .take(MAX_ENTRIES)
 
             _historyFlow.value = updatedHistory
-            saveEntries(updatedHistory)
-            preferences.edit().putLong(KEY_LAST_ID, lastId.get()).apply()
+            saveEntries(updatedHistory, activeUserId)
+            preferences.edit().putLong(lastIdKey(activeUserId), lastId.get()).apply()
         }
 
         if (syncWithBackend) {
@@ -134,6 +144,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
     }
 
     fun markShareInviteHandled(inviteId: Long) {
+        refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
             val index = currentHistory.indexOfFirst { entry ->
@@ -151,15 +162,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 .take(MAX_ENTRIES)
 
             _historyFlow.value = updatedHistory
-            saveEntries(updatedHistory)
+            saveEntries(updatedHistory, currentUserId)
         }
     }
 
     fun pruneShareNotifications(validReferences: Set<Long>) {
+        refreshUserContext()
         pruneCategoryEntries(SHARE_CATEGORY, validReferences)
     }
 
     fun pruneContactNotifications(validReferences: Set<Long>) {
+        refreshUserContext()
         pruneCategoryEntries(CONTACT_CATEGORY, validReferences)
     }
 
@@ -185,13 +198,14 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
             if (updatedHistory.size != _historyFlow.value.size) {
                 _historyFlow.value = updatedHistory
-                saveEntries(updatedHistory)
+                saveEntries(updatedHistory, currentUserId)
             }
         }
     }
 
 
     fun markContactInviteHandled(inviteId: Long) {
+        refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
             val index = currentHistory.indexOfFirst { entry ->
@@ -209,24 +223,26 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 .take(MAX_ENTRIES)
 
             _historyFlow.value = updatedHistory
-            saveEntries(updatedHistory)
+            saveEntries(updatedHistory, currentUserId)
         }
     }
 
 
     fun clear() {
+        refreshUserContext()
         synchronized(lock) {
             _historyFlow.value = emptyList()
+            val activeUserId = currentUserId
             preferences.edit()
-                .remove(KEY_ENTRIES)
-                .remove(KEY_LAST_ID)
+                .remove(entriesKey(activeUserId))
+                .remove(lastIdKey(activeUserId))
                 .apply()
             lastId.set(0)
         }
     }
 
-    private fun loadEntries(): List<NotificationEntry> {
-        val json = preferences.getString(KEY_ENTRIES, null) ?: return emptyList()
+    private fun loadEntries(userId: Long?): List<NotificationEntry> {
+        val json = preferences.getString(entriesKey(userId), null) ?: return emptyList()
 
         return runCatching {
             val array = JSONArray(json)
@@ -280,7 +296,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }.getOrElse { emptyList() }
     }
 
-    private fun saveEntries(entries: List<NotificationEntry>) {
+    private fun saveEntries(entries: List<NotificationEntry>, userId: Long?) {
         val array = JSONArray()
         entries.forEach { entry ->
             val obj = JSONObject().apply {
@@ -306,7 +322,35 @@ class NotificationHistoryRepository private constructor(context: Context) {
             }
             array.put(obj)
         }
-        preferences.edit().putString(KEY_ENTRIES, array.toString()).apply()
+        preferences.edit().putString(entriesKey(userId), array.toString()).apply()
+    }
+
+    private fun refreshUserContext() {
+        TokenManager.loadToken(appContext)
+        val resolvedUserId = TokenManager.usuarioId
+        synchronized(lock) {
+            if (resolvedUserId == currentUserId) {
+                return
+            }
+
+            currentUserId = resolvedUserId
+            val storedEntries = loadEntries(currentUserId)
+            _historyFlow.value = storedEntries
+
+            val persistedLastId = preferences.getLong(lastIdKey(currentUserId), 0L)
+            val currentMaxId = storedEntries.maxOfOrNull { it.id } ?: 0L
+            lastId.set(max(persistedLastId, currentMaxId))
+        }
+    }
+
+    private fun entriesKey(userId: Long?): String {
+        val suffix = userId?.toString() ?: KEY_SUFFIX_GUEST
+        return "${KEY_ENTRIES}_$suffix"
+    }
+
+    private fun lastIdKey(userId: Long?): String {
+        val suffix = userId?.toString() ?: KEY_SUFFIX_GUEST
+        return "${KEY_LAST_ID}_$suffix"
     }
 
     companion object {
@@ -314,6 +358,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val KEY_ENTRIES = "notification_entries"
         private const val KEY_LAST_ID = "notification_last_id"
         private const val MAX_ENTRIES = 100
+        private const val KEY_SUFFIX_GUEST = "guest"
 
         private const val JSON_ID = "id"
         private const val JSON_TITLE = "title"
@@ -339,9 +384,21 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private var instance: NotificationHistoryRepository? = null
 
         fun getInstance(context: Context): NotificationHistoryRepository {
-            return instance ?: synchronized(this) {
-                instance ?: NotificationHistoryRepository(context.applicationContext).also {
-                    instance = it
+            val existing = instance
+            if (existing != null) {
+                existing.refreshUserContext()
+                return existing
+            }
+
+            return synchronized(this) {
+                val current = instance
+                if (current != null) {
+                    current.refreshUserContext()
+                    current
+                } else {
+                    val created = NotificationHistoryRepository(context.applicationContext)
+                    instance = created
+                    created
                 }
             }
         }
