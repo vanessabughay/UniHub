@@ -92,8 +92,10 @@ fun TelaInicial(
     val mensagemObrigatoria = stringResource(R.string.instituicao_obrigatoria_message)
 
     LaunchedEffect(Unit) {
+        val jaPossuiInstituicao = TokenManager.hasInstitution
         val instituicao = runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
-        if (instituicao == null) {
+        val possuiInstituicao = instituicao != null || jaPossuiInstituicao
+        if (!possuiInstituicao) {
             navController.navigate(
                 Screen.ManterInstituicao.createRoute(
                     nome = "",

@@ -93,9 +93,7 @@ class ManterInstituicaoViewModel(
         return nomeInstituicao.isBlank() && media.isBlank() && frequencia.isBlank()
     }
 
-    fun deveMostrarBotaoLogout(): Boolean {
-        return carregamentoInicialConcluido && !possuiInstituicaoCadastrada && isFormularioVazio()
-    }
+
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar(onSaved: () -> Unit) {
