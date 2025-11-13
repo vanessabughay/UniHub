@@ -1,20 +1,21 @@
 package com.unihub.backend.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import com.unihub.backend.model.Contato;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.unihub.backend.repository.InstituicaoRepository;
 import com.unihub.backend.dto.LoginResponse;
-import com.unihub.backend.model.Contato;
-import com.unihub.backend.repository.ContatoRepository;
+
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
-import java.util.List;
+
 
 @Service
 public class AutenticacaoService {
@@ -22,8 +23,6 @@ public class AutenticacaoService {
     @Autowired
     private UsuarioRepository repository;
 
-    @Autowired
-    private ContatoRepository contatoRepository;
 
     @Autowired
     private InstituicaoRepository instituicaoRepository;
@@ -33,6 +32,9 @@ public class AutenticacaoService {
 
     @Autowired
     private GoogleCalendarCredentialService googleCalendarCredentialService;
+
+     @Autowired
+    private ContatoService contatoService;
 
     // Armazena token -> usuarioId (STATeless de verdade exigiria JWT; aqui mantém seu fluxo atual)
     private final Map<String, Long> tokens = new ConcurrentHashMap<>();
@@ -56,17 +58,7 @@ public class AutenticacaoService {
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         Usuario salvo = repository.save(usuario);
 
-        List<Contato> convitesPendentes = contatoRepository
-                .findByEmailIgnoreCaseAndPendenteTrue(salvo.getEmail());
-
-        if (!convitesPendentes.isEmpty()) {
-            for (Contato convite : convitesPendentes) {
-                convite.setIdContato(salvo.getId());
-                convite.setNome(salvo.getNomeUsuario());
-                convite.setEmail(salvo.getEmail());
-            }
-            contatoRepository.saveAll(convitesPendentes);
-        }
+       contatoService.processarConvitesPendentesParaUsuario(salvo);
 
         return salvo;
     }

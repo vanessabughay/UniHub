@@ -221,15 +221,13 @@ class HistoricoNotificacoesViewModel(
                                 R.string.contact_notification_history_reject
                             }
 
-                            historyRepository.logNotification(
+                            historyRepository.updateContactNotification(
+                                referenceId = conviteId,
                                 title = historyTitle,
                                 message = appContext.getString(historyMessageRes),
                                 timestampMillis = System.currentTimeMillis(),
                                 type = ContatoNotificationManager.TIPO_RESPOSTA,
-                                category = CONTACT_CATEGORY,
-                                referenceId = conviteId,
-                                hasPendingInteraction = false,
-                                syncWithBackend = false,
+
                             )
 
                             ContatoNotificationSynchronizer.getInstance(appContext)

@@ -119,14 +119,20 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
     )
 
     private fun NotificacaoConviteUi.isContactNotification(): Boolean {
-        return tipo?.equals(TIPO_CONVITE, ignoreCase = true) == true ||
-                tipo?.equals(TIPO_RESPOSTA, ignoreCase = true) == true ||
-                categoria?.equals(CONTACT_CATEGORY, ignoreCase = true) == true
+        val normalizedType = tipo?.trim()
+        if (!normalizedType.isNullOrBlank() && normalizedType.contains(CONTACT_KEYWORD, ignoreCase = true)) {
+            return true
+        }
+        val normalizedCategory = categoria?.trim()
+        if (!normalizedCategory.isNullOrBlank() && normalizedCategory.contains(CONTACT_KEYWORD, ignoreCase = true)) {
+            return true
+        }
+        return false
     }
 
     private fun NotificacaoConviteUi.isPendingInvite(): Boolean {
         val referenceId = referenciaId ?: return false
-        return tipo == TIPO_CONVITE && (interacaoPendente || !lida) && referenceId >= 0
+        return tipo.equals(TIPO_CONVITE, ignoreCase = true) && (interacaoPendente || !lida) && referenceId >= 0
     }
 
     private fun NotificacaoConviteUi.isInviteAlreadyHandled(): Boolean {
@@ -140,6 +146,7 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
         private const val TIPO_CONVITE = "CONTATO_SOLICITACAO"
         private const val TIPO_RESPOSTA = "CONTATO_SOLICITACAO_RESPOSTA"
         private const val CONTACT_CATEGORY = "CONTATO"
+        private const val CONTACT_KEYWORD = "CONTATO"
 
         private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         private val isRunning = AtomicBoolean(false)

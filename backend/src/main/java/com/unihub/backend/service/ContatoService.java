@@ -138,6 +138,47 @@ public class ContatoService {
         return salvo;
     }
 
+     public void processarConvitesPendentesParaUsuario(Usuario usuario) {
+        if (usuario == null) {
+            return;
+        }
+
+        Long usuarioId = usuario.getId();
+        String email = Optional.ofNullable(usuario.getEmail())
+                .map(String::trim)
+                .orElse("");
+
+        if (usuarioId == null || email.isEmpty()) {
+            return;
+        }
+
+        List<Contato> convitesPendentes = repository.findByEmailIgnoreCaseAndPendenteTrue(email);
+        if (convitesPendentes.isEmpty()) {
+            return;
+        }
+
+        Map<Long, Usuario> donosConvite = new HashMap<>();
+
+        for (Contato convite : convitesPendentes) {
+            convite.setIdContato(usuarioId);
+            convite.setNome(usuario.getNomeUsuario());
+            convite.setEmail(email);
+
+            Long ownerId = convite.getOwnerId();
+            if (ownerId != null && !donosConvite.containsKey(ownerId)) {
+                usuarioRepository.findById(ownerId)
+                        .ifPresent(dono -> donosConvite.put(ownerId, dono));
+            }
+        }
+
+        repository.saveAll(convitesPendentes);
+
+        for (Contato convite : convitesPendentes) {
+            Usuario remetente = convite.getOwnerId() != null ? donosConvite.get(convite.getOwnerId()) : null;
+            criarOuAtualizarNotificacaoConvite(convite, usuario, remetente);
+        }
+    }
+    
     private Contato mapearConviteParaDono(Contato conviteOriginal, Usuario dono) {
         Contato resposta = new Contato();
         resposta.setId(conviteOriginal.getId());

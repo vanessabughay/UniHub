@@ -10,15 +10,16 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.InstituicaoRepository;
 import com.google.api.client.json.gson.GsonFactory;
 
 import com.unihub.backend.dto.LoginResponse;
 import com.unihub.backend.model.enums.AuthProvider;
+import com.unihub.backend.model.Contato;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
-import com.unihub.backend.repository.ContatoRepository;
-import com.unihub.backend.model.Contato;
+
 
 @Service
 public class GoogleAuthService {
@@ -28,20 +29,20 @@ public class GoogleAuthService {
 
     private final UsuarioRepository usuarioRepository;
     private final AutenticacaoService autenticacaoService;
-    private final ContatoRepository contatoRepository;
     private final GoogleCalendarCredentialService googleCalendarCredentialService;
     private final InstituicaoRepository instituicaoRepository;
+    private final ContatoService contatoService;
 
     public GoogleAuthService(UsuarioRepository usuarioRepository,
                              AutenticacaoService autenticacaoService,
-                             ContatoRepository contatoRepository,
                              GoogleCalendarCredentialService googleCalendarCredentialService,
-                             InstituicaoRepository instituicaoRepository) {
+                             InstituicaoRepository instituicaoRepository,
+                             ContatoService contatoService) {
         this.usuarioRepository = usuarioRepository;
         this.autenticacaoService = autenticacaoService;
-        this.contatoRepository = contatoRepository;
         this.googleCalendarCredentialService = googleCalendarCredentialService;
         this.instituicaoRepository = instituicaoRepository;
+        this.contatoService = contatoService;
     }
 
     public LoginResponse loginWithGoogle(String idTokenString) {
@@ -95,18 +96,7 @@ public class GoogleAuthService {
              Usuario salvo = usuarioRepository.save(user);
 
             // Atualiza convites pendentes direcionados a este e-mail, assim como no cadastro nativo
-            if (salvo.getEmail() != null) {
-                var convitesPendentes = contatoRepository
-                        .findByEmailIgnoreCaseAndPendenteTrue(salvo.getEmail());
-                if (!convitesPendentes.isEmpty()) {
-                    for (Contato convite : convitesPendentes) {
-                        convite.setIdContato(salvo.getId());
-                        convite.setNome(salvo.getNomeUsuario());
-                        convite.setEmail(salvo.getEmail());
-                    }
-                    contatoRepository.saveAll(convitesPendentes);
-                }
-            }
+            contatoService.processarConvitesPendentesParaUsuario(salvo);
 
             // gera jwt
             // Se seu AutenticacaoService gerar token por id:

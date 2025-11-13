@@ -69,15 +69,28 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val normalizedType = type?.takeIf { it.isNotBlank() }
         val normalizedCategory = category?.takeIf { it.isNotBlank() }
         val metadataPayload = metadata?.takeIf { it.isNotEmpty() }
+        val isContactCategory = normalizedCategory?.equals(CONTACT_CATEGORY, ignoreCase = true) == true
+        val isContactType = normalizedType?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
+                normalizedType?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
 
         refreshUserContext()
 
         synchronized(lock) {
             val activeUserId = currentUserId
             val existingEntry = when {
-                referenceId != null && normalizedType != null -> {
-                    _historyFlow.value.firstOrNull {
-                        it.referenceId == referenceId && it.type == normalizedType
+                referenceId != null && (normalizedType != null || normalizedCategory != null) -> {
+                    _historyFlow.value.firstOrNull { entry ->
+                        if (entry.referenceId != referenceId) return@firstOrNull false
+
+                        val entryIsContact = entry.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true ||
+                                entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
+                                entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+
+                        if (isContactCategory || isContactType || entryIsContact) {
+                            entryIsContact || isContactCategory || isContactType
+                        } else {
+                            normalizedType != null && entry.type?.equals(normalizedType, ignoreCase = true) == true
+                        }
                     }
                 }
                 referenceId != null -> {
@@ -99,7 +112,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
             val resolvedReferenceId = referenceId ?: existingEntry?.referenceId
             val resolvedType = normalizedType ?: existingEntry?.type
-            val resolvedCategory = normalizedCategory ?: existingEntry?.category
+            val resolvedCategory = when {
+                isContactCategory -> CONTACT_CATEGORY
+                existingEntry?.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true && isContactType -> CONTACT_CATEGORY
+                else -> normalizedCategory ?: existingEntry?.category
+            }
             val resolvedPending = when {
                 resolvedReferenceId != null -> hasPendingInteraction
                 existingEntry != null -> existingEntry.hasPendingInteraction
