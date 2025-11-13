@@ -117,16 +117,27 @@ class ContatoNotificationManager(context: Context) {
         val message = notification.mensagem
         val referenceId = notification.referenciaId ?: notification.id
 
-        historyRepository.logNotification(
-            title = title,
-            message = message,
-            timestampMillis = notification.historyTimestampMillis(),
-            type = notification.tipo,
-            category = CONTACT_CATEGORY,
-            referenceId = referenceId,
-            hasPendingInteraction = false,
-            syncWithBackend = false,
-        )
+        val timestamp = notification.historyTimestampMillis()
+        if (notification.tipo == TIPO_RESPOSTA) {
+            historyRepository.updateContactNotification(
+                referenceId = referenceId,
+                title = title,
+                message = message,
+                timestampMillis = timestamp,
+                type = TIPO_RESPOSTA
+            )
+        } else {
+            historyRepository.logNotification(
+                title = title,
+                message = message,
+                timestampMillis = timestamp,
+                type = notification.tipo,
+                category = CONTACT_CATEGORY,
+                referenceId = referenceId,
+                hasPendingInteraction = false,
+                syncWithBackend = false,
+            )
+        }
 
         if (notification.tipo == TIPO_CONVITE && notification.lida) return
         if (!hasPostNotificationsPermission()) return

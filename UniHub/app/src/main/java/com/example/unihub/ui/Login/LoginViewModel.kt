@@ -17,10 +17,12 @@ open class AuthViewModel(
     open var isLoading by mutableStateOf(false)
     open var errorMessage by mutableStateOf<String?>(null)
     open var success by mutableStateOf(false)
+    open var hasInstitution by mutableStateOf<Boolean?>(null)
 
     open fun loginUser(context: Context) {
         errorMessage = null
         success = false
+        hasInstitution = null
 
         val cleanEmail = email.trim().lowercase()
         val cleanPassword = password.trim()
@@ -50,8 +52,9 @@ open class AuthViewModel(
                 context = context,
                 email = cleanEmail,
                 password = cleanPassword,
-                onSuccess = {
+                onSuccess = { possuiInstituicao ->
                     isLoading = false
+                    hasInstitution = possuiInstituicao
                     success = true
                 },
                 onError = { error ->
@@ -66,13 +69,15 @@ open class AuthViewModel(
         errorMessage = null
         success = false
         isLoading = true
+        hasInstitution = null
 
         viewModelScope.launch {
             repository.loginWithGoogle(
                 context = context,
                 idToken = idToken,
-                onSuccess = {
+                onSuccess = { possuiInstituicao ->
                     isLoading = false
+                    hasInstitution = possuiInstituicao
                     success = true
                 },
                 onError = { error ->

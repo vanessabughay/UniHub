@@ -33,6 +33,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import androidx.compose.runtime.remember
 import com.example.unihub.data.repository.InstituicaoRepositoryProvider
+import com.example.unihub.data.config.TokenManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -54,11 +55,13 @@ fun LoginScreen(
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
             Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
-            val instituicao = withContext(Dispatchers.IO) {
-                runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
+            val possuiInstituicao = viewModel.hasInstitution ?: withContext(Dispatchers.IO) {
+                val inst = runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
+                TokenManager.updateHasInstitution(context, inst != null)
+                inst != null
             }
 
-            if (instituicao == null) {
+            if (!possuiInstituicao) {
                 val mensagemObrigatoria = context.getString(R.string.instituicao_obrigatoria_message)
                 navController.navigate(
                     Screen.ManterInstituicao.createRoute(
@@ -79,6 +82,7 @@ fun LoginScreen(
                 }
             }
             viewModel.success = false
+            viewModel.hasInstitution = possuiInstituicao
         }
     }
 
@@ -245,7 +249,9 @@ private fun Preview_LoginScreen() {
         override var isLoading: Boolean = false
         override var errorMessage: String? = null
         override var success: Boolean = false
+        override var hasInstitution: Boolean? = true
         override fun loginUser(context: Context) { /* no-op */ }
+        override fun loginWithGoogle(context: Context, idToken: String) { /* no-op */ }
     }
 
     MaterialTheme {

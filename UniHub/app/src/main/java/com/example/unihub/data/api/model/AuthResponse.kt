@@ -6,4 +6,6 @@ data class AuthResponse(
     val email: String? = null,
     val usuarioId: Long? = null,
     val googleCalendarLinked: Boolean = false,
+    val hasInstitution: Boolean = false,
+
 )

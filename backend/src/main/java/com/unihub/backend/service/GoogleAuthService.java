@@ -10,6 +10,7 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.unihub.backend.repository.InstituicaoRepository;
 import com.google.api.client.json.gson.GsonFactory;
 
 import com.unihub.backend.dto.LoginResponse;
@@ -29,15 +30,18 @@ public class GoogleAuthService {
     private final AutenticacaoService autenticacaoService;
     private final ContatoRepository contatoRepository;
     private final GoogleCalendarCredentialService googleCalendarCredentialService;
+    private final InstituicaoRepository instituicaoRepository;
 
     public GoogleAuthService(UsuarioRepository usuarioRepository,
                              AutenticacaoService autenticacaoService,
                              ContatoRepository contatoRepository,
-                             GoogleCalendarCredentialService googleCalendarCredentialService) {
+                             GoogleCalendarCredentialService googleCalendarCredentialService,
+                             InstituicaoRepository instituicaoRepository) {
         this.usuarioRepository = usuarioRepository;
         this.autenticacaoService = autenticacaoService;
         this.contatoRepository = contatoRepository;
         this.googleCalendarCredentialService = googleCalendarCredentialService;
+        this.instituicaoRepository = instituicaoRepository;
     }
 
     public LoginResponse loginWithGoogle(String idTokenString) {
@@ -65,7 +69,7 @@ public class GoogleAuthService {
             String sub = payload.getSubject(); // providerId estável do Google
 
             // Upsert por e-mail
-Usuario user = email == null ? null : usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
+            Usuario user = email == null ? null : usuarioRepository.findByEmailIgnoreCase(email).orElse(null);
             if (user == null) {
                 user = new Usuario();
                 user.setEmail(email);
@@ -109,7 +113,8 @@ Usuario user = email == null ? null : usuarioRepository.findByEmailIgnoreCase(em
             String token = autenticacaoService.gerarToken(salvo.getId());
 
             boolean calendarLinked = googleCalendarCredentialService.isLinked(salvo.getId());
-            return new LoginResponse(token, salvo.getNomeUsuario(), salvo.getEmail(), salvo.getId(), calendarLinked);
+            boolean hasInstitution = !instituicaoRepository.findByUsuarioIdOrderByNomeAsc(salvo.getId()).isEmpty();
+            return new LoginResponse(token, salvo.getNomeUsuario(), salvo.getEmail(), salvo.getId(), calendarLinked, hasInstitution);
         } catch (Exception e) {
             throw new RuntimeException("Falha ao validar token do Google: " + e.getMessage(), e);
         }

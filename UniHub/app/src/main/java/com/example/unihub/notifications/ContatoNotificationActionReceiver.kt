@@ -49,15 +49,12 @@ class ContatoNotificationActionReceiver : BroadcastReceiver() {
                 }?.title ?: appContext.getString(R.string.contact_notification_history_title)
 
                 messageRes?.let { resId ->
-                    historyRepository.logNotification(
+                    historyRepository.updateContactNotification(
+                        referenceId = referenceId,
                         title = title,
                         message = appContext.getString(resId),
                         timestampMillis = System.currentTimeMillis(),
                         type = ContatoNotificationManager.TIPO_RESPOSTA,
-                        category = CONTACT_CATEGORY,
-                        referenceId = referenceId,
-                        hasPendingInteraction = false,
-                        syncWithBackend = false,
                     )
                 }
 

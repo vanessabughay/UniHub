@@ -3,6 +3,7 @@ package com.example.unihub.data.repository
 import android.os.Build
 import android.content.Context
 import androidx.annotation.RequiresExtension
+import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Instituicao
 
 interface _instituicaobackend {
@@ -15,6 +16,8 @@ class InstituicaoRepository(
     private val backend: _instituicaobackend,
     context: Context
 ) {
+
+    private val appContext = context.applicationContext
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun buscarInstituicoes(query: String): List<Instituicao> {
@@ -31,11 +34,14 @@ class InstituicaoRepository(
             backend.addInstituicaoApi(instituicao)
         }
 
+        TokenManager.updateHasInstitution(appContext, true)
     }
 
     suspend fun instituicaoUsuario(): Instituicao? {
         return try {
-            backend.buscarInstituicoesApi("").firstOrNull()
+            backend.buscarInstituicoesApi("").firstOrNull().also { inst ->
+                TokenManager.updateHasInstitution(appContext, inst != null)
+            }
         } catch (_: Exception) {
             null
         }

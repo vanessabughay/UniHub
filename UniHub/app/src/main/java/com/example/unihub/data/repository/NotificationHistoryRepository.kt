@@ -227,6 +227,54 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+    fun updateContactNotification(
+        referenceId: Long,
+        title: String,
+        message: String,
+        timestampMillis: Long,
+        type: String
+    ) {
+        refreshUserContext()
+        synchronized(lock) {
+            val currentHistory = _historyFlow.value.toMutableList()
+            val index = currentHistory.indexOfFirst { entry ->
+                entry.referenceId == referenceId && (
+                        entry.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true ||
+                                entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
+                                entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+                        )
+            }
+
+            val existingEntry = currentHistory.getOrNull(index)
+            val entryId = existingEntry?.id ?: lastId.incrementAndGet()
+            val metadataJson = existingEntry?.metadataJson
+
+            val updatedEntry = NotificationEntry(
+                id = entryId,
+                title = title,
+                message = message,
+                timestampMillis = timestampMillis,
+                type = type,
+                category = CONTACT_CATEGORY,
+                referenceId = referenceId,
+                hasPendingInteraction = false,
+                metadataJson = metadataJson
+            )
+
+            if (index >= 0) {
+                currentHistory[index] = updatedEntry
+            } else {
+                currentHistory.add(updatedEntry)
+            }
+
+            val updatedHistory = currentHistory
+                .sortedByDescending { it.timestampMillis }
+                .take(MAX_ENTRIES)
+
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory, currentUserId)
+        }
+    }
 
     fun clear() {
         refreshUserContext()

@@ -160,7 +160,9 @@ class   ManterContaViewModel(
                                 value = TokenManager.token ?: "",
                                 nome = nome,
                                 email = email,
-                                usuarioId = TokenManager.usuarioId
+                                usuarioId = TokenManager.usuarioId,
+                                calendarLinked = TokenManager.googleCalendarLinked,
+                                hasInstitution = TokenManager.hasInstitution
                             )
                             nomeOriginal = nome
                             emailOriginal = email

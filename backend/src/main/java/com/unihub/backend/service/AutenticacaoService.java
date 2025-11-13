@@ -5,6 +5,7 @@ import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import com.unihub.backend.repository.InstituicaoRepository;
 import com.unihub.backend.dto.LoginResponse;
 import com.unihub.backend.model.Contato;
 import com.unihub.backend.repository.ContatoRepository;
@@ -21,8 +22,11 @@ public class AutenticacaoService {
     @Autowired
     private UsuarioRepository repository;
 
-     @Autowired
+    @Autowired
     private ContatoRepository contatoRepository;
+
+    @Autowired
+    private InstituicaoRepository instituicaoRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -73,7 +77,8 @@ public class AutenticacaoService {
             Usuario usuario = usuarioOpt.get();
             String token = gerarToken(usuario.getId()); // <- usa o novo método
             boolean calendarLinked = googleCalendarCredentialService.isLinked(usuario.getId());
-            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getEmail(), usuario.getId(), calendarLinked);
+            boolean hasInstitution = !instituicaoRepository.findByUsuarioIdOrderByNomeAsc(usuario.getId()).isEmpty();
+            return new LoginResponse(token, usuario.getNomeUsuario(), usuario.getEmail(), usuario.getId(), calendarLinked, hasInstitution);
         }
         return null;
     }

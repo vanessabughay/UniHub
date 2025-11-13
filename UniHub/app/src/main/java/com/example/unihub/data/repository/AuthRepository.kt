@@ -56,7 +56,7 @@ class AuthRepository(
         context: Context,
         email: String,
         password: String,
-        onSuccess: () -> Unit,
+        onSuccess: (Boolean) -> Unit,
         onError: (String) -> Unit
     ) {
         withContext(Dispatchers.IO) {
@@ -73,11 +73,12 @@ class AuthRepository(
                             nome = authResponse.nomeUsuario,
                             email = authResponse.email ?: email,
                             usuarioId = authResponse.usuarioId,
-                            calendarLinked = authResponse.googleCalendarLinked
+                            calendarLinked = authResponse.googleCalendarLinked,
+                            hasInstitution = authResponse.hasInstitution
                         )
                         CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
                         ContatoNotificationSynchronizer.triggerImmediate(context)
-                        withContext(Dispatchers.Main) { onSuccess() }
+                        withContext(Dispatchers.Main) { onSuccess(authResponse.hasInstitution) }
                     } else {
                         withContext(Dispatchers.Main) {
                             onError("Token não encontrado na resposta.")
@@ -102,29 +103,40 @@ class AuthRepository(
     suspend fun loginWithGoogle(
         context: Context,
         idToken: String,
-        onSuccess: () -> Unit,
+        onSuccess: (Boolean) -> Unit,
         onError: (String) -> Unit
     ) {
-        try {
-            val resp = api.loginWithGoogle(GoogleLoginRequest(idToken))
-            if (resp.isSuccessful) {
-                val body = resp.body()
-                if (body != null) {
-                    TokenManager.saveToken(
-                        context,
-                        value = body.token,
-                        nome = body.nomeUsuario,
-                        email = body.email,
-                        usuarioId = body.usuarioId,
-                        calendarLinked = body.googleCalendarLinked
-                    )
-                    CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
-                    ContatoNotificationSynchronizer.triggerImmediate(context)
-                    onSuccess()
-                } else onError("Resposta vazia do servidor")
-            } else onError("Falha no login Google: ${resp.code()}")
-        } catch (e: Exception) {
-            onError("Erro de rede: ${e.message}")
+        withContext(Dispatchers.IO) {
+            try {
+                val resp = api.loginWithGoogle(GoogleLoginRequest(idToken))
+                if (resp.isSuccessful) {
+                    val body = resp.body()
+                    if (body != null) {
+                        TokenManager.saveToken(
+                            context,
+                            value = body.token,
+                            nome = body.nomeUsuario,
+                            email = body.email,
+                            usuarioId = body.usuarioId,
+                            calendarLinked = body.googleCalendarLinked,
+                            hasInstitution = body.hasInstitution
+                        )
+                        CompartilhamentoNotificationSynchronizer.triggerImmediate(context)
+                        ContatoNotificationSynchronizer.triggerImmediate(context)
+                        withContext(Dispatchers.Main) { onSuccess(body.hasInstitution) }
+                    } else {
+                        withContext(Dispatchers.Main) { onError("Resposta vazia do servidor") }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        onError("Falha no login Google: ${resp.code()}")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    onError("Erro de rede: ${e.message}")
+                }
+            }
         }
     }
 
@@ -155,7 +167,8 @@ class AuthRepository(
                         nome = name,
                         email = email,
                         usuarioId = TokenManager.usuarioId,
-                        calendarLinked = TokenManager.googleCalendarLinked
+                        calendarLinked = TokenManager.googleCalendarLinked,
+                        hasInstitution = TokenManager.hasInstitution
 
                     )
                     withContext(Dispatchers.Main) { onSuccess() }
