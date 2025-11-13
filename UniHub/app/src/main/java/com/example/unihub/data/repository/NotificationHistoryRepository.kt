@@ -155,6 +155,42 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+    fun pruneShareNotifications(validReferences: Set<Long>) {
+        pruneCategoryEntries(SHARE_CATEGORY, validReferences)
+    }
+
+    fun pruneContactNotifications(validReferences: Set<Long>) {
+        pruneCategoryEntries(CONTACT_CATEGORY, validReferences)
+    }
+
+    private fun pruneCategoryEntries(category: String, validReferences: Set<Long>) {
+        synchronized(lock) {
+            val updatedHistory = _historyFlow.value.filter { entry ->
+                val matchesCategory = entry.category?.equals(category, ignoreCase = true) == true
+                val matchesType = when (category) {
+                    SHARE_CATEGORY -> entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true
+                            || entry.type?.equals(SHARE_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+                    CONTACT_CATEGORY -> entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true
+                            || entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+                    else -> false
+                }
+
+                if (matchesCategory || matchesType) {
+                    val referenceId = entry.referenceId
+                    referenceId != null && validReferences.contains(referenceId)
+                } else {
+                    true
+                }
+            }
+
+            if (updatedHistory.size != _historyFlow.value.size) {
+                _historyFlow.value = updatedHistory
+                saveEntries(updatedHistory)
+            }
+        }
+    }
+
+
     fun markContactInviteHandled(inviteId: Long) {
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
@@ -292,9 +328,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_CONTACT_ACTION_PENDING = "contact_action_pending"
         private const val JSON_PENDING_INTERACTION = "pending_interaction"
         private const val JSON_METADATA = "metadata"
+        private const val SHARE_INVITE_TYPE_RESPONSE = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
         private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
         private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
         private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
+        private const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
         private const val CONTACT_CATEGORY = "CONTATO"
 
         @Volatile

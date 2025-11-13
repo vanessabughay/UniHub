@@ -31,6 +31,10 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
     }
 
     fun synchronize(notifications: List<NotificacaoConviteUi>) {
+        val validReferences = notifications
+            .mapNotNull { it.historyReferenceId() }
+            .toSet()
+        historyRepository.pruneShareNotifications(validReferences)
         // 1) Marca como tratados todos os convites já lidos
         notifications
             .filter { it.isInviteAlreadyHandled() }
@@ -97,6 +101,9 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
             .apply()
     }
 
+    private fun NotificacaoConviteUi.historyReferenceId(): Long? {
+        return referenciaId ?: conviteId ?: id
+    }
     private fun createBackend(): CompartilhamentoBackend = ApiCompartilhamentoBackend()
 
     private fun NotificacaoResponse.toUi(): NotificacaoConviteUi = NotificacaoConviteUi(

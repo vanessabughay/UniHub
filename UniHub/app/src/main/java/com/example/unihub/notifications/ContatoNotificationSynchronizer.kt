@@ -32,6 +32,11 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
     fun synchronize(notifications: List<NotificacaoConviteUi>) {
         val contactNotifications = notifications.filter { it.isContactNotification() }
 
+        val validReferences = contactNotifications
+            .mapNotNull { it.historyReferenceId() }
+            .toSet()
+        historyRepository.pruneContactNotifications(validReferences)
+
         val handledInviteIds = contactNotifications
             .filter { it.isInviteAlreadyHandled() }
             .mapNotNull { it.referenciaId }
@@ -92,6 +97,10 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
         preferences.edit()
             .putStringSet(KEY_ACTIVE_INVITES, ids.map { it.toString() }.toSet())
             .apply()
+    }
+
+    private fun NotificacaoConviteUi.historyReferenceId(): Long? {
+        return referenciaId ?: conviteId ?: id
     }
 
     private fun NotificacaoResponse.toUi(): NotificacaoConviteUi = NotificacaoConviteUi(
