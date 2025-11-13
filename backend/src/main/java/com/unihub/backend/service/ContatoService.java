@@ -15,6 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,6 +41,7 @@ public class ContatoService {
     private static final String NOTIFICACAO_CATEGORIA = "CONTATO";
     private static final String NOTIFICACAO_TITULO_CONVITE = "Solicitação de contato";
     private static final String NOTIFICACAO_TITULO_RESPOSTA = "Atualização de contato";
+    private static final ZoneId ZONA_BRASIL = ZoneId.of("America/Sao_Paulo");
 
      @Autowired
     private InvitationEmailService invitationEmailService;
@@ -86,12 +88,12 @@ public class ContatoService {
         if (contato.getId() == null) {
             contato.setIdContato(null);
             if (contato.getDataSolicitacao() == null) {
-                contato.setDataSolicitacao(LocalDateTime.now());
+                contato.setDataSolicitacao(agora());
             }
             if (Boolean.TRUE.equals(contato.getPendente())) {
                 contato.setDataConfirmacao(null);
             } else if (contato.getDataConfirmacao() == null) {
-                contato.setDataConfirmacao(LocalDateTime.now());
+                contato.setDataSolicitacao(agora());
             }
             } else {
             repository.findById(contato.getId())
@@ -194,7 +196,7 @@ public class ContatoService {
         }
         convite.setEmail(usuarioAtual.getEmail());
         convite.setIdContato(usuarioAtual.getId());
-        convite.setDataConfirmacao(LocalDateTime.now());
+        convite.setDataConfirmacao(agora());
         repository.save(convite);
 
       
@@ -215,9 +217,9 @@ public class ContatoService {
                     novoContato.setEmail(emailDono);
                     novoContato.setPendente(false);
                     novoContato.setIdContato(dono.getId());
-                    LocalDateTime agora = LocalDateTime.now();
-                    novoContato.setDataSolicitacao(agora);
-                    novoContato.setDataConfirmacao(agora);
+                    LocalDateTime momentoAtual = agora();
+                    novoContato.setDataSolicitacao(momentoAtual);
+                    novoContato.setDataConfirmacao(momentoAtual);
                     repository.save(novoContato);
                 }
             }
@@ -309,11 +311,11 @@ private void criarOuAtualizarNotificacaoConvite(Contato convite, Usuario destina
         notificacao.setInteracaoPendente(true);
         notificacao.setLida(false);
         notificacao.setConvite(null);
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime momentoAtual = agora();
         if (nova) {
-            notificacao.setCriadaEm(agora);
+            notificacao.setCriadaEm(momentoAtual);
         }
-        notificacao.setAtualizadaEm(agora);
+        notificacao.setAtualizadaEm(momentoAtual);
         notificacaoRepository.save(notificacao);
     }
 
@@ -343,7 +345,7 @@ private void criarOuAtualizarNotificacaoConvite(Contato convite, Usuario destina
                     notificacao.setTitulo(NOTIFICACAO_TITULO_CONVITE);
                     notificacao.setLida(true);
                     notificacao.setInteracaoPendente(false);
-                    notificacao.setAtualizadaEm(LocalDateTime.now());
+                    notificacao.setAtualizadaEm(agora());
                     notificacaoRepository.save(notificacao);
                 });
     }
@@ -380,12 +382,12 @@ private void criarOuAtualizarNotificacaoConvite(Contato convite, Usuario destina
         notificacao.setReferenciaId(referenciaId);
         notificacao.setInteracaoPendente(false);
         notificacao.setConvite(null);
-        LocalDateTime agora = LocalDateTime.now();
+         LocalDateTime momentoAtual = agora();
         if (nova) {
-            notificacao.setCriadaEm(agora);
+            notificacao.setCriadaEm(momentoAtual);
             notificacao.setLida(false);
         }
-        notificacao.setAtualizadaEm(agora);
+        notificacao.setAtualizadaEm(momentoAtual);
         notificacaoRepository.save(notificacao);
     }
 
@@ -402,5 +404,9 @@ private void criarOuAtualizarNotificacaoConvite(Contato convite, Usuario destina
             return email;
         }
         return fallbackPadrao;
+    }
+
+    private LocalDateTime agora() {
+        return LocalDateTime.now(ZONA_BRASIL);
     }
 }

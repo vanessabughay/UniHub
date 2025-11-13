@@ -24,6 +24,7 @@ class ContatoNotificationManager(context: Context) {
     private val appContext = context.applicationContext
     private val notificationManager = NotificationManagerCompat.from(appContext)
     private val historyRepository = NotificationHistoryRepository.getInstance(appContext)
+    private val notificationZone: ZoneId = ZoneId.of("America/Sao_Paulo")
 
     private fun hasPostNotificationsPermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -212,7 +213,7 @@ class ContatoNotificationManager(context: Context) {
 
         return runCatching {
             LocalDateTime.parse(isoString)
-                .atZone(ZoneId.systemDefault())
+                .atZone(notificationZone)
                 .toInstant()
                 .toEpochMilli()
         }.getOrElse { System.currentTimeMillis() }

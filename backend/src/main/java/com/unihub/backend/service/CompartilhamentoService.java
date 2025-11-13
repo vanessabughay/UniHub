@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,6 +26,7 @@ public class CompartilhamentoService {
     private static final String TIPO_CONVITE = "DISCIPLINA_COMPARTILHAMENTO";
     private static final String TIPO_RESPOSTA = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA";
     private static final String CATEGORIA_COMPARTILHAMENTO = "COMPARTILHAMENTO";
+    private static final ZoneId ZONA_BRASIL = ZoneId.of("America/Sao_Paulo");
 
     private final ConviteCompartilhamentoRepository conviteRepository;
     private final DisciplinaRepository disciplinaRepository;
@@ -78,7 +80,7 @@ public class CompartilhamentoService {
         convite.setDestinatario(destinatario);
         convite.setMensagem(request.getMensagem());
         convite.setStatus(StatusConviteCompartilhamento.PENDENTE);
-        convite.setCriadoEm(LocalDateTime.now());
+        convite.setCriadoEm(agora());
         conviteRepository.save(convite);
 
         String mensagem = String.format("%s quer compartilhar a disciplina %s",
@@ -112,7 +114,7 @@ public class CompartilhamentoService {
         disciplinaRepository.save(disciplinaClonada);
 
         convite.setStatus(StatusConviteCompartilhamento.ACEITO);
-        convite.setRespondidoEm(LocalDateTime.now());
+        convite.setCriadoEm(agora());
         conviteRepository.save(convite);
 
         marcarNotificacoesComoLidas(convite.getId(), usuarioId);
@@ -138,7 +140,7 @@ public class CompartilhamentoService {
         }
 
         convite.setStatus(StatusConviteCompartilhamento.RECUSADO);
-        convite.setRespondidoEm(LocalDateTime.now());
+        convite.setRespondidoEm(agora());
         conviteRepository.save(convite);
 
         marcarNotificacoesComoLidas(convite.getId(), usuarioId);
@@ -208,11 +210,11 @@ String nomeContato = contato.getNome();
         if (notificacoes.isEmpty()) {
             return;
         }
-        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime momentoAtual = agora();
         notificacoes.forEach(notificacao -> {
             notificacao.setLida(true);
             notificacao.setInteracaoPendente(false);
-            notificacao.setAtualizadaEm(agora);
+            notificacao.setAtualizadaEm(momentoAtual);
         });
         notificacaoRepository.saveAll(notificacoes);
     }
@@ -231,14 +233,14 @@ String nomeContato = contato.getNome();
                             CATEGORIA_COMPARTILHAMENTO, referenciaId);
             if (existente.isPresent()) {
                 Notificacao notificacaoExistente = existente.get();
-                notificacaoExistente.setTitulo(definirTituloNotificacao(tipo));
+                notificacaoExistente.setTitulo(definirTituloNotificacao(tipo, convite));
                 notificacaoExistente.setMensagem(mensagem);
                 boolean pendente = TIPO_CONVITE.equals(tipo) && !notificacaoExistente.isLida();
                 notificacaoExistente.setInteracaoPendente(pendente);
                 if (pendente) {
                     notificacaoExistente.setLida(false);
                 }
-                notificacaoExistente.setAtualizadaEm(LocalDateTime.now());
+                notificacaoExistente.setAtualizadaEm(agora());
                 notificacaoRepository.save(notificacaoExistente);
                 return;
             }
@@ -247,28 +249,60 @@ String nomeContato = contato.getNome();
         Notificacao notificacao = new Notificacao();
         notificacao.setUsuario(usuario);
         notificacao.setConvite(convite);
-        notificacao.setTitulo(definirTituloNotificacao(tipo));
+        notificacao.setTitulo(definirTituloNotificacao(tipo, convite));
         notificacao.setMensagem(mensagem);
         notificacao.setTipo(tipo);
         notificacao.setCategoria(CATEGORIA_COMPARTILHAMENTO);
         notificacao.setReferenciaId(referenciaId);
         notificacao.setInteracaoPendente(TIPO_CONVITE.equals(tipo));
-        notificacao.setCriadaEm(LocalDateTime.now());
-        notificacao.setAtualizadaEm(LocalDateTime.now());
+        LocalDateTime agoraNotificacao = agora();
+        notificacao.setCriadaEm(agoraNotificacao);
+        notificacao.setAtualizadaEm(agoraNotificacao);
         notificacao.setLida(false);
         notificacaoRepository.save(notificacao);
     }
 
-    private String definirTituloNotificacao(String tipo) {
+     private String definirTituloNotificacao(String tipo, ConviteCompartilhamento convite) {
+        String disciplinaNome = Optional.ofNullable(convite)
+                .map(ConviteCompartilhamento::getDisciplina)
+                .map(Disciplina::getNome)
+                .filter(nome -> nome != null && !nome.isBlank())
+                .orElse("sua disciplina");
         if (TIPO_CONVITE.equals(tipo)) {
-            return "Convite de compartilhamento";
+             String remetenteNome = resolverNomeUsuario(
+                    Optional.ofNullable(convite).map(ConviteCompartilhamento::getRemetente).orElse(null),
+                    "Um contato");
+            return String.format("%s compartilhou %s", remetenteNome, disciplinaNome);
         }
         if (TIPO_RESPOSTA.equals(tipo)) {
-            return "Resposta de compartilhamento";
+            String respondenteNome = resolverNomeUsuario(
+                    Optional.ofNullable(convite).map(ConviteCompartilhamento::getDestinatario).orElse(null),
+                    "Seu contato");
+            return String.format("%s respondeu sobre %s", respondenteNome, disciplinaNome);
         }
         return tipo;
     }
 
+
+    private String resolverNomeUsuario(Usuario usuario, String fallback) {
+        if (usuario == null) {
+            return fallback;
+        }
+        String nome = usuario.getNomeUsuario();
+        if (nome != null && !nome.isBlank()) {
+            return nome;
+        }
+        String email = usuario.getEmail();
+        if (email != null && !email.isBlank()) {
+            return email;
+        }
+        return fallback;
+    }
+
+    private LocalDateTime agora() {
+        return LocalDateTime.now(ZONA_BRASIL);
+    }
+    
     private Disciplina clonarDisciplina(Disciplina original, Usuario novoUsuario) {
         Disciplina copia = new Disciplina();
         copia.setCodigo(original.getCodigo());

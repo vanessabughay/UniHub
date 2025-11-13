@@ -56,7 +56,9 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
             notificationManager.showInviteNotification(invite)
         }
 
-        val otherNotifications = contactNotifications.filterNot { it.isPendingInvite() }
+        val otherNotifications = contactNotifications
+            .filterNot { it.isPendingInvite() }
+            .filter { it.tipo?.equals(TIPO_RESPOSTA, ignoreCase = true) == true }
         otherNotifications.forEach { notification ->
             notificationManager.showGenericNotification(notification)
         }

@@ -67,6 +67,7 @@ class HistoricoNotificacoesViewModel(
         "dd/MM/yyyy 'às' HH:mm",
         Locale("pt", "BR")
     )
+    private val historyZone: ZoneId = ZoneId.of("America/Sao_Paulo")
 
     private val appContext = application.applicationContext
     private val historyRepository = NotificationHistoryRepository.getInstance(appContext)
@@ -288,7 +289,7 @@ class HistoricoNotificacoesViewModel(
     }
     private fun formatTimestamp(timestampMillis: Long): String {
         val zonedDateTime = Instant.ofEpochMilli(timestampMillis)
-            .atZone(ZoneId.systemDefault())
+            .atZone(historyZone)
         return dateFormatter.format(zonedDateTime)
     }
 }

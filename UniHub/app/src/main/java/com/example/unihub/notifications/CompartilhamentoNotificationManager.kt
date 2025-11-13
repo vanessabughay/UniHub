@@ -24,6 +24,7 @@ class CompartilhamentoNotificationManager(context: Context) {
     private val appContext = context.applicationContext
     private val notificationManager = NotificationManagerCompat.from(appContext)
     private val historyRepository = NotificationHistoryRepository.getInstance(appContext)
+    private val notificationZone: ZoneId = ZoneId.of("America/Sao_Paulo")
 
     // =====================================================
     // Permissão / capacidade de notificar
@@ -240,7 +241,7 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         return runCatching {
             LocalDateTime.parse(isoString)
-                .atZone(ZoneId.systemDefault())
+                .atZone(notificationZone)
                 .toInstant()
                 .toEpochMilli()
         }.getOrElse { System.currentTimeMillis() }

@@ -22,6 +22,7 @@ import java.util.Optional;
 public class NotificacaoService {
 
     private static final String DEFAULT_TIPO = "APP_NOTIFICACAO";
+    private static final ZoneId ZONA_BRASIL = ZoneId.of("America/Sao_Paulo");
 
     private final NotificacaoRepository notificacaoRepository;
     private final UsuarioRepository usuarioRepository;
@@ -100,7 +101,7 @@ public class NotificacaoService {
             notificacao.setCriadaEm(criadaEm);
             notificacao.setLida(false);
         }
-        notificacao.setAtualizadaEm(LocalDateTime.now());
+        notificacao.setAtualizadaEm(agora());
 
         Notificacao salvo = notificacaoRepository.save(notificacao);
         return NotificacaoResponse.fromEntity(salvo);
@@ -108,13 +109,17 @@ public class NotificacaoService {
 
     private LocalDateTime converterTimestamp(Long timestamp) {
         if (timestamp == null || timestamp <= 0) {
-            return LocalDateTime.now();
+            return agora();
         }
         try {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneId.systemDefault());
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZONA_BRASIL);
         } catch (Exception ex) {
-            return LocalDateTime.now();
+            return agora();
         }
+    }
+    
+    private LocalDateTime agora() {
+        return LocalDateTime.now(ZONA_BRASIL);
     }
     
     private String serializeMetadata(java.util.Map<String, Object> metadata) {
