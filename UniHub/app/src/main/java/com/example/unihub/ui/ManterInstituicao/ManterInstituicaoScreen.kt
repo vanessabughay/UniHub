@@ -44,7 +44,6 @@ fun ManterInstituicaoScreen(
     frequencia: String = "",
     mensagemObrigatoria: String = "",
     bloquearSaida: Boolean = false,
-    onLogout: () -> Unit = {},
 
     viewModel: ManterInstituicaoViewModel = viewModel(factory = ManterInstituicaoViewModelFactory(LocalContext.current))) {
 
@@ -248,21 +247,8 @@ fun ManterInstituicaoScreen(
                 }
             }
         }
-        if (viewModel.deveMostrarBotaoLogout()) {
-            TextButton(
-                onClick = onLogout,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = "Sair",
-                    color = Color(0xFF243C5B),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
+
+
     }
     }
 

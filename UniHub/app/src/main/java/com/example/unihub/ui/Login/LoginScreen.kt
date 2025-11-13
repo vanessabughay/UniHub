@@ -55,11 +55,21 @@ fun LoginScreen(
     LaunchedEffect(viewModel.success) {
         if (viewModel.success) {
             Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
-            val possuiInstituicao = viewModel.hasInstitution ?: withContext(Dispatchers.IO) {
-                val inst = runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
-                TokenManager.updateHasInstitution(context, inst != null)
-                inst != null
+
+            val reportedHasInstitution = viewModel.hasInstitution
+            val previousHasInstitution = TokenManager.hasInstitution
+            val instituicaoRemota = withContext(Dispatchers.IO) {
+                runCatching { instituicaoRepository.instituicaoUsuario() }.getOrNull()
             }
+
+            val possuiInstituicao = when {
+                instituicaoRemota != null -> true
+                reportedHasInstitution == true -> true
+                previousHasInstitution -> true
+                else -> false
+            }
+            TokenManager.updateHasInstitution(context, possuiInstituicao)
+
 
             if (!possuiInstituicao) {
                 val mensagemObrigatoria = context.getString(R.string.instituicao_obrigatoria_message)

@@ -284,7 +284,8 @@ class MainActivity : ComponentActivity() {
                                 Screen.Register.route,
                                 Screen.TelaInicial.route,
                                 Screen.EsqueciSenha.route,
-                                Screen.RedefinirSenha.route.substringBefore("?")
+                                Screen.RedefinirSenha.route.substringBefore("?"),
+                                Screen.ManterInstituicao.route.substringBefore("?")
                             )
                         }
                         val currentMenuRoute =
@@ -470,18 +471,7 @@ class MainActivity : ComponentActivity() {
                                         media = mediaArg,
                                         frequencia = frequenciaArg,
                                         mensagemObrigatoria = mensagemArg,
-                                        bloquearSaida = forcarArg,
-                                        onLogout = {
-                                            TokenManager.clearToken(context)
-                                            val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
-                                            val client = GoogleSignIn.getClient(context, gso)
-                                            client.signOut().addOnCompleteListener {
-                                                navController.navigate(Screen.Login.route) {
-                                                    popUpTo(0) { inclusive = true }
-                                                    launchSingleTop = true
-                                                }
-                                            }
-                                        }
+                                        bloquearSaida = forcarArg
                                     )
                                 }
 

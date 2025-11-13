@@ -40,7 +40,11 @@ class InstituicaoRepository(
     suspend fun instituicaoUsuario(): Instituicao? {
         return try {
             backend.buscarInstituicoesApi("").firstOrNull().also { inst ->
-                TokenManager.updateHasInstitution(appContext, inst != null)
+                if (inst != null) {
+                    TokenManager.updateHasInstitution(appContext, true)
+                } else if (!TokenManager.hasInstitution) {
+                    TokenManager.updateHasInstitution(appContext, false)
+                }
             }
         } catch (_: Exception) {
             null
