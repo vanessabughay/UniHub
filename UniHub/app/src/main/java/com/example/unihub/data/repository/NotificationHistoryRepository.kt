@@ -119,8 +119,27 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 timestampMillis
             }
 
-            val metadataJson = metadataPayload?.let { serializeMetadata(it) }
-                ?: existingEntry?.metadataJson
+            val metadataJson = if (metadataPayload != null) {
+                val mergedMetadata = existingEntry?.metadataJson
+                    ?.let { deserializeMetadata(it) }
+                    ?: mutableMapOf()
+
+                metadataPayload.forEach { (key, value) ->
+                    if (value == null) {
+                        mergedMetadata.remove(key)
+                    } else {
+                        mergedMetadata[key] = value
+                    }
+                }
+
+                if (mergedMetadata.isEmpty()) {
+                    null
+                } else {
+                    serializeMetadata(mergedMetadata)
+                }
+            } else {
+                existingEntry?.metadataJson
+            }
 
             val resolvedReferenceId = referenceId ?: existingEntry?.referenceId
             val resolvedType = normalizedType ?: existingEntry?.type
@@ -582,9 +601,27 @@ class NotificationHistoryRepository private constructor(context: Context) {
     private fun serializeMetadata(metadata: Map<String, Any?>): String {
         val jsonObject = JSONObject()
         metadata.forEach { (key, value) ->
-            jsonObject.put(key, value)
+            if (value == null) {
+                jsonObject.put(key, JSONObject.NULL)
+            } else {
+                jsonObject.put(key, value)
+            }
         }
         return jsonObject.toString()
+    }
+
+    private fun deserializeMetadata(json: String): MutableMap<String, Any?> {
+        val result = mutableMapOf<String, Any?>()
+        runCatching {
+            val jsonObject = JSONObject(json)
+            val keys = jsonObject.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val value = jsonObject.opt(key)
+                result[key] = if (value == JSONObject.NULL) null else value
+            }
+        }
+        return result
     }
 
     private fun cancelAttendanceNotification(entry: NotificationEntry) {

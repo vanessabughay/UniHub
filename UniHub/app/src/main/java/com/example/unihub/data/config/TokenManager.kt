@@ -65,8 +65,16 @@ object TokenManager {
     ) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+        val persistedUserId = prefs.takeIf { it.contains(USER_ID_KEY) }
+            ?.getLong(USER_ID_KEY, -1L)
+            ?.takeIf { id -> id != -1L }
+
+        val resolvedUserId = usuarioId?.takeIf { it > 0 }
+            ?: this.usuarioId
+            ?: persistedUserId
+
         // Recupera se esse usuário já tinha instituição salva
-        val storedHasInstitution = usuarioId?.let { id ->
+        val storedHasInstitution = resolvedUserId?.let { id ->
             prefs.getBoolean(userInstitutionKey(id), false)
         } ?: false
 
@@ -76,7 +84,7 @@ object TokenManager {
         token = value
         nomeUsuario = nome
         emailUsuario = email
-        this.usuarioId = usuarioId
+        this.usuarioId = resolvedUserId
         googleCalendarLinked = calendarLinked
         this.hasInstitution = finalHasInstitution
 
@@ -88,10 +96,10 @@ object TokenManager {
         editor.putBoolean(CALENDAR_LINKED_KEY, googleCalendarLinked)
         editor.putBoolean(HAS_INSTITUTION_KEY, finalHasInstitution)
 
-        if (usuarioId != null) {
-            editor.putLong(USER_ID_KEY, usuarioId)
+        if (resolvedUserId != null) {
+            editor.putLong(USER_ID_KEY, resolvedUserId)
             if (finalHasInstitution) {
-                editor.putBoolean(userInstitutionKey(usuarioId), true)
+                editor.putBoolean(userInstitutionKey(resolvedUserId), true)
             }
         } else {
             editor.remove(USER_ID_KEY)

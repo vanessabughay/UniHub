@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoData
 import com.example.unihub.data.model.Ausencia
+import com.example.unihub.data.model.Disciplina
+import com.example.unihub.data.model.HorarioAula
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.unihub.data.repository.AusenciaRepository
@@ -38,15 +40,18 @@ import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.data.apiBackend.ApiCategoriaBackend
 import com.example.unihub.R
+import java.text.Normalizer
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlinx.coroutines.delay
 import com.example.unihub.components.formatDateToLocale
 import com.example.unihub.components.showLocalizedDatePicker
 import com.example.unihub.ui.Shared.ZeroInsets
+import org.json.JSONObject
 
 
 //cores
@@ -118,9 +123,10 @@ fun ManterAusenciaScreen(
         if (sucesso) {
             val discId = disciplina?.id ?: disciplinaId.toLongOrNull()
             if (discId != null) {
+                val occurrenceEpochDay = data.toEpochDay()
                 val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
                     discId,
-                    data.toEpochDay()
+                    occurrenceEpochDay
                 )
                 val locale = Locale("pt", "BR")
                 val title = disciplina?.nome
@@ -133,16 +139,42 @@ fun ManterAusenciaScreen(
                     formattedDate
                 )
 
+                val existingEntry = historyRepository.historyFlow.value.firstOrNull { entry ->
+                    entry.referenceId == referenceId && (
+                            entry.category?.equals(
+                                NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+                                ignoreCase = true
+                            ) == true ||
+                                    entry.type?.equals(
+                                        NotificationHistoryRepository.ATTENDANCE_TYPE,
+                                        ignoreCase = true
+                                    ) == true
+                            )
+                }
+                val existingMetadata = parseMetadataJson(existingEntry?.metadataJson)
+                val inicioFromHistory = existingMetadata?.get("inicio").asIntOrNull()
+                val diaFromHistory = existingMetadata?.get("dia") as? String
+                val inicio = inicioFromHistory ?: findClassStartForDate(disciplina, data)
+                val dia = diaFromHistory ?: findClassDayLabelForDate(disciplina, data)
+
+                val metadata = mutableMapOf<String, Any?>(
+                    "disciplinaId" to discId,
+                    "occurrenceEpochDay" to occurrenceEpochDay,
+                    "response" to "ABSENCE",
+                    "operation" to if (ausenciaId == null) "CREATE" else "UPDATE"
+                )
+                if (inicio != null) {
+                    metadata["inicio"] = inicio
+                }
+                if (!dia.isNullOrBlank()) {
+                    metadata["dia"] = dia
+                }
+
                 historyRepository.logAttendanceResponse(
                     referenceId = referenceId,
                     title = title,
                     message = message,
-                    metadata = mapOf(
-                        "disciplinaId" to discId,
-                        "occurrenceEpochDay" to data.toEpochDay(),
-                        "response" to "ABSENCE",
-                        "operation" to if (ausenciaId == null) "CREATE" else "UPDATE"
-                    ),
+                    metadata = metadata,
                     syncWithBackend = false
                 )
             }
@@ -329,6 +361,59 @@ fun ManterAusenciaScreen(
         }
     }
 }
+
+private fun parseMetadataJson(metadataJson: String?): Map<String, Any?>? {
+    if (metadataJson.isNullOrBlank()) return null
+    return runCatching {
+        val json = JSONObject(metadataJson)
+        buildMap {
+            val keys = json.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val value = json.opt(key)
+                put(key, if (value == JSONObject.NULL) null else value)
+            }
+        }
+    }.getOrNull()
+}
+
+private fun Any?.asIntOrNull(): Int? = when (this) {
+    is Number -> this.toInt()
+    is String -> this.toIntOrNull()
+    else -> null
+}
+
+private fun findClassStartForDate(disciplina: Disciplina?, date: LocalDate): Int? {
+    return findClassForDate(disciplina, date)?.horarioInicio
+}
+
+private fun findClassDayLabelForDate(disciplina: Disciplina?, date: LocalDate): String? {
+    return findClassForDate(disciplina, date)?.diaDaSemana
+}
+
+private fun findClassForDate(disciplina: Disciplina?, date: LocalDate): HorarioAula? {
+    val schedule = disciplina?.aulas ?: return null
+    val targetLabel = normalizeDayLabel(
+        date.dayOfWeek.getDisplayName(TextStyle.FULL, attendanceLocale)
+    )
+    if (targetLabel.isEmpty()) {
+        return null
+    }
+    return schedule.firstOrNull { horario ->
+        normalizeDayLabel(horario.diaDaSemana) == targetLabel
+    }
+}
+
+private fun normalizeDayLabel(label: String): String {
+    val trimmed = label.trim().lowercase(attendanceLocale)
+    val withoutDiacritics = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
+        .replace(combiningMarksRegex, "")
+    return withoutDiacritics.replace(nonLetterRegex, "")
+}
+
+private val combiningMarksRegex = "\\p{InCombiningDiacriticalMarks}+".toRegex()
+private val nonLetterRegex = "[^a-z]".toRegex()
+private val attendanceLocale = Locale("pt", "BR")
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Preview(showBackground = true)
