@@ -25,8 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.unihub.backend.dto.planejamento.TarefaDto; 
-import java.util.Collections;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.unihub.backend.dto.planejamento.TarefaDto;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -37,11 +38,14 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -66,6 +70,17 @@ public class QuadroPlanejamentoService {
     private TarefaComentarioRepository tarefaComentarioRepository;
     @Autowired
     private TarefaNotificacaoRepository tarefaNotificacaoRepository;
+    @Autowired
+    private NotificacaoRepository notificacaoRepository;
+    @Autowired
+    private NotificacaoConfiguracaoRepository notificacaoConfiguracaoRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private static final String NOTIFICACAO_TIPO = "APP_NOTIFICACAO";
+    private static final String NOTIFICACAO_CATEGORIA = "QUADRO_PLANEJAMENTO";
+    private static final String NOTIFICACAO_TITULO = "Quadro compartilhado";
+    private static final ZoneId ZONA_BRASIL = ZoneId.of("America/Sao_Paulo");
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
         String tituloNormalizado = titulo != null ? titulo.trim() : null;
@@ -111,7 +126,7 @@ public class QuadroPlanejamentoService {
             quadro.setDisciplina(disciplina);
         }
         if (dto.getContatoId() != null) {
-                        Contato contato = obterContatoDoUsuario(usuarioId, dto.getContatoId());
+                Contato contato = obterContatoDoUsuario(usuarioId, dto.getContatoId());
             quadro.setContato(contato);
         }
         if (dto.getGrupoId() != null) {
@@ -126,7 +141,10 @@ public class QuadroPlanejamentoService {
         }
         ajustarStatus(quadro, null); 
         
-        return repository.save(quadro);
+        QuadroPlanejamento salvo = repository.save(quadro);
+        Set<Long> novosParticipantes = extrairParticipantes(salvo);
+        notificarNovosParticipantes(salvo, novosParticipantes);
+        return salvo;
     }
 
     // atualizar atualizado
@@ -134,6 +152,7 @@ public class QuadroPlanejamentoService {
     public QuadroPlanejamento atualizar(Long id, QuadroPlanejamentoRequest dto, Long usuarioId) {
         QuadroPlanejamento existente = buscarPorId(id, usuarioId);
         QuadroStatus statusAnterior = existente.getStatus();
+        Set<Long> participantesAntes = extrairParticipantes(existente);
         
         // Validação da regra de negócio
         if (dto.getContatoId() != null && dto.getGrupoId() != null) {
@@ -174,7 +193,12 @@ public class QuadroPlanejamentoService {
         
         ajustarStatus(existente, statusAnterior);
 
-        return repository.save(existente);
+        QuadroPlanejamento salvo = repository.save(existente);
+        Set<Long> participantesDepois = extrairParticipantes(salvo);
+        participantesDepois.removeAll(participantesAntes);
+        notificarNovosParticipantes(salvo, participantesDepois);
+
+        return salvo;
     }
 
     @Transactional
@@ -751,5 +775,125 @@ public class QuadroPlanejamentoService {
                nomeQuadro,
                 receberNotificacoes
         );
+    }
+
+    
+    private Set<Long> extrairParticipantes(QuadroPlanejamento quadro) {
+        if (quadro == null) {
+            return Collections.emptySet();
+        }
+
+        Set<Long> participantes = new LinkedHashSet<>();
+
+        Contato contato = quadro.getContato();
+        adicionarParticipante(participantes, contato);
+
+        Grupo grupo = quadro.getGrupo();
+        if (grupo != null) {
+            if (grupo.getMembros() != null) {
+                grupo.getMembros().forEach(membro -> adicionarParticipante(participantes, membro));
+            }
+        }
+
+        Long donoQuadroId = quadro.getUsuario() != null ? quadro.getUsuario().getId() : null;
+        participantes.remove(donoQuadroId);
+
+        return participantes;
+    }
+
+    private void adicionarParticipante(Set<Long> participantes, Contato contato) {
+        if (contato == null) {
+            return;
+        }
+        Long participanteId = contato.getIdContato();
+        if (participanteId != null) {
+            participantes.add(participanteId);
+        }
+    }
+
+    private void notificarNovosParticipantes(QuadroPlanejamento quadro, Set<Long> novosParticipantes) {
+        if (quadro == null || novosParticipantes == null || novosParticipantes.isEmpty()) {
+            return;
+        }
+
+        Long referenciaId = quadro.getId();
+        if (referenciaId == null) {
+            return;
+        }
+
+        novosParticipantes.stream()
+                .filter(Objects::nonNull)
+                .filter(this::desejaReceberNotificacaoDeQuadro)
+                .map(usuarioRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(usuario -> registrarNotificacao(quadro, usuario));
+    }
+
+    private boolean desejaReceberNotificacaoDeQuadro(Long usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+        return notificacaoConfiguracaoRepository.findByUsuarioId(usuarioId)
+                .map(NotificacaoConfiguracao::isIncluirEmQuadro)
+                .orElse(true);
+    }
+
+    private void registrarNotificacao(QuadroPlanejamento quadro, Usuario usuario) {
+        Long quadroId = quadro.getId();
+        if (quadroId == null || usuario == null || usuario.getId() == null) {
+            return;
+        }
+
+        Notificacao notificacao = notificacaoRepository
+                .findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(usuario.getId(),
+                        NOTIFICACAO_TIPO, NOTIFICACAO_CATEGORIA, quadroId)
+                .orElseGet(Notificacao::new);
+
+        boolean nova = notificacao.getId() == null;
+        notificacao.setUsuario(usuario);
+        notificacao.setConvite(null);
+        notificacao.setTitulo(NOTIFICACAO_TITULO);
+        notificacao.setMensagem(montarMensagemQuadro(quadro));
+        notificacao.setTipo(NOTIFICACAO_TIPO);
+        notificacao.setCategoria(NOTIFICACAO_CATEGORIA);
+        notificacao.setReferenciaId(quadroId);
+        notificacao.setInteracaoPendente(false);
+        notificacao.setMetadataJson(gerarMetadataQuadro(quadro));
+        LocalDateTime agora = agora();
+        if (nova) {
+            notificacao.setCriadaEm(agora);
+            notificacao.setLida(false);
+        }
+        notificacao.setAtualizadaEm(agora);
+        notificacaoRepository.save(notificacao);
+    }
+
+    private String montarMensagemQuadro(QuadroPlanejamento quadro) {
+        String titulo = quadro.getTitulo();
+        if (titulo == null || titulo.isBlank()) {
+            return "Você foi adicionado a um quadro.";
+        }
+        return String.format("Você foi adicionado ao quadro \"%s\".", titulo);
+    }
+
+    private String gerarMetadataQuadro(QuadroPlanejamento quadro) {
+        if (objectMapper == null || quadro == null || quadro.getId() == null) {
+            return null;
+        }
+
+        Map<String, Object> metadata = Map.of(
+                "action", "OPEN_QUADRO",
+                "quadroId", quadro.getId()
+        );
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private LocalDateTime agora() {
+        return LocalDateTime.now(ZONA_BRASIL);
     }
 }
