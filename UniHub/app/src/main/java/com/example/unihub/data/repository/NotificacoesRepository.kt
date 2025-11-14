@@ -6,6 +6,7 @@ import com.example.unihub.data.api.NotificacoesApi
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.NotificacoesConfig
+import com.example.unihub.data.model.normalized
 import com.example.unihub.notifications.AttendanceNotificationScheduler
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.notifications.TaskNotificationScheduler
@@ -26,18 +27,20 @@ class NotificacoesRepository(
 
     suspend fun carregarConfig(): NotificacoesConfig {
         val (authHeader, usuarioId) = getAuthData()
-        return api.carregar(authHeader, usuarioId)
+        return api.carregar(authHeader, usuarioId).normalized()
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
-    suspend fun salvarConfig(config: NotificacoesConfig) {
+    suspend fun salvarConfig(config: NotificacoesConfig): NotificacoesConfig {
         val (authHeader, usuarioId) = getAuthData()
 
         // 1. Persiste a nova configuração no backend real
-        api.salvar(authHeader, usuarioId, config)
+        val payload = config.normalized()
+        val salvo = api.salvar(authHeader, usuarioId, payload).normalized()
 
         // 2. Re-agenda as notificações com base na nova configuração
-        reagendarTodasNotificacoes(config)
+        reagendarTodasNotificacoes(salvo)
+        return salvo
     }
 
     private fun getAuthData(): Pair<String, Long> {

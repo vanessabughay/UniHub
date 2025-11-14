@@ -23,3 +23,22 @@ data class NotificacoesConfig(
     val conviteContato: Boolean = true,
     val inclusoEmGrupo: Boolean = true
 )
+
+fun NotificacoesConfig.normalized(): NotificacoesConfig {
+    val periodicidadeNormalizada = avaliacoesConfig.periodicidade.toMutableMap()
+    Prioridade.values().forEach { prioridade ->
+        periodicidadeNormalizada.putIfAbsent(prioridade, Antecedencia.padrao)
+    }
+
+    return copy(
+        avaliacoesConfig = avaliacoesConfig.copy(
+            periodicidade = periodicidadeNormalizada.toMap()
+        )
+    )
+}
+
+fun NotificacoesConfig.deepCopy(): NotificacoesConfig = copy(
+    avaliacoesConfig = avaliacoesConfig.copy(
+        periodicidade = avaliacoesConfig.periodicidade.toMap()
+    )
+)

@@ -8,6 +8,8 @@ import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.AvaliacoesConfig
 import com.example.unihub.data.model.NotificacoesConfig
 import com.example.unihub.data.model.Prioridade
+import com.example.unihub.data.model.deepCopy
+import com.example.unihub.data.model.normalized
 import com.example.unihub.data.repository.NotificacoesRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,11 +42,13 @@ class NotificacoesViewModel(
     fun carregar() = viewModelScope.launch {
         _ui.value = _ui.value.copy(isLoading = true, error = null)
         try {
-            val config = repository.carregarConfig()
+            val config = repository.carregarConfig().normalized()
+            val original = config.deepCopy()
+            val edit = config.deepCopy()
             _ui.value = NotificacoesUiState(
                 isLoading = false,
-                original = config,
-                edit = config,
+                original = original,
+                edit = edit,
                 disciplinasExpandido = false,
                 quadrosExpandido = false,
                 contatosExpandido = false,
@@ -94,10 +98,12 @@ class NotificacoesViewModel(
         _ui.value = _ui.value.copy(isLoading = true, error = null)
         try {
             // O 'edit' (NotificacoesConfig) agora contém TODOS os toggles
-            repository.salvarConfig(edit)
+            val salvo = repository.salvarConfig(edit)
+            val snapshot = salvo.deepCopy()
             _ui.value = _ui.value.copy(
                 isLoading = false,
-                original = edit,
+                original = snapshot,
+                edit = snapshot,
                 botaoSalvarHabilitado = false
             )
         } catch (t: Throwable) {
@@ -110,7 +116,7 @@ class NotificacoesViewModel(
      * deve ficar habilitado (comparando 'edit' com 'original').
      */
     private fun update(block: (NotificacoesConfig) -> NotificacoesConfig) {
-        val next = block(_ui.value.edit)
+        val next = block(_ui.value.edit).normalized()
         val changed = next != _ui.value.original
         _ui.value = _ui.value.copy(edit = next, botaoSalvarHabilitado = changed)
     }
