@@ -58,7 +58,7 @@ public class AutenticacaoService {
         usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
         Usuario salvo = repository.save(usuario);
 
-       contatoService.processarConvitesPendentesParaUsuario(salvo);
+        contatoService.processarConvitesPendentesParaUsuario(salvo);
 
         return salvo;
     }

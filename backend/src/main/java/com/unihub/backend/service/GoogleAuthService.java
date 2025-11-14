@@ -93,7 +93,7 @@ public class GoogleAuthService {
                 user.setEmailVerified(emailVerified);
             } catch (Exception ignored) {}
 
-             Usuario salvo = usuarioRepository.save(user);
+            Usuario salvo = usuarioRepository.save(user);
 
             // Atualiza convites pendentes direcionados a este e-mail, assim como no cadastro nativo
             contatoService.processarConvitesPendentesParaUsuario(salvo);
