@@ -140,7 +140,7 @@ class CompartilhamentoNotificationManager(context: Context) {
         val message = notification.mensagem
         val historyReference = notification.referenciaId ?: notification.conviteId ?: notification.id
 
-        historyRepository.logNotification(
+        val shouldNotify = historyRepository.logNotification(
             title = title,
             message = message,
             timestampMillis = notification.historyTimestampMillis(),
@@ -150,6 +150,10 @@ class CompartilhamentoNotificationManager(context: Context) {
             hasPendingInteraction = false,
             syncWithBackend = false,
         )
+        if (!shouldNotify) {
+            return
+        }
+
 
         if (notification.tipo == TIPO_CONVITE && notification.lida) return
         if (!hasPostNotificationsPermission()) return

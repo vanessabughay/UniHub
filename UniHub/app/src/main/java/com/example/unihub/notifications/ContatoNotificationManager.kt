@@ -118,7 +118,7 @@ class ContatoNotificationManager(context: Context) {
         val referenceId = notification.referenciaId ?: notification.id
 
         val timestamp = notification.historyTimestampMillis()
-        if (notification.tipo == TIPO_RESPOSTA) {
+        val shouldNotify = if (notification.tipo == TIPO_RESPOSTA) {
             historyRepository.updateContactNotification(
                 referenceId = referenceId,
                 title = title,
@@ -137,6 +137,10 @@ class ContatoNotificationManager(context: Context) {
                 hasPendingInteraction = false,
                 syncWithBackend = false,
             )
+        }
+
+        if (!shouldNotify) {
+            return
         }
 
         if (notification.tipo == TIPO_CONVITE && notification.lida) return

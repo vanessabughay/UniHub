@@ -65,7 +65,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         hasPendingInteraction: Boolean = false,
         metadata: Map<String, Any?>? = null,
         syncWithBackend: Boolean = true,
-    ) {
+    ): Boolean {
         val normalizedType = type?.takeIf { it.isNotBlank() }
         val normalizedCategory = category?.takeIf { it.isNotBlank() }
         val metadataPayload = metadata?.takeIf { it.isNotEmpty() }
@@ -135,6 +135,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 metadataJson = metadataJson
             )
 
+            val shouldNotify = existingEntry?.let { previous ->
+                previous.title != entry.title ||
+                        previous.message != entry.message ||
+                        previous.timestampMillis != entry.timestampMillis ||
+                        previous.type != entry.type ||
+                        previous.category != entry.category ||
+                        previous.referenceId != entry.referenceId ||
+                        previous.hasPendingInteraction != entry.hasPendingInteraction ||
+                        previous.metadataJson != entry.metadataJson
+            } ?: true
+
             val filteredHistory = _historyFlow.value.filterNot { it.id == entryId }
             val updatedHistory = (listOf(entry) + filteredHistory)
                 .sortedByDescending { it.timestampMillis }
@@ -143,9 +154,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
             _historyFlow.value = updatedHistory
             saveEntries(updatedHistory, activeUserId)
             preferences.edit().putLong(lastIdKey(activeUserId), lastId.get()).apply()
-        }
 
-        if (syncWithBackend) {
+        if (syncWithBackend && shouldNotify) {
             remoteLogger.logNotification(
                 title = title,
                 message = message,
@@ -157,6 +167,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 metadata = metadataPayload
             )
         }
+        return shouldNotify
+    }
+    // Caso a sincronização ocorra fora do bloco synchronized retornaremos false.
+    return false
 
     }
 
@@ -250,7 +264,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         message: String,
         timestampMillis: Long,
         type: String
-    ) {
+    ): Boolean {
         refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
@@ -277,6 +291,12 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 hasPendingInteraction = false,
                 metadataJson = metadataJson
             )
+            val shouldNotify = existingEntry?.let { previous ->
+                previous.title != updatedEntry.title ||
+                        previous.message != updatedEntry.message ||
+                        previous.timestampMillis != updatedEntry.timestampMillis ||
+                        previous.type != updatedEntry.type
+            } ?: true
 
             if (index >= 0) {
                 currentHistory[index] = updatedEntry
@@ -290,7 +310,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
             _historyFlow.value = updatedHistory
             saveEntries(updatedHistory, currentUserId)
+
+            return shouldNotify
         }
+        return false
     }
 
     fun clear() {
