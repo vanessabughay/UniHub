@@ -151,15 +151,15 @@ class AuthRepository(
         withContext(Dispatchers.IO) {
             try {
                 val request = UpdateUsuarioRequest(name, email, password)
-                val token = TokenManager.token
-
-                if (token.isNullOrBlank()) {
+                val token = try {
+                    TokenManager.requireToken()
+                } catch (e: IllegalStateException) {
                     withContext(Dispatchers.Main) {
                         onError("Token inválido. Faça login novamente.")
                     }
                     return@withContext
                 }
-                val response = api.updateUser("Bearer $token", request)
+                val response = api.updateUser(request)
                 if (response.isSuccessful) {
                     TokenManager.saveToken(
                         context = context,
@@ -194,8 +194,9 @@ class AuthRepository(
         onError: (String) -> Unit
     ) {
         withContext(Dispatchers.IO) {
-            val token = TokenManager.token
-            if (token.isNullOrBlank()) {
+            val token = try {
+                TokenManager.requireToken()
+            } catch (e: IllegalStateException) {
                 withContext(Dispatchers.Main) {
                     onError("Token inválido. Faça login novamente.")
                 }
@@ -203,7 +204,7 @@ class AuthRepository(
             }
 
             try {
-                val response = api.deleteUser("Bearer $token")
+                val response = api.deleteUser()
                 if (response.isSuccessful) {
                     CompartilhamentoNotificationSynchronizer.getInstance(context).reset()
                     ContatoNotificationSynchronizer.getInstance(context).reset()

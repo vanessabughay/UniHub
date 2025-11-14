@@ -5,11 +5,14 @@ import okhttp3.Response
 
 class AuthHeaderInterceptor : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
-        val t = TokenManager.token
-        val req = if (t.isNullOrBlank()) chain.request()
-        else chain.request().newBuilder()
-            .addHeader("Authorization", "Bearer $t")
-            .build()
+        val token = TokenManager.ensureTokenLoaded()
+        val req = if (token.isNullOrBlank()) {
+            chain.request()
+        } else {
+            chain.request().newBuilder()
+                .addHeader("Authorization", "Bearer $token")
+                .build()
+        }
         return chain.proceed(req)
     }
 }

@@ -37,7 +37,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
     private val _historyFlow: MutableStateFlow<List<NotificationEntry>>
 
-    private val remoteLogger = NotificationRemoteLogger(context)
+    private val remoteLogger = NotificationRemoteLogger()
 
     private var currentUserId: Long? = null
 

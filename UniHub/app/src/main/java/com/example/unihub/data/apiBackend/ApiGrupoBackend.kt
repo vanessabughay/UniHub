@@ -3,7 +3,6 @@ package com.example.unihub.data.apiBackend
 import android.util.Log
 import com.example.unihub.data.api.GrupoApi
 import com.example.unihub.data.config.RetrofitClient
-import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Grupo
 import com.example.unihub.data.repository.Grupobackend
 import retrofit2.HttpException // Para tratar erros HTTP específicos do Retrofit
@@ -19,13 +18,9 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
         RetrofitClient.retrofit.create(GrupoApi::class.java) // <<< usa o client com interceptor
     }
 
-    private fun authHeader(): String = TokenManager.token?.takeIf { it.isNotBlank() }
-        ?.let { "Bearer $it" }
-        ?: throw IllegalStateException("Token de autenticação indisponível")
-
     override suspend fun getGrupoApi(): List<Grupo> {
         try {
-            val response = api.list(authHeader()) // Chama o método 'list' da GrupoApi
+            val response = api.list() // Chama o método 'list' da GrupoApi
             if (response.isSuccessful) {
                 // Log opcional para verificar os dados brutos, se necessário
                 response.body()?.forEachIndexed { index, grupo ->
@@ -56,7 +51,7 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
         try {
             val longId = id.toLongOrNull()
                 ?: throw IllegalArgumentException("ID inválido fornecido: $id")
-            val response = api.get(authHeader(), longId) // Chama o método 'get' da GrupoApi
+            val response = api.get(longId) // Chama o método 'get' da GrupoApi
             if (response.isSuccessful) {
                 return response.body()
             } else {
@@ -75,7 +70,7 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     override suspend fun addGrupoApi(grupo: Grupo) { // Retorno Unit (void) como na interface
         try {
-            val response = api.add(authHeader(), grupo) // Chama o método 'add' da GrupoApi
+            val response = api.add(grupo) // Chama o método 'add' da GrupoApi
             if (!response.isSuccessful) {
                 Log.e("ApiGrupoBackend", "Erro ao adicionar grupo: ${response.code()} - ${response.message()}")
                 throw IOException("Erro na API ao adicionar grupo: ${response.code()} ${response.errorBody()?.string()}")
@@ -90,7 +85,7 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     override suspend fun updateGrupoApi(id: Long, grupo: Grupo): Boolean {
         try {
-            val response = api.update(authHeader(), id, grupo) // Chama o método 'update' da GrupoApi
+            val response = api.update(id, grupo) // Chama o método 'update' da GrupoApi
             if (!response.isSuccessful) {
                 Log.e("ApiGrupoBackend", "Erro ao atualizar grupo $id: ${response.code()} - ${response.message()}")
             }
@@ -105,7 +100,7 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     override suspend fun deleteGrupoApi(id: Long): Boolean {
         try {
-            val response = api.delete(authHeader(), id)
+            val response = api.delete(id)
             if (response.isSuccessful) {
                 return true
             }
@@ -137,7 +132,7 @@ class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
     }
     override suspend fun leaveGrupoApi(id: Long): Boolean {
         try {
-            val response = api.leave(authHeader(), id)
+            val response = api.leave(id)
             if (response.isSuccessful) {
                 return true
             }

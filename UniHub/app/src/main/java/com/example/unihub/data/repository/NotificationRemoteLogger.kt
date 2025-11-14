@@ -1,6 +1,5 @@
 package com.example.unihub.data.repository
 
-import android.content.Context
 import com.example.unihub.data.api.NotificationLogApi
 import com.example.unihub.data.config.RetrofitClient
 import com.example.unihub.data.config.TokenManager
@@ -10,9 +9,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-class NotificationRemoteLogger(context: Context) {
+class NotificationRemoteLogger {
 
-    private val appContext = context.applicationContext
     private val api: NotificationLogApi by lazy { RetrofitClient.create(NotificationLogApi::class.java) }
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -28,9 +26,7 @@ class NotificationRemoteLogger(context: Context) {
     ) {
         scope.launch {
             try {
-                TokenManager.loadToken(appContext)
-                val token = TokenManager.token ?: return@launch
-                val authHeader = "Bearer $token"
+                if (TokenManager.ensureTokenLoaded().isNullOrBlank()) return@launch
                 val request = NotificationLogRequest(
                     titulo = title,
                     mensagem = message,
@@ -41,7 +37,7 @@ class NotificationRemoteLogger(context: Context) {
                     metadata = metadata,
                     timestamp = timestampMillis
                 )
-                api.logNotification(authHeader, request)
+                api.logNotification(request)
             } catch (_: Exception) {
                 // Ignora falhas de sincronização para não impactar o fluxo local
             }

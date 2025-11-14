@@ -1,6 +1,7 @@
 package com.example.unihub.data.config
 
 import android.content.Context
+import java.util.concurrent.atomic.AtomicReference
 
 object TokenManager {
     private const val PREFS_NAME = "auth_prefs"
@@ -14,7 +15,10 @@ object TokenManager {
 
     private fun userInstitutionKey(userId: Long) = "$HAS_INSTITUTION_USER_PREFIX$userId"
 
+    private val applicationContextRef = AtomicReference<Context?>()
+
     /** In-memory representation of the token used by interceptors. */
+    @Volatile
     var token: String? = null
         private set
 
@@ -34,7 +38,9 @@ object TokenManager {
         private set
 
     /** Loads the token from shared preferences, if not already loaded. */
+    @Synchronized
     fun loadToken(context: Context, forceReload: Boolean = false) {
+        applicationContextRef.set(context.applicationContext)
         val shouldReload = forceReload || token.isNullOrBlank() || nomeUsuario == null ||
                 emailUsuario == null || usuarioId == null
 
@@ -70,6 +76,7 @@ object TokenManager {
         hasInstitution: Boolean = this.hasInstitution
     ) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        applicationContextRef.set(context.applicationContext)
 
         val persistedUserId = prefs.takeIf { it.contains(USER_ID_KEY) }
             ?.getLong(USER_ID_KEY, -1L)
@@ -138,6 +145,30 @@ object TokenManager {
         editor.remove(CALENDAR_LINKED_KEY)
         editor.remove(HAS_INSTITUTION_KEY)
         editor.apply()
+    }
+
+    fun initialize(context: Context) {
+        applicationContextRef.set(context.applicationContext)
+        loadToken(context.applicationContext, forceReload = true)
+    }
+
+    @Synchronized
+    fun ensureTokenLoaded(): String? {
+        if (!token.isNullOrBlank()) {
+            return token
+        }
+
+        val ctx = applicationContextRef.get() ?: return token
+        loadToken(ctx, forceReload = true)
+        return token
+    }
+
+    fun requireToken(): String = ensureTokenLoaded()?.takeIf { it.isNotBlank() }
+        ?: throw IllegalStateException("Token de autenticação não encontrado")
+
+    fun requireUsuarioId(): Long {
+        ensureTokenLoaded()
+        return usuarioId ?: throw IllegalStateException("ID do usuário não encontrado")
     }
 
     fun updateCalendarLinkState(context: Context, linked: Boolean) {

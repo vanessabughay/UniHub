@@ -31,28 +31,21 @@ class NotificacoesRepository(
 ) {
 
     suspend fun carregarConfig(): NotificacoesConfig {
-        val (authHeader, usuarioId) = getAuthData()
-        return api.carregar(authHeader, usuarioId).normalized()
+        val usuarioId = TokenManager.requireUsuarioId()
+        return api.carregar(usuarioId).normalized()
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun salvarConfig(config: NotificacoesConfig): NotificacoesConfig {
-        val (authHeader, usuarioId) = getAuthData()
+        val usuarioId = TokenManager.requireUsuarioId()
 
         // 1. Persiste a nova configuração no backend real
         val payload = config.normalized()
-        val salvo = api.salvar(authHeader, usuarioId, payload).normalized()
+        val salvo = api.salvar(usuarioId, payload).normalized()
 
         // 2. Re-agenda as notificações com base na nova configuração
         reagendarTodasNotificacoes(salvo)
         return salvo
-    }
-
-    private fun getAuthData(): Pair<String, Long> {
-        val token = TokenManager.token ?: throw IllegalStateException("Token de autenticação não encontrado")
-        val usuarioId = TokenManager.usuarioId ?: throw IllegalStateException("ID do usuário não encontrado")
-        val authHeader = "Bearer $token"
-        return Pair(authHeader, usuarioId)
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
