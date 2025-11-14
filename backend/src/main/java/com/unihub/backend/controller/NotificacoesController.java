@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/notificacoes")
 @CrossOrigin(origins = "*")
@@ -40,6 +42,13 @@ public class NotificacoesController {
         return notificacaoConfiguracaoService.salvar(resolvedId, request);
     }
 
+    @GetMapping({"/historico", "/usuarios/{usuarioId}/historico"})
+    public List<NotificacaoResponse> listar(@AuthenticationPrincipal Long usuarioAutenticado,
+                                            @PathVariable(value = "usuarioId", required = false) Long usuarioId) {
+        Long resolvedId = resolveUsuarioId(usuarioId, usuarioAutenticado);
+        return notificacaoService.listarHistorico(resolvedId);
+    }
+
     @PostMapping("/historico")
     public NotificacaoResponse registrar(@AuthenticationPrincipal Long usuarioId,
                                          @RequestBody NotificacaoLogRequest request) {
@@ -47,13 +56,16 @@ public class NotificacoesController {
     }
 
     private Long resolveUsuarioId(Long pathUsuarioId, Long usuarioAutenticado) {
-        Long resolved = pathUsuarioId != null ? pathUsuarioId : usuarioAutenticado;
+        Long resolved = (pathUsuarioId != null) ? pathUsuarioId : usuarioAutenticado;
+
         if (resolved == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
         }
+
         if (usuarioAutenticado == null || !resolved.equals(usuarioAutenticado)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem acesso");
         }
+
         return resolved;
     }
 }

@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -34,6 +35,16 @@ public class NotificacaoService {
         this.notificacaoRepository = notificacaoRepository;
         this.usuarioRepository = usuarioRepository;
         this.objectMapper = objectMapper;
+    }
+
+    public List<NotificacaoResponse> listarHistorico(Long usuarioId) {
+        if (usuarioId == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+
+        return notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId).stream()
+                .map(NotificacaoResponse::fromEntity)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     public NotificacaoResponse registrarNotificacao(Long usuarioId, NotificacaoLogRequest request) {
