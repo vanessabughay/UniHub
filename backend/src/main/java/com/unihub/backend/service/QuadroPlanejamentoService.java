@@ -39,6 +39,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -80,6 +81,10 @@ public class QuadroPlanejamentoService {
     private static final String NOTIFICACAO_TIPO = "APP_NOTIFICACAO";
     private static final String NOTIFICACAO_CATEGORIA = "QUADRO_PLANEJAMENTO";
     private static final String NOTIFICACAO_TITULO = "Quadro compartilhado";
+    private static final String NOTIFICACAO_TAREFA_ATRIBUIDA_CATEGORIA = "TAREFA_ATRIBUIDA";
+    private static final String NOTIFICACAO_TAREFA_ATRIBUIDA_TITULO = "Tarefa atribuída";
+    private static final String NOTIFICACAO_TAREFA_COMENTARIO_CATEGORIA = "TAREFA_COMENTARIO";
+    private static final String NOTIFICACAO_TAREFA_COMENTARIO_TITULO = "Novo comentário na tarefa";
     private static final ZoneId ZONA_BRASIL = ZoneId.of("America/Sao_Paulo");
 
     public List<QuadroPlanejamentoListaResponse> listar(Long usuarioId, QuadroStatus status, String titulo) {
@@ -325,13 +330,18 @@ public class QuadroPlanejamentoService {
 
         tarefa.setResponsaveis(buscarResponsaveis(quadroId, request.getResponsavelIds(), usuarioId));
 
-        return tarefaRepository.save(tarefa);
+        TarefaPlanejamento salvo = tarefaRepository.save(tarefa);
+        Set<Long> novosResponsaveis = extrairResponsaveisIds(salvo);
+        notificarResponsaveisAtribuidos(salvo, novosResponsaveis, usuarioId);
+        sincronizarInscricoesComentarios(salvo, novosResponsaveis);
+        return salvo;
     }
 
     @Transactional
     public TarefaPlanejamentoResponse atualizarTarefa(Long quadroId, Long colunaId, Long tarefaId,
                                                       AtualizarTarefaPlanejamentoRequest request, Long usuarioId) {
         TarefaPlanejamento tarefa = buscarTarefaEntity(quadroId, colunaId, tarefaId, usuarioId);
+        Set<Long> responsaveisAntes = extrairResponsaveisIds(tarefa);
 
         if (request.getTitulo() != null) {
             validarTitulo(request.getTitulo());
@@ -357,6 +367,21 @@ public class QuadroPlanejamentoService {
         }
 
         TarefaPlanejamento atualizado = tarefaRepository.save(tarefa);
+         Set<Long> responsaveisDepois = extrairResponsaveisIds(atualizado);
+
+        Set<Long> novosResponsaveis = new LinkedHashSet<>(responsaveisDepois);
+        novosResponsaveis.removeAll(responsaveisAntes);
+        if (!novosResponsaveis.isEmpty()) {
+            notificarResponsaveisAtribuidos(atualizado, novosResponsaveis, usuarioId);
+            sincronizarInscricoesComentarios(atualizado, novosResponsaveis);
+        }
+
+        Set<Long> removidos = new LinkedHashSet<>(responsaveisAntes);
+        removidos.removeAll(responsaveisDepois);
+        if (!removidos.isEmpty()) {
+            removerInscricoesComentarios(atualizado, removidos);
+        }
+        
         return toResponse(atualizado);
     }
 
@@ -417,6 +442,7 @@ public class QuadroPlanejamentoService {
         comentario.setConteudo(request.getConteudo().trim());
 
         TarefaComentario salvo = tarefaComentarioRepository.save(comentario);
+        notificarResponsaveisSobreComentario(tarefa, salvo);
         return toComentarioResponse(salvo, usuarioId);
     }
 
@@ -867,6 +893,277 @@ public class QuadroPlanejamentoService {
         }
         notificacao.setAtualizadaEm(agora);
         notificacaoRepository.save(notificacao);
+    }
+
+     private Set<Long> extrairResponsaveisIds(TarefaPlanejamento tarefa) {
+        if (tarefa == null) {
+            return Collections.emptySet();
+        }
+
+        List<Long> ids = tarefa.getResponsaveisIds();
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        return new LinkedHashSet<>(ids);
+    }
+
+    private void notificarResponsaveisAtribuidos(TarefaPlanejamento tarefa, Set<Long> novosResponsaveis, Long autorId) {
+        if (tarefa == null || tarefa.getId() == null || novosResponsaveis == null || novosResponsaveis.isEmpty()) {
+            return;
+        }
+
+        novosResponsaveis.stream()
+                .filter(Objects::nonNull)
+                .filter(responsavelId -> !Objects.equals(responsavelId, autorId))
+                .filter(this::desejaReceberNotificacaoDePrazo)
+                .map(usuarioRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(usuario -> registrarNotificacaoTarefaAtribuida(tarefa, usuario));
+    }
+
+    private boolean desejaReceberNotificacaoDePrazo(Long usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+        return notificacaoConfiguracaoRepository.findByUsuarioId(usuarioId)
+                .map(NotificacaoConfiguracao::isPrazoTarefa)
+                .orElse(true);
+    }
+
+    private void sincronizarInscricoesComentarios(TarefaPlanejamento tarefa, Set<Long> responsaveis) {
+        if (tarefa == null || tarefa.getId() == null || responsaveis == null || responsaveis.isEmpty()) {
+            return;
+        }
+
+        responsaveis.stream()
+                .filter(Objects::nonNull)
+                .forEach(responsavelId -> sincronizarInscricaoComentario(tarefa, responsavelId));
+    }
+
+    private void sincronizarInscricaoComentario(TarefaPlanejamento tarefa, Long usuarioId) {
+        if (usuarioId == null || tarefa == null || tarefa.getId() == null) {
+            return;
+        }
+
+        boolean desejaReceber = notificacaoConfiguracaoRepository.findByUsuarioId(usuarioId)
+                .map(NotificacaoConfiguracao::isComentarioTarefa)
+                .orElse(true);
+        boolean inscrito = tarefaNotificacaoRepository.existsByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+
+        if (desejaReceber && !inscrito) {
+            usuarioRepository.findById(usuarioId)
+                    .ifPresent(usuario -> {
+                        TarefaNotificacao notificacao = new TarefaNotificacao();
+                        notificacao.setTarefa(tarefa);
+                        notificacao.setUsuario(usuario);
+                        tarefaNotificacaoRepository.save(notificacao);
+                    });
+        } else if (!desejaReceber && inscrito) {
+            tarefaNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+        }
+    }
+
+    private void removerInscricoesComentarios(TarefaPlanejamento tarefa, Set<Long> removidos) {
+        if (tarefa == null || tarefa.getId() == null || removidos == null || removidos.isEmpty()) {
+            return;
+        }
+        removidos.stream()
+                .filter(Objects::nonNull)
+                .forEach(usuarioId -> removerInscricaoComentario(tarefa, usuarioId));
+    }
+
+    private void removerInscricaoComentario(TarefaPlanejamento tarefa, Long usuarioId) {
+        if (usuarioId == null || tarefa == null || tarefa.getId() == null) {
+            return;
+        }
+        tarefaNotificacaoRepository.deleteByTarefaIdAndUsuarioId(tarefa.getId(), usuarioId);
+    }
+
+    private void registrarNotificacaoTarefaAtribuida(TarefaPlanejamento tarefa, Usuario usuario) {
+        if (usuario == null || usuario.getId() == null || tarefa == null || tarefa.getId() == null) {
+            return;
+        }
+
+        Notificacao notificacao = notificacaoRepository
+                .findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(usuario.getId(),
+                        NOTIFICACAO_TIPO, NOTIFICACAO_TAREFA_ATRIBUIDA_CATEGORIA, tarefa.getId())
+                .orElseGet(Notificacao::new);
+
+        boolean nova = notificacao.getId() == null;
+        notificacao.setUsuario(usuario);
+        notificacao.setConvite(null);
+        notificacao.setTitulo(NOTIFICACAO_TAREFA_ATRIBUIDA_TITULO);
+        notificacao.setMensagem(montarMensagemTarefaAtribuida(tarefa));
+        notificacao.setTipo(NOTIFICACAO_TIPO);
+        notificacao.setCategoria(NOTIFICACAO_TAREFA_ATRIBUIDA_CATEGORIA);
+        notificacao.setReferenciaId(tarefa.getId());
+        notificacao.setInteracaoPendente(false);
+        notificacao.setMetadataJson(gerarMetadataTarefa(tarefa));
+        LocalDateTime agora = agora();
+        if (nova) {
+            notificacao.setCriadaEm(agora);
+            notificacao.setLida(false);
+        }
+        notificacao.setAtualizadaEm(agora);
+        notificacaoRepository.save(notificacao);
+    }
+
+    private void notificarResponsaveisSobreComentario(TarefaPlanejamento tarefa, TarefaComentario comentario) {
+        if (tarefa == null || tarefa.getId() == null || comentario == null || comentario.getId() == null) {
+            return;
+        }
+
+        List<TarefaNotificacao> inscricoes = tarefaNotificacaoRepository.findByTarefaId(tarefa.getId());
+        if (inscricoes == null || inscricoes.isEmpty()) {
+            return;
+        }
+
+        Long autorId = comentario.getAutor() != null ? comentario.getAutor().getId() : null;
+        Set<Long> processados = new LinkedHashSet<>();
+
+        for (TarefaNotificacao inscricao : inscricoes) {
+            if (inscricao == null || inscricao.getUsuario() == null) {
+                continue;
+            }
+
+            Usuario destinatario = inscricao.getUsuario();
+            Long destinatarioId = destinatario.getId();
+            if (destinatarioId == null || Objects.equals(destinatarioId, autorId)) {
+                continue;
+            }
+            if (!processados.add(destinatarioId)) {
+                continue;
+            }
+            if (!desejaReceberComentarioTarefa(destinatarioId)) {
+                continue;
+            }
+            registrarNotificacaoComentario(tarefa, comentario, destinatario);
+        }
+    }
+
+    private boolean desejaReceberComentarioTarefa(Long usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+        return notificacaoConfiguracaoRepository.findByUsuarioId(usuarioId)
+                .map(NotificacaoConfiguracao::isComentarioTarefa)
+                .orElse(true);
+    }
+
+    private void registrarNotificacaoComentario(TarefaPlanejamento tarefa, TarefaComentario comentario, Usuario destinatario) {
+        if (destinatario == null || destinatario.getId() == null || comentario == null || comentario.getId() == null) {
+            return;
+        }
+
+        Notificacao notificacao = notificacaoRepository
+                .findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(destinatario.getId(),
+                        NOTIFICACAO_TIPO, NOTIFICACAO_TAREFA_COMENTARIO_CATEGORIA, comentario.getId())
+                .orElseGet(Notificacao::new);
+
+        boolean nova = notificacao.getId() == null;
+        notificacao.setUsuario(destinatario);
+        notificacao.setConvite(null);
+        notificacao.setTitulo(NOTIFICACAO_TAREFA_COMENTARIO_TITULO);
+        notificacao.setMensagem(montarMensagemComentario(tarefa, comentario.getAutor()));
+        notificacao.setTipo(NOTIFICACAO_TIPO);
+        notificacao.setCategoria(NOTIFICACAO_TAREFA_COMENTARIO_CATEGORIA);
+        notificacao.setReferenciaId(comentario.getId());
+        notificacao.setInteracaoPendente(false);
+        notificacao.setMetadataJson(gerarMetadataComentario(tarefa, comentario));
+        LocalDateTime agora = agora();
+        if (nova) {
+            notificacao.setCriadaEm(agora);
+            notificacao.setLida(false);
+        }
+        notificacao.setAtualizadaEm(agora);
+        notificacaoRepository.save(notificacao);
+    }
+
+    private String montarMensagemTarefaAtribuida(TarefaPlanejamento tarefa) {
+        if (tarefa == null) {
+            return "Você foi atribuído a uma tarefa.";
+        }
+        String tituloTarefa = tarefa.getTitulo();
+        QuadroPlanejamento quadro = obterQuadroDaTarefa(tarefa);
+        String tituloQuadro = quadro != null ? quadro.getTitulo() : null;
+
+        if (tituloTarefa != null && !tituloTarefa.isBlank()) {
+            if (tituloQuadro != null && !tituloQuadro.isBlank()) {
+                return String.format("Você foi atribuído à tarefa \"%s\" no quadro \"%s\".", tituloTarefa, tituloQuadro);
+            }
+            return String.format("Você foi atribuído à tarefa \"%s\".", tituloTarefa);
+        }
+
+        if (tituloQuadro != null && !tituloQuadro.isBlank()) {
+            return String.format("Você foi atribuído a uma tarefa no quadro \"%s\".", tituloQuadro);
+        }
+
+        return "Você foi atribuído a uma tarefa.";
+    }
+
+    private String gerarMetadataTarefa(TarefaPlanejamento tarefa) {
+        if (objectMapper == null || tarefa == null || tarefa.getId() == null) {
+            return null;
+        }
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("action", "OPEN_TAREFA");
+        metadata.put("tarefaId", tarefa.getId());
+
+        QuadroPlanejamento quadro = obterQuadroDaTarefa(tarefa);
+        if (quadro != null && quadro.getId() != null) {
+            metadata.put("quadroId", quadro.getId());
+        }
+
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private String montarMensagemComentario(TarefaPlanejamento tarefa, Usuario autor) {
+        String nomeAutor = autor != null && autor.getNomeUsuario() != null && !autor.getNomeUsuario().isBlank()
+                ? autor.getNomeUsuario()
+                : "Alguém";
+
+        String tituloTarefa = tarefa != null ? tarefa.getTitulo() : null;
+        if (tituloTarefa != null && !tituloTarefa.isBlank()) {
+            return String.format("%s comentou na tarefa \"%s\".", nomeAutor, tituloTarefa);
+        }
+        return String.format("%s comentou em uma tarefa.", nomeAutor);
+    }
+
+    private String gerarMetadataComentario(TarefaPlanejamento tarefa, TarefaComentario comentario) {
+        if (objectMapper == null || comentario == null || comentario.getId() == null) {
+            return null;
+        }
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("action", "OPEN_TAREFA_COMENTARIO");
+        metadata.put("comentarioId", comentario.getId());
+        if (tarefa != null && tarefa.getId() != null) {
+            metadata.put("tarefaId", tarefa.getId());
+        }
+        QuadroPlanejamento quadro = obterQuadroDaTarefa(tarefa);
+        if (quadro != null && quadro.getId() != null) {
+            metadata.put("quadroId", quadro.getId());
+        }
+
+        try {
+            return objectMapper.writeValueAsString(metadata);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private QuadroPlanejamento obterQuadroDaTarefa(TarefaPlanejamento tarefa) {
+        if (tarefa == null || tarefa.getColuna() == null) {
+            return null;
+        }
+        return tarefa.getColuna().getQuadro();
     }
 
     private String montarMensagemQuadro(QuadroPlanejamento quadro) {
