@@ -547,7 +547,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
     }
 
     private fun refreshUserContext() {
-        TokenManager.loadToken(appContext)
+        TokenManager.loadToken(appContext, forceReload = true)
         val resolvedUserId = TokenManager.usuarioId
         synchronized(lock) {
             if (resolvedUserId == currentUserId) {

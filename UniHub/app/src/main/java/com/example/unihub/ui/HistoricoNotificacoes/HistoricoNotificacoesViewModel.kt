@@ -115,7 +115,7 @@ class HistoricoNotificacoesViewModel(
             _uiState.update { it.copy(isLoading = true) }
         }
 
-        TokenManager.loadToken(appContext)
+        TokenManager.loadToken(appContext, forceReload = true)
         val usuarioId = TokenManager.usuarioId
         if (usuarioId == null || usuarioId <= 0) {
             _uiState.value = HistoricoNotificacoesUiState(isLoading = false, notificacoes = emptyList())
@@ -160,7 +160,7 @@ class HistoricoNotificacoesViewModel(
     }
 
     private fun executarAcao(conviteId: Long, aceitar: Boolean) {
-        TokenManager.loadToken(appContext)
+        TokenManager.loadToken(appContext, forceReload = true)
         val usuarioId = TokenManager.usuarioId
         if (usuarioId == null || usuarioId <= 0) {
             viewModelScope.launch {

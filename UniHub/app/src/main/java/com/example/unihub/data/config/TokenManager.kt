@@ -34,23 +34,29 @@ object TokenManager {
         private set
 
     /** Loads the token from shared preferences, if not already loaded. */
-    fun loadToken(context: Context) {
-        if (token == null || nomeUsuario == null || emailUsuario == null || usuarioId == null) {
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            token = prefs.getString(TOKEN_KEY, null)
-            nomeUsuario = prefs.getString(USER_NAME_KEY, null)
-            emailUsuario = prefs.getString(USER_EMAIL_KEY, null)
-            usuarioId = prefs.takeIf { it.contains(USER_ID_KEY) }
-                ?.getLong(USER_ID_KEY, -1L)
-                ?.takeIf { id -> id != -1L }
+    fun loadToken(context: Context, forceReload: Boolean = false) {
+        val shouldReload = forceReload || token.isNullOrBlank() || nomeUsuario == null ||
+                emailUsuario == null || usuarioId == null
 
-            googleCalendarLinked = prefs.getBoolean(CALENDAR_LINKED_KEY, false)
-
-            // Primeiro tenta por usuário, se não tiver, cai pro global antigo
-            hasInstitution = usuarioId?.let { id ->
-                prefs.getBoolean(userInstitutionKey(id), false)
-            } ?: prefs.getBoolean(HAS_INSTITUTION_KEY, false)
+        if (!shouldReload) {
+            return
         }
+
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        token = prefs.getString(TOKEN_KEY, null)?.takeIf { it.isNotBlank() }
+        nomeUsuario = prefs.getString(USER_NAME_KEY, null)
+        emailUsuario = prefs.getString(USER_EMAIL_KEY, null)
+        usuarioId = prefs.takeIf { it.contains(USER_ID_KEY) }
+            ?.getLong(USER_ID_KEY, -1L)
+            ?.takeIf { id -> id > 0 }
+
+        googleCalendarLinked = prefs.getBoolean(CALENDAR_LINKED_KEY, false)
+
+        // Primeiro tenta por usuário, se não tiver, cai pro global antigo
+        hasInstitution = usuarioId?.let { id ->
+            prefs.getBoolean(userInstitutionKey(id), false)
+        } ?: prefs.getBoolean(HAS_INSTITUTION_KEY, false)
     }
 
     /** Persists and updates the current token and basic user info. */
@@ -81,7 +87,9 @@ object TokenManager {
         val finalHasInstitution = hasInstitution || storedHasInstitution
 
         // Atualiza in-memory
-        token = value
+        val normalizedToken = value.takeIf { it.isNotBlank() }
+
+        token = normalizedToken
         nomeUsuario = nome
         emailUsuario = email
         this.usuarioId = resolvedUserId
@@ -90,7 +98,11 @@ object TokenManager {
 
         // Persiste no SharedPreferences
         val editor = prefs.edit()
-        editor.putString(TOKEN_KEY, token)
+        if (normalizedToken != null) {
+            editor.putString(TOKEN_KEY, normalizedToken)
+        } else {
+            editor.remove(TOKEN_KEY)
+        }
         editor.putString(USER_NAME_KEY, nomeUsuario)
         editor.putString(USER_EMAIL_KEY, emailUsuario)
         editor.putBoolean(CALENDAR_LINKED_KEY, googleCalendarLinked)
