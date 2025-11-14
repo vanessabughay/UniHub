@@ -8,6 +8,8 @@ import com.unihub.backend.service.NotificacaoConfiguracaoService;
 import com.unihub.backend.service.NotificacaoService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/notificacoes")
@@ -23,20 +25,35 @@ public class NotificacoesController {
         this.notificacaoService = notificacaoService;
     }
 
-    @GetMapping("/config")
-    public NotificacoesConfigResponse carregar(@AuthenticationPrincipal Long usuarioId) {
-        return notificacaoConfiguracaoService.carregar(usuarioId);
+    @GetMapping({"/config", "/usuarios/{usuarioId}/notificacoes-config"})
+    public NotificacoesConfigResponse carregar(@AuthenticationPrincipal Long usuarioAutenticado,
+                                               @PathVariable(value = "usuarioId", required = false) Long usuarioId) {
+        Long resolvedId = resolveUsuarioId(usuarioId, usuarioAutenticado);
+        return notificacaoConfiguracaoService.carregar(resolvedId);
     }
 
-    @PutMapping("/config")
-    public NotificacoesConfigResponse salvar(@AuthenticationPrincipal Long usuarioId,
+    @PutMapping({"/config", "/usuarios/{usuarioId}/notificacoes-config"})
+    public NotificacoesConfigResponse salvar(@AuthenticationPrincipal Long usuarioAutenticado,
+                                             @PathVariable(value = "usuarioId", required = false) Long usuarioId,
                                              @RequestBody NotificacoesConfigRequest request) {
-        return notificacaoConfiguracaoService.salvar(usuarioId, request);
+        Long resolvedId = resolveUsuarioId(usuarioId, usuarioAutenticado);
+        return notificacaoConfiguracaoService.salvar(resolvedId, request);
     }
 
     @PostMapping("/historico")
     public NotificacaoResponse registrar(@AuthenticationPrincipal Long usuarioId,
                                          @RequestBody NotificacaoLogRequest request) {
         return notificacaoService.registrarNotificacao(usuarioId, request);
+    }
+
+    private Long resolveUsuarioId(Long pathUsuarioId, Long usuarioAutenticado) {
+        Long resolved = pathUsuarioId != null ? pathUsuarioId : usuarioAutenticado;
+        if (resolved == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
+        }
+        if (usuarioAutenticado == null || !resolved.equals(usuarioAutenticado)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem acesso");
+        }
+        return resolved;
     }
 }

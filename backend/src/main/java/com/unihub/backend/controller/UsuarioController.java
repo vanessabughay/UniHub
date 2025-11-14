@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,7 +22,7 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/usuarios")
+@RequestMapping({"/usuarios", "/api/usuarios"})
 @CrossOrigin(origins = "*")
 public class UsuarioController {
 
@@ -113,7 +115,7 @@ public class UsuarioController {
 
     private void validarUsuarioAutenticado(Long usuarioId, Long usuarioAutenticado) {
         if (usuarioAutenticado == null || !usuarioAutenticado.equals(usuarioId)) {
-            throw new RuntimeException("Sem acesso");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Sem acesso");
         }
     }
 

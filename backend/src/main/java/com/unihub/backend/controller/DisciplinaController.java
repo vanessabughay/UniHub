@@ -10,7 +10,7 @@ import java.util.List;
 import com.unihub.backend.model.Ausencia;
 
 @RestController
-@RequestMapping("/disciplinas")
+@RequestMapping({"/disciplinas", "/api/disciplinas"})
 @CrossOrigin(origins = "*")
 public class DisciplinaController {
 
