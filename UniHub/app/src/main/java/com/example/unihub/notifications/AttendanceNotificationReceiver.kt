@@ -14,12 +14,13 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
 import com.example.unihub.MainActivity
 import com.example.unihub.R
+import com.example.unihub.components.formatMinutesToTime
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.NotificationHistoryRepository
-import kotlin.math.abs
-import com.example.unihub.components.formatMinutesToTime
-
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale
+import kotlin.math.abs
 
 class AttendanceNotificationReceiver : BroadcastReceiver() {
 
@@ -35,10 +36,28 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             .takeIf { it >= 0 }
         val limiteAusencias = intent.getIntExtra(EXTRA_AUSENCIAS_MAX, NO_AUSENCIA_LIMIT)
             .takeIf { it >= 0 }
+        val occurrenceEpochDay = intent.getLongExtra(EXTRA_AULA_EPOCH_DAY, Long.MIN_VALUE)
+            .takeIf { it != Long.MIN_VALUE }
+            ?: Instant.ofEpochMilli(System.currentTimeMillis())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toEpochDay()
 
         createChannel(context)
 
         val notificationId = abs((disciplinaId.toString() + inicio.toString()).hashCode())
+        intent.putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+
+        val historyRepository = NotificationHistoryRepository.getInstance(context.applicationContext)
+        val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
+            disciplinaId,
+            occurrenceEpochDay
+        )
+
+        if (!historyRepository.shouldNotifyAttendance(referenceId)) {
+            scheduleNextOccurrence(context, intent, requestCode, dia, inicio)
+            return
+        }
 
         val visualizarIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -68,13 +87,21 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             )
         }
 
-        val presencaPendingIntent = TaskStackBuilder.create(context).run {
-            addNextIntentWithParentStack(visualizarIntent)
-            getPendingIntent(
-                notificationId + 2,
-                PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
-            )
+        val presencaIntent = Intent(context, AttendanceNotificationActionReceiver::class.java).apply {
+            action = AttendanceNotificationActionReceiver.ACTION_MARK_PRESENCE
+            putExtra(AttendanceNotificationActionReceiver.EXTRA_DISCIPLINA_ID, disciplinaId)
+            putExtra(AttendanceNotificationActionReceiver.EXTRA_DISCIPLINA_NOME, disciplinaNome)
+            putExtra(AttendanceNotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(AttendanceNotificationActionReceiver.EXTRA_OCCURRENCE_EPOCH_DAY, occurrenceEpochDay)
         }
+
+        val presencaPendingIntent = PendingIntent.getBroadcast(
+            context,
+            notificationId + 2,
+            presencaIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
+        )
+
 
         val formattedTime = formatMinutes(inicio)
         val scheduleText = buildScheduleText(context, dia, formattedTime)
@@ -120,25 +147,25 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
 
         NotificationManagerCompat.from(context).notify(notificationId, builder.build())
 
-        NotificationHistoryRepository.getInstance(context.applicationContext)
-            .logNotification(
-                title = notificationTitle,
-                message = historyMessage,
-                timestampMillis = System.currentTimeMillis(),
-                type = "PRESENCA_AULA"
+        historyRepository.logNotification(
+            title = notificationTitle,
+            message = historyMessage,
+            timestampMillis = System.currentTimeMillis(),
+            type = NotificationHistoryRepository.ATTENDANCE_TYPE,
+            category = NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+            referenceId = referenceId,
+            hasPendingInteraction = true,
+            metadata = mapOf(
+                "disciplinaId" to disciplinaId,
+                "occurrenceEpochDay" to occurrenceEpochDay,
+                "requestCode" to requestCode,
+                "dia" to dia,
+                "inicio" to inicio
             )
+        )
 
 
-        if (requestCode != -1) {
-            val nextTrigger = AttendanceNotificationScheduler.computeTriggerMillis(dia, inicio)
-            if (nextTrigger != null) {
-                val nextIntent = Intent(context, AttendanceNotificationReceiver::class.java).apply {
-                    putExtras(intent)
-                }
-                AttendanceNotificationScheduler(context)
-                    .scheduleExactAlarm(requestCode, nextTrigger, nextIntent)
-            }
-        }
+        scheduleNextOccurrence(context, intent, requestCode, dia, inicio)
     }
 
     private fun createChannel(context: Context) {
@@ -218,6 +245,31 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         }
     }
 
+    private fun scheduleNextOccurrence(
+        context: Context,
+        intent: Intent,
+        requestCode: Int,
+        dia: String,
+        inicio: Int
+    ) {
+        if (requestCode == -1) return
+        val nextTrigger = AttendanceNotificationScheduler.computeTriggerMillis(dia, inicio)
+        if (nextTrigger != null) {
+            val nextIntent = Intent(context, AttendanceNotificationReceiver::class.java).apply {
+                putExtras(intent)
+                putExtra(
+                    EXTRA_AULA_EPOCH_DAY,
+                    Instant.ofEpochMilli(nextTrigger)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                        .toEpochDay()
+                )
+            }
+            AttendanceNotificationScheduler(context)
+                .scheduleExactAlarm(requestCode, nextTrigger, nextIntent)
+        }
+    }
+
     companion object {
         const val EXTRA_DISCIPLINA_ID = "extra_disciplina_id"
         const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
@@ -226,6 +278,8 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         const val EXTRA_REQUEST_CODE = "extra_request_code"
         const val EXTRA_TOTAL_AUSENCIAS = "extra_total_ausencias"
         const val EXTRA_AUSENCIAS_MAX = "extra_ausencias_max"
+        const val EXTRA_AULA_EPOCH_DAY = "extra_aula_epoch_day"
+        const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
 
         const val NO_AUSENCIA_LIMIT = -1
         private const val NO_VALUE = -1

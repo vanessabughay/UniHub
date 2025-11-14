@@ -10,6 +10,9 @@
     <string name="attendance_notification_absence_with_limit">Faltas: %1$d de %2$d permitidas.</string>
     <string name="attendance_notification_absence_without_limit">Faltas registradas: %1$d.</string>
     <string name="attendance_notification_absence_only_limit">Máximo permitido: %1$d faltas.</string>
+    <string name="attendance_notification_history_title">Presença</string>
+    <string name="attendance_notification_history_presence">Presença registrada em %1$s.</string>
+    <string name="attendance_notification_history_absence">Ausência registrada em %1$s.</string>
     <string name="evaluation_channel_name">Lembretes de avaliações</string>
     <string name="evaluation_channel_description">Notificações para avaliações agendadas.</string>
     <string name="evaluation_notification_prompt">Confira os detalhes da avaliação.</string>

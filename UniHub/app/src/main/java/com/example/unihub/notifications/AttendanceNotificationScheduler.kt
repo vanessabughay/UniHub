@@ -8,6 +8,8 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.example.unihub.data.model.HorarioAula
 import java.time.DayOfWeek
+import java.time.Instant
+import java.time.ZoneId
 import java.text.Normalizer
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
@@ -69,6 +71,10 @@ class AttendanceNotificationScheduler(private val context: Context) {
                     putExtra(
                         AttendanceNotificationReceiver.EXTRA_AUSENCIAS_MAX,
                         disciplina.ausenciasPermitidas ?: AttendanceNotificationReceiver.NO_AUSENCIA_LIMIT
+                    )
+                    putExtra(
+                        AttendanceNotificationReceiver.EXTRA_AULA_EPOCH_DAY,
+                        computeEpochDay(triggerAtMillis)
                     )
                 }
 
@@ -152,6 +158,13 @@ class AttendanceNotificationScheduler(private val context: Context) {
     private fun buildRequestCode(id: Long, index: Int, horario: HorarioAula): Int {
         val raw = Objects.hash(id, index, horario.diaDaSemana, horario.horarioInicio)
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
+    }
+
+    private fun computeEpochDay(triggerAtMillis: Long): Long {
+        return Instant.ofEpochMilli(triggerAtMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .toEpochDay()
     }
 
     private fun canScheduleExactAlarms(manager: AlarmManager): Boolean {

@@ -33,12 +33,15 @@ import androidx.compose.ui.unit.sp
 import com.example.unihub.data.repository.AusenciaRepository
 import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.CategoriaRepository
+import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.data.apiBackend.ApiAusenciaBackend
 import com.example.unihub.data.apiBackend.ApiDisciplinaBackend
 import com.example.unihub.data.apiBackend.ApiCategoriaBackend
+import com.example.unihub.R
 import java.time.LocalDate
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.delay
 import com.example.unihub.components.formatDateToLocale
@@ -60,6 +63,9 @@ fun ManterAusenciaScreen(
     viewModel: ManterAusenciaViewModel
 ) {
     val context = LocalContext.current
+    val historyRepository = remember(context) {
+        NotificationHistoryRepository.getInstance(context.applicationContext)
+    }
 
     var data by remember { mutableStateOf(LocalDate.now()) }
     var justificativa by remember { mutableStateOf("") }
@@ -73,6 +79,7 @@ fun ManterAusenciaScreen(
 
     val locale = remember { Locale("pt", "BR") }
     val zoneId = remember { ZoneId.systemDefault() }
+    val dateFormatter = remember { DateTimeFormatter.ofPattern("dd/MM/yyyy") }
 
     val disciplina by viewModel.disciplina.collectAsState()
     val ausenciaLoaded by viewModel.ausencia.collectAsState()
@@ -108,7 +115,39 @@ fun ManterAusenciaScreen(
     }
 
     LaunchedEffect(sucesso) {
-        if (sucesso) onVoltar()
+        if (sucesso) {
+            val discId = disciplina?.id ?: disciplinaId.toLongOrNull()
+            if (discId != null) {
+                val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
+                    discId,
+                    data.toEpochDay()
+                )
+                val locale = Locale("pt", "BR")
+                val title = disciplina?.nome
+                    ?.takeIf { it.isNotBlank() }
+                    ?.uppercase(locale)
+                    ?: context.getString(R.string.attendance_notification_history_title)
+                val formattedDate = dateFormatter.format(data)
+                val message = context.getString(
+                    R.string.attendance_notification_history_absence,
+                    formattedDate
+                )
+
+                historyRepository.logAttendanceResponse(
+                    referenceId = referenceId,
+                    title = title,
+                    message = message,
+                    metadata = mapOf(
+                        "disciplinaId" to discId,
+                        "occurrenceEpochDay" to data.toEpochDay(),
+                        "response" to "ABSENCE",
+                        "operation" to if (ausenciaId == null) "CREATE" else "UPDATE"
+                    ),
+                    syncWithBackend = false
+                )
+            }
+            onVoltar()
+        }
     }
 
     LaunchedEffect(ausenciaLoaded) {

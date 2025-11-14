@@ -45,6 +45,12 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notifications.AttendanceNotificationActionReceiver"
+            android:enabled="true"
+            android:exported="false" />
+
+
+        <receiver
             android:name=".notifications.EvaluationNotificationReceiver"
             android:enabled="true"
             android:exported="false" />

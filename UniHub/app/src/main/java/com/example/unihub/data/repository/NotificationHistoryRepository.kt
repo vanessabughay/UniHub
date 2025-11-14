@@ -72,6 +72,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val isContactCategory = normalizedCategory?.equals(CONTACT_CATEGORY, ignoreCase = true) == true
         val isContactType = normalizedType?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
                 normalizedType?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+        val isAttendanceCategory = normalizedCategory?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true
+        val isAttendanceType = normalizedType?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
+                normalizedType?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
 
         refreshUserContext()
 
@@ -85,6 +88,13 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         val entryIsContact = entry.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true ||
                                 entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
                                 entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+
+                        if (isAttendanceCategory || isAttendanceType) {
+                            val entryIsAttendance = entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                                    entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
+                                    entry.type?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
+                            return@firstOrNull entryIsAttendance || isAttendanceCategory || isAttendanceType
+                        }
 
                         if (isContactCategory || isContactType || entryIsContact) {
                             entryIsContact || isContactCategory || isContactType
@@ -114,7 +124,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
             val resolvedType = normalizedType ?: existingEntry?.type
             val resolvedCategory = when {
                 isContactCategory -> CONTACT_CATEGORY
+                isAttendanceCategory -> ATTENDANCE_CATEGORY
                 existingEntry?.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true && isContactType -> CONTACT_CATEGORY
+                existingEntry?.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true && isAttendanceType -> ATTENDANCE_CATEGORY
                 else -> normalizedCategory ?: existingEntry?.category
             }
             val resolvedPending = when {
@@ -205,6 +217,65 @@ class NotificationHistoryRepository private constructor(context: Context) {
     fun pruneContactNotifications(validReferences: Set<Long>) {
         refreshUserContext()
         pruneCategoryEntries(CONTACT_CATEGORY, validReferences)
+    }
+
+    fun shouldNotifyAttendance(referenceId: Long): Boolean {
+        refreshUserContext()
+        return synchronized(lock) {
+            val entry = _historyFlow.value.firstOrNull { current ->
+                current.referenceId == referenceId && (
+                        current.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                                current.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        )
+            }
+            entry?.hasPendingInteraction != false
+        }
+    }
+
+    fun markAttendanceHandled(referenceId: Long) {
+        refreshUserContext()
+        synchronized(lock) {
+            val currentHistory = _historyFlow.value.toMutableList()
+            val index = currentHistory.indexOfFirst { entry ->
+                entry.referenceId == referenceId && (
+                        entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                                entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        )
+            }
+            if (index == -1) return
+
+            val entry = currentHistory[index]
+            if (!entry.hasPendingInteraction) return
+
+            currentHistory[index] = entry.copy(hasPendingInteraction = false)
+            val updatedHistory = currentHistory
+                .sortedByDescending { it.timestampMillis }
+                .take(MAX_ENTRIES)
+
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory, currentUserId)
+        }
+    }
+
+    fun logAttendanceResponse(
+        referenceId: Long,
+        title: String,
+        message: String,
+        metadata: Map<String, Any?>? = null,
+        syncWithBackend: Boolean = false,
+    ) {
+        logNotification(
+            title = title,
+            message = message,
+            timestampMillis = System.currentTimeMillis(),
+            type = ATTENDANCE_RESPONSE_TYPE,
+            category = ATTENDANCE_CATEGORY,
+            referenceId = referenceId,
+            hasPendingInteraction = false,
+            metadata = metadata,
+            syncWithBackend = syncWithBackend
+        )
+        markAttendanceHandled(referenceId)
     }
 
     private fun pruneCategoryEntries(category: String, validReferences: Set<Long>) {
@@ -404,6 +475,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         put(JSON_CONTACT_INVITE_ID, reference)
                         put(JSON_CONTACT_ACTION_PENDING, entry.hasPendingInteraction)
                     }
+                    if (entry.category == ATTENDANCE_CATEGORY || entry.type == ATTENDANCE_TYPE) {
+                        put(JSON_PENDING_INTERACTION, entry.hasPendingInteraction)
+                    }
                 }
                 put(JSON_PENDING_INTERACTION, entry.hasPendingInteraction)
                 entry.metadataJson?.let { put(JSON_METADATA, it) }
@@ -467,6 +541,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
         private const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
         private const val CONTACT_CATEGORY = "CONTATO"
+        const val ATTENDANCE_TYPE = "PRESENCA_AULA"
+        const val ATTENDANCE_RESPONSE_TYPE = "PRESENCA_AULA_RESPOSTA"
+        const val ATTENDANCE_CATEGORY = "PRESENCA"
 
         @Volatile
         private var instance: NotificationHistoryRepository? = null
@@ -489,6 +566,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
                     created
                 }
             }
+        }
+        fun buildAttendanceReferenceId(disciplinaId: Long, occurrenceEpochDay: Long): Long {
+            val upper = disciplinaId and 0xFFFFFFFFL
+            val lower = occurrenceEpochDay and 0xFFFFFFFFL
+            return (upper shl 32) or (lower and 0xFFFFFFFFL)
         }
     }
     private fun serializeMetadata(metadata: Map<String, Any?>): String {
