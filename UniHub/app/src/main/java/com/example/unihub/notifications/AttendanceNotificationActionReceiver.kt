@@ -61,9 +61,6 @@ class AttendanceNotificationActionReceiver : BroadcastReceiver() {
             syncWithBackend = false
         )
 
-        if (notificationId != -1) {
-            NotificationManagerCompat.from(appContext).cancel(notificationId)
-        }
     }
 
     companion object {

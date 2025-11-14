@@ -154,7 +154,12 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             builder.setSubText(absenceInfoText)
         }
 
-        NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+        try {
+            NotificationManagerCompat.from(context).notify(notificationId, builder.build())
+        } catch (se: SecurityException) {
+
+        }
+
 
         historyRepository.logNotification(
             title = notificationTitle,
