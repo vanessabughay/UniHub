@@ -15,7 +15,7 @@ import java.io.IOException // Para exceções de I/O genéricas
 class ApiGrupoBackend : Grupobackend { // Implementa sua interface Grupobackend
 
     private val api: GrupoApi by lazy {
-        RetrofitClient.retrofit.create(GrupoApi::class.java) // <<< usa o client com interceptor
+        RetrofitClient.create(GrupoApi::class.java)
     }
 
     override suspend fun getGrupoApi(): List<Grupo> {

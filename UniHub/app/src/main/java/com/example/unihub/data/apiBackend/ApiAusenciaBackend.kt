@@ -35,7 +35,7 @@ class ApiAusenciaBackend : _ausenciabackend {
 class ApiAnotacoesBackend {
 
     private val api: AnotacoesApi by lazy {
-        RetrofitClient.retrofit.create(AnotacoesApi::class.java)
+        RetrofitClient.create(AnotacoesApi::class.java)
     }
 
 

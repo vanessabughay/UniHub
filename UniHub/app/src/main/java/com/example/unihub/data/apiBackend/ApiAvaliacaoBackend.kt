@@ -19,7 +19,7 @@ import java.io.IOException // Para exceções de I/O genéricas
 class ApiAvaliacaoBackend : Avaliacaobackend { // Implementa sua interface Avaliacaobackend
 
     private val api: AvaliacaoApi by lazy {
-        RetrofitClient.retrofit.create(AvaliacaoApi::class.java) // <<< usa o client com interceptor
+        RetrofitClient.create(AvaliacaoApi::class.java)
     }
 
     private fun Avaliacao.toRequest(): AvaliacaoRequestDto {
