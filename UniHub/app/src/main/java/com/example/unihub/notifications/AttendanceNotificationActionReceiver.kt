@@ -55,7 +55,8 @@ class AttendanceNotificationActionReceiver : BroadcastReceiver() {
             metadata = mapOf(
                 "disciplinaId" to disciplinaId,
                 "occurrenceEpochDay" to occurrenceEpochDay,
-                "response" to "PRESENCE"
+                "response" to "PRESENCE",
+                "notificationId" to notificationId.takeIf { it != -1 }
             ),
             syncWithBackend = false
         )

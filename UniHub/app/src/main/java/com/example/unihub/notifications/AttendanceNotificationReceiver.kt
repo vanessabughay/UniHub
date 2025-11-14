@@ -25,13 +25,23 @@ import kotlin.math.abs
 class AttendanceNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        // Opcional: se quiser bloquear notificações sem login
         TokenManager.loadToken(context.applicationContext)
+//        if (TokenManager.token.isNullOrBlank()) {
+//            return
+//        }
 
         val disciplinaId = intent.getLongExtra(EXTRA_DISCIPLINA_ID, -1L)
         val disciplinaNome = intent.getStringExtra(EXTRA_DISCIPLINA_NOME) ?: return
         val dia = intent.getStringExtra(EXTRA_AULA_DIA).orEmpty()
         val inicio = intent.getIntExtra(EXTRA_AULA_INICIO, -1)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
+
+        // ✅ Guard clause: se algo essencial veio inválido, aborta
+        if (disciplinaId <= 0L || inicio < 0 || requestCode < 0) {
+            return
+        }
+
         val totalAusencias = intent.getIntExtra(EXTRA_TOTAL_AUSENCIAS, NO_VALUE)
             .takeIf { it >= 0 }
         val limiteAusencias = intent.getIntExtra(EXTRA_AUSENCIAS_MAX, NO_AUSENCIA_LIMIT)
@@ -102,14 +112,13 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
         )
 
-
         val formattedTime = formatMinutes(inicio)
         val scheduleText = buildScheduleText(context, dia, formattedTime)
         val absenceInfoText = buildAbsenceInfoText(context, totalAusencias, limiteAusencias)
         val promptText = context.getString(R.string.attendance_notification_prompt)
 
         val locale = Locale("pt", "BR")
-        val notificationTitle = "${disciplinaNome.uppercase(locale)}"
+        val notificationTitle = disciplinaNome.uppercase(locale)
         val summaryText = buildSummaryText(scheduleText, absenceInfoText)
         val historyMessage = listOf(promptText, summaryText.takeIf { it.isNotBlank() })
             .filterNotNull()
@@ -160,10 +169,10 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
                 "occurrenceEpochDay" to occurrenceEpochDay,
                 "requestCode" to requestCode,
                 "dia" to dia,
-                "inicio" to inicio
+                "inicio" to inicio,
+                "notificationId" to notificationId
             )
         )
-
 
         scheduleNextOccurrence(context, intent, requestCode, dia, inicio)
     }
@@ -181,7 +190,10 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         manager.createNotificationChannel(channel)
     }
 
-    private fun formatMinutes(totalMinutes: Int): String = formatMinutesToTime(totalMinutes)
+    private fun formatMinutes(totalMinutes: Int): String {
+        if (totalMinutes < 0) return ""
+        return formatMinutesToTime(totalMinutes)
+    }
 
     private fun buildScheduleText(context: Context, dayLabel: String, formattedTime: String): String {
         val locale = Locale("pt", "BR")
@@ -235,7 +247,6 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             .filter { it.isNotBlank() }
             .joinToString(" • ")
     }
-
 
     private fun immutableFlag(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

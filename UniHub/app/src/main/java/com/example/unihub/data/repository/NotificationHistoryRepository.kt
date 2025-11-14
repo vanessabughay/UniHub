@@ -58,43 +58,50 @@ class NotificationHistoryRepository private constructor(context: Context) {
     val historyFlow: StateFlow<List<NotificationEntry>> = _historyFlow.asStateFlow()
 
     fun logNotification(
-        title: String,
-        message: String,
-        timestampMillis: Long,
-        type: String? = null,
-        category: String? = null,
-        referenceId: Long? = null,
-        hasPendingInteraction: Boolean = false,
-        metadata: Map<String, Any?>? = null,
-        syncWithBackend: Boolean = true,
+    title: String,
+    message: String,
+    timestampMillis: Long,
+    type: String? = null,
+    category: String? = null,
+    referenceId: Long? = null,
+    hasPendingInteraction: Boolean = false,
+    metadata: Map<String, Any?>? = null,
+    syncWithBackend: Boolean = true,
     ): Boolean {
         val normalizedType = type?.takeIf { it.isNotBlank() }
         val normalizedCategory = category?.takeIf { it.isNotBlank() }
         val metadataPayload = metadata?.takeIf { it.isNotEmpty() }
+
         val isContactCategory = normalizedCategory?.equals(CONTACT_CATEGORY, ignoreCase = true) == true
         val isContactType = normalizedType?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
                 normalizedType?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+
         val isAttendanceCategory = normalizedCategory?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true
         val isAttendanceType = normalizedType?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
                 normalizedType?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
 
         refreshUserContext()
 
+        var shouldNotify = false
+
         synchronized(lock) {
             val activeUserId = currentUserId
+
             val existingEntry = when {
                 referenceId != null && (normalizedType != null || normalizedCategory != null) -> {
                     _historyFlow.value.firstOrNull { entry ->
                         if (entry.referenceId != referenceId) return@firstOrNull false
 
-                        val entryIsContact = entry.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true ||
-                                entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
-                                entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+                        val entryIsContact =
+                            entry.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true ||
+                                    entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
+                                    entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
 
                         if (isAttendanceCategory || isAttendanceType) {
-                            val entryIsAttendance = entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                                    entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
-                                    entry.type?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
+                            val entryIsAttendance =
+                                entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                                        entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
+                                        entry.type?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
                             return@firstOrNull entryIsAttendance || isAttendanceCategory || isAttendanceType
                         }
 
@@ -150,6 +157,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 existingEntry?.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true && isAttendanceType -> ATTENDANCE_CATEGORY
                 else -> normalizedCategory ?: existingEntry?.category
             }
+
             val resolvedPending = when {
                 resolvedReferenceId != null -> hasPendingInteraction
                 existingEntry != null -> existingEntry.hasPendingInteraction
@@ -168,7 +176,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 metadataJson = metadataJson
             )
 
-            val shouldNotify = existingEntry?.let { previous ->
+            shouldNotify = existingEntry?.let { previous ->
                 previous.title != entry.title ||
                         previous.message != entry.message ||
                         previous.timestampMillis != entry.timestampMillis ||
@@ -187,6 +195,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
             _historyFlow.value = updatedHistory
             saveEntries(updatedHistory, activeUserId)
             preferences.edit().putLong(lastIdKey(activeUserId), lastId.get()).apply()
+        }
 
         if (syncWithBackend && shouldNotify) {
             remoteLogger.logNotification(
@@ -200,12 +209,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 metadata = metadataPayload
             )
         }
+
         return shouldNotify
     }
-    // Caso a sincronização ocorra fora do bloco synchronized retornaremos false.
-    return false
 
-    }
 
     fun markShareInviteHandled(inviteId: Long) {
         refreshUserContext()
@@ -254,6 +261,51 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+
+
+    fun logAttendanceResponse(
+        referenceId: Long,
+        title: String,
+        message: String,
+        metadata: Map<String, Any?>? = null,
+        syncWithBackend: Boolean = false,
+    ) {
+        val mergedMetadata = synchronized(lock) {
+            val existingEntry = _historyFlow.value.firstOrNull { current ->
+                current.referenceId == referenceId && (
+                        current.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                                current.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        )
+            }
+
+            val baseMetadata = existingEntry?.metadataJson
+                ?.let { deserializeMetadata(it) }
+                ?: mutableMapOf<String, Any?>()
+
+            metadata?.forEach { (key, value) ->
+                if (value == null) {
+                    baseMetadata.remove(key)
+                } else {
+                    baseMetadata[key] = value
+                }
+            }
+
+            baseMetadata.takeIf { it.isNotEmpty() }?.toMap()
+        }
+        logNotification(
+            title = title,
+            message = message,
+            timestampMillis = System.currentTimeMillis(),
+            type = ATTENDANCE_RESPONSE_TYPE,
+            category = ATTENDANCE_CATEGORY,
+            referenceId = referenceId,
+            hasPendingInteraction = false,
+            metadata = mergedMetadata,
+            syncWithBackend = syncWithBackend
+        )
+        markAttendanceHandled(referenceId)
+    }
+
     fun markAttendanceHandled(referenceId: Long) {
         refreshUserContext()
         synchronized(lock) {
@@ -267,40 +319,22 @@ class NotificationHistoryRepository private constructor(context: Context) {
             if (index == -1) return
 
             val entry = currentHistory[index]
-            if (!entry.hasPendingInteraction) return
+            val updatedEntry = if (entry.hasPendingInteraction) {
+                val resolvedEntry = entry.copy(hasPendingInteraction = false)
+                currentHistory[index] = resolvedEntry
+                val updatedHistory = currentHistory
+                    .sortedByDescending { it.timestampMillis }
+                    .take(MAX_ENTRIES)
 
-            val updatedEntry = entry.copy(hasPendingInteraction = false)
-            currentHistory[index] = updatedEntry
-            val updatedHistory = currentHistory
-                .sortedByDescending { it.timestampMillis }
-                .take(MAX_ENTRIES)
-
-            _historyFlow.value = updatedHistory
-            saveEntries(updatedHistory, currentUserId)
+                _historyFlow.value = updatedHistory
+                saveEntries(updatedHistory, currentUserId)
+                resolvedEntry
+            } else {
+                entry
+            }
 
             cancelAttendanceNotification(updatedEntry)
         }
-    }
-
-    fun logAttendanceResponse(
-        referenceId: Long,
-        title: String,
-        message: String,
-        metadata: Map<String, Any?>? = null,
-        syncWithBackend: Boolean = false,
-    ) {
-        logNotification(
-            title = title,
-            message = message,
-            timestampMillis = System.currentTimeMillis(),
-            type = ATTENDANCE_RESPONSE_TYPE,
-            category = ATTENDANCE_CATEGORY,
-            referenceId = referenceId,
-            hasPendingInteraction = false,
-            metadata = metadata,
-            syncWithBackend = syncWithBackend
-        )
-        markAttendanceHandled(referenceId)
     }
 
     private fun pruneCategoryEntries(category: String, validReferences: Set<Long>) {
@@ -634,6 +668,25 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val metadata = entry.metadataJson ?: return
         runCatching {
             val json = JSONObject(metadata)
+
+            // Primeiro, tenta usar notificationId direto do metadata
+            val notificationId = when {
+                json.has("notificationId") && !json.isNull("notificationId") -> {
+                    when (val value = json.opt("notificationId")) {
+                        is Number -> value.toInt()
+                        is String -> value.toIntOrNull()
+                        else -> null
+                    }
+                }
+                else -> null
+            }
+
+            if (notificationId != null) {
+                NotificationManagerCompat.from(appContext).cancel(notificationId)
+                return@runCatching
+            }
+
+            // Se não tiver notificationId, tenta reconstruir a partir de disciplinaId + inicio
             val disciplinaId = when {
                 json.has("disciplinaId") && !json.isNull("disciplinaId") -> {
                     json.optLong("disciplinaId", Long.MIN_VALUE)
@@ -653,8 +706,11 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 else -> null
             } ?: return
 
-            val notificationId = abs((disciplinaId.toString() + inicio.toString()).hashCode())
-            NotificationManagerCompat.from(appContext).cancel(notificationId)
+            val fallbackNotificationId =
+                abs((disciplinaId.toString() + inicio.toString()).hashCode())
+
+            NotificationManagerCompat.from(appContext).cancel(fallbackNotificationId)
         }
     }
+
 }
