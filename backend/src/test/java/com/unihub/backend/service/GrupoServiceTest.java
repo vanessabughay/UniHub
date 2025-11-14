@@ -1,16 +1,19 @@
 package com.unihub.backend.service;
 
 import com.unihub.backend.model.Contato;
+import com.unihub.backend.dto.notificacoes.NotificacaoLogRequest;
 import com.unihub.backend.model.Grupo;
+import com.unihub.backend.model.NotificacaoConfiguracao;
 import com.unihub.backend.model.Usuario;
 import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.GrupoRepository;
+import com.unihub.backend.repository.NotificacaoConfiguracaoRepository;
 import com.unihub.backend.repository.UsuarioRepository;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,12 +32,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -49,12 +57,19 @@ class GrupoServiceTest {
     @Mock
     private UsuarioRepository usuarioRepository;
 
+    @Mock
+    private NotificacaoService notificacaoService;
+
+    @Mock
+    private NotificacaoConfiguracaoRepository notificacaoConfiguracaoRepository;
+
     @InjectMocks
     private GrupoService grupoService;
 
     @BeforeEach
     void setUp() {
         lenient().when(usuarioRepository.findByEmailIgnoreCase(anyString())).thenReturn(Optional.empty());
+        lenient().when(notificacaoConfiguracaoRepository.findByUsuarioId(anyLong())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -134,6 +149,66 @@ class GrupoServiceTest {
         assertNull(resultado.get(0).getAdminContatoId());
     }
 
+    @Test
+    void criarGrupoRegistraNotificacaoParaNovosMembros() {
+        Long ownerId = 1L;
+        Long membroUsuarioId = 2L;
+
+        Usuario owner = new Usuario();
+        owner.setId(ownerId);
+        owner.setEmail("owner@example.com");
+        owner.setNomeUsuario("Owner");
+
+        Usuario usuarioMembro = new Usuario();
+        usuarioMembro.setId(membroUsuarioId);
+        usuarioMembro.setEmail("member@example.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(10L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail(owner.getEmail());
+        contatoOwner.setIdContato(ownerId);
+        contatoOwner.setPendente(Boolean.FALSE);
+
+        Contato contatoMembro = new Contato();
+        contatoMembro.setId(20L);
+        contatoMembro.setOwnerId(ownerId);
+        contatoMembro.setEmail("member@example.com");
+        contatoMembro.setIdContato(membroUsuarioId);
+        contatoMembro.setPendente(Boolean.FALSE);
+
+        Grupo grupoRequest = new Grupo();
+        grupoRequest.setNome("Novo Grupo");
+        grupoRequest.setMembros(List.of(contatoMembro));
+
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(usuarioRepository.findById(membroUsuarioId)).thenReturn(Optional.of(usuarioMembro));
+        when(contatoRepository.findByOwnerIdAndEmail(ownerId, owner.getEmail())).thenReturn(Optional.of(contatoOwner));
+        when(contatoRepository.findByOwnerIdAndIdIn(eq(ownerId), anyList())).thenReturn(List.of(contatoMembro));
+        when(contatoRepository.findByOwnerIdAndIdContato(ownerId, membroUsuarioId)).thenReturn(Optional.of(contatoMembro));
+        when(contatoRepository.findByOwnerIdAndEmailIgnoreCase(ownerId, "member@example.com"))
+                .thenReturn(Optional.of(contatoMembro));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> {
+            Grupo value = invocation.getArgument(0);
+            if (value.getId() == null) {
+                value.setId(500L);
+            }
+            return value;
+        });
+        when(notificacaoConfiguracaoRepository.findByUsuarioId(membroUsuarioId)).thenReturn(Optional.of(configuracao(true)));
+        when(notificacaoService.registrarNotificacao(anyLong(), any(NotificacaoLogRequest.class))).thenReturn(null);
+
+        Grupo resultado = grupoService.criarGrupo(grupoRequest, ownerId);
+
+        assertEquals(500L, resultado.getId());
+        ArgumentCaptor<NotificacaoLogRequest> captor = ArgumentCaptor.forClass(NotificacaoLogRequest.class);
+        verify(notificacaoService).registrarNotificacao(eq(membroUsuarioId), captor.capture());
+        NotificacaoLogRequest request = captor.getValue();
+        assertEquals("GRUPO_MEMBRO_ADICIONADO", request.getTipo());
+        assertEquals("GRUPO_MEMBRO_ADICIONADO", request.getCategoria());
+        assertEquals(500L, request.getReferenciaId());
+        assertTrue(request.getMensagem().contains("Novo Grupo"));
+    }
 
     @Test
     void atualizarGrupoTransferePropriedadeParaNovoAdministrador() {
@@ -189,6 +264,70 @@ class GrupoServiceTest {
         assertEquals(contatoNovoAdmin.getId(), atualizado.getAdminContatoId());
         assertEquals(novoAdministradorUsuarioId, atualizado.getOwnerId());
         verify(grupoRepository, never()).delete(any(Grupo.class));
+    }
+
+    @Test
+    void atualizarGrupoNaoRegistraNotificacaoQuandoConfiguracaoDesativada() {
+        Long ownerId = 4L;
+        Long grupoId = 900L;
+        Long novoUsuarioId = 40L;
+
+        Usuario owner = new Usuario();
+        owner.setId(ownerId);
+        owner.setEmail("owner-notify@example.com");
+
+        Usuario usuarioNovo = new Usuario();
+        usuarioNovo.setId(novoUsuarioId);
+        usuarioNovo.setEmail("novo-membro@example.com");
+
+        Contato contatoOwner = new Contato();
+        contatoOwner.setId(301L);
+        contatoOwner.setOwnerId(ownerId);
+        contatoOwner.setEmail(owner.getEmail());
+        contatoOwner.setIdContato(ownerId);
+        contatoOwner.setPendente(Boolean.FALSE);
+
+        Contato contatoExistente = new Contato();
+        contatoExistente.setId(302L);
+        contatoExistente.setOwnerId(ownerId);
+        contatoExistente.setEmail("existente@example.com");
+        contatoExistente.setIdContato(50L);
+        contatoExistente.setPendente(Boolean.FALSE);
+
+        Contato contatoNovo = new Contato();
+        contatoNovo.setId(303L);
+        contatoNovo.setOwnerId(ownerId);
+        contatoNovo.setEmail("novo-membro@example.com");
+        contatoNovo.setIdContato(novoUsuarioId);
+        contatoNovo.setPendente(Boolean.FALSE);
+
+        Grupo grupoExistente = new Grupo();
+        grupoExistente.setId(grupoId);
+        grupoExistente.setNome("Grupo Notificação");
+        grupoExistente.setOwnerId(ownerId);
+        grupoExistente.setMembros(new java.util.ArrayList<>(List.of(contatoOwner, contatoExistente)));
+        grupoExistente.setAdminContatoId(contatoOwner.getId());
+
+        Grupo request = new Grupo();
+        request.setMembros(List.of(contatoExistente, contatoNovo));
+
+        when(grupoRepository.findByIdAndOwnerId(grupoId, ownerId)).thenReturn(Optional.of(grupoExistente));
+        when(usuarioRepository.findById(ownerId)).thenReturn(Optional.of(owner));
+        when(usuarioRepository.findById(novoUsuarioId)).thenReturn(Optional.of(usuarioNovo));
+        when(contatoRepository.findByOwnerIdAndEmail(ownerId, owner.getEmail())).thenReturn(Optional.of(contatoOwner));
+        when(contatoRepository.findByOwnerIdAndIdIn(eq(ownerId), anyList())).thenReturn(List.of(contatoExistente, contatoNovo));
+        when(contatoRepository.findByOwnerIdAndIdContato(ownerId, contatoExistente.getIdContato()))
+                .thenReturn(Optional.of(contatoExistente));
+        when(contatoRepository.findByOwnerIdAndIdContato(ownerId, contatoNovo.getIdContato()))
+                .thenReturn(Optional.of(contatoNovo));
+        when(contatoRepository.findByOwnerIdAndEmailIgnoreCase(ownerId, "novo-membro@example.com"))
+                .thenReturn(Optional.of(contatoNovo));
+        when(grupoRepository.save(any(Grupo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(notificacaoConfiguracaoRepository.findByUsuarioId(novoUsuarioId)).thenReturn(Optional.of(configuracao(false)));
+
+        grupoService.atualizarGrupo(grupoId, request, ownerId);
+
+        verify(notificacaoService, never()).registrarNotificacao(anyLong(), any(NotificacaoLogRequest.class));
     }
 
     @Test
@@ -427,5 +566,11 @@ class GrupoServiceTest {
         assertTrue(grupo.getMembros().isEmpty());
         verify(grupoRepository).delete(grupo);
         verify(grupoRepository, times(2)).save(grupo);
+    }
+
+    private NotificacaoConfiguracao configuracao(boolean incluso) {
+        NotificacaoConfiguracao configuracao = new NotificacaoConfiguracao();
+        configuracao.setInclusoEmGrupo(incluso);
+        return configuracao;
     }
 }

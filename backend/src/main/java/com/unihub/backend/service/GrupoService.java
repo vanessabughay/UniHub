@@ -1,9 +1,12 @@
 package com.unihub.backend.service;
 
 import com.unihub.backend.model.Contato;
+import com.unihub.backend.dto.notificacoes.NotificacaoLogRequest;
 import com.unihub.backend.model.Grupo;
+import com.unihub.backend.model.NotificacaoConfiguracao;
 import com.unihub.backend.repository.ContatoRepository;
 import com.unihub.backend.repository.GrupoRepository;
+import com.unihub.backend.repository.NotificacaoConfiguracaoRepository;
 import jakarta.persistence.EntityNotFoundException; // Boa prática para exceções específicas
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,7 @@ import com.unihub.backend.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +40,14 @@ public class GrupoService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+     @Autowired
+    private NotificacaoService notificacaoService;
+
+    @Autowired
+    private NotificacaoConfiguracaoRepository notificacaoConfiguracaoRepository;
+
+    private static final String NOTIFICACAO_MEMBRO_ADICIONADO = "GRUPO_MEMBRO_ADICIONADO";
 
     @Transactional(readOnly = true)
     public List<Grupo> listarTodas(Long usuarioId) {
@@ -98,6 +110,7 @@ public class GrupoService {
         grupo.setId(null);
         grupo.setOwnerId(ownerId);
         List<Contato> membrosGerenciados = carregarMembrosValidos(grupo.getMembros(), ownerId, ownerId);
+        List<Contato> novosMembros = identificarNovosMembros(null, membrosGerenciados);
         Contato contatoAdministrador = garantirContatoDoUsuarioNoGrupo(membrosGerenciados, ownerId, true);
         grupo.getMembros().clear();
         grupo.getMembros().addAll(membrosGerenciados);
@@ -108,6 +121,7 @@ public class GrupoService {
         if (atualizarOwnerPorAdmin(grupoSalvo, administradorSalvo) && !ownerAlterado) {
             grupoSalvo = grupoRepository.save(grupoSalvo);
         }
+        registrarInclusaoNovosMembros(grupoSalvo, novosMembros, ownerId);
         return grupoSalvo;
     }
 
@@ -116,6 +130,9 @@ public class GrupoService {
         Long solicitanteId = requireUsuario(usuarioId);
         Grupo grupoExistente = buscarPorId(id, solicitanteId);
         Long ownerIdDoGrupo = grupoExistente.getOwnerId();
+        List<Contato> membrosOriginais = grupoExistente.getMembros() != null
+                ? new ArrayList<>(grupoExistente.getMembros())
+                : new ArrayList<>();
 
         if (grupoDetalhesRequest.getNome() != null) {
             grupoExistente.setNome(grupoDetalhesRequest.getNome());
@@ -123,9 +140,11 @@ public class GrupoService {
 
         // Lógica para atualizar a lista de membros
         Contato contatoAdministradorPreferencial;
+        List<Contato> contatosAdicionados = Collections.emptyList();
         if (grupoDetalhesRequest.getMembros() != null) {
             List<Contato> novosMembros = carregarMembrosValidos(
                     grupoDetalhesRequest.getMembros(), ownerIdDoGrupo, solicitanteId);
+            contatosAdicionados = identificarNovosMembros(membrosOriginais, novosMembros);
             contatoAdministradorPreferencial = garantirContatoDoUsuarioNoGrupo(novosMembros, ownerIdDoGrupo, false);
             grupoExistente.getMembros().clear();
             grupoExistente.getMembros().addAll(novosMembros);
@@ -156,6 +175,7 @@ public class GrupoService {
         if (atualizarOwnerPorAdmin(grupoAtualizado, administradorAtualizado) && !ownerAlterado) {
             grupoAtualizado = grupoRepository.save(grupoAtualizado);
         }
+        registrarInclusaoNovosMembros(grupoAtualizado, contatosAdicionados, solicitanteId);
         return grupoAtualizado;
     }
 
@@ -625,6 +645,159 @@ public class GrupoService {
         }
         String trimmed = email.trim();
         return trimmed.isBlank() ? null : trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private List<Contato> identificarNovosMembros(List<Contato> membrosOriginais, List<Contato> membrosAtualizados) {
+        if (membrosAtualizados == null || membrosAtualizados.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Set<String> identificadoresOriginais = extrairIdentificadores(membrosOriginais);
+        List<Contato> novos = new ArrayList<>();
+        Set<String> identificadoresProcessados = new HashSet<>();
+
+        for (Contato contato : membrosAtualizados) {
+            String identificador = gerarIdentificadorContato(contato);
+            if (identificador == null) {
+                continue;
+            }
+            if (!identificadoresOriginais.contains(identificador) && identificadoresProcessados.add(identificador)) {
+                novos.add(contato);
+            }
+        }
+
+        return novos;
+    }
+
+    private Set<String> extrairIdentificadores(List<Contato> contatos) {
+        Set<String> identificadores = new HashSet<>();
+        if (contatos == null || contatos.isEmpty()) {
+            return identificadores;
+        }
+
+        for (Contato contato : contatos) {
+            String identificador = gerarIdentificadorContato(contato);
+            if (identificador != null) {
+                identificadores.add(identificador);
+            }
+        }
+
+        return identificadores;
+    }
+
+    private String gerarIdentificadorContato(Contato contato) {
+        if (contato == null) {
+            return null;
+        }
+
+        Long idContato = contato.getIdContato();
+        if (idContato != null) {
+            return "usuario:" + idContato;
+        }
+
+        Long id = contato.getId();
+        if (id != null) {
+            return "contato:" + id;
+        }
+
+        String email = normalizarEmail(contato.getEmail());
+        if (email != null) {
+            return "email:" + email;
+        }
+
+        return null;
+    }
+
+    private void registrarInclusaoNovosMembros(Grupo grupo, List<Contato> novosMembros, Long autorId) {
+        if (grupo == null || grupo.getId() == null || novosMembros == null || novosMembros.isEmpty()) {
+            return;
+        }
+
+        Set<Long> usuariosNotificados = new HashSet<>();
+
+        for (Contato contato : novosMembros) {
+            if (contato == null) {
+                continue;
+            }
+
+            Optional<Usuario> usuarioDestino = localizarUsuarioDoContato(contato);
+            if (usuarioDestino.isEmpty()) {
+                continue;
+            }
+
+            Long usuarioDestinoId = usuarioDestino.get().getId();
+            if (usuarioDestinoId == null) {
+                continue;
+            }
+
+            if (autorId != null && Objects.equals(autorId, usuarioDestinoId)) {
+                continue;
+            }
+
+            if (!usuariosNotificados.add(usuarioDestinoId)) {
+                continue;
+            }
+
+            if (!podeNotificarInclusaoEmGrupo(usuarioDestinoId)) {
+                continue;
+            }
+
+            NotificacaoLogRequest request = criarNotificacaoInclusaoGrupo(grupo, contato, usuarioDestino.get(), autorId);
+            notificacaoService.registrarNotificacao(usuarioDestinoId, request);
+        }
+    }
+
+    private boolean podeNotificarInclusaoEmGrupo(Long usuarioId) {
+        if (usuarioId == null) {
+            return false;
+        }
+
+        return notificacaoConfiguracaoRepository.findByUsuarioId(usuarioId)
+                .map(NotificacaoConfiguracao::isInclusoEmGrupo)
+                .orElse(true);
+    }
+
+    private NotificacaoLogRequest criarNotificacaoInclusaoGrupo(Grupo grupo, Contato contato, Usuario destinatario, Long autorId) {
+        NotificacaoLogRequest request = new NotificacaoLogRequest();
+        request.setTipo(NOTIFICACAO_MEMBRO_ADICIONADO);
+        request.setCategoria(NOTIFICACAO_MEMBRO_ADICIONADO);
+        request.setTitulo("Você foi adicionado a um grupo");
+
+        String nomeGrupo = grupo != null ? grupo.getNome() : null;
+        if (nomeGrupo != null && !nomeGrupo.isBlank()) {
+            request.setMensagem("Você foi adicionado ao grupo \"" + nomeGrupo + "\".");
+        } else {
+            request.setMensagem("Você foi adicionado a um novo grupo.");
+        }
+
+        if (grupo != null && grupo.getId() != null) {
+            request.setReferenciaId(grupo.getId());
+        }
+        request.setInteracaoPendente(false);
+        request.setTimestamp(System.currentTimeMillis());
+
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        if (grupo != null && grupo.getId() != null) {
+            metadata.put("grupoId", grupo.getId());
+        }
+        if (nomeGrupo != null && !nomeGrupo.isBlank()) {
+            metadata.put("grupoNome", nomeGrupo);
+        }
+        if (autorId != null) {
+            metadata.put("autorId", autorId);
+        }
+        if (destinatario != null && destinatario.getId() != null) {
+            metadata.put("destinatarioId", destinatario.getId());
+        }
+        if (contato != null && contato.getId() != null) {
+            metadata.put("contatoId", contato.getId());
+        }
+
+        if (!metadata.isEmpty()) {
+            request.setMetadata(metadata);
+        }
+
+        return request;
     }
 
     private Contato criarContatoParaOwnerSeNecessario(Long ownerId, Long solicitanteId, Contato membro) {
