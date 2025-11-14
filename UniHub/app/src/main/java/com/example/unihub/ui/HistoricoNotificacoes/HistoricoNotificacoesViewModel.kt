@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 data class HistoricoNotificacaoUiModel(
     val id: Long,
@@ -136,9 +137,15 @@ class HistoricoNotificacoesViewModel(
 
         } catch (exception: Exception) {
             _uiState.update { it.copy(isLoading = false) }
-            _mensagens.emit(
-                exception.message ?: appContext.getString(R.string.notification_history_load_error)
-            )
+            val message = when (exception) {
+                is HttpException -> when (exception.code()) {
+                    401, 403 -> appContext.getString(R.string.share_notification_action_session_expired)
+                    else -> appContext.getString(R.string.notification_history_load_error)
+                }
+
+                else -> exception.message ?: appContext.getString(R.string.notification_history_load_error)
+            }
+            _mensagens.emit(message)
         }
     }
 

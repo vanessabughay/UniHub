@@ -2,7 +2,9 @@ package com.example.unihub.data.repository
 
 import android.content.Context
 import com.example.unihub.data.config.TokenManager
+import androidx.core.app.NotificationManagerCompat
 import java.util.concurrent.atomic.AtomicLong
+import kotlin.math.abs
 import kotlin.math.max
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -199,7 +201,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
             val entry = currentHistory[index]
             if (!entry.hasPendingInteraction) return
 
-            currentHistory[index] = entry.copy(hasPendingInteraction = false)
+            val updatedEntry = entry.copy(hasPendingInteraction = false)
+            currentHistory[index] = updatedEntry
             val updatedHistory = currentHistory
                 .sortedByDescending { it.timestampMillis }
                 .take(MAX_ENTRIES)
@@ -247,13 +250,16 @@ class NotificationHistoryRepository private constructor(context: Context) {
             val entry = currentHistory[index]
             if (!entry.hasPendingInteraction) return
 
-            currentHistory[index] = entry.copy(hasPendingInteraction = false)
+            val updatedEntry = entry.copy(hasPendingInteraction = false)
+            currentHistory[index] = updatedEntry
             val updatedHistory = currentHistory
                 .sortedByDescending { it.timestampMillis }
                 .take(MAX_ENTRIES)
 
             _historyFlow.value = updatedHistory
             saveEntries(updatedHistory, currentUserId)
+
+            cancelAttendanceNotification(updatedEntry)
         }
     }
 
@@ -579,5 +585,39 @@ class NotificationHistoryRepository private constructor(context: Context) {
             jsonObject.put(key, value)
         }
         return jsonObject.toString()
+    }
+
+    private fun cancelAttendanceNotification(entry: NotificationEntry) {
+        val isAttendanceEntry = entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
+                entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+        if (!isAttendanceEntry) {
+            return
+        }
+
+        val metadata = entry.metadataJson ?: return
+        runCatching {
+            val json = JSONObject(metadata)
+            val disciplinaId = when {
+                json.has("disciplinaId") && !json.isNull("disciplinaId") -> {
+                    json.optLong("disciplinaId", Long.MIN_VALUE)
+                        .takeIf { it != Long.MIN_VALUE }
+                }
+                else -> null
+            } ?: return
+
+            val inicio = when {
+                json.has("inicio") && !json.isNull("inicio") -> {
+                    when (val value = json.opt("inicio")) {
+                        is Number -> value.toInt()
+                        is String -> value.toIntOrNull()
+                        else -> null
+                    }
+                }
+                else -> null
+            } ?: return
+
+            val notificationId = abs((disciplinaId.toString() + inicio.toString()).hashCode())
+            NotificationManagerCompat.from(appContext).cancel(notificationId)
+        }
     }
 }
