@@ -78,6 +78,18 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
         removeInvite(inviteId)
     }
 
+    fun silenceNotifications() {
+        saveActiveInviteIds(emptySet())
+        notificationManager.cancelAll()
+        historyRepository.clearByCategoryOrType(
+            category = NotificationHistoryRepository.SHARE_CATEGORY,
+            types = setOf(
+                NotificationHistoryRepository.SHARE_INVITE_TYPE,
+                NotificationHistoryRepository.SHARE_INVITE_TYPE_RESPONSE,
+            )
+        )
+    }
+
     fun reset() {
         historyRepository.clear()
         notificationManager.cancelAll()

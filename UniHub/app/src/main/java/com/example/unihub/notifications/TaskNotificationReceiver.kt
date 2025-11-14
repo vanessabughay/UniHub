@@ -107,7 +107,15 @@ class TaskNotificationReceiver : BroadcastReceiver() {
                 title = notificationTitle,
                 message = historyMessage,
                 timestampMillis = System.currentTimeMillis(),
-                type = "TAREFA_PRAZO"
+                type = NotificationHistoryRepository.TASK_DEADLINE_TYPE,
+                category = NotificationHistoryRepository.TASK_CATEGORY,
+                hasPendingInteraction = false,
+                metadata = mapOf(
+                    "titulo" to notificationTitle,
+                    "quadro" to quadroNome,
+                    "prazoIso" to dataHoraIso,
+                    "notificationId" to notificationId,
+                )
             )
 
         if (requestCode != -1) {

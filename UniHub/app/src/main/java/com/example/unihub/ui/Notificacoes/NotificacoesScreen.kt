@@ -73,7 +73,8 @@ fun SectionHeaderRow(
 fun ToggleRow(
     titulo: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -84,6 +85,7 @@ fun ToggleRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = Color(0xFF59C36A),
@@ -100,7 +102,8 @@ fun DropdownPill(
     options: List<String>,
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
-    minHeight: Dp = 48.dp
+    minHeight: Dp = 48.dp,
+    enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -110,7 +113,7 @@ fun DropdownPill(
                 .heightIn(min = minHeight)
                 .wrapContentWidth()
                 .clip(RoundedCornerShape(24.dp))
-                .clickable { expanded = true },
+                .then(if (enabled) Modifier.clickable { expanded = true } else Modifier),
             shape = RoundedCornerShape(24.dp),
             color = Color.Transparent,
             border = BorderStroke(1.dp, Color(0xFF74777A))
@@ -132,7 +135,7 @@ fun DropdownPill(
         }
 
         DropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,
             onDismissRequest = { expanded = false }
         ) {
             options.forEachIndexed { index, text ->
@@ -307,7 +310,8 @@ private fun Content(
                     ToggleRow(
                         titulo = "Presença",
                         checked = state.edit.notificacaoDePresenca,
-                        onCheckedChange = onTogglePresenca
+                        onCheckedChange = onTogglePresenca,
+                        enabled = !state.isLoading
                     )
 
                     // Notificação de compartilhamento de disciplina
@@ -315,14 +319,16 @@ private fun Content(
                     ToggleRow(
                         titulo = "Compartilhamento de disciplina",
                         checked = state.edit.compartilhamentoDisciplina,
-                        onCheckedChange = onSetCompartilhamentoDisciplina
+                        onCheckedChange = onSetCompartilhamentoDisciplina,
+                        enabled = !state.isLoading
                     )
 
                     Spacer(Modifier.height(10.dp))
                     ToggleRow(
                         titulo = "Avaliações",
                         checked = state.edit.avaliacoesAtivas,
-                        onCheckedChange = onToggleAvaliacoes
+                        onCheckedChange = onToggleAvaliacoes,
+                        enabled = !state.isLoading
                     )
 
 
@@ -348,7 +354,8 @@ private fun Content(
                                     label = opcoes.first(),
                                     options = opcoes,
                                     selectedIndex = Antecedencia.todas.indexOf(mapa[p] ?: Antecedencia.padrao),
-                                    onSelected = { idx -> onSelectAntecedencia(p, Antecedencia.todas[idx]) }
+                                    onSelected = { idx -> onSelectAntecedencia(p, Antecedencia.todas[idx]) },
+                                    enabled = !state.isLoading
                                 )
                             }
                         }
@@ -384,21 +391,24 @@ private fun Content(
                     ToggleRow(
                         titulo = "Inclusão em um quadro",
                         checked = state.edit.incluirEmQuadro,
-                        onCheckedChange = onSetIncluirEmQuadro
+                        onCheckedChange = onSetIncluirEmQuadro,
+                        enabled = !state.isLoading
                     )
                     Spacer(Modifier.height(10.dp))
 
                     ToggleRow(
                         titulo = "Prazo de entrega de tarefa",
-                        checked =state.edit.prazoTarefa,
-                        onCheckedChange = onSetPrazoTarefa
+                        checked = state.edit.prazoTarefa,
+                        onCheckedChange = onSetPrazoTarefa,
+                        enabled = !state.isLoading
                     )
                     Spacer(Modifier.height(10.dp))
 
                     ToggleRow(
                         titulo = "Comentários de tarefa",
                         checked = state.edit.comentarioTarefa,
-                        onCheckedChange = onSetComentarioTarefa
+                        onCheckedChange = onSetComentarioTarefa,
+                        enabled = !state.isLoading
                     )
                 }
             }
@@ -425,7 +435,8 @@ private fun Content(
                     ToggleRow(
                         titulo = "Convite como contato",
                         checked = state.edit.conviteContato,
-                        onCheckedChange = onSetConviteContato
+                        onCheckedChange = onSetConviteContato,
+                        enabled = !state.isLoading
                     )
                     Spacer(Modifier.height(10.dp))
 
@@ -433,7 +444,8 @@ private fun Content(
                     ToggleRow(
                         titulo = "Inclusão em grupo",
                         checked = state.edit.inclusoEmGrupo,
-                        onCheckedChange = onSetInclusoEmGrupo
+                        onCheckedChange = onSetInclusoEmGrupo,
+                        enabled = !state.isLoading
                     )
                 }
             }

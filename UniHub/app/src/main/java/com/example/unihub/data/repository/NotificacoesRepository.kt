@@ -8,6 +8,8 @@ import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.NotificacoesConfig
 import com.example.unihub.data.model.normalized
 import com.example.unihub.notifications.AttendanceNotificationScheduler
+import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
+import com.example.unihub.notifications.ContatoNotificationSynchronizer
 import com.example.unihub.notifications.EvaluationNotificationScheduler
 import com.example.unihub.notifications.TaskNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoModel
@@ -22,7 +24,10 @@ class NotificacoesRepository(
     private val taskScheduler: TaskNotificationScheduler,
     private val disciplinaRepository: DisciplinaRepository,
     private val avaliacaoRepository: AvaliacaoRepository,
-    private val tarefaRepository: TarefaRepository
+    private val tarefaRepository: TarefaRepository,
+    private val notificationHistoryRepository: NotificationHistoryRepository,
+    private val compartilhamentoSynchronizer: CompartilhamentoNotificationSynchronizer,
+    private val contatoSynchronizer: ContatoNotificationSynchronizer,
 ) {
 
     suspend fun carregarConfig(): NotificacoesConfig {
@@ -71,6 +76,13 @@ class NotificacoesRepository(
             attendanceScheduler.scheduleNotifications(attendanceInfoList)
         } else {
             attendanceScheduler.cancelAllNotifications()
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+                types = setOf(
+                    NotificationHistoryRepository.ATTENDANCE_TYPE,
+                    NotificationHistoryRepository.ATTENDANCE_RESPONSE_TYPE,
+                )
+            )
         }
 
         // *** Lógica de Avaliação ***
@@ -109,6 +121,10 @@ class NotificacoesRepository(
             evaluationScheduler.scheduleNotifications(evaluationInfoList)
         } else {
             evaluationScheduler.scheduleNotifications(emptyList())
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.EVALUATION_CATEGORY,
+                types = setOf(NotificationHistoryRepository.EVALUATION_REMINDER_TYPE)
+            )
         }
 
         // *** Lógica de Tarefas/Quadros ***
@@ -127,6 +143,39 @@ class NotificacoesRepository(
             taskScheduler.scheduleNotifications(taskInfoList)
         } else {
             taskScheduler.scheduleNotifications(emptyList())
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.TASK_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TASK_DEADLINE_TYPE)
+            )
+        }
+
+        if (!config.compartilhamentoDisciplina) {
+            compartilhamentoSynchronizer.silenceNotifications()
+        }
+
+        if (!config.incluirEmQuadro) {
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.TASK_ASSIGNMENT_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TASK_ASSIGNMENT_CATEGORY)
+            )
+        }
+
+        if (!config.comentarioTarefa) {
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.TASK_COMMENT_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TASK_COMMENT_CATEGORY)
+            )
+        }
+
+        if (!config.conviteContato) {
+            contatoSynchronizer.silenceNotifications()
+        }
+
+        if (!config.inclusoEmGrupo) {
+            notificationHistoryRepository.clearByCategoryOrType(
+                category = NotificationHistoryRepository.GROUP_MEMBER_CATEGORY,
+                types = setOf(NotificationHistoryRepository.GROUP_MEMBER_CATEGORY)
+            )
         }
     }
 

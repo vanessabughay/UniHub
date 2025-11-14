@@ -76,6 +76,20 @@ class ContatoNotificationSynchronizer private constructor(context: Context) {
         removeInvite(inviteId)
     }
 
+    fun silenceNotifications() {
+        saveActiveInviteIds(emptySet())
+        notificationManager.cancelAll()
+        historyRepository.clearByCategoryOrType(
+            category = NotificationHistoryRepository.CONTACT_CATEGORY,
+            types = setOf(
+                TIPO_CONVITE,
+                TIPO_RESPOSTA,
+                NotificationHistoryRepository.CONTACT_INVITE_TYPE,
+                NotificationHistoryRepository.CONTACT_INVITE_TYPE_RESPONSE,
+            )
+        )
+    }
+
     fun reset() {
         historyRepository.clear()
         notificationManager.cancelAll()

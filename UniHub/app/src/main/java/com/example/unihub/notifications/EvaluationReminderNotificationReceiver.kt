@@ -112,7 +112,16 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
                 title = notificationTitle,
                 message = historyMessage,
                 timestampMillis = System.currentTimeMillis(),
-                type = "AVALIACAO_LEMBRETE"
+                type = NotificationHistoryRepository.EVALUATION_REMINDER_TYPE,
+                category = NotificationHistoryRepository.EVALUATION_CATEGORY,
+                referenceId = avaliacaoId,
+                hasPendingInteraction = false,
+                metadata = mapOf(
+                    "disciplinaId" to disciplinaId,
+                    "avaliacaoId" to avaliacaoId,
+                    "dataHora" to dataHoraIso,
+                    "notificationId" to notificationId,
+                )
             )
 
         if (requestCode != -1) {

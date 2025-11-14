@@ -213,6 +213,30 @@ class NotificationHistoryRepository private constructor(context: Context) {
         return shouldNotify
     }
 
+    /**
+     * Remove entradas do histórico para a categoria e/ou tipos especificados. Útil para
+     * sincronizar rapidamente o estado local quando o usuário desativa determinadas
+     * notificações nas configurações.
+     */
+    fun clearByCategoryOrType(category: String? = null, types: Set<String> = emptySet()) {
+        if (category == null && types.isEmpty()) return
+
+        refreshUserContext()
+        synchronized(lock) {
+            val updatedHistory = _historyFlow.value.filterNot { entry ->
+                val matchesCategory = category != null && entry.category?.equals(category, ignoreCase = true) == true
+                val matchesType = entry.type?.let { currentType ->
+                    types.any { type -> type.equals(currentType, ignoreCase = true) }
+                } == true
+                matchesCategory || matchesType
+            }
+
+            if (updatedHistory.size != _historyFlow.value.size) {
+                _historyFlow.value = updatedHistory
+                saveEntries(updatedHistory, currentUserId)
+            }
+        }
+    }
 
     fun markShareInviteHandled(inviteId: Long) {
         refreshUserContext()
@@ -594,12 +618,19 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_CONTACT_ACTION_PENDING = "contact_action_pending"
         private const val JSON_PENDING_INTERACTION = "pending_interaction"
         private const val JSON_METADATA = "metadata"
-        private const val SHARE_INVITE_TYPE_RESPONSE = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
-        private const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
-        private const val SHARE_CATEGORY = "COMPARTILHAMENTO"
-        private const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
-        private const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
-        private const val CONTACT_CATEGORY = "CONTATO"
+        const val SHARE_INVITE_TYPE_RESPONSE = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
+        const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+        const val SHARE_CATEGORY = "COMPARTILHAMENTO"
+        const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
+        const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
+        const val CONTACT_CATEGORY = "CONTATO"
+        const val GROUP_MEMBER_CATEGORY = "GRUPO_MEMBRO_ADICIONADO"
+        const val TASK_ASSIGNMENT_CATEGORY = "TAREFA_ATRIBUIDA"
+        const val TASK_COMMENT_CATEGORY = "TAREFA_COMENTARIO"
+        const val TASK_DEADLINE_TYPE = "TAREFA_PRAZO"
+        const val TASK_CATEGORY = "TAREFA"
+        const val EVALUATION_REMINDER_TYPE = "AVALIACAO_LEMBRETE"
+        const val EVALUATION_CATEGORY = "AVALIACAO"
         const val ATTENDANCE_TYPE = "PRESENCA_AULA"
         const val ATTENDANCE_RESPONSE_TYPE = "PRESENCA_AULA_RESPOSTA"
         const val ATTENDANCE_CATEGORY = "PRESENCA"

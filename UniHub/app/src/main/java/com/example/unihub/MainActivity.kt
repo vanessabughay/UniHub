@@ -54,6 +54,7 @@ import com.example.unihub.data.repository.DisciplinaRepository
 import com.example.unihub.data.repository.GoogleCalendarRepository
 import com.example.unihub.data.repository.GrupoRepository
 import com.example.unihub.data.repository.NotificacoesRepository
+import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository.TarefaRepository
 import com.example.unihub.notifications.AttendanceNotificationScheduler
@@ -800,7 +801,10 @@ class MainActivity : ComponentActivity() {
                                         taskScheduler = taskScheduler,
                                         disciplinaRepository = disciplinaRepository,
                                         avaliacaoRepository = avaliacaoRepository,
-                                        tarefaRepository = tarefaRepository
+                                        tarefaRepository = tarefaRepository,
+                                        notificationHistoryRepository = NotificationHistoryRepository.getInstance(context),
+                                        compartilhamentoSynchronizer = CompartilhamentoNotificationSynchronizer.getInstance(context),
+                                        contatoSynchronizer = ContatoNotificationSynchronizer.getInstance(context)
                                     )
 
                                     val factory = NotificacoesViewModelFactory(notificacoesRepository)
