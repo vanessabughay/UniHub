@@ -1,5 +1,9 @@
 package com.example.unihub
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -216,6 +220,7 @@ class MainActivity : ComponentActivity() {
             ContatoNotificationSynchronizer.triggerImmediate(applicationContext)
         }
         navigationIntentFlow.value = intent
+        requestNotificationPermissionIfNeeded()
 
         setContent {
             MaterialTheme {
@@ -920,6 +925,24 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(EXTRA_TARGET_DISCIPLINA_ID)
         intent.removeExtra(EXTRA_TARGET_SCREEN)
     }
+    private fun requestNotificationPermissionIfNeeded() {
+        // Só precisa pedir em Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQUEST_CODE_POST_NOTIFICATIONS
+                )
+            }
+        }
+    }
+
 
     companion object {
         const val EXTRA_TARGET_DISCIPLINA_ID = "extra_target_disciplina_id"
@@ -931,5 +954,6 @@ class MainActivity : ComponentActivity() {
         const val TARGET_SCREEN_LISTAR_QUADROS = "listar_quadros"
         const val EXTRA_TARGET_TASK_ID = "extra_target_task_id"
         const val TARGET_SCREEN_VISUALIZAR_TAREFA = "visualizar_tarefa"
+        private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
     }
 }
