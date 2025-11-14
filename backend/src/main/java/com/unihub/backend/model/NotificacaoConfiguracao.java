@@ -2,6 +2,7 @@ package com.unihub.backend.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -20,34 +21,42 @@ public class NotificacaoConfiguracao {
     private Usuario usuario;
 
     // --- Seção Disciplinas (Existente) ---
-    @Column(name = "notificacao_de_presenca", nullable = false)
+     @Column(name = "notificacao_de_presenca", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean notificacaoDePresenca = true;
 
-    @Column(name = "avaliacoes_ativas", nullable = false)
+    @Column(name = "avaliacoes_ativas", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean avaliacoesAtivas = true;
 
-    @Column(name = "compartilhamento_disciplina", nullable = false)
+    @Column(name = "compartilhamento_disciplina", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean compartilhamentoDisciplina = true;
 
     // --- Seção Quadros/Tarefas (NOVOS CAMPOS) ---
-    @Column(name = "incluir_em_quadro", nullable = false)
+    @Column(name = "incluir_em_quadro", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean incluirEmQuadro = true;
 
-    @Column(name = "prazo_tarefa", nullable = false)
+    @Column(name = "prazo_tarefa", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean prazoTarefa = true;
 
-    @Column(name = "comentario_tarefa", nullable = false)
+    @Column(name = "comentario_tarefa", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean comentarioTarefa = true;
 
     // --- Seção Contatos/Grupos (NOVOS CAMPOS) ---
-    @Column(name = "convite_contato", nullable = false)
+    @Column(name = "convite_contato", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean conviteContato = true;
 
-    @Column(name = "incluso_em_grupo", nullable = false)
+     @Column(name = "incluso_em_grupo", nullable = false, columnDefinition = "boolean default true")
+    @ColumnDefault("true")
     private boolean inclusoEmGrupo = true;
 
 
-    @OneToMany(mappedBy = "configuracao", cascade = CascadeType.ALL, orphanRemoval = true)
+     @OneToMany(mappedBy = "configuracao", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<NotificacaoConfiguracaoAntecedencia> antecedencias = new LinkedHashSet<>();
 
     // --- Getters e Setters ---
@@ -137,7 +146,11 @@ public class NotificacaoConfiguracao {
     }
 
     public void setAntecedencias(Set<NotificacaoConfiguracaoAntecedencia> antecedencias) {
-        this.antecedencias = antecedencias;
+        this.antecedencias.clear();
+        if (antecedencias == null) {
+            return;
+        }
+        antecedencias.forEach(this::addAntecedencia);
     }
 
     public void addAntecedencia(NotificacaoConfiguracaoAntecedencia antecedencia) {

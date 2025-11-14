@@ -97,9 +97,10 @@ public class NotificacaoConfiguracaoService {
     }
 
     private void atualizarAntecedencias(NotificacaoConfiguracao configuracao, AvaliacoesConfigDto dto) {
-        Map<Prioridade, Antecedencia> valores = dto != null
-                ? new EnumMap<>(dto.getPeriodicidade())
-                : new EnumMap<>(Prioridade.class);
+         EnumMap<Prioridade, Antecedencia> valores = new EnumMap<>(Prioridade.class);
+        if (dto != null && dto.getPeriodicidade() != null) {
+            valores.putAll(dto.getPeriodicidade());
+        }
 
         Map<Prioridade, NotificacaoConfiguracaoAntecedencia> existentes = configuracao.getAntecedencias()
                 .stream()
@@ -111,7 +112,10 @@ public class NotificacaoConfiguracaoService {
                 ));
 
         for (Prioridade prioridade : Prioridade.values()) {
-            Antecedencia antecedencia = valores.getOrDefault(prioridade, Antecedencia.padrao());
+            Antecedencia antecedencia = valores.get(prioridade);
+            if (antecedencia == null) {
+                antecedencia = Antecedencia.padrao();
+            }
             NotificacaoConfiguracaoAntecedencia registro = existentes.get(prioridade);
             if (registro == null) {
                 registro = new NotificacaoConfiguracaoAntecedencia();
