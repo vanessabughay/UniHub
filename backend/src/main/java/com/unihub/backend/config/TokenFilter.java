@@ -7,7 +7,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.lang.NonNull;
@@ -30,7 +32,9 @@ public class TokenFilter extends OncePerRequestFilter {
             Long usuarioId = autenticacaoService.getUsuarioIdPorToken(token);
             if (usuarioId != null) {
                 UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(usuarioId, null, List.of());
+                        new UsernamePasswordAuthenticationToken(usuarioId, null,
+                                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
                 /* Talvez substituir tudo dentro do if (){...}
                 var auth = new UsernamePasswordAuthenticationToken(
