@@ -1,5 +1,6 @@
 package com.example.unihub.ui.ListarDisciplinas
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,10 +10,13 @@ import com.example.unihub.data.model.NotificacaoResponse
 import com.example.unihub.data.model.UsuarioResumo
 import com.example.unihub.data.repository.CompartilhamentoBackend
 import com.example.unihub.data.repository.CompartilhamentoRepository
+import com.example.unihub.data.repository.NotificationHistoryRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 
 data class NotificacaoConviteUi(
@@ -31,7 +35,8 @@ data class NotificacaoConviteUi(
 )
 
 class CompartilhamentoViewModel(
-    private val repository: CompartilhamentoRepository
+    private val repository: CompartilhamentoRepository,
+    private val notificationHistoryRepository: NotificationHistoryRepository
 ) : ViewModel() {
 
     private val _contatos = MutableStateFlow<List<UsuarioResumo>>(emptyList())
@@ -128,9 +133,21 @@ class CompartilhamentoViewModel(
 
     fun aceitarConvite(usuarioId: Long, conviteId: Long) {
         atualizarProcessamento(conviteId, true)
+        val notificacao = _notificacoes.value.firstOrNull {
+            it.conviteId == conviteId || it.referenciaId == conviteId
+        }
         viewModelScope.launch {
             try {
-                repository.aceitarConvite(conviteId, usuarioId)
+                withContext(Dispatchers.IO) {
+                    repository.aceitarConvite(conviteId, usuarioId)
+                    notificationHistoryRepository.updateShareInviteResponse(
+                        referenceId = conviteId,
+                        accepted = true,
+                        timestampMillis = System.currentTimeMillis(),
+                        fallbackTitle = notificacao?.titulo,
+                        fallbackMessage = notificacao?.mensagem
+                    )
+                }
                 carregarNotificacoes(usuarioId)
                 _statusMessage.value = "Convite aceito"
             } catch (e: Exception) {
@@ -146,9 +163,21 @@ class CompartilhamentoViewModel(
 
     fun rejeitarConvite(usuarioId: Long, conviteId: Long) {
         atualizarProcessamento(conviteId, true)
+        val notificacao = _notificacoes.value.firstOrNull {
+            it.conviteId == conviteId || it.referenciaId == conviteId
+        }
         viewModelScope.launch {
             try {
-                repository.rejeitarConvite(conviteId, usuarioId)
+                withContext(Dispatchers.IO) {
+                    repository.rejeitarConvite(conviteId, usuarioId)
+                    notificationHistoryRepository.updateShareInviteResponse(
+                        referenceId = conviteId,
+                        accepted = false,
+                        timestampMillis = System.currentTimeMillis(),
+                        fallbackTitle = notificacao?.titulo,
+                        fallbackMessage = notificacao?.mensagem
+                    )
+                }
                 carregarNotificacoes(usuarioId)
                 _statusMessage.value = "Convite rejeitado"
             } catch (e: Exception) {
@@ -196,12 +225,15 @@ class CompartilhamentoViewModel(
     )
 }
 
-object CompartilhamentoViewModelFactory : ViewModelProvider.Factory {
+class CompartilhamentoViewModelFactory(
+    private val context: Context
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(CompartilhamentoViewModel::class.java)) {
             val backend: CompartilhamentoBackend = ApiCompartilhamentoBackend()
             val repository = CompartilhamentoRepository(backend)
-            return CompartilhamentoViewModel(repository) as T
+            val historyRepository = NotificationHistoryRepository.getInstance(context)
+            return CompartilhamentoViewModel(repository, historyRepository) as T
         }
         throw IllegalArgumentException("Classe de ViewModel desconhecida")
     }

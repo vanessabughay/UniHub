@@ -267,7 +267,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
         referenceId: Long,
         accepted: Boolean,
         timestampMillis: Long = System.currentTimeMillis(),
-        fallbackTitle: String? = null
+        fallbackTitle: String? = null,
+        fallbackMessage: String? = null
     ): Boolean {
         refreshUserContext()
         synchronized(lock) {
@@ -287,8 +288,21 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 ?.let { deserializeMetadata(it) }
                 ?: mutableMapOf()
 
-            val senderName = resolveShareSender(existingEntry, metadata)
-            val disciplineName = resolveShareDiscipline(existingEntry, metadata)
+            var senderName = resolveShareSender(existingEntry, metadata)
+            var disciplineName = resolveShareDiscipline(existingEntry, metadata)
+
+            if (senderName == null || disciplineName == null) {
+                val (fallbackSender, fallbackDiscipline) = guessShareInviteDetails(
+                    existingEntry?.title ?: fallbackTitle,
+                    existingEntry?.message ?: fallbackMessage
+                )
+                if (senderName == null) {
+                    senderName = fallbackSender
+                }
+                if (disciplineName == null) {
+                    disciplineName = fallbackDiscipline
+                }
+            }
 
             if (senderName != null) {
                 metadata[KEY_SHARE_SENDER_NAME] = senderName

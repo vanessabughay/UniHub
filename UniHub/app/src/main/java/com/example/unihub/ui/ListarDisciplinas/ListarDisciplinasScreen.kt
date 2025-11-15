@@ -67,8 +67,11 @@ fun ListarDisciplinasScreen(
 
     val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
 
+    val compartilhamentoFactory = remember(context) {
+        CompartilhamentoViewModelFactory(context.applicationContext)
+    }
     val compartilhamentoViewModel: CompartilhamentoViewModel =
-        viewModel(factory = CompartilhamentoViewModelFactory)
+        viewModel(factory = compartilhamentoFactory)
 
     val contatos by compartilhamentoViewModel.contatos.collectAsState()
     val notificacoes by compartilhamentoViewModel.notificacoes.collectAsState()

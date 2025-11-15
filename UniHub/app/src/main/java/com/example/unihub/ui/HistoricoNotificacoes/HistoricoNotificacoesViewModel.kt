@@ -202,7 +202,8 @@ class HistoricoNotificacoesViewModel(
                                 referenceId = conviteId,
                                 accepted = aceitar,
                                 timestampMillis = System.currentTimeMillis(),
-                                fallbackTitle = historyTitle
+                                fallbackTitle = historyTitle,
+                                fallbackMessage = historyEntry?.message
                             )
 
                             CompartilhamentoNotificationSynchronizer.getInstance(appContext)
