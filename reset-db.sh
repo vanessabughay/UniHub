@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
+# Usa o diretório onde o script está (que é a raiz do projeto)
+PROJECT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$PROJECT_DIR"
 
 COMPOSE_CMD=${COMPOSE_CMD:-docker compose}
 
-# Stop containers and remove associated volumes to ensure database is recreated.
+# Derruba tudo + volumes do compose
 $COMPOSE_CMD down --volumes
 
-# Make sure the named volume is gone so Postgres starts with a clean data directory.
+# ⚠️ CONFIRMAR o nome real do volume com `docker volume ls`
 VOLUME_NAME="unihub_pgdata"
+
 if docker volume inspect "$VOLUME_NAME" >/dev/null 2>&1; then
   docker volume rm "$VOLUME_NAME" >/dev/null
 fi
