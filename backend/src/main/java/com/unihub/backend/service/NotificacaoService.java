@@ -42,7 +42,23 @@ public class NotificacaoService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
         }
 
-        return notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId).stream()
+         List<Notificacao> notificacoes = notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId);
+
+        List<Notificacao> pendentes = notificacoes.stream()
+                .filter(Notificacao::isInteracaoPendente)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!pendentes.isEmpty()) {
+            LocalDateTime agora = agora();
+            pendentes.forEach(notificacao -> {
+                notificacao.setInteracaoPendente(false);
+                notificacao.setLida(true);
+                notificacao.setAtualizadaEm(agora);
+            });
+            notificacaoRepository.saveAll(pendentes);
+        }
+
+        return notificacoes.stream()
                 .map(NotificacaoResponse::fromEntity)
                 .collect(java.util.stream.Collectors.toList());
     }
@@ -70,7 +86,7 @@ public class NotificacaoService {
                 .filter(value -> !value.isEmpty())
                 .orElse(null);
         Long referenciaId = request.getReferenciaId();
-        boolean interacaoPendente = Boolean.TRUE.equals(request.getInteracaoPendente());
+        Boolean interacaoPendenteRequest = request.getInteracaoPendente();
         String metadataJson = serializeMetadata(request.getMetadata());
 
         Optional<Notificacao> existente = Optional.empty();
@@ -101,10 +117,19 @@ public class NotificacaoService {
         notificacao.setTipo(tipo);
         notificacao.setCategoria(categoria);
         notificacao.setReferenciaId(referenciaId);
-        if (interacaoPendente) {
+         boolean interacaoPendenteAtual = notificacao.isInteracaoPendente();
+        boolean interacaoPendenteAtualizada = interacaoPendenteAtual;
+
+        if (Boolean.FALSE.equals(interacaoPendenteRequest)) {
+            interacaoPendenteAtualizada = false;
+        } else if (Boolean.TRUE.equals(interacaoPendenteRequest) && (novaNotificacao || interacaoPendenteAtual)) {
+            interacaoPendenteAtualizada = true;
+        }
+
+        if (!interacaoPendenteAtual && interacaoPendenteAtualizada) {
             notificacao.setLida(false);
         }
-        notificacao.setInteracaoPendente(interacaoPendente);
+         notificacao.setInteracaoPendente(interacaoPendenteAtualizada);
         if (metadataJson != null) {
             notificacao.setMetadataJson(metadataJson);
         }

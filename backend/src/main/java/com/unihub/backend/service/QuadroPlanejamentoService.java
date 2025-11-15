@@ -884,7 +884,9 @@ public class QuadroPlanejamentoService {
         notificacao.setTipo(NOTIFICACAO_TIPO);
         notificacao.setCategoria(NOTIFICACAO_CATEGORIA);
         notificacao.setReferenciaId(quadroId);
-        notificacao.setInteracaoPendente(false);
+         if (nova) {
+            notificacao.setInteracaoPendente(true);
+        }
         notificacao.setMetadataJson(gerarMetadataQuadro(quadro));
         LocalDateTime agora = agora();
         if (nova) {
@@ -999,7 +1001,9 @@ public class QuadroPlanejamentoService {
         notificacao.setTipo(NOTIFICACAO_TIPO);
         notificacao.setCategoria(NOTIFICACAO_TAREFA_ATRIBUIDA_CATEGORIA);
         notificacao.setReferenciaId(tarefa.getId());
-        notificacao.setInteracaoPendente(false);
+        if (nova) {
+            notificacao.setInteracaoPendente(true);
+        }
         notificacao.setMetadataJson(gerarMetadataTarefa(tarefa));
         LocalDateTime agora = agora();
         if (nova) {
@@ -1070,7 +1074,9 @@ public class QuadroPlanejamentoService {
         notificacao.setTipo(NOTIFICACAO_TIPO);
         notificacao.setCategoria(NOTIFICACAO_TAREFA_COMENTARIO_CATEGORIA);
         notificacao.setReferenciaId(comentario.getId());
-        notificacao.setInteracaoPendente(false);
+         if (nova) {
+            notificacao.setInteracaoPendente(true);
+        }
         notificacao.setMetadataJson(gerarMetadataComentario(tarefa, comentario));
         LocalDateTime agora = agora();
         if (nova) {

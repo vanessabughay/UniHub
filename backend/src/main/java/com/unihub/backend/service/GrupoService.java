@@ -773,7 +773,7 @@ public class GrupoService {
         if (grupo != null && grupo.getId() != null) {
             request.setReferenciaId(grupo.getId());
         }
-        request.setInteracaoPendente(false);
+        request.setInteracaoPendente(true);
         request.setTimestamp(System.currentTimeMillis());
 
         Map<String, Object> metadata = new LinkedHashMap<>();
