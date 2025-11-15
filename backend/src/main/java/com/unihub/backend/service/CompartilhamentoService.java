@@ -118,6 +118,7 @@ public class CompartilhamentoService {
         conviteRepository.save(convite);
 
         marcarNotificacoesComoLidas(convite.getId(), usuarioId);
+        registrarRespostaParaDestinatario(convite, destinatario, true);
 
         Usuario remetente = convite.getRemetente();
         if (remetente != null) {
@@ -144,6 +145,7 @@ public class CompartilhamentoService {
         conviteRepository.save(convite);
 
         marcarNotificacoesComoLidas(convite.getId(), usuarioId);
+        registrarRespostaParaDestinatario(convite, convite.getDestinatario(), false);
 
         Usuario remetente = convite.getRemetente();
         if (remetente != null) {
@@ -194,7 +196,12 @@ String nomeContato = contato.getNome();
     }
 
     public List<NotificacaoResponse> listarNotificacoes(Long usuarioId) {
-        return notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId).stream()
+         List<Notificacao> notificacoes = notificacaoRepository.findByUsuarioIdOrderByAtualizadaEmDesc(usuarioId);
+         if (notificacoes.isEmpty()) {
+            notificacoes = notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId);
+         }
+
+        return notificacoes.stream()
                 .map(NotificacaoResponse::fromEntity)
                 .collect(Collectors.toList());
     }
@@ -262,6 +269,58 @@ String nomeContato = contato.getNome();
         notificacaoRepository.save(notificacao);
     }
 
+    private void registrarRespostaParaDestinatario(ConviteCompartilhamento convite,
+                                                   Usuario destinatario,
+                                                   boolean aceito) {
+        if (destinatario == null || destinatario.getId() == null) {
+            return;
+        }
+
+        Long referenciaId = convite != null ? convite.getId() : null;
+        Optional<Notificacao> existente = Optional.empty();
+        if (referenciaId != null) {
+            existente = notificacaoRepository.findByUsuarioIdAndTipoAndCategoriaAndReferenciaId(
+                    destinatario.getId(),
+                    TIPO_RESPOSTA,
+                    CATEGORIA_COMPARTILHAMENTO,
+                    referenciaId
+            );
+        }
+
+        Notificacao notificacao = existente.orElseGet(Notificacao::new);
+        boolean nova = notificacao.getId() == null;
+
+        notificacao.setUsuario(destinatario);
+        notificacao.setConvite(convite);
+        notificacao.setTipo(TIPO_RESPOSTA);
+        notificacao.setCategoria(CATEGORIA_COMPARTILHAMENTO);
+        notificacao.setReferenciaId(referenciaId);
+        notificacao.setInteracaoPendente(false);
+
+        String disciplinaNome = Optional.ofNullable(convite)
+                .map(ConviteCompartilhamento::getDisciplina)
+                .map(Disciplina::getNome)
+                .filter(nome -> nome != null && !nome.isBlank())
+                .orElse("sua disciplina");
+
+        String titulo = aceito ? "Compartilhamento aceito" : "Compartilhamento recusado";
+        String mensagem = aceito
+                ? String.format("Você aceitou o compartilhamento da disciplina %s.", disciplinaNome)
+                : String.format("Você recusou o compartilhamento da disciplina %s.", disciplinaNome);
+
+        notificacao.setTitulo(titulo);
+        notificacao.setMensagem(mensagem);
+
+        LocalDateTime agora = agora();
+        if (nova) {
+            notificacao.setCriadaEm(agora);
+            notificacao.setLida(false);
+        }
+        notificacao.setAtualizadaEm(agora);
+
+        notificacaoRepository.save(notificacao);
+    }
+    
      private String definirTituloNotificacao(String tipo, ConviteCompartilhamento convite) {
         String disciplinaNome = Optional.ofNullable(convite)
                 .map(ConviteCompartilhamento::getDisciplina)

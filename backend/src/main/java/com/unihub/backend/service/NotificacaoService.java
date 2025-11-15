@@ -42,8 +42,11 @@ public class NotificacaoService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuário não autenticado");
         }
 
-         List<Notificacao> notificacoes = notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId);
-
+        List<Notificacao> notificacoes = notificacaoRepository.findByUsuarioIdOrderByAtualizadaEmDesc(usuarioId);
+        if (notificacoes.isEmpty()) {
+            notificacoes = notificacaoRepository.findByUsuarioIdOrderByCriadaEmDesc(usuarioId);
+        }
+        
         List<Notificacao> pendentes = notificacoes.stream()
                 .filter(Notificacao::isInteracaoPendente)
                 .collect(java.util.stream.Collectors.toList());
