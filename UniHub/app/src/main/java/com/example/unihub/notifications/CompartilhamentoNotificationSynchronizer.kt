@@ -114,7 +114,7 @@ class CompartilhamentoNotificationSynchronizer private constructor(context: Cont
     }
 
     private fun NotificacaoConviteUi.historyReferenceId(): Long? {
-        return referenciaId ?: conviteId ?: id
+        return conviteId ?: referenciaId ?: id
     }
     private fun createBackend(): CompartilhamentoBackend = ApiCompartilhamentoBackend()
 

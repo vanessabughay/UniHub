@@ -243,9 +243,15 @@ class NotificationHistoryRepository private constructor(context: Context) {
         refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
-            val index = currentHistory.indexOfFirst { entry ->
+            var index = currentHistory.indexOfFirst { entry ->
                 entry.referenceId == inviteId &&
                         (entry.type == SHARE_INVITE_TYPE || entry.category == SHARE_CATEGORY)
+            }
+            if (index == -1) {
+                index = currentHistory.indexOfFirst { entry ->
+                    entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true &&
+                            extractShareInviteId(entry.metadataJson) == inviteId
+                }
             }
             if (index == -1) return
 
@@ -273,7 +279,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
-            val index = currentHistory.indexOfFirst { entry ->
+            var index = currentHistory.indexOfFirst { entry ->
                 entry.referenceId == referenceId && (
                         entry.category?.equals(SHARE_CATEGORY, ignoreCase = true) == true ||
                                 entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true ||
@@ -281,12 +287,27 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         )
             }
 
+            if (index == -1) {
+                index = currentHistory.indexOfFirst { entry ->
+                    entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true &&
+                            extractShareInviteId(entry.metadataJson) == referenceId
+                }
+            }
+
+
             val existingEntry = currentHistory.getOrNull(index)
             val entryId = existingEntry?.id ?: lastId.incrementAndGet()
 
             val metadata = existingEntry?.metadataJson
                 ?.let { deserializeMetadata(it) }
                 ?: mutableMapOf()
+
+            if (referenceId > 0) {
+                metadata[KEY_SHARE_INVITE_ID] = referenceId
+            } else {
+                metadata.remove(KEY_SHARE_INVITE_ID)
+            }
+
 
             var senderName = resolveShareSender(existingEntry, metadata)
             var disciplineName = resolveShareDiscipline(existingEntry, metadata)
@@ -376,7 +397,17 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 currentHistory.add(updatedEntry)
             }
 
-            val updatedHistory = currentHistory
+            val cleanedHistory = currentHistory.filter { entry ->
+                if (entry.id == updatedEntry.id) {
+                    true
+                } else if (referenceId > 0 && entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true) {
+                    !entry.matchesShareInvite(referenceId)
+                } else {
+                    true
+                }
+            }
+
+            val updatedHistory = cleanedHistory
                 .sortedByDescending { it.timestampMillis }
                 .take(MAX_ENTRIES)
 
@@ -500,7 +531,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
                 if (matchesCategory || matchesType) {
                     val referenceId = entry.referenceId
-                    referenceId != null && validReferences.contains(referenceId)
+                    val metadataReference = extractShareInviteId(entry.metadataJson)
+                    val isValidReference = referenceId != null && validReferences.contains(referenceId)
+                    val isValidMetadata = metadataReference != null && validReferences.contains(metadataReference)
+                    isValidReference || isValidMetadata
                 } else {
                     true
                 }
@@ -511,6 +545,25 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 saveEntries(updatedHistory, currentUserId)
             }
         }
+    }
+
+    private fun NotificationEntry.matchesShareInvite(referenceId: Long): Boolean {
+        if (referenceId <= 0) return false
+        if (this.referenceId == referenceId) return true
+        return extractShareInviteId(metadataJson) == referenceId
+    }
+
+    private fun extractShareInviteId(metadataJson: String?): Long? {
+        if (metadataJson.isNullOrBlank()) return null
+        val metadata = deserializeMetadata(metadataJson)
+        val rawValue = metadata[KEY_SHARE_INVITE_ID] ?: return null
+        return parseShareInviteReference(rawValue)
+    }
+
+    private fun parseShareInviteReference(value: Any?): Long? = when (value) {
+        is Number -> value.toLong()
+        is String -> value.toLongOrNull()
+        else -> value?.toString()?.toLongOrNull()
     }
 
 
@@ -792,6 +845,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
         const val KEY_SHARE_SENDER_NAME = "shareSenderName"
         const val KEY_SHARE_DISCIPLINE_NAME = "shareDisciplineName"
         const val KEY_SHARE_LAST_ACTION = "shareLastAction"
+        const val KEY_SHARE_INVITE_ID = "shareInviteId"
         const val SHARE_ACTION_ACCEPTED = "ACCEPTED"
         const val SHARE_ACTION_REJECTED = "REJECTED"
         private const val SHARE_TITLE_INVITE_SEPARATOR = " compartilhou "

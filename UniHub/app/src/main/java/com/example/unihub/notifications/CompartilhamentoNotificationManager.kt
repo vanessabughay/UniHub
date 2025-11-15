@@ -67,11 +67,12 @@ class CompartilhamentoNotificationManager(context: Context) {
         val title = invite.titulo ?: appContext.getString(R.string.share_notification_invite_title)
         val message = invite.mensagem
 
-        val historyReference = invite.referenciaId ?: inviteId
+        val historyReference = inviteId
 
         val (senderName, disciplineName) =
             NotificationHistoryRepository.guessShareInviteDetails(title, message)
         val metadata = mutableMapOf<String, Any?>()
+        metadata[NotificationHistoryRepository.KEY_SHARE_INVITE_ID] = inviteId
         senderName?.let {
             metadata[NotificationHistoryRepository.KEY_SHARE_SENDER_NAME] = it
         }
@@ -149,7 +150,12 @@ class CompartilhamentoNotificationManager(context: Context) {
 
         val title = notification.titulo ?: appContext.getString(titleRes)
         val message = notification.mensagem
-        val historyReference = notification.referenciaId ?: notification.conviteId ?: notification.id
+        val historyReference = notification.conviteId ?: notification.referenciaId ?: notification.id
+
+        val metadata = mutableMapOf<String, Any?>()
+        notification.conviteId?.let {
+            metadata[NotificationHistoryRepository.KEY_SHARE_INVITE_ID] = it
+        }
 
         val shouldNotify = historyRepository.logNotification(
             title = title,
@@ -159,6 +165,7 @@ class CompartilhamentoNotificationManager(context: Context) {
             category = SHARE_CATEGORY,
             referenceId = historyReference,
             hasPendingInteraction = false,
+            metadata = metadata.takeIf { it.isNotEmpty() },
             syncWithBackend = false,
         )
         if (!shouldNotify) {
