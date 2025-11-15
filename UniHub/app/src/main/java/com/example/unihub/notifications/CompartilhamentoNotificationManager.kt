@@ -172,6 +172,8 @@ class CompartilhamentoNotificationManager(context: Context) {
             return
         }
 
+        if (notification.lida) return
+
 
         if (notification.tipo == TIPO_CONVITE && notification.lida) return
         if (!hasPostNotificationsPermission()) return
