@@ -43,9 +43,9 @@ public class Notificacao {
     @Column(nullable = false)
     private boolean interacaoPendente = false;
 
-    @Lob
-    @Column(name = "metadata_json")
+    @Column(name = "metadata_json", columnDefinition = "TEXT")
     private String metadataJson;
+
 
     @Column(name = "criada_em", nullable = false)
     private LocalDateTime criadaEm;
