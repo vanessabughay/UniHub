@@ -24,31 +24,39 @@ public class TokenFilter extends OncePerRequestFilter {
     private AutenticacaoService autenticacaoService;
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            Long usuarioId = autenticacaoService.getUsuarioIdPorToken(token);
-            if (usuarioId != null) {
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(usuarioId, null,
-                                List.of(new SimpleGrantedAuthority("ROLE_USER")));
-                auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                /* Talvez substituir tudo dentro do if (){...}
-                var auth = new UsernamePasswordAuthenticationToken(
-                        usuarioId,
-                        null,
-                        java.util.List.of(new SimpleGrantedAuthority("ROLE_USER")) // <<< importante
-                );
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                 */
+    protected void doFilterInternal(@NonNull HttpServletRequest request,
+                                    @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain)
+        throws ServletException, IOException {
 
+    String header = request.getHeader("Authorization");
 
+    // LOG 1 – sempre imprime o header
+    System.out.println("DEBUG TOKENFILTER: " + request.getMethod() + " " + request.getRequestURI()
+            + " | header=" + header);
 
-            }
+    if (header != null && header.startsWith("Bearer ")) {
+        String token = header.substring(7);
+
+        // chama o serviço que valida/busca o usuário
+        Long usuarioId = autenticacaoService.getUsuarioIdPorToken(token);
+
+        // LOG 2 – mostra o token e o usuário resolvido (ou null)
+        System.out.println("DEBUG TOKENFILTER: token=" + token + ", usuarioId=" + usuarioId);
+
+        if (usuarioId != null) {
+            UsernamePasswordAuthenticationToken auth =
+                    new UsernamePasswordAuthenticationToken(
+                            usuarioId,
+                            null,
+                            List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                    );
+            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
-        filterChain.doFilter(request, response);
     }
+
+    filterChain.doFilter(request, response);
+}
+
 }
