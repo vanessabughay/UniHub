@@ -159,6 +159,7 @@ class HistoricoNotificacoesViewModel(
         executarAcao(conviteId, aceitar = false)
     }
 
+    @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private fun executarAcao(conviteId: Long, aceitar: Boolean) {
         TokenManager.loadToken(appContext, forceReload = true)
         val usuarioId = TokenManager.usuarioId
@@ -197,15 +198,11 @@ class HistoricoNotificacoesViewModel(
                                 R.string.share_notification_history_reject
                             }
 
-                            historyRepository.logNotification(
-                                title = historyTitle,
-                                message = appContext.getString(historyMessageRes),
-                                timestampMillis = System.currentTimeMillis(),
-                                type = historyEntry?.type,
-                                category = historyEntry?.category,
+                            historyRepository.updateShareInviteResponse(
                                 referenceId = conviteId,
-                                hasPendingInteraction = false,
-                                syncWithBackend = false,
+                                accepted = aceitar,
+                                timestampMillis = System.currentTimeMillis(),
+                                fallbackTitle = historyTitle
                             )
 
                             CompartilhamentoNotificationSynchronizer.getInstance(appContext)

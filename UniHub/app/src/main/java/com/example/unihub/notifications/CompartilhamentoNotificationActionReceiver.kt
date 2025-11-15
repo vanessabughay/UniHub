@@ -3,7 +3,6 @@ package com.example.unihub.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.example.unihub.R
 import com.example.unihub.data.apiBackend.ApiCompartilhamentoBackend
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.repository.CompartilhamentoBackend
@@ -38,23 +37,10 @@ class CompartilhamentoNotificationActionReceiver : BroadcastReceiver() {
                         ACTION_REJECT -> repository.rejeitarConvite(conviteId, usuarioId)
                     }
 
-                    NotificationHistoryRepository.getInstance(appContext).logNotification(
-                        title = appContext.getString(R.string.share_notification_history_title),
-                        message = when (action) {
-                            ACTION_ACCEPT -> appContext.getString(R.string.share_notification_history_accept)
-                            ACTION_REJECT -> appContext.getString(R.string.share_notification_history_reject)
-                            else -> ""
-                        },
-                        timestampMillis = System.currentTimeMillis(),
-                        type = when (action) {
-                            ACTION_ACCEPT -> CompartilhamentoNotificationManager.TIPO_RESPOSTA
-                            ACTION_REJECT -> CompartilhamentoNotificationManager.TIPO_RESPOSTA
-                            else -> null
-                        },
-                        category = CATEGORY_COMPARTILHAMENTO,
+                    NotificationHistoryRepository.getInstance(appContext).updateShareInviteResponse(
                         referenceId = conviteId,
-                        hasPendingInteraction = false,
-                        syncWithBackend = false,
+                        accepted = action == ACTION_ACCEPT,
+                        timestampMillis = System.currentTimeMillis()
                     )
 
                     CompartilhamentoNotificationSynchronizer.getInstance(appContext)

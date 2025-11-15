@@ -1,6 +1,7 @@
 package com.example.unihub.data.repository
 
 import android.content.Context
+import com.example.unihub.R
 import com.example.unihub.data.config.TokenManager
 import androidx.core.app.NotificationManagerCompat
 import java.util.concurrent.atomic.AtomicLong
@@ -262,6 +263,116 @@ class NotificationHistoryRepository private constructor(context: Context) {
         }
     }
 
+    fun updateShareInviteResponse(
+        referenceId: Long,
+        accepted: Boolean,
+        timestampMillis: Long = System.currentTimeMillis(),
+        fallbackTitle: String? = null
+    ): Boolean {
+        refreshUserContext()
+        synchronized(lock) {
+            val currentHistory = _historyFlow.value.toMutableList()
+            val index = currentHistory.indexOfFirst { entry ->
+                entry.referenceId == referenceId && (
+                        entry.category?.equals(SHARE_CATEGORY, ignoreCase = true) == true ||
+                                entry.type?.equals(SHARE_INVITE_TYPE, ignoreCase = true) == true ||
+                                entry.type?.equals(SHARE_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
+                        )
+            }
+
+            val existingEntry = currentHistory.getOrNull(index)
+            val entryId = existingEntry?.id ?: lastId.incrementAndGet()
+
+            val metadata = existingEntry?.metadataJson
+                ?.let { deserializeMetadata(it) }
+                ?: mutableMapOf()
+
+            val senderName = resolveShareSender(existingEntry, metadata)
+            val disciplineName = resolveShareDiscipline(existingEntry, metadata)
+
+            if (senderName != null) {
+                metadata[KEY_SHARE_SENDER_NAME] = senderName
+            } else {
+                metadata.remove(KEY_SHARE_SENDER_NAME)
+            }
+
+            if (disciplineName != null) {
+                metadata[KEY_SHARE_DISCIPLINE_NAME] = disciplineName
+            } else {
+                metadata.remove(KEY_SHARE_DISCIPLINE_NAME)
+            }
+
+            metadata[KEY_SHARE_LAST_ACTION] = if (accepted) {
+                SHARE_ACTION_ACCEPTED
+            } else {
+                SHARE_ACTION_REJECTED
+            }
+
+            val resolvedTitle = existingEntry?.title
+                ?: fallbackTitle
+                ?: appContext.getString(R.string.share_notification_history_title)
+            val resolvedSender = senderName
+                ?: appContext.getString(R.string.share_notification_history_unknown_sender)
+            val resolvedDiscipline = disciplineName
+                ?: appContext.getString(R.string.share_notification_history_unknown_discipline)
+
+            val message = if (accepted) {
+                appContext.getString(
+                    R.string.share_notification_history_accept_detail,
+                    resolvedDiscipline,
+                    resolvedSender
+                )
+            } else {
+                appContext.getString(
+                    R.string.share_notification_history_reject_detail,
+                    resolvedDiscipline,
+                    resolvedSender
+                )
+            }
+
+            val metadataJson = metadata.takeIf { it.isNotEmpty() }
+                ?.let { serializeMetadata(it) }
+
+            val updatedEntry = NotificationEntry(
+                id = entryId,
+                title = resolvedTitle,
+                message = message,
+                timestampMillis = timestampMillis,
+                type = existingEntry?.type ?: SHARE_INVITE_TYPE,
+                category = existingEntry?.category ?: SHARE_CATEGORY,
+                referenceId = referenceId,
+                hasPendingInteraction = false,
+                metadataJson = metadataJson
+            )
+
+            val shouldNotify = existingEntry?.let { previous ->
+                previous.title != updatedEntry.title ||
+                        previous.message != updatedEntry.message ||
+                        previous.timestampMillis != updatedEntry.timestampMillis ||
+                        previous.type != updatedEntry.type ||
+                        previous.category != updatedEntry.category ||
+                        previous.referenceId != updatedEntry.referenceId ||
+                        previous.hasPendingInteraction != updatedEntry.hasPendingInteraction ||
+                        previous.metadataJson != updatedEntry.metadataJson
+            } ?: true
+
+            if (index >= 0) {
+                currentHistory[index] = updatedEntry
+            } else {
+                currentHistory.add(updatedEntry)
+            }
+
+            val updatedHistory = currentHistory
+                .sortedByDescending { it.timestampMillis }
+                .take(MAX_ENTRIES)
+
+            _historyFlow.value = updatedHistory
+            saveEntries(updatedHistory, currentUserId)
+
+            return shouldNotify
+        }
+    }
+
     fun pruneShareNotifications(validReferences: Set<Long>) {
         refreshUserContext()
         pruneCategoryEntries(SHARE_CATEGORY, validReferences)
@@ -410,6 +521,50 @@ class NotificationHistoryRepository private constructor(context: Context) {
             _historyFlow.value = updatedHistory
             saveEntries(updatedHistory, currentUserId)
         }
+    }
+
+    private fun resolveShareSender(
+        entry: NotificationEntry?,
+        metadata: MutableMap<String, Any?>
+    ): String? {
+        fun sanitize(value: String?): String? {
+            if (value.isNullOrBlank()) return null
+            val cleaned = value.trim().trimEnd('.', ' ')
+            return cleaned.takeIf { it.isNotEmpty() }
+        }
+
+        val metadataValue = sanitize(metadata[KEY_SHARE_SENDER_NAME]?.toString())
+        if (metadataValue != null) {
+            return metadataValue
+        }
+
+        val (sender, _) = NotificationHistoryRepository.guessShareInviteDetails(
+            entry?.title,
+            entry?.message
+        )
+        return sender
+    }
+
+    private fun resolveShareDiscipline(
+        entry: NotificationEntry?,
+        metadata: MutableMap<String, Any?>
+    ): String? {
+        fun sanitize(value: String?): String? {
+            if (value.isNullOrBlank()) return null
+            val cleaned = value.trim().trimEnd('.', ' ')
+            return cleaned.takeIf { it.isNotEmpty() }
+        }
+
+        val metadataValue = sanitize(metadata[KEY_SHARE_DISCIPLINE_NAME]?.toString())
+        if (metadataValue != null) {
+            return metadataValue
+        }
+
+        val (_, discipline) = NotificationHistoryRepository.guessShareInviteDetails(
+            entry?.title,
+            entry?.message
+        )
+        return discipline
     }
 
     fun updateContactNotification(
@@ -620,6 +775,41 @@ class NotificationHistoryRepository private constructor(context: Context) {
         private const val JSON_METADATA = "metadata"
         const val SHARE_INVITE_TYPE_RESPONSE = "DISCIPLINA_COMPARTILHAMENTO_RESPOSTA"
         const val SHARE_INVITE_TYPE = "DISCIPLINA_COMPARTILHAMENTO"
+        const val KEY_SHARE_SENDER_NAME = "shareSenderName"
+        const val KEY_SHARE_DISCIPLINE_NAME = "shareDisciplineName"
+        const val KEY_SHARE_LAST_ACTION = "shareLastAction"
+        const val SHARE_ACTION_ACCEPTED = "ACCEPTED"
+        const val SHARE_ACTION_REJECTED = "REJECTED"
+        private const val SHARE_TITLE_INVITE_SEPARATOR = " compartilhou "
+        private const val SHARE_TITLE_RESPONSE_SEPARATOR = " respondeu sobre "
+        private const val SHARE_MESSAGE_INVITE_SEPARATOR = " quer compartilhar a disciplina "
+
+        fun guessShareInviteDetails(title: String?, message: String?): Pair<String?, String?> {
+            val senderFromTitle = extractBefore(title, SHARE_TITLE_INVITE_SEPARATOR)
+                ?: extractBefore(title, SHARE_TITLE_RESPONSE_SEPARATOR)
+            val disciplineFromTitle = extractAfter(title, SHARE_TITLE_INVITE_SEPARATOR)
+                ?: extractAfter(title, SHARE_TITLE_RESPONSE_SEPARATOR)
+
+            var sender = sanitizeShareText(senderFromTitle)
+            var discipline = sanitizeShareText(disciplineFromTitle)
+
+            if ((sender == null || discipline == null) && !message.isNullOrBlank()) {
+                val index = message.indexOf(SHARE_MESSAGE_INVITE_SEPARATOR)
+                if (index > 0) {
+                    if (sender == null) {
+                        sender = sanitizeShareText(message.substring(0, index))
+                    }
+                    if (discipline == null) {
+                        discipline = sanitizeShareText(
+                            message.substring(index + SHARE_MESSAGE_INVITE_SEPARATOR.length)
+                        )
+                    }
+                }
+            }
+
+            return sender to discipline
+        }
+
         const val SHARE_CATEGORY = "COMPARTILHAMENTO"
         const val CONTACT_INVITE_TYPE = "CONTATO_SOLICITACAO"
         const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
@@ -657,10 +847,31 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 }
             }
         }
+
         fun buildAttendanceReferenceId(disciplinaId: Long, occurrenceEpochDay: Long): Long {
             val upper = disciplinaId and 0xFFFFFFFFL
             val lower = occurrenceEpochDay and 0xFFFFFFFFL
             return (upper shl 32) or (lower and 0xFFFFFFFFL)
+        }
+
+        private fun extractBefore(text: String?, separator: String): String? {
+            if (text.isNullOrBlank()) return null
+            val index = text.indexOf(separator)
+            if (index <= 0) return null
+            return text.substring(0, index)
+        }
+
+        private fun extractAfter(text: String?, separator: String): String? {
+            if (text.isNullOrBlank()) return null
+            val index = text.indexOf(separator)
+            if (index < 0) return null
+            return text.substring(index + separator.length)
+        }
+
+        private fun sanitizeShareText(raw: String?): String? {
+            if (raw.isNullOrBlank()) return null
+            val cleaned = raw.trim().trimEnd('.', ' ')
+            return cleaned.takeIf { it.isNotEmpty() }
         }
     }
     private fun serializeMetadata(metadata: Map<String, Any?>): String {
