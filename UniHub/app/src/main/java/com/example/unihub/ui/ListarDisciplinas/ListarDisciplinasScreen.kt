@@ -324,12 +324,12 @@ fun ListarDisciplinasScreen(
                 isLoading = isCarregandoContatos,
                 isSending = isCompartilhando,
                 onDismiss = { disciplinaParaCompartilhar = null },
-                onConfirm = { contato, mensagem ->
+                onConfirm = { contato ->
                     compartilhamentoViewModel.compartilharDisciplina(
                         usuarioId,
                         disciplinaSelecionada.id,
                         contato.id,
-                        mensagem
+                        null
                     )
                     disciplinaParaCompartilhar = null
                 }
@@ -480,9 +480,9 @@ fun CompartilharDisciplinaDialog(
     isLoading: Boolean,
     isSending: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (UsuarioResumo, String?) -> Unit
+    onConfirm: (UsuarioResumo) -> Unit
 ) {
-    var mensagem by remember { mutableStateOf("") }
+
     var contatoSelecionadoId by remember { mutableStateOf<Long?>(null) }
 
     AlertDialog(
@@ -490,9 +490,7 @@ fun CompartilharDisciplinaDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    contatos.firstOrNull { it.id == contatoSelecionadoId }?.let { selecionado ->
-                        onConfirm(selecionado, mensagem.takeIf { it.isNotBlank() })
-                    }
+                    contatos.firstOrNull { it.id == contatoSelecionadoId }?.let(onConfirm)
                 },
                 enabled = contatoSelecionadoId != null && !isLoading && !isSending
             ) {
@@ -552,14 +550,8 @@ fun CompartilharDisciplinaDialog(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = mensagem,
-                            onValueChange = { mensagem = it },
-                            label = { Text("Mensagem (opcional)") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = false
-                        )
+
+
                     }
                 }
             }
