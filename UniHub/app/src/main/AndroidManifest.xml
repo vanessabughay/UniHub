@@ -41,23 +41,23 @@
         </activity>
 
         <receiver
-            android:name=".notifications.AttendanceNotificationReceiver"
+            android:name=".notifications.FrequenciaNotificationReceiver"
             android:enabled="true"
             android:exported="false" />
 
         <receiver
-            android:name=".notifications.AttendanceNotificationActionReceiver"
+            android:name=".notifications.FrequenciaNotificationActionReceiver"
             android:enabled="true"
             android:exported="false" />
 
 
         <receiver
-            android:name=".notifications.EvaluationNotificationReceiver"
+            android:name=".notifications.AvaliacaoNotificationReceiver"
             android:enabled="true"
             android:exported="false" />
 
         <receiver
-            android:name=".notifications.TaskNotificationReceiver"
+            android:name=".notifications.TarefaNotificationReceiver"
             android:enabled="true"
             android:exported="false" />
 
