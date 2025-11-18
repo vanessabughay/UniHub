@@ -506,13 +506,6 @@ public class QuadroPlanejamentoService {
                 return new PreferenciaTarefaResponse(estadoAtual);
     }
 
-
-    private Usuario referenciaUsuario(Long usuarioId) {
-        Usuario usuario = new Usuario();
-        usuario.setId(usuarioId);
-        return usuario;
-    }
-
     private void ajustarStatus(QuadroPlanejamento quadro, QuadroStatus statusAnterior) {
         if (quadro.getStatus() == null) {
             quadro.setStatus(QuadroStatus.ATIVO);
@@ -586,40 +579,65 @@ public class QuadroPlanejamentoService {
         }
 
         String trimmed = valor.trim();
+        return tryParseInstant(trimmed)
+                .or(() -> tryParseOffsetDateTime(trimmed))
+                .or(() -> tryParseEpochMillis(trimmed))
+                .or(() -> tryParseLocalDateTime(trimmed))
+                .or(() -> tryParseLocalDate(trimmed))
+                .orElseThrow(() -> new IllegalArgumentException("Formato de prazo inválido: " + valor));
+    }
 
+        private Optional<LocalDateTime> tryParseInstant(String valor) {
         try {
-            Instant instant = Instant.parse(trimmed);
-            return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+            Instant instant = Instant.parse(valor);
+            return Optional.of(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
         } catch (DateTimeParseException ignored) {
+            return Optional.empty();        
+        }
+    }
+
+     private Optional<LocalDateTime> tryParseOffsetDateTime(String valor) {
+        try {
+            return Optional.of(OffsetDateTime.parse(valor).toLocalDateTime());
+        } catch (DateTimeParseException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private Optional<LocalDateTime> tryParseEpochMillis(String valor) {
+        if (!valor.matches("^-?\\d+$")) {
+            return Optional.empty();
         }
         try {
-            return OffsetDateTime.parse(trimmed).toLocalDateTime();
-        } catch (DateTimeParseException ignored) {
-        }
-
-        try {
-            long epochMillis = Long.parseLong(trimmed);
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneId.systemDefault());
+            long epochMillis = Long.parseLong(valor);
+            Instant instant = Instant.ofEpochMilli(epochMillis);
+            return Optional.of(LocalDateTime.ofInstant(instant, ZoneId.systemDefault()));
         } catch (NumberFormatException ignored) {
+            return Optional.empty();
         }
+    }
 
-        String normalized = trimmed.replace(' ', 'T');
+        private Optional<LocalDateTime> tryParseLocalDateTime(String valor) {
+        String normalized = valor.replace(' ', 'T');
         if (normalized.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
             normalized = normalized + ":00";
         }
 
         try {
-            return LocalDateTime.parse(normalized);
+            return Optional.of(LocalDateTime.parse(normalized));
         } catch (DateTimeParseException ignored) {
+                        return Optional.empty();
         }
+    }
 
+    private Optional<LocalDateTime> tryParseLocalDate(String valor) {
         try {
-            LocalDate date = LocalDate.parse(trimmed);
-            return date.atStartOfDay();
+            LocalDate date = LocalDate.parse(valor);
+            return Optional.of(date.atStartOfDay());
         } catch (DateTimeParseException ignored) {
+            return Optional.empty();
         }
 
-        throw new IllegalArgumentException("Formato de prazo inválido: " + valor);
     }
 
 

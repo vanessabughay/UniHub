@@ -1,7 +1,7 @@
 package com.unihub.backend.service;
 
-import com.unihub.backend.dto.AvaliacaoRequest;   // <- DTO
-import com.unihub.backend.dto.ContatoRef;         // <- se precisar
+import com.unihub.backend.dto.AvaliacaoRequest;
+import com.unihub.backend.dto.ContatoRef;
 import com.unihub.backend.model.*;
 import com.unihub.backend.model.enums.Modalidade;
 import com.unihub.backend.repository.*;
@@ -13,6 +13,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AvaliacaoService {
@@ -47,10 +50,10 @@ public class AvaliacaoService {
 
     @Transactional
     public Long criar(AvaliacaoRequest req, Long usuarioId) {
-                validarUsuario(usuarioId);
+        validarUsuario(usuarioId);
         Avaliacao a = new Avaliacao();
         aplicar(req, a, usuarioId);
-         Avaliacao salvo = avaliacaoRepository.save(a);
+        Avaliacao salvo = avaliacaoRepository.save(a);
         googleCalendarSyncService.syncEvaluation(salvo.getId(), usuarioId);
         return salvo.getId();
     }
@@ -59,7 +62,9 @@ public class AvaliacaoService {
     public boolean atualizar(Long id, AvaliacaoRequest req, Long usuarioId) {
         validarUsuario(usuarioId);
         var opt = avaliacaoRepository.findByIdAndUsuarioId(id, usuarioId);
-        if (opt.isEmpty()) return false;
+        if (opt.isEmpty()) {
+            return false;
+        }
         Avaliacao a = opt.get();
         aplicar(req, a, usuarioId);
         avaliacaoRepository.save(a);
@@ -68,7 +73,6 @@ public class AvaliacaoService {
     }
 
     private void aplicar(AvaliacaoRequest req, Avaliacao a, Long usuarioId) {
-        validarUsuario(usuarioId);
         a.setDescricao(req.descricao());
         a.setTipoAvaliacao(req.tipoAvaliacao());
         a.setModalidade(req.modalidade());
@@ -80,21 +84,8 @@ public class AvaliacaoService {
         a.setPeso(req.peso());
         a.setUsuario(referenciaUsuario(usuarioId));
 
-        if (req.dataEntrega() == null || req.dataEntrega().isBlank()) {
-            a.setDataEntrega(null);
-        } else {
-            String raw = req.dataEntrega().trim();
-            if (raw.contains("T")) {
-                // aceita "yyyy-MM-dd'T'HH:mm" e "yyyy-MM-dd'T'HH:mm:ss"
-                if (raw.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
-                    raw = raw + ":00"; // garante segundos
-                }
-                a.setDataEntrega(LocalDateTime.parse(raw)); // ISO
-            } else {
-                // veio só a data -> meia-noite
-                a.setDataEntrega(LocalDate.parse(raw).atStartOfDay());
-            }
-        }
+        a.setDataEntrega(parseDataEntrega(req.dataEntrega()));
+
 
         // Disciplina (apenas id no request)
         Long discId = (req.disciplina() != null ? req.disciplina().id() : null);
@@ -105,19 +96,8 @@ public class AvaliacaoService {
 
         // Integrantes (enviar/receber só ids)
         a.getIntegrantes().clear();
-        if (a.getModalidade() == Modalidade.EM_GRUPO && req.integrantes() != null && !req.integrantes().isEmpty()) {
-            List<Long> ids = req.integrantes().stream().map(ContatoRef::id).toList();
-            if (!ids.isEmpty()) {
-                if (ids.stream().anyMatch(java.util.Objects::isNull)) {
-                    throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a uma avaliação.");
-                }
-                List<Contato> contatos = contatoRepository.findByOwnerIdAndIdIn(usuarioId, ids);
-                java.util.Set<Long> encontrados = new java.util.HashSet<>(contatos.stream().map(Contato::getId).toList());
-                if (encontrados.size() != new java.util.HashSet<>(ids).size()) {
-                    throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
-                }
-                a.getIntegrantes().addAll(contatos);
-            }
+        if (a.getModalidade() == Modalidade.EM_GRUPO) {
+            a.getIntegrantes().addAll(carregarIntegrantes(req.integrantes(), usuarioId));
         }
     }
 
@@ -145,6 +125,48 @@ public class AvaliacaoService {
             throw new IllegalArgumentException("Usuário autenticado é obrigatório");
         }
     }
+
+    private LocalDateTime parseDataEntrega(String data) {
+        if (data == null || data.isBlank()) {
+            return null;
+        }
+
+        String raw = data.trim();
+        if (raw.contains("T")) {
+            if (raw.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$")) {
+                raw = raw + ":00";
+            }
+            return LocalDateTime.parse(raw);
+        }
+        return LocalDate.parse(raw).atStartOfDay();
+    }
+
+    private List<Contato> carregarIntegrantes(List<ContatoRef> integrantes, Long usuarioId) {
+        if (integrantes == null || integrantes.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> ids = integrantes.stream()
+                .map(ContatoRef::id)
+                .toList();
+
+        if (ids.isEmpty() || ids.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Todos os contatos devem possuir um ID ao vincular a uma avaliação.");
+        }
+
+        List<Contato> contatos = contatoRepository.findByOwnerIdAndIdIn(usuarioId, ids);
+        Set<Long> solicitados = new java.util.HashSet<>(ids);
+        Set<Long> encontrados = contatos.stream()
+                .map(Contato::getId)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (!encontrados.containsAll(solicitados)) {
+            throw new EntityNotFoundException("Alguns contatos informados não pertencem ao usuário autenticado.");
+        }
+
+        return contatos;
+    }
+
 
     private Usuario referenciaUsuario(Long usuarioId) {
         Usuario usuario = new Usuario();
