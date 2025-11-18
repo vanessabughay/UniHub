@@ -11,8 +11,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresExtension
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -320,13 +318,7 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 // LISTAR DISCIPLINAS
-                                composable(
-                                    route = Screen.ListarDisciplinas.route,
-                                    enterTransition = { EnterTransition.None },
-                                    exitTransition = { ExitTransition.None },
-                                    popEnterTransition = { EnterTransition.None },
-                                    popExitTransition = { ExitTransition.None }
-                                ) {
+                                composable(Screen.ListarDisciplinas.route) {
                                     ListarDisciplinasScreen(
                                         onAddDisciplina = {
                                             navController.navigate(Screen.ManterDisciplina.createRoute(null))
@@ -369,13 +361,9 @@ class MainActivity : ComponentActivity() {
                                 }
 
                                 // VISUALIZAR DISCIPLINA
-                                composable( 
+                                composable(
                                     route = Screen.VisualizarDisciplina.route,
-                                    arguments = listOf(navArgument("id") { type = NavType.StringType }),
-                                    enterTransition = { EnterTransition.None },
-                                    exitTransition = { ExitTransition.None },
-                                    popEnterTransition = { EnterTransition.None },
-                                    popExitTransition = { ExitTransition.None }
+                                    arguments = listOf(navArgument("id") { type = NavType.StringType })
                                 ) { backStackEntry ->
                                     val disciplinaId = backStackEntry.arguments?.getString("id")
 
