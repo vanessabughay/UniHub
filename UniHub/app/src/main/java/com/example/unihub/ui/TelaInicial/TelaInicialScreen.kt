@@ -46,6 +46,7 @@ import androidx.navigation.NavHostController
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.components.MenuLateral
 import com.example.unihub.components.iconeParaRotulo
@@ -448,10 +449,11 @@ private fun CabecalhoPerfil(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 atalhos.forEach { rotulo ->
-                    AtalhoRapido(
+                    AtalhoRapidoItem(
                         icone = iconeParaRotulo(rotulo),
                         rotulo = rotulo,
-                        onClick = { onClicarAtalho(rotulo) }
+                        onClick = { onClicarAtalho(rotulo) },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -463,10 +465,17 @@ private fun CabecalhoPerfil(
 
 
 @Composable
-private fun AtalhoRapido(icone: ImageVector, rotulo: String, onClick: () -> Unit) {
-    Column(modifier = Modifier
-        .width(80.dp)
-        .clickable { onClick() }, horizontalAlignment = Alignment.CenterHorizontally) {
+private fun AtalhoRapidoItem(
+    icone: ImageVector,
+    rotulo: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .clickable { onClick() },
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Box(
             modifier = Modifier
                 .size(64.dp)
@@ -477,7 +486,14 @@ private fun AtalhoRapido(icone: ImageVector, rotulo: String, onClick: () -> Unit
             Icon(icone, contentDescription = rotulo, tint = CoresApp.AzulIcone, modifier = Modifier.size(34.dp))
         }
         Spacer(Modifier.height(8.dp))
-        Text(text = rotulo, color = CoresApp.AzulIcone, fontSize = 14.sp)
+        Text(
+            text = rotulo,
+            color = CoresApp.AzulIcone,
+            fontSize = 14.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
