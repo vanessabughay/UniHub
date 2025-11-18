@@ -21,16 +21,16 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 
-class TaskNotificationReceiver : BroadcastReceiver() {
+class TarefaNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         TokenManager.loadToken(context.applicationContext)
 
-        val titulo = intent.getStringExtra(EXTRA_TASK_TITLE).orEmpty()
+        val titulo = intent.getStringExtra(EXTRA_TAREFA_TITLE).orEmpty()
         if (titulo.isBlank()) return
 
-        val quadroNome = intent.getStringExtra(EXTRA_TASK_BOARD_NAME)
-        val dataHoraIso = intent.getStringExtra(EXTRA_TASK_DEADLINE)
+        val quadroNome = intent.getStringExtra(EXTRA_TAREFA_BOARD_NAME)
+        val dataHoraIso = intent.getStringExtra(EXTRA_TAREFA_DEADLINE)
         val requestCode = intent.getIntExtra(EXTRA_REQUEST_CODE, -1)
 
         createChannel(context)
@@ -47,26 +47,26 @@ class TaskNotificationReceiver : BroadcastReceiver() {
             addNextIntentWithParentStack(visualizarIntent)
             getPendingIntent(
                 notificationId,
-                PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_UPDATE_CURRENT or FrequenciaNotificationScheduler.immutableFlag()
             )
         }
 
         val formattedDateTime = formatDateTimeForDisplay(context, dataHoraIso)
-        val promptText = context.getString(R.string.task_notification_prompt)
+        val promptText = context.getString(R.string.tarefa_notification_prompt)
         val boardText = quadroNome?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.task_notification_board_format, it) }
+            ?.let { context.getString(R.string.tarefa_notification_board_format, it) }
             .orEmpty()
 
         val locale = Locale("pt", "BR")
         val notificationTitle = titulo.takeIf { it.isNotBlank() }
             ?.uppercase(locale)
-            ?: context.getString(R.string.task_notification_default_title)
+            ?: context.getString(R.string.tarefa_notification_default_title)
 
         val historyMessage = listOfNotNull(promptText, formattedDateTime, boardText.takeIf { it.isNotBlank() })
             .joinToString("\n")
 
-        val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
-            setTextViewText(R.id.notification_app_title, context.getString(R.string.task_notification_label))
+        val contentView = RemoteViews(context.packageName, R.layout.notificacao_frequencia).apply {
+            setTextViewText(R.id.notification_app_title, context.getString(R.string.tarefa_notification_label))
             setTextViewText(R.id.notification_title, notificationTitle)
             setTextViewText(R.id.notification_message, promptText)
             setTextViewText(R.id.notification_time, formattedDateTime)
@@ -80,7 +80,7 @@ class TaskNotificationReceiver : BroadcastReceiver() {
 
             setTextViewText(
                 R.id.notification_button_presence,
-                context.getString(R.string.task_notification_button_details)
+                context.getString(R.string.tarefa_notification_button_details)
             )
             setViewVisibility(R.id.notification_button_presence, View.VISIBLE)
             setOnClickPendingIntent(R.id.notification_button_presence, visualizarPendingIntent)
@@ -107,8 +107,8 @@ class TaskNotificationReceiver : BroadcastReceiver() {
                 title = notificationTitle,
                 message = historyMessage,
                 timestampMillis = System.currentTimeMillis(),
-                type = NotificationHistoryRepository.TASK_DEADLINE_TYPE,
-                category = NotificationHistoryRepository.TASK_CATEGORY,
+                type = NotificationHistoryRepository.TAREFA_PRAZO_TYPE,
+                category = NotificationHistoryRepository.TAREFA_CATEGORY,
                 hasPendingInteraction = false,
                 metadata = mapOf(
                     "titulo" to notificationTitle,
@@ -124,7 +124,7 @@ class TaskNotificationReceiver : BroadcastReceiver() {
                 context,
                 requestCode,
                 intent,
-                PendingIntent.FLAG_NO_CREATE or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_NO_CREATE or FrequenciaNotificationScheduler.immutableFlag()
             )
             pendingIntent?.let { alarmManager?.cancel(it) }
         }
@@ -135,31 +135,31 @@ class TaskNotificationReceiver : BroadcastReceiver() {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.task_channel_name),
+            context.getString(R.string.tarefa_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = context.getString(R.string.task_channel_description)
+            description = context.getString(R.string.tarefa_channel_description)
         }
         manager.createNotificationChannel(channel)
     }
 
     private fun formatDateTimeForDisplay(context: Context, dateTimeString: String?): String {
-        val zoned = TaskNotificationScheduler.parseDateTime(dateTimeString)
-            ?: return context.getString(R.string.task_notification_schedule_unknown)
+        val zoned = TarefaNotificationScheduler.parseDateTime(dateTimeString)
+            ?: return context.getString(R.string.tarefa_notification_schedule_unknown)
 
         val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
         return context.getString(
-            R.string.task_notification_schedule_format,
+            R.string.tarefa_notification_schedule_format,
             formatter.format(zoned)
         )
     }
 
     companion object {
-        const val EXTRA_TASK_TITLE = "extra_task_title"
-        const val EXTRA_TASK_BOARD_NAME = "extra_task_board_name"
-        const val EXTRA_TASK_DEADLINE = "extra_task_deadline"
+        const val EXTRA_TAREFA_TITLE = "extra_tarefa_title"
+        const val EXTRA_TAREFA_BOARD_NAME = "extra_tarefa_board_name"
+        const val EXTRA_TAREFA_DEADLINE = "extra_tarefa_deadline"
         const val EXTRA_REQUEST_CODE = "extra_request_code"
 
-        private const val CHANNEL_ID = "task_notifications"
+        private const val CHANNEL_ID = "tarefa_notifications"
     }
 }

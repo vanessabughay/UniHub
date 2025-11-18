@@ -21,7 +21,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.Icons.Outlined
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -50,12 +49,10 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.components.MenuLateral
 import com.example.unihub.components.iconeParaRotulo
-import com.example.unihub.data.model.Antecedencia
-import com.example.unihub.ui.TelaInicial.TelaInicialViewModelFactory
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import com.example.unihub.notifications.TaskNotificationScheduler
-import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.notifications.TarefaNotificationScheduler
+import com.example.unihub.notifications.AvaliacaoNotificationScheduler
 import com.example.unihub.data.repository.InstituicaoRepositoryProvider
 import com.example.unihub.Screen
 import com.example.unihub.R
@@ -111,10 +108,10 @@ fun TelaInicial(
         }
     }
 
-    val taskNotificationScheduler = remember { TaskNotificationScheduler(context.applicationContext) }
-    val evaluationNotificationScheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+    val tarefaNotificationScheduler = remember { TarefaNotificationScheduler(context.applicationContext) }
+    val avaliacaoNotificationScheduler = remember { AvaliacaoNotificationScheduler(context.applicationContext) }
 
-    val evaluationNotificationInfos = remember(avaliacoesDetalhadas) {
+    val avaliacaoNotificationInfos = remember(avaliacoesDetalhadas) {
         avaliacoesDetalhadas.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
             val disciplinaId = when (val rawId = avaliacao.disciplina?.id) {
@@ -122,13 +119,13 @@ fun TelaInicial(
                 is String -> rawId.toLongOrNull()
                 else -> null
             }
-            EvaluationNotificationScheduler.EvaluationInfo(
+            AvaliacaoNotificationScheduler.AvaliacaoInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
                 disciplinaId = disciplinaId,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                reminderDuration = EvaluationNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
+                reminderDuration = AvaliacaoNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
                 // receberNotificacoes = avaliacao.receberNotificacoes == true,
                 // antecedenciaDias = Antecedencia.padrao.dias
                 receberNotificacoes = avaliacao.receberNotificacoes == true
@@ -137,10 +134,10 @@ fun TelaInicial(
         }
     }
 
-    val taskNotificationInfos = remember(estado.tarefas) {
+    val tarefaNotificationInfos = remember(estado.tarefas) {
         estado.tarefas.mapNotNull { tarefa ->
             val prazoIso = tarefa.prazoIso ?: return@mapNotNull null
-            TaskNotificationScheduler.TaskInfo(
+            TarefaNotificationScheduler.TarefaInfo(
                 titulo = tarefa.titulo,
                 quadroNome = tarefa.nomeQuadro,
                 prazoIso = prazoIso,
@@ -149,8 +146,8 @@ fun TelaInicial(
         }
     }
 
-    val latestEvaluationInfos by rememberUpdatedState(evaluationNotificationInfos)
-    val latestTaskInfos by rememberUpdatedState(taskNotificationInfos)
+    val latestAvaliacaoInfos by rememberUpdatedState(avaliacaoNotificationInfos)
+    val latestTarefaInfos by rememberUpdatedState(tarefaNotificationInfos)
 
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
@@ -161,13 +158,13 @@ fun TelaInicial(
     }
 
 
-    DisposableEffect(lifecycleOwner, latestEvaluationInfos, latestTaskInfos) {
+    DisposableEffect(lifecycleOwner, latestAvaliacaoInfos, latestTarefaInfos) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.atualizarNomeUsuario()
                 viewModel.refreshData()
-                evaluationNotificationScheduler.scheduleNotifications(latestEvaluationInfos)
-                taskNotificationScheduler.scheduleNotifications(latestTaskInfos)
+                avaliacaoNotificationScheduler.scheduleNotifications(latestAvaliacaoInfos)
+                tarefaNotificationScheduler.scheduleNotifications(latestTarefaInfos)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -187,12 +184,12 @@ fun TelaInicial(
         }
     }
 
-    LaunchedEffect(evaluationNotificationInfos) {
-        evaluationNotificationScheduler.scheduleNotifications(evaluationNotificationInfos)
+    LaunchedEffect(avaliacaoNotificationInfos) {
+        avaliacaoNotificationScheduler.scheduleNotifications(avaliacaoNotificationInfos)
     }
 
-    LaunchedEffect(taskNotificationInfos) {
-        taskNotificationScheduler.scheduleNotifications(taskNotificationInfos)
+    LaunchedEffect(tarefaNotificationInfos) {
+        tarefaNotificationScheduler.scheduleNotifications(tarefaNotificationInfos)
     }
 
 

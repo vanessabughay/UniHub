@@ -5,6 +5,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+// MUDANÇA AQUI: Importa o java.time.Duration
+import com.example.unihub.data.model.Prioridade
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -13,14 +16,16 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Objects
 import kotlin.math.abs
-import android.util.Log
 
-class TaskNotificationScheduler(private val context: Context) {
+class AvaliacaoNotificationScheduler(private val context: Context) {
 
-    data class TaskInfo(
-        val titulo: String?,
-        val quadroNome: String?,
-        val prazoIso: String?,
+    data class AvaliacaoInfo(
+        val id: Long,
+        val descricao: String?,
+        val disciplinaId: Long?,
+        val disciplinaNome: String?,
+        val dataHoraIso: String?,
+        val reminderDuration: Duration,
         val receberNotificacoes: Boolean
     )
 
@@ -30,7 +35,7 @@ class TaskNotificationScheduler(private val context: Context) {
     private val preferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun scheduleNotifications(tarefas: List<TaskInfo>) {
+    fun scheduleNotifications(avaliacoes: List<AvaliacaoInfo>) {
         val manager = alarmManager ?: return
 
         val storedRequestCodes =
@@ -38,42 +43,33 @@ class TaskNotificationScheduler(private val context: Context) {
         cancelStored(manager, storedRequestCodes)
 
         if (!canScheduleExactAlarms(manager)) {
-            Log.w(TAG, "scheduleNotifications: não é possível agendar alarmes exatos; cancelando pendências")
             preferences.edit().remove(KEY_REQUEST_CODES).apply()
             return
         }
 
         val newRequestCodes = mutableSetOf<String>()
-        val baseIntent = Intent(context, TaskNotificationReceiver::class.java)
+        val baseIntent = Intent(context, AvaliacaoNotificationReceiver::class.java)
 
-        tarefas
+        avaliacoes
             .filter { it.receberNotificacoes }
-            .forEach { tarefa ->
+            .forEach { avaliacao ->
                 val triggerAtMillis = computeTriggerMillis(
-                    tarefa.prazoIso
+                    avaliacao.dataHoraIso,
+                    avaliacao.reminderDuration
                 )
-                    ?: run {
-                        Log.w(
-                            PRAZO_LOG_TAG,
-                            "scheduleNotifications: ignorando tarefa '${tarefa.titulo}' (prazoIso=${tarefa.prazoIso})"
-                        )
-                        return@forEach
-                    }
+                    ?: return@forEach
 
-                val requestCode = buildRequestCode(tarefa, triggerAtMillis)
+                val requestCode = buildRequestCode(avaliacao.id, triggerAtMillis)
                 newRequestCodes.add(requestCode.toString())
 
                 val intent = Intent(baseIntent).apply {
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_TITLE, tarefa.titulo)
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_BOARD_NAME, tarefa.quadroNome)
-                    putExtra(TaskNotificationReceiver.EXTRA_TASK_DEADLINE, tarefa.prazoIso)
-                    putExtra(TaskNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_ID, avaliacao.id)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DESCRICAO, avaliacao.descricao)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_ID, avaliacao.disciplinaId)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_NOME, avaliacao.disciplinaNome)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DATA_HORA, avaliacao.dataHoraIso)
+                    putExtra(AvaliacaoNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
                 }
-
-                Log.i(
-                    PRAZO_LOG_TAG,
-                    "scheduleNotifications: agendando '${tarefa.titulo}' para ${triggerAtMillis} (prazoIso=${tarefa.prazoIso}, requestCode=$requestCode)"
-                )
 
                 scheduleExactAlarm(requestCode, triggerAtMillis, intent)
             }
@@ -88,7 +84,7 @@ class TaskNotificationScheduler(private val context: Context) {
                 val pendingIntent = PendingIntent.getBroadcast(
                     context,
                     code,
-                    Intent(context, TaskNotificationReceiver::class.java),
+                    Intent(context, AvaliacaoNotificationReceiver::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
                 )
                 manager.cancel(pendingIntent)
@@ -106,10 +102,6 @@ class TaskNotificationScheduler(private val context: Context) {
         )
 
         if (!canScheduleExactAlarms(manager)) {
-            Log.w(
-                PRAZO_LOG_TAG,
-                "scheduleExactAlarm: canScheduleExactAlarms retornou false para requestCode=$requestCode"
-            )
             return
         }
 
@@ -121,7 +113,6 @@ class TaskNotificationScheduler(private val context: Context) {
                     pendingIntent
                 )
             }
-
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT -> {
                 manager.setExact(
                     AlarmManager.RTC_WAKEUP,
@@ -129,7 +120,6 @@ class TaskNotificationScheduler(private val context: Context) {
                     pendingIntent
                 )
             }
-
             else -> {
                 manager.set(
                     AlarmManager.RTC_WAKEUP,
@@ -140,13 +130,8 @@ class TaskNotificationScheduler(private val context: Context) {
         }
     }
 
-    private fun buildRequestCode(info: TaskInfo, triggerAtMillis: Long): Int {
-        val raw = Objects.hash(
-            info.titulo.orEmpty(),
-            info.quadroNome.orEmpty(),
-            info.prazoIso.orEmpty(),
-            triggerAtMillis
-        )
+    private fun buildRequestCode(id: Long, triggerAtMillis: Long): Int {
+        val raw = Objects.hash(id, triggerAtMillis)
         return abs(raw.takeIf { it != Int.MIN_VALUE } ?: 0)
     }
 
@@ -159,9 +144,7 @@ class TaskNotificationScheduler(private val context: Context) {
     }
 
     companion object {
-        private const val TAG = "TaskScheduler"
-        private const val PRAZO_LOG_TAG = "UniHubPrazo"
-        private const val PREFS_NAME = "task_notification_prefs"
+        private const val PREFS_NAME = "avaliacao_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
 
         private val LOCAL_DATE_TIME_FORMATTERS = listOf(
@@ -172,16 +155,21 @@ class TaskNotificationScheduler(private val context: Context) {
 
         internal fun computeTriggerMillis(
             dateTimeString: String?,
+            reminderDuration: Duration,
             zoneId: ZoneId = ZoneId.systemDefault(),
             now: ZonedDateTime = ZonedDateTime.now(zoneId)
         ): Long? {
             val zonedDateTime = parseToZonedDateTime(dateTimeString, zoneId) ?: return null
-            if (!zonedDateTime.isAfter(now)) {
+
+            // Lógica alterada para usar a Duration recebida
+            val reminderDateTime = zonedDateTime.minus(reminderDuration)
+
+            if (!reminderDateTime.isAfter(now)) {
                 return null
             }
-            return zonedDateTime.toInstant().toEpochMilli()
-
+            return reminderDateTime.toInstant().toEpochMilli()
         }
+
 
         internal fun parseDateTime(
             dateTimeString: String?,
@@ -217,6 +205,17 @@ class TaskNotificationScheduler(private val context: Context) {
             return null
         }
 
-        private fun immutableFlag(): Int = AttendanceNotificationScheduler.immutableFlag()
+        internal fun immutableFlag(): Int = FrequenciaNotificationScheduler.immutableFlag()
+
+        fun defaultReminderDuration(priority: Prioridade?): Duration {
+            return when (priority) {
+                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
+                Prioridade.BAIXA -> Duration.ofHours(12)
+                Prioridade.MEDIA -> Duration.ofDays(1)
+                Prioridade.ALTA -> Duration.ofDays(2)
+                Prioridade.MUITO_ALTA -> Duration.ofDays(3)
+                null -> Duration.ofDays(1)
+            }
+        }
     }
 }

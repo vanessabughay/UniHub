@@ -77,9 +77,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val isContactType = normalizedType?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
                 normalizedType?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
 
-        val isAttendanceCategory = normalizedCategory?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true
-        val isAttendanceType = normalizedType?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
-                normalizedType?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
+        val ehCategoriaFrequencia = normalizedCategory?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true
+        val ehTipoFrequencia = normalizedType?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true ||
+                normalizedType?.equals(FREQUENCIA_RESPOSTA_TYPE, ignoreCase = true) == true
 
         refreshUserContext()
 
@@ -98,12 +98,12 @@ class NotificationHistoryRepository private constructor(context: Context) {
                                     entry.type?.equals(CONTACT_INVITE_TYPE, ignoreCase = true) == true ||
                                     entry.type?.equals(CONTACT_INVITE_TYPE_RESPONSE, ignoreCase = true) == true
 
-                        if (isAttendanceCategory || isAttendanceType) {
-                            val entryIsAttendance =
-                                entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                                        entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true ||
-                                        entry.type?.equals(ATTENDANCE_RESPONSE_TYPE, ignoreCase = true) == true
-                            return@firstOrNull entryIsAttendance || isAttendanceCategory || isAttendanceType
+                        if (ehCategoriaFrequencia || ehTipoFrequencia) {
+                            val entradaEhFrequencia =
+                                entry.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true ||
+                                        entry.type?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true ||
+                                        entry.type?.equals(FREQUENCIA_RESPOSTA_TYPE, ignoreCase = true) == true
+                            return@firstOrNull entradaEhFrequencia || ehCategoriaFrequencia || ehTipoFrequencia
                         }
 
                         if (isContactCategory || isContactType || entryIsContact) {
@@ -153,9 +153,9 @@ class NotificationHistoryRepository private constructor(context: Context) {
             val resolvedType = normalizedType ?: existingEntry?.type
             val resolvedCategory = when {
                 isContactCategory -> CONTACT_CATEGORY
-                isAttendanceCategory -> ATTENDANCE_CATEGORY
+                ehCategoriaFrequencia -> FREQUENCIA_CATEGORY
                 existingEntry?.category?.equals(CONTACT_CATEGORY, ignoreCase = true) == true && isContactType -> CONTACT_CATEGORY
-                existingEntry?.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true && isAttendanceType -> ATTENDANCE_CATEGORY
+                existingEntry?.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true && ehTipoFrequencia -> FREQUENCIA_CATEGORY
                 else -> normalizedCategory ?: existingEntry?.category
             }
 
@@ -428,13 +428,13 @@ class NotificationHistoryRepository private constructor(context: Context) {
         pruneCategoryEntries(CONTACT_CATEGORY, validReferences)
     }
 
-    fun shouldNotifyAttendance(referenceId: Long): Boolean {
+    fun shouldNotifyFrequencia(referenceId: Long): Boolean {
         refreshUserContext()
         return synchronized(lock) {
             val entry = _historyFlow.value.firstOrNull { current ->
                 current.referenceId == referenceId && (
-                        current.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                                current.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        current.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true ||
+                                current.type?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true
                         )
             }
             entry?.hasPendingInteraction != false
@@ -443,7 +443,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
 
 
 
-    fun logAttendanceResponse(
+    fun logFrequenciaResponse(
         referenceId: Long,
         title: String,
         message: String,
@@ -453,8 +453,8 @@ class NotificationHistoryRepository private constructor(context: Context) {
         val mergedMetadata = synchronized(lock) {
             val existingEntry = _historyFlow.value.firstOrNull { current ->
                 current.referenceId == referenceId && (
-                        current.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                                current.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        current.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true ||
+                                current.type?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true
                         )
             }
 
@@ -476,24 +476,24 @@ class NotificationHistoryRepository private constructor(context: Context) {
             title = title,
             message = message,
             timestampMillis = System.currentTimeMillis(),
-            type = ATTENDANCE_RESPONSE_TYPE,
-            category = ATTENDANCE_CATEGORY,
+            type = FREQUENCIA_RESPOSTA_TYPE,
+            category = FREQUENCIA_CATEGORY,
             referenceId = referenceId,
             hasPendingInteraction = false,
             metadata = mergedMetadata,
             syncWithBackend = syncWithBackend
         )
-        markAttendanceHandled(referenceId)
+        markFrequenciaHandled(referenceId)
     }
 
-    fun markAttendanceHandled(referenceId: Long) {
+    fun markFrequenciaHandled(referenceId: Long) {
         refreshUserContext()
         synchronized(lock) {
             val currentHistory = _historyFlow.value.toMutableList()
             val index = currentHistory.indexOfFirst { entry ->
                 entry.referenceId == referenceId && (
-                        entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                                entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
+                        entry.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true ||
+                                entry.type?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true
                         )
             }
             if (index == -1) return
@@ -513,7 +513,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
                 entry
             }
 
-            cancelAttendanceNotification(updatedEntry)
+            cancelFrequenciaNotification(updatedEntry)
         }
     }
 
@@ -780,7 +780,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
                         put(JSON_CONTACT_INVITE_ID, reference)
                         put(JSON_CONTACT_ACTION_PENDING, entry.hasPendingInteraction)
                     }
-                    if (entry.category == ATTENDANCE_CATEGORY || entry.type == ATTENDANCE_TYPE) {
+                    if (entry.category == FREQUENCIA_CATEGORY || entry.type == FREQUENCIA_TYPE) {
                         put(JSON_PENDING_INTERACTION, entry.hasPendingInteraction)
                     }
                 }
@@ -883,15 +883,15 @@ class NotificationHistoryRepository private constructor(context: Context) {
         const val CONTACT_INVITE_TYPE_RESPONSE = "CONTATO_SOLICITACAO_RESPOSTA"
         const val CONTACT_CATEGORY = "CONTATO"
         const val GROUP_MEMBER_CATEGORY = "GRUPO_MEMBRO_ADICIONADO"
-        const val TASK_ASSIGNMENT_CATEGORY = "TAREFA_ATRIBUIDA"
-        const val TASK_COMMENT_CATEGORY = "TAREFA_COMENTARIO"
-        const val TASK_DEADLINE_TYPE = "TAREFA_PRAZO"
-        const val TASK_CATEGORY = "TAREFA"
-        const val EVALUATION_REMINDER_TYPE = "AVALIACAO_LEMBRETE"
-        const val EVALUATION_CATEGORY = "AVALIACAO"
-        const val ATTENDANCE_TYPE = "PRESENCA_AULA"
-        const val ATTENDANCE_RESPONSE_TYPE = "PRESENCA_AULA_RESPOSTA"
-        const val ATTENDANCE_CATEGORY = "PRESENCA"
+        const val TAREFA_ATRIBUICAO_CATEGORY = "TAREFA_ATRIBUIDA"
+        const val TAREFA_COMENTARIO_CATEGORY = "TAREFA_COMENTARIO"
+        const val TAREFA_PRAZO_TYPE = "TAREFA_PRAZO"
+        const val TAREFA_CATEGORY = "TAREFA"
+        const val AVALIACAO_LEMBRETE_TYPE = "AVALIACAO_LEMBRETE"
+        const val AVALIACAO_CATEGORY = "AVALIACAO"
+        const val FREQUENCIA_TYPE = "PRESENCA_AULA"
+        const val FREQUENCIA_RESPOSTA_TYPE = "PRESENCA_AULA_RESPOSTA"
+        const val FREQUENCIA_CATEGORY = "PRESENCA"
 
         @Volatile
         private var instance: NotificationHistoryRepository? = null
@@ -916,7 +916,7 @@ class NotificationHistoryRepository private constructor(context: Context) {
             }
         }
 
-        fun buildAttendanceReferenceId(disciplinaId: Long, occurrenceEpochDay: Long): Long {
+        fun buildFrequenciaReferenceId(disciplinaId: Long, occurrenceEpochDay: Long): Long {
             val upper = disciplinaId and 0xFFFFFFFFL
             val lower = occurrenceEpochDay and 0xFFFFFFFFL
             return (upper shl 32) or (lower and 0xFFFFFFFFL)
@@ -968,10 +968,10 @@ class NotificationHistoryRepository private constructor(context: Context) {
         return result
     }
 
-    private fun cancelAttendanceNotification(entry: NotificationEntry) {
-        val isAttendanceEntry = entry.category?.equals(ATTENDANCE_CATEGORY, ignoreCase = true) == true ||
-                entry.type?.equals(ATTENDANCE_TYPE, ignoreCase = true) == true
-        if (!isAttendanceEntry) {
+    private fun cancelFrequenciaNotification(entry: NotificationEntry) {
+        val entradaEhFrequencia = entry.category?.equals(FREQUENCIA_CATEGORY, ignoreCase = true) == true ||
+                entry.type?.equals(FREQUENCIA_TYPE, ignoreCase = true) == true
+        if (!entradaEhFrequencia) {
             return
         }
 

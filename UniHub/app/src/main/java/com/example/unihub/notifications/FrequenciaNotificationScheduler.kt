@@ -17,7 +17,7 @@ import java.util.Locale
 import java.util.Objects
 import kotlin.math.abs
 
-class AttendanceNotificationScheduler(private val context: Context) {
+class FrequenciaNotificationScheduler(private val context: Context) {
 
     data class DisciplineScheduleInfo(
         val id: Long,
@@ -48,7 +48,7 @@ class AttendanceNotificationScheduler(private val context: Context) {
 
         val newRequestCodes = mutableSetOf<String>()
 
-        val baseIntent = Intent(context, AttendanceNotificationReceiver::class.java)
+        val baseIntent = Intent(context, FrequenciaNotificationReceiver::class.java)
 
         disciplinas.forEach { disciplina ->
             if (!disciplina.receberNotificacoes) {
@@ -62,18 +62,18 @@ class AttendanceNotificationScheduler(private val context: Context) {
                 newRequestCodes.add(requestCode.toString())
 
                 val intent = Intent(baseIntent).apply {
-                    putExtra(AttendanceNotificationReceiver.EXTRA_DISCIPLINA_ID, disciplina.id)
-                    putExtra(AttendanceNotificationReceiver.EXTRA_DISCIPLINA_NOME, disciplina.nome)
-                    putExtra(AttendanceNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
-                    putExtra(AttendanceNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
-                    putExtra(AttendanceNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
-                    putExtra(AttendanceNotificationReceiver.EXTRA_TOTAL_AUSENCIAS, disciplina.totalAusencias)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_DISCIPLINA_ID, disciplina.id)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_DISCIPLINA_NOME, disciplina.nome)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_AULA_DIA, horario.diaDaSemana)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_AULA_INICIO, horario.horarioInicio)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+                    putExtra(FrequenciaNotificationReceiver.EXTRA_TOTAL_AUSENCIAS, disciplina.totalAusencias)
                     putExtra(
-                        AttendanceNotificationReceiver.EXTRA_AUSENCIAS_MAX,
-                        disciplina.ausenciasPermitidas ?: AttendanceNotificationReceiver.NO_AUSENCIA_LIMIT
+                        FrequenciaNotificationReceiver.EXTRA_AUSENCIAS_MAX,
+                        disciplina.ausenciasPermitidas ?: FrequenciaNotificationReceiver.NO_AUSENCIA_LIMIT
                     )
                     putExtra(
-                        AttendanceNotificationReceiver.EXTRA_AULA_EPOCH_DAY,
+                        FrequenciaNotificationReceiver.EXTRA_AULA_EPOCH_DAY,
                         computeEpochDay(triggerAtMillis)
                     )
                 }
@@ -103,7 +103,7 @@ class AttendanceNotificationScheduler(private val context: Context) {
                 val pendingIntent = PendingIntent.getBroadcast(
                     context,
                     code,
-                    Intent(context, AttendanceNotificationReceiver::class.java),
+                    Intent(context, FrequenciaNotificationReceiver::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or immutableFlag()
                 )
                 manager.cancel(pendingIntent)
@@ -177,7 +177,7 @@ class AttendanceNotificationScheduler(private val context: Context) {
 
 
     companion object {
-        private const val PREFS_NAME = "attendance_notification_prefs"
+        private const val PREFS_NAME = "frequencia_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
 
         internal fun computeTriggerMillis(

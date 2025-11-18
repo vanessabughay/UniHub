@@ -44,7 +44,7 @@ import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.UsuarioResumo
-import com.example.unihub.notifications.AttendanceNotificationScheduler
+import com.example.unihub.notifications.FrequenciaNotificationScheduler
 import com.example.unihub.notifications.CompartilhamentoNotificationActionReceiver
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 
@@ -65,7 +65,7 @@ fun ListarDisciplinasScreen(
 
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val scheduler = remember { AttendanceNotificationScheduler(context.applicationContext) }
+    val scheduler = remember { FrequenciaNotificationScheduler(context.applicationContext) }
 
     val compartilhamentoFactory = remember(context) {
         CompartilhamentoViewModelFactory(context.applicationContext)
@@ -105,7 +105,7 @@ fun ListarDisciplinasScreen(
 
     LaunchedEffect(disciplinasState) {
         val schedules = disciplinasState.map {
-            AttendanceNotificationScheduler.DisciplineScheduleInfo(
+            FrequenciaNotificationScheduler.DisciplineScheduleInfo(
                 id = it.id,
                 nome = it.nome,
                 receberNotificacoes = it.receberNotificacoes,
@@ -328,20 +328,7 @@ fun ListarDisciplinasScreen(
                     compartilhamentoViewModel.compartilharDisciplina(
                         usuarioId,
                         disciplinaSelecionada.id,
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-                        contato.id,
-                        null
-=======
                         contato.id
->>>>>>> Stashed changes
-=======
-                        contato.id
->>>>>>> Stashed changes
-=======
-                        contato.id
->>>>>>> Stashed changes
                     )
                     disciplinaParaCompartilhar = null
                 }

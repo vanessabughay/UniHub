@@ -124,7 +124,7 @@ fun ManterAusenciaScreen(
             val discId = disciplina?.id ?: disciplinaId.toLongOrNull()
             if (discId != null) {
                 val occurrenceEpochDay = data.toEpochDay()
-                val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
+                val referenceId = NotificationHistoryRepository.buildFrequenciaReferenceId(
                     discId,
                     occurrenceEpochDay
                 )
@@ -132,21 +132,21 @@ fun ManterAusenciaScreen(
                 val title = disciplina?.nome
                     ?.takeIf { it.isNotBlank() }
                     ?.uppercase(locale)
-                    ?: context.getString(R.string.attendance_notification_history_title)
+                    ?: context.getString(R.string.frequencia_notification_history_title)
                 val formattedDate = dateFormatter.format(data)
                 val message = context.getString(
-                    R.string.attendance_notification_history_absence,
+                    R.string.frequencia_notification_history_absence,
                     formattedDate
                 )
 
                 val existingEntry = historyRepository.historyFlow.value.firstOrNull { entry ->
                     entry.referenceId == referenceId && (
                             entry.category?.equals(
-                                NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+                                NotificationHistoryRepository.FREQUENCIA_CATEGORY,
                                 ignoreCase = true
                             ) == true ||
                                     entry.type?.equals(
-                                        NotificationHistoryRepository.ATTENDANCE_TYPE,
+                                        NotificationHistoryRepository.FREQUENCIA_TYPE,
                                         ignoreCase = true
                                     ) == true
                             )
@@ -170,7 +170,7 @@ fun ManterAusenciaScreen(
                     metadata["dia"] = dia
                 }
 
-                historyRepository.logAttendanceResponse(
+                historyRepository.logFrequenciaResponse(
                     referenceId = referenceId,
                     title = title,
                     message = message,
@@ -394,7 +394,7 @@ private fun findClassDayLabelForDate(disciplina: Disciplina?, date: LocalDate): 
 private fun findClassForDate(disciplina: Disciplina?, date: LocalDate): HorarioAula? {
     val schedule = disciplina?.aulas ?: return null
     val targetLabel = normalizeDayLabel(
-        date.dayOfWeek.getDisplayName(TextStyle.FULL, attendanceLocale)
+        date.dayOfWeek.getDisplayName(TextStyle.FULL, frequenciaLocale)
     )
     if (targetLabel.isEmpty()) {
         return null
@@ -405,7 +405,7 @@ private fun findClassForDate(disciplina: Disciplina?, date: LocalDate): HorarioA
 }
 
 private fun normalizeDayLabel(label: String): String {
-    val trimmed = label.trim().lowercase(attendanceLocale)
+    val trimmed = label.trim().lowercase(frequenciaLocale)
     val withoutDiacritics = Normalizer.normalize(trimmed, Normalizer.Form.NFD)
         .replace(combiningMarksRegex, "")
     return withoutDiacritics.replace(nonLetterRegex, "")
@@ -413,7 +413,7 @@ private fun normalizeDayLabel(label: String): String {
 
 private val combiningMarksRegex = "\\p{InCombiningDiacriticalMarks}+".toRegex()
 private val nonLetterRegex = "[^a-z]".toRegex()
-private val attendanceLocale = Locale("pt", "BR")
+private val frequenciaLocale = Locale("pt", "BR")
 
 @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
 @Preview(showBackground = true)

@@ -10,7 +10,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-class AttendanceNotificationActionReceiver : BroadcastReceiver() {
+class FrequenciaNotificationActionReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
@@ -30,7 +30,7 @@ class AttendanceNotificationActionReceiver : BroadcastReceiver() {
 
         val appContext = context.applicationContext
         val historyRepository = NotificationHistoryRepository.getInstance(appContext)
-        val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
+        val referenceId = NotificationHistoryRepository.buildFrequenciaReferenceId(
             disciplinaId,
             occurrenceEpochDay
         )
@@ -39,16 +39,16 @@ class AttendanceNotificationActionReceiver : BroadcastReceiver() {
         val title = disciplinaNome
             ?.takeIf { it.isNotBlank() }
             ?.uppercase(locale)
-            ?: context.getString(R.string.attendance_notification_history_title)
+            ?: context.getString(R.string.frequencia_notification_history_title)
 
         val occurrenceDate = LocalDate.ofEpochDay(occurrenceEpochDay)
         val formattedDate = occurrenceDate.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
         val message = context.getString(
-            R.string.attendance_notification_history_presence,
+            R.string.frequencia_notification_history_presence,
             formattedDate
         )
 
-        historyRepository.logAttendanceResponse(
+        historyRepository.logFrequenciaResponse(
             referenceId = referenceId,
             title = title,
             message = message,
@@ -64,7 +64,7 @@ class AttendanceNotificationActionReceiver : BroadcastReceiver() {
     }
 
     companion object {
-        const val ACTION_MARK_PRESENCE = "com.example.unihub.action.MARK_ATTENDANCE_PRESENCE"
+        const val ACTION_MARK_PRESENCE = "com.example.unihub.action.MARCAR_FREQUENCIA_PRESENCA"
         const val EXTRA_DISCIPLINA_ID = "extra_disciplina_id"
         const val EXTRA_DISCIPLINA_NOME = "extra_disciplina_nome"
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"

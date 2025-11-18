@@ -57,11 +57,11 @@ import com.example.unihub.data.repository.NotificacoesRepository
 import com.example.unihub.data.repository.NotificationHistoryRepository
 import com.example.unihub.data.repository.QuadroRepository
 import com.example.unihub.data.repository.TarefaRepository
-import com.example.unihub.notifications.AttendanceNotificationScheduler
+import com.example.unihub.notifications.FrequenciaNotificationScheduler
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 import com.example.unihub.notifications.ContatoNotificationSynchronizer
-import com.example.unihub.notifications.EvaluationNotificationScheduler
-import com.example.unihub.notifications.TaskNotificationScheduler
+import com.example.unihub.notifications.AvaliacaoNotificationScheduler
+import com.example.unihub.notifications.TarefaNotificationScheduler
 import com.example.unihub.ui.Anotacoes.AnotacoesView
 import com.example.unihub.ui.Calendario.CalendarioRoute
 import com.example.unihub.ui.Calendario.CalendarioViewModel
@@ -778,7 +778,7 @@ class MainActivity : ComponentActivity() {
                                     HistoricoNotificacoesScreen(onVoltar = { navController.popBackStack() })
                                 }
 
-                                // GERENCIAR NOTIFICAÇÕES (versão completa com Retrofit + TaskScheduler)
+                                // GERENCIAR NOTIFICAÇÕES (versão completa com Retrofit + TarefaScheduler)
                                 composable(Screen.GerenciarNotificacoes.route) {
                                     val context = LocalContext.current
 
@@ -787,18 +787,18 @@ class MainActivity : ComponentActivity() {
 
                                     val tarefaRepository = TarefaRepository(tarefaApi)
 
-                                    val attendanceScheduler = AttendanceNotificationScheduler(context)
-                                    val evaluationScheduler = EvaluationNotificationScheduler(context)
-                                    val taskScheduler = TaskNotificationScheduler(context)
+                                    val frequenciaScheduler = FrequenciaNotificationScheduler(context)
+                                    val avaliacaoScheduler = AvaliacaoNotificationScheduler(context)
+                                    val tarefaScheduler = TarefaNotificationScheduler(context)
 
                                     val disciplinaRepository = DisciplinaRepository(ApiDisciplinaBackend())
                                     val avaliacaoRepository = AvaliacaoRepository(ApiAvaliacaoBackend())
 
                                     val notificacoesRepository = NotificacoesRepository(
                                         api = notificacoesApi,
-                                        attendanceScheduler = attendanceScheduler,
-                                        evaluationScheduler = evaluationScheduler,
-                                        taskScheduler = taskScheduler,
+                                        frequenciaScheduler = frequenciaScheduler,
+                                        avaliacaoScheduler = avaliacaoScheduler,
+                                        tarefaScheduler = tarefaScheduler,
                                         disciplinaRepository = disciplinaRepository,
                                         avaliacaoRepository = avaliacaoRepository,
                                         tarefaRepository = tarefaRepository,
@@ -956,7 +956,7 @@ class MainActivity : ComponentActivity() {
         const val TARGET_SCREEN_REGISTRAR_AUSENCIA = "registrar_ausencia"
         const val TARGET_SCREEN_VISUALIZAR_AVALIACAO = "visualizar_avaliacao"
         const val TARGET_SCREEN_LISTAR_QUADROS = "listar_quadros"
-        const val EXTRA_TARGET_TASK_ID = "extra_target_task_id"
+        const val EXTRA_TARGET_TAREFA_ID = "extra_target_tarefa_id"
         const val TARGET_SCREEN_VISUALIZAR_TAREFA = "visualizar_tarefa"
         private const val REQUEST_CODE_POST_NOTIFICATIONS = 1001
     }

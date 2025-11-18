@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
 
-class EvaluationNotificationReceiver : BroadcastReceiver() {
+class AvaliacaoNotificationReceiver : BroadcastReceiver() {
 
 
     override fun onReceive(context: Context, intent: Intent) {
@@ -52,26 +52,26 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
             addNextIntentWithParentStack(visualizarIntent)
             getPendingIntent(
                 notificationId,
-                PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_UPDATE_CURRENT or FrequenciaNotificationScheduler.immutableFlag()
             )
         }
 
         val formattedDateTime = formatDateTimeForDisplay(context, dataHoraIso)
-        val promptText = context.getString(R.string.evaluation_notification_prompt)
+        val promptText = context.getString(R.string.avaliacao_notification_prompt)
         val disciplineText = disciplina?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.evaluation_notification_discipline_format, it) }
+            ?.let { context.getString(R.string.avaliacao_notification_discipline_format, it) }
             .orEmpty()
 
         val locale = Locale("pt", "BR")
         val notificationTitle = descricao.takeIf { it.isNotBlank() }
             ?.uppercase(locale)
-            ?: context.getString(R.string.evaluation_notification_default_title)
+            ?: context.getString(R.string.avaliacao_notification_default_title)
 
         val historyMessage = listOfNotNull(promptText, formattedDateTime, disciplineText.takeIf { it.isNotBlank() })
             .joinToString("\n")
 
-        val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
-            setTextViewText(R.id.notification_app_title, context.getString(R.string.evaluation_notification_label))
+        val contentView = RemoteViews(context.packageName, R.layout.notificacao_frequencia).apply {
+            setTextViewText(R.id.notification_app_title, context.getString(R.string.avaliacao_notification_label))
             setTextViewText(R.id.notification_title, notificationTitle)
             setTextViewText(R.id.notification_message, promptText)
             setTextViewText(R.id.notification_time, formattedDateTime)
@@ -85,7 +85,7 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
 
             setTextViewText(
                 R.id.notification_button_presence,
-                context.getString(R.string.evaluation_notification_button_details)
+                context.getString(R.string.avaliacao_notification_button_details)
             )
             setViewVisibility(R.id.notification_button_presence, View.VISIBLE)
             setOnClickPendingIntent(R.id.notification_button_presence, visualizarPendingIntent)
@@ -112,8 +112,8 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
                 title = notificationTitle,
                 message = historyMessage,
                 timestampMillis = System.currentTimeMillis(),
-                type = NotificationHistoryRepository.EVALUATION_REMINDER_TYPE,
-                category = NotificationHistoryRepository.EVALUATION_CATEGORY,
+                type = NotificationHistoryRepository.AVALIACAO_LEMBRETE_TYPE,
+                category = NotificationHistoryRepository.AVALIACAO_CATEGORY,
                 referenceId = avaliacaoId,
                 hasPendingInteraction = false,
                 metadata = mapOf(
@@ -130,7 +130,7 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
                 context,
                 requestCode,
                 intent,
-                PendingIntent.FLAG_NO_CREATE or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_NO_CREATE or FrequenciaNotificationScheduler.immutableFlag()
             )
             pendingIntent?.let { alarmManager?.cancel(it) }
         }
@@ -141,21 +141,21 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.evaluation_channel_name),
+            context.getString(R.string.avaliacao_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = context.getString(R.string.evaluation_channel_description)
+            description = context.getString(R.string.avaliacao_channel_description)
         }
         manager.createNotificationChannel(channel)
     }
 
     private fun formatDateTimeForDisplay(context: Context, dateTimeString: String?): String {
-        val zoned = EvaluationNotificationScheduler.parseDateTime(dateTimeString)
-            ?: return context.getString(R.string.evaluation_notification_schedule_unknown)
+        val zoned = AvaliacaoNotificationScheduler.parseDateTime(dateTimeString)
+            ?: return context.getString(R.string.avaliacao_notification_schedule_unknown)
 
         val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy 'às' HH:mm")
         return context.getString(
-            R.string.evaluation_notification_schedule_format,
+            R.string.avaliacao_notification_schedule_format,
             formatter.format(zoned)
         )
     }
@@ -168,6 +168,6 @@ class EvaluationNotificationReceiver : BroadcastReceiver() {
         const val EXTRA_AVALIACAO_DATA_HORA = "extra_avaliacao_data_hora"
         const val EXTRA_REQUEST_CODE = "extra_request_code"
 
-        private const val CHANNEL_ID = "evaluation_notifications"
+        private const val CHANNEL_ID = "avaliacao_notifications"
     }
 }

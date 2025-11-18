@@ -74,7 +74,7 @@ import androidx.compose.material3.HorizontalDivider
 import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
-import com.example.unihub.notifications.EvaluationNotificationScheduler
+import com.example.unihub.notifications.AvaliacaoNotificationScheduler
 import com.example.unihub.ui.Shared.ZeroInsets
 
 import java.time.LocalDate
@@ -125,7 +125,7 @@ fun ListarAvaliacaoScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
 
-    val scheduler = remember { EvaluationNotificationScheduler(context.applicationContext) }
+    val scheduler = remember { AvaliacaoNotificationScheduler(context.applicationContext) }
     val notificationPermissionLauncher = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         rememberLauncherForActivityResult(
             ActivityResultContracts.RequestPermission()
@@ -152,13 +152,13 @@ fun ListarAvaliacaoScreen(
 
             val disciplinaIdLong = (avaliacao.disciplina?.id as? String)?.toLongOrNull()
 
-            EvaluationNotificationScheduler.EvaluationInfo(
+            AvaliacaoNotificationScheduler.AvaliacaoInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
                 disciplinaId = disciplinaIdLong,
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                reminderDuration = EvaluationNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
+                reminderDuration = AvaliacaoNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
 
                 // receberNotificacoes = avaliacao.receberNotificacoes,
                 // antecedenciaDias = Antecedencia.padrao.dias

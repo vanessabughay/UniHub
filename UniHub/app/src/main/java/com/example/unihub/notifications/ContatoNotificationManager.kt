@@ -202,7 +202,7 @@ class ContatoNotificationManager(context: Context) {
             appContext,
             requestCode,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
+            PendingIntent.FLAG_UPDATE_CURRENT or FrequenciaNotificationScheduler.immutableFlag()
         )
     }
 
@@ -215,7 +215,7 @@ class ContatoNotificationManager(context: Context) {
             addNextIntentWithParentStack(openIntent)
             getPendingIntent(
                 notificationId,
-                PendingIntent.FLAG_UPDATE_CURRENT or AttendanceNotificationScheduler.immutableFlag()
+                PendingIntent.FLAG_UPDATE_CURRENT or FrequenciaNotificationScheduler.immutableFlag()
             )
         }
     }

@@ -22,7 +22,7 @@ import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 
-class AttendanceNotificationReceiver : BroadcastReceiver() {
+class FrequenciaNotificationReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         // Opcional: se quiser bloquear notificações sem login
@@ -59,12 +59,12 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         intent.putExtra(EXTRA_NOTIFICATION_ID, notificationId)
 
         val historyRepository = NotificationHistoryRepository.getInstance(context.applicationContext)
-        val referenceId = NotificationHistoryRepository.buildAttendanceReferenceId(
+        val referenceId = NotificationHistoryRepository.buildFrequenciaReferenceId(
             disciplinaId,
             occurrenceEpochDay
         )
 
-        if (!historyRepository.shouldNotifyAttendance(referenceId)) {
+        if (!historyRepository.shouldNotifyFrequencia(referenceId)) {
             scheduleNextOccurrence(context, intent, requestCode, dia, inicio)
             return
         }
@@ -97,12 +97,12 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             )
         }
 
-        val presencaIntent = Intent(context, AttendanceNotificationActionReceiver::class.java).apply {
-            action = AttendanceNotificationActionReceiver.ACTION_MARK_PRESENCE
-            putExtra(AttendanceNotificationActionReceiver.EXTRA_DISCIPLINA_ID, disciplinaId)
-            putExtra(AttendanceNotificationActionReceiver.EXTRA_DISCIPLINA_NOME, disciplinaNome)
-            putExtra(AttendanceNotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
-            putExtra(AttendanceNotificationActionReceiver.EXTRA_OCCURRENCE_EPOCH_DAY, occurrenceEpochDay)
+        val presencaIntent = Intent(context, FrequenciaNotificationActionReceiver::class.java).apply {
+            action = FrequenciaNotificationActionReceiver.ACTION_MARK_PRESENCE
+            putExtra(FrequenciaNotificationActionReceiver.EXTRA_DISCIPLINA_ID, disciplinaId)
+            putExtra(FrequenciaNotificationActionReceiver.EXTRA_DISCIPLINA_NOME, disciplinaNome)
+            putExtra(FrequenciaNotificationActionReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+            putExtra(FrequenciaNotificationActionReceiver.EXTRA_OCCURRENCE_EPOCH_DAY, occurrenceEpochDay)
         }
 
         val presencaPendingIntent = PendingIntent.getBroadcast(
@@ -115,7 +115,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val formattedTime = formatMinutes(inicio)
         val scheduleText = buildScheduleText(context, dia, formattedTime)
         val absenceInfoText = buildAbsenceInfoText(context, totalAusencias, limiteAusencias)
-        val promptText = context.getString(R.string.attendance_notification_prompt)
+        val promptText = context.getString(R.string.frequencia_notification_prompt)
 
         val locale = Locale("pt", "BR")
         val notificationTitle = disciplinaNome.uppercase(locale)
@@ -124,7 +124,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             .filterNotNull()
             .joinToString("\n")
 
-        val contentView = RemoteViews(context.packageName, R.layout.notification_attendance).apply {
+        val contentView = RemoteViews(context.packageName, R.layout.notificacao_frequencia).apply {
             setTextViewText(R.id.notification_title, notificationTitle)
             setTextViewText(R.id.notification_message, promptText)
             setTextViewText(R.id.notification_time, scheduleText)
@@ -165,8 +165,8 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
             title = notificationTitle,
             message = historyMessage,
             timestampMillis = System.currentTimeMillis(),
-            type = NotificationHistoryRepository.ATTENDANCE_TYPE,
-            category = NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+            type = NotificationHistoryRepository.FREQUENCIA_TYPE,
+            category = NotificationHistoryRepository.FREQUENCIA_CATEGORY,
             referenceId = referenceId,
             hasPendingInteraction = true,
             metadata = mapOf(
@@ -187,10 +187,10 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            context.getString(R.string.attendance_channel_name),
+            context.getString(R.string.frequencia_channel_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = context.getString(R.string.attendance_channel_description)
+            description = context.getString(R.string.frequencia_channel_description)
         }
         manager.createNotificationChannel(channel)
     }
@@ -209,12 +209,12 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
 
         return when {
             normalizedDay != null && formattedTime.isNotEmpty() ->
-                context.getString(R.string.attendance_notification_schedule_format, normalizedDay, formattedTime)
+                context.getString(R.string.frequencia_notification_schedule_format, normalizedDay, formattedTime)
 
             normalizedDay != null -> normalizedDay
             formattedTime.isNotEmpty() ->
-                context.getString(R.string.attendance_notification_time_only_format, formattedTime)
-            else -> context.getString(R.string.attendance_notification_schedule_unknown)
+                context.getString(R.string.frequencia_notification_time_only_format, formattedTime)
+            else -> context.getString(R.string.frequencia_notification_schedule_unknown)
         }
     }
 
@@ -226,20 +226,20 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         return when {
             totalAusencias != null && limiteAusencias != null ->
                 context.getString(
-                    R.string.attendance_notification_absence_with_limit,
+                    R.string.frequencia_notification_absence_with_limit,
                     totalAusencias,
                     limiteAusencias
                 )
 
             totalAusencias != null ->
                 context.getString(
-                    R.string.attendance_notification_absence_without_limit,
+                    R.string.frequencia_notification_absence_without_limit,
                     totalAusencias
                 )
 
             limiteAusencias != null ->
                 context.getString(
-                    R.string.attendance_notification_absence_only_limit,
+                    R.string.frequencia_notification_absence_only_limit,
                     limiteAusencias
                 )
 
@@ -269,9 +269,9 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         inicio: Int
     ) {
         if (requestCode == -1) return
-        val nextTrigger = AttendanceNotificationScheduler.computeTriggerMillis(dia, inicio)
+        val nextTrigger = FrequenciaNotificationScheduler.computeTriggerMillis(dia, inicio)
         if (nextTrigger != null) {
-            val nextIntent = Intent(context, AttendanceNotificationReceiver::class.java).apply {
+            val nextIntent = Intent(context, FrequenciaNotificationReceiver::class.java).apply {
                 putExtras(intent)
                 putExtra(
                     EXTRA_AULA_EPOCH_DAY,
@@ -281,7 +281,7 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
                         .toEpochDay()
                 )
             }
-            AttendanceNotificationScheduler(context)
+            FrequenciaNotificationScheduler(context)
                 .scheduleExactAlarm(requestCode, nextTrigger, nextIntent)
         }
     }
@@ -300,6 +300,6 @@ class AttendanceNotificationReceiver : BroadcastReceiver() {
         const val NO_AUSENCIA_LIMIT = -1
         private const val NO_VALUE = -1
 
-        private const val CHANNEL_ID = "attendance_reminders"
+        private const val CHANNEL_ID = "frequencia_reminders"
     }
 }

@@ -7,11 +7,11 @@ import com.example.unihub.data.config.TokenManager
 import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.NotificacoesConfig
 import com.example.unihub.data.model.normalized
-import com.example.unihub.notifications.AttendanceNotificationScheduler
+import com.example.unihub.notifications.FrequenciaNotificationScheduler
 import com.example.unihub.notifications.CompartilhamentoNotificationSynchronizer
 import com.example.unihub.notifications.ContatoNotificationSynchronizer
-import com.example.unihub.notifications.EvaluationNotificationScheduler
-import com.example.unihub.notifications.TaskNotificationScheduler
+import com.example.unihub.notifications.AvaliacaoNotificationScheduler
+import com.example.unihub.notifications.TarefaNotificationScheduler
 import com.example.unihub.data.model.Avaliacao as AvaliacaoModel
 import com.example.unihub.data.dto.TarefaDto
 import kotlinx.coroutines.flow.first
@@ -19,9 +19,9 @@ import java.time.Duration
 
 class NotificacoesRepository(
     private val api: NotificacoesApi,
-    private val attendanceScheduler: AttendanceNotificationScheduler,
-    private val evaluationScheduler: EvaluationNotificationScheduler,
-    private val taskScheduler: TaskNotificationScheduler,
+    private val frequenciaScheduler: FrequenciaNotificationScheduler,
+    private val avaliacaoScheduler: AvaliacaoNotificationScheduler,
+    private val tarefaScheduler: TarefaNotificationScheduler,
     private val disciplinaRepository: DisciplinaRepository,
     private val avaliacaoRepository: AvaliacaoRepository,
     private val tarefaRepository: TarefaRepository,
@@ -54,10 +54,10 @@ class NotificacoesRepository(
         // *** Lógica de Presença/Aula ***
         if (config.notificacaoDePresenca) {
             val disciplinasResumo = getDisciplinasResumoSuspend()
-            val attendanceInfoList = disciplinasResumo
+            val frequenciaInfoList = disciplinasResumo
                 .filter { it.receberNotificacoes }
                 .map { discResumo ->
-                    AttendanceNotificationScheduler.DisciplineScheduleInfo(
+                    FrequenciaNotificationScheduler.DisciplineScheduleInfo(
                         id = discResumo.id,
                         nome = discResumo.nome,
                         receberNotificacoes = discResumo.receberNotificacoes,
@@ -66,14 +66,14 @@ class NotificacoesRepository(
                         ausenciasPermitidas = discResumo.ausenciasPermitidas
                     )
                 }
-            attendanceScheduler.scheduleNotifications(attendanceInfoList)
+            frequenciaScheduler.scheduleNotifications(frequenciaInfoList)
         } else {
-            attendanceScheduler.cancelAllNotifications()
+            frequenciaScheduler.cancelAllNotifications()
             notificationHistoryRepository.clearByCategoryOrType(
-                category = NotificationHistoryRepository.ATTENDANCE_CATEGORY,
+                category = NotificationHistoryRepository.FREQUENCIA_CATEGORY,
                 types = setOf(
-                    NotificationHistoryRepository.ATTENDANCE_TYPE,
-                    NotificationHistoryRepository.ATTENDANCE_RESPONSE_TYPE,
+                    NotificationHistoryRepository.FREQUENCIA_TYPE,
+                    NotificationHistoryRepository.FREQUENCIA_RESPOSTA_TYPE,
                 )
             )
         }
@@ -81,7 +81,7 @@ class NotificacoesRepository(
         // *** Lógica de Avaliação ***
         if (config.avaliacoesAtivas) {
             val avaliacoesAtivas = getAvaliacoesAtivasSuspend()
-            val evaluationInfoList = avaliacoesAtivas
+            val avaliacaoInfoList = avaliacoesAtivas
                 .filter { it.receberNotificacoes }
                 .mapNotNull { avaliacao ->
                     val disciplinaNome = avaliacao.disciplina?.nome ?: return@mapNotNull null
@@ -96,12 +96,12 @@ class NotificacoesRepository(
 
                     val reminderDuration: Duration =
                         if (antecedenciaEscolhida == null || antecedenciaEscolhida == Antecedencia.padrao) {
-                            EvaluationNotificationScheduler.defaultReminderDuration(prioridade)
+                            AvaliacaoNotificationScheduler.defaultReminderDuration(prioridade)
                         } else {
                             Duration.ofDays(antecedenciaEscolhida.dias.toLong())
                         }
 
-                    EvaluationNotificationScheduler.EvaluationInfo(
+                    AvaliacaoNotificationScheduler.AvaliacaoInfo(
                         id = avaliacaoId,
                         descricao = avaliacao.descricao,
                         disciplinaId = disciplinaId,
@@ -111,34 +111,34 @@ class NotificacoesRepository(
                         receberNotificacoes = avaliacao.receberNotificacoes
                     )
                 }
-            evaluationScheduler.scheduleNotifications(evaluationInfoList)
+            avaliacaoScheduler.scheduleNotifications(avaliacaoInfoList)
         } else {
-            evaluationScheduler.scheduleNotifications(emptyList())
+            avaliacaoScheduler.scheduleNotifications(emptyList())
             notificationHistoryRepository.clearByCategoryOrType(
-                category = NotificationHistoryRepository.EVALUATION_CATEGORY,
-                types = setOf(NotificationHistoryRepository.EVALUATION_REMINDER_TYPE)
+                category = NotificationHistoryRepository.AVALIACAO_CATEGORY,
+                types = setOf(NotificationHistoryRepository.AVALIACAO_LEMBRETE_TYPE)
             )
         }
 
         // *** Lógica de Tarefas/Quadros ***
         if (config.prazoTarefa) {
             val tarefasAtivas = getTarefasAtivasSuspend()
-            val taskInfoList = tarefasAtivas
+            val tarefaInfoList = tarefasAtivas
                 .filter { it.receberNotificacoes }
                 .map { tarefaDto ->
-                    TaskNotificationScheduler.TaskInfo(
+                    TarefaNotificationScheduler.TarefaInfo(
                         titulo = tarefaDto.titulo,
                         quadroNome = tarefaDto.nomeQuadro,
                         prazoIso = tarefaDto.dataPrazo,
                         receberNotificacoes = tarefaDto.receberNotificacoes
                     )
                 }
-            taskScheduler.scheduleNotifications(taskInfoList)
+            tarefaScheduler.scheduleNotifications(tarefaInfoList)
         } else {
-            taskScheduler.scheduleNotifications(emptyList())
+            tarefaScheduler.scheduleNotifications(emptyList())
             notificationHistoryRepository.clearByCategoryOrType(
-                category = NotificationHistoryRepository.TASK_CATEGORY,
-                types = setOf(NotificationHistoryRepository.TASK_DEADLINE_TYPE)
+                category = NotificationHistoryRepository.TAREFA_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TAREFA_PRAZO_TYPE)
             )
         }
 
@@ -148,15 +148,15 @@ class NotificacoesRepository(
 
         if (!config.incluirEmQuadro) {
             notificationHistoryRepository.clearByCategoryOrType(
-                category = NotificationHistoryRepository.TASK_ASSIGNMENT_CATEGORY,
-                types = setOf(NotificationHistoryRepository.TASK_ASSIGNMENT_CATEGORY)
+                category = NotificationHistoryRepository.TAREFA_ATRIBUICAO_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TAREFA_ATRIBUICAO_CATEGORY)
             )
         }
 
         if (!config.comentarioTarefa) {
             notificationHistoryRepository.clearByCategoryOrType(
-                category = NotificationHistoryRepository.TASK_COMMENT_CATEGORY,
-                types = setOf(NotificationHistoryRepository.TASK_COMMENT_CATEGORY)
+                category = NotificationHistoryRepository.TAREFA_COMENTARIO_CATEGORY,
+                types = setOf(NotificationHistoryRepository.TAREFA_COMENTARIO_CATEGORY)
             )
         }
 
