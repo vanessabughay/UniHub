@@ -126,6 +126,7 @@ public class DataInitializer {
             criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,8,19), "Congresso", "Trabalho");
             criarAusenciaSeNaoExistir(usuario, saob22, LocalDate.of(2025,9,9), "Show", "Pessoal");
         }
+
     }
 
     private void initVictoria(Usuario usuario) {

@@ -97,8 +97,7 @@ class CompartilhamentoViewModel(
     fun compartilharDisciplina(
         usuarioId: Long,
         disciplinaId: Long,
-        destinatarioId: Long,
-        mensagem: String?
+        destinatarioId: Long
     ) {
         if (_isCompartilhando.value) return
         if (usuarioId == destinatarioId) {
@@ -110,8 +109,7 @@ class CompartilhamentoViewModel(
             try {
                 val request = CompartilharDisciplinaRequest(
                     disciplinaId = disciplinaId,
-                    destinatarioId = destinatarioId,
-                    mensagem = mensagem?.takeIf { it.isNotBlank() }
+                    destinatarioId = destinatarioId
                 )
                 repository.compartilhar(request)
                 _statusMessage.value = "Convite enviado com sucesso"

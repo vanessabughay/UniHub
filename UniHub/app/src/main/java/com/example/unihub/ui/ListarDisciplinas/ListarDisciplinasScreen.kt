@@ -328,8 +328,12 @@ fun ListarDisciplinasScreen(
                     compartilhamentoViewModel.compartilharDisciplina(
                         usuarioId,
                         disciplinaSelecionada.id,
+<<<<<<< Updated upstream
                         contato.id,
                         null
+=======
+                        contato.id
+>>>>>>> Stashed changes
                     )
                     disciplinaParaCompartilhar = null
                 }

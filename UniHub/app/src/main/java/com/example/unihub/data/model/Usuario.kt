@@ -8,8 +8,7 @@ data class UsuarioResumo(
 
 data class CompartilharDisciplinaRequest(
     val disciplinaId: Long,
-    val destinatarioId: Long,
-    val mensagem: String? = null
+    val destinatarioId: Long
 )
 
 data class ConviteCompartilhamentoResponse(
