@@ -49,7 +49,7 @@ public class AutenticacaoController {
         if (response != null) {
             return ResponseEntity.ok(response);
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("erro", "Credenciais inválidas"));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("E-mail ou senha incorretos. Tente novamente.");
     }
 
    @PostMapping("/forgot-password")
