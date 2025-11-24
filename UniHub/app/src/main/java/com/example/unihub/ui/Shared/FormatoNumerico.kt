@@ -4,40 +4,42 @@ import java.util.Locale
 import kotlin.math.roundToInt
 
 object NotaCampo {
-    fun formatFieldText(digits: String): String {
-        if (digits.isEmpty()) return ""
-        val integerPartRaw = if (digits.length == 1) "" else digits.dropLast(1)
-        val integerPart = integerPartRaw.trimStart('0').ifEmpty { "0" }
-        val decimalPart = digits.last().toString()
-        return "$integerPart,$decimalPart"
-    }
+    fun formatFieldText(text: String): String = sanitize(text)
 
     fun sanitize(raw: String): String {
-        val digitsOnly = raw.filter { it.isDigit() }
-        return when {
-            digitsOnly.isEmpty() -> ""
-            digitsOnly.length == 1 -> digitsOnly
-            else -> digitsOnly.trimStart('0').ifEmpty { "0" }
+        if (raw.isBlank()) return ""
+
+        val normalized = raw.replace('.', ',')
+        val result = StringBuilder()
+        var hasComma = false
+
+        for (ch in normalized) {
+            when {
+                ch.isDigit() -> result.append(ch)
+                ch == ',' && !hasComma -> {
+                    hasComma = true
+                    if (result.isEmpty()) result.append('0')
+                    result.append(',')
+                }
+            }
         }
+
+        return result.toString()
     }
 
     fun fromDouble(nota: Double?): String {
-        return nota?.let { toDigits(it) } ?: ""
+        return nota?.let { formatNumero(it) } ?: ""
     }
 
-    fun toDouble(digits: String): Double? {
-        if (digits.isEmpty()) return null
-        val inteiro = digits.toLongOrNull() ?: return null
-        return inteiro / 10.0
+    fun toDouble(valor: String): Double? {
+        val sanitized = sanitize(valor)
+        if (sanitized.isEmpty() || sanitized.last() == ',') return null
+        val normalized = sanitized.replace(',', '.')
+        return normalized.toDoubleOrNull()
     }
 
     fun formatListValue(nota: Double?): String {
         return nota?.let { formatNumero(it) } ?: "-"
-    }
-
-    private fun toDigits(nota: Double): String {
-        val valorEscalado = (nota * 10).roundToInt()
-        return valorEscalado.toString()
     }
 
     private fun formatNumero(v: Double): String {
