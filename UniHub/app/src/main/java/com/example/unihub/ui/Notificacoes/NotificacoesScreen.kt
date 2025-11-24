@@ -1,6 +1,7 @@
 package com.example.notificacoes.ui
 
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresExtension
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -10,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -194,7 +196,14 @@ fun NotificacoesScreen(
     onAbrirHistorico: () -> Unit = {}
 ) {
     val state by viewModel.ui.collectAsState()
+    val context = LocalContext.current
 
+    LaunchedEffect(state.configuracoesSalvas) {
+        if (state.configuracoesSalvas) {
+            Toast.makeText(context, "Configurações salvas!", Toast.LENGTH_SHORT).show()
+            viewModel.confirmarConfiguracoesSalvas()
+        }
+    }
     Scaffold(
         topBar = {
             CabecalhoAlternativo(
@@ -334,10 +343,10 @@ private fun Content(
 
                     if (state.edit.avaliacoesAtivas) {
                         Spacer(Modifier.height(16.dp))
-                        Text("Periodicidade", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF4A4E52))
+                        Text("Antecedência", style = MaterialTheme.typography.bodyLarge, color = Color(0xFF4A4E52))
                         Spacer(Modifier.height(10.dp))
 
-                        val mapa = state.edit.avaliacoesConfig.periodicidade
+                        val mapa = state.edit.avaliacoesConfig.antecedencia
                         val opcoes = Antecedencia.todas.map { it.label }
 
                         @Composable

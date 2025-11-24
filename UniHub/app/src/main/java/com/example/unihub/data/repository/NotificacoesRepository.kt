@@ -31,17 +31,21 @@ class NotificacoesRepository(
 ) {
 
     suspend fun carregarConfig(): NotificacoesConfig {
-        val usuarioId = TokenManager.requireUsuarioId()
-        return api.carregar(usuarioId).normalized()
+        TokenManager.requireUsuarioId()
+        return api.carregar().normalized().also { config ->
+            avaliacaoScheduler.persistAntecedencias(config.avaliacoesConfig.antecedencia)
+        }
     }
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     suspend fun salvarConfig(config: NotificacoesConfig): NotificacoesConfig {
-        val usuarioId = TokenManager.requireUsuarioId()
+        TokenManager.requireUsuarioId()
 
         // 1. Persiste a nova configuração no backend real
         val payload = config.normalized()
-        val salvo = api.salvar(usuarioId, payload).normalized()
+        val salvo = api.salvar(payload).normalized()
+        avaliacaoScheduler.persistAntecedencias(salvo.avaliacoesConfig.antecedencia)
+
 
         // 2. Re-agenda as notificações com base na nova configuração
         reagendarTodasNotificacoes(salvo)
@@ -50,6 +54,9 @@ class NotificacoesRepository(
 
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     private suspend fun reagendarTodasNotificacoes(config: NotificacoesConfig) {
+
+        avaliacaoScheduler.persistAntecedencias(config.avaliacoesConfig.antecedencia)
+
 
         // *** Lógica de Presença/Aula ***
         if (config.notificacaoDePresenca) {
@@ -84,30 +91,22 @@ class NotificacoesRepository(
             val avaliacaoInfoList = avaliacoesAtivas
                 .filter { it.receberNotificacoes }
                 .mapNotNull { avaliacao ->
-                    val disciplinaNome = avaliacao.disciplina?.nome ?: return@mapNotNull null
-                    val disciplinaId = (avaliacao.disciplina?.id as? String)?.toLongOrNull() ?: return@mapNotNull null
+
                     val avaliacaoId = avaliacao.id ?: return@mapNotNull null
 
-
-
                     val prioridade = avaliacao.prioridade
-
-                    val antecedenciaEscolhida: Antecedencia? = config.avaliacoesConfig.periodicidade[prioridade]
-
+                    val antecedenciaEscolhida: Antecedencia? = config.avaliacoesConfig.antecedencia[prioridade]
                     val reminderDuration: Duration =
-                        if (antecedenciaEscolhida == null || antecedenciaEscolhida == Antecedencia.padrao) {
-                            AvaliacaoNotificationScheduler.defaultReminderDuration(prioridade)
-                        } else {
-                            Duration.ofDays(antecedenciaEscolhida.dias.toLong())
-                        }
+                        antecedenciaEscolhida?.duration ?: Antecedencia.padrao.duration
 
                     AvaliacaoNotificationScheduler.AvaliacaoInfo(
                         id = avaliacaoId,
                         descricao = avaliacao.descricao,
-                        disciplinaId = disciplinaId,
-                        disciplinaNome = disciplinaNome,
+                        disciplinaId = AvaliacaoNotificationScheduler.parseDisciplinaId(avaliacao.disciplina?.id),
+                        disciplinaNome = avaliacao.disciplina?.nome,
                         dataHoraIso = avaliacao.dataEntrega,
-                        reminderDuration = reminderDuration,
+                        prioridade = prioridade,
+                        overrideReminderDuration = reminderDuration,
                         receberNotificacoes = avaliacao.receberNotificacoes
                     )
                 }

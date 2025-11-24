@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 // MUDANÇA AQUI: Importa o java.time.Duration
+import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Prioridade
 import java.time.Duration
 import java.time.Instant
@@ -25,7 +26,8 @@ class AvaliacaoNotificationScheduler(private val context: Context) {
         val disciplinaId: Long?,
         val disciplinaNome: String?,
         val dataHoraIso: String?,
-        val reminderDuration: Duration,
+        val prioridade: Prioridade?,
+        val overrideReminderDuration: Duration? = null,
         val receberNotificacoes: Boolean
     )
 
@@ -34,6 +36,24 @@ class AvaliacaoNotificationScheduler(private val context: Context) {
 
     private val preferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    fun persistAntecedencias(antecedencias: Map<Prioridade, Antecedencia>) {
+        val editor = preferences.edit()
+        antecedencias.forEach { (prioridade, antecedencia) ->
+            editor.putString(keyForPriority(prioridade), antecedencia.name)
+        }
+        editor.apply()
+    }
+
+    fun reminderDurationForPriority(priority: Prioridade?): Duration {
+        val antecedencia = priority?.let { prioridade ->
+            preferences.getString(keyForPriority(prioridade), null)
+                ?.let { stored ->
+                    runCatching { Antecedencia.valueOf(stored) }.getOrNull()
+                }
+        }
+        return (antecedencia ?: Antecedencia.padrao).duration
+    }
 
     fun scheduleNotifications(avaliacoes: List<AvaliacaoInfo>) {
         val manager = alarmManager ?: return
@@ -47,32 +67,51 @@ class AvaliacaoNotificationScheduler(private val context: Context) {
             return
         }
 
-        val newRequestCodes = mutableSetOf<String>()
-        val baseIntent = Intent(context, AvaliacaoNotificationReceiver::class.java)
+        val uniqueSchedules = linkedMapOf<Int, Pair<AvaliacaoInfo, Long>>()
+
 
         avaliacoes
             .filter { it.receberNotificacoes }
             .forEach { avaliacao ->
+                val reminderDuration = avaliacao.overrideReminderDuration
+                    ?: reminderDurationForPriority(avaliacao.prioridade)
                 val triggerAtMillis = computeTriggerMillis(
                     avaliacao.dataHoraIso,
-                    avaliacao.reminderDuration
-                )
-                    ?: return@forEach
+                    reminderDuration
+                ) ?: return@forEach
+
 
                 val requestCode = buildRequestCode(avaliacao.id, triggerAtMillis)
-                newRequestCodes.add(requestCode.toString())
-
-                val intent = Intent(baseIntent).apply {
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_ID, avaliacao.id)
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DESCRICAO, avaliacao.descricao)
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_ID, avaliacao.disciplinaId)
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_NOME, avaliacao.disciplinaNome)
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DATA_HORA, avaliacao.dataHoraIso)
-                    putExtra(AvaliacaoNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+                val current = uniqueSchedules[requestCode]
+                if (current == null || triggerAtMillis < current.second) {
+                    uniqueSchedules[requestCode] = avaliacao to triggerAtMillis
                 }
-
-                scheduleExactAlarm(requestCode, triggerAtMillis, intent)
             }
+
+        if (uniqueSchedules.isEmpty()) {
+            preferences.edit().remove(KEY_REQUEST_CODES).apply()
+            return
+        }
+
+        val newRequestCodes = mutableSetOf<String>()
+        val baseIntent = Intent(context, AvaliacaoNotificationReceiver::class.java)
+
+        uniqueSchedules.forEach { (requestCode, pair) ->
+            val (avaliacao, triggerAtMillis) = pair
+            newRequestCodes.add(requestCode.toString())
+
+            val intent = Intent(baseIntent).apply {
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_ID, avaliacao.id)
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DESCRICAO, avaliacao.descricao)
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_ID, avaliacao.disciplinaId)
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_DISCIPLINA_NOME, avaliacao.disciplinaNome)
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_AVALIACAO_DATA_HORA, avaliacao.dataHoraIso)
+                putExtra(AvaliacaoNotificationReceiver.EXTRA_REQUEST_CODE, requestCode)
+            }
+
+            scheduleExactAlarm(requestCode, triggerAtMillis, intent)
+        }
+
 
         preferences.edit().putStringSet(KEY_REQUEST_CODES, newRequestCodes).apply()
     }
@@ -146,6 +185,8 @@ class AvaliacaoNotificationScheduler(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "avaliacao_notification_prefs"
         private const val KEY_REQUEST_CODES = "request_codes"
+        private const val KEY_ANTECEDENCIA_PREFIX = "antecedencia_"
+
 
         private val LOCAL_DATE_TIME_FORMATTERS = listOf(
             DateTimeFormatter.ISO_LOCAL_DATE_TIME,
@@ -207,15 +248,14 @@ class AvaliacaoNotificationScheduler(private val context: Context) {
 
         internal fun immutableFlag(): Int = FrequenciaNotificationScheduler.immutableFlag()
 
-        fun defaultReminderDuration(priority: Prioridade?): Duration {
-            return when (priority) {
-                Prioridade.MUITO_BAIXA -> Duration.ofHours(3)
-                Prioridade.BAIXA -> Duration.ofHours(12)
-                Prioridade.MEDIA -> Duration.ofDays(1)
-                Prioridade.ALTA -> Duration.ofDays(2)
-                Prioridade.MUITO_ALTA -> Duration.ofDays(3)
-                null -> Duration.ofDays(1)
-            }
+
+        private fun keyForPriority(priority: Prioridade): String =
+            KEY_ANTECEDENCIA_PREFIX + priority.name
+
+        fun parseDisciplinaId(value: Any?): Long? = when (value) {
+            is Number -> value.toLong()
+            is String -> value.toLongOrNull()
+            else -> null
         }
     }
 }

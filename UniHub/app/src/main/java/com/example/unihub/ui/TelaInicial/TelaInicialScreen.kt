@@ -114,20 +114,14 @@ fun TelaInicial(
     val avaliacaoNotificationInfos = remember(avaliacoesDetalhadas) {
         avaliacoesDetalhadas.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
-            val disciplinaId = when (val rawId = avaliacao.disciplina?.id) {
-                is Number -> rawId.toLong()
-                is String -> rawId.toLongOrNull()
-                else -> null
-            }
+
             AvaliacaoNotificationScheduler.AvaliacaoInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
-                disciplinaId = disciplinaId,
+                disciplinaId = AvaliacaoNotificationScheduler.parseDisciplinaId(avaliacao.disciplina?.id),
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                reminderDuration = AvaliacaoNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
-                // receberNotificacoes = avaliacao.receberNotificacoes == true,
-                // antecedenciaDias = Antecedencia.padrao.dias
+                prioridade = avaliacao.prioridade,
                 receberNotificacoes = avaliacao.receberNotificacoes == true
 
             )
