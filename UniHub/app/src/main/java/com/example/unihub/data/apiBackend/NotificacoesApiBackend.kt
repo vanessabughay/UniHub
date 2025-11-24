@@ -11,14 +11,13 @@ class NotificacoesApiBackend : NotificacoesApi {
     private val mutex = Mutex()
     private var cache: NotificacoesConfig = NotificacoesConfig()
 
-    override suspend fun carregar(usuarioId: Long): NotificacoesConfig {
+    override suspend fun carregar(): NotificacoesConfig {
         delay(350) // simula rede
         return mutex.withLock { cache }
     }
 
 
     override suspend fun salvar(
-        usuarioId: Long,
         config: NotificacoesConfig
     ): NotificacoesConfig {
         delay(350)

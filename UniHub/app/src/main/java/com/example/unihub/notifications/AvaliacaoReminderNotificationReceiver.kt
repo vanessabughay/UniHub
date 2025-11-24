@@ -1,5 +1,6 @@
 package com.example.unihub.notifications
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,6 +11,7 @@ import android.content.Intent
 import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
+import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.TaskStackBuilder
@@ -24,6 +26,7 @@ import kotlin.math.abs
 class AvaliacaoNotificationReceiver : BroadcastReceiver() {
 
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onReceive(context: Context, intent: Intent) {
         TokenManager.loadToken(context.applicationContext)
         val avaliacaoId = intent.getLongExtra(EXTRA_AVALIACAO_ID, -1L)

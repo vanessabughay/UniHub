@@ -25,7 +25,8 @@ data class NotificacoesUiState(
     val disciplinasExpandido: Boolean = true,
     val quadrosExpandido: Boolean = false,
     val contatosExpandido: Boolean = false,
-    val botaoSalvarHabilitado: Boolean = false
+    val botaoSalvarHabilitado: Boolean = false,
+    val configuracoesSalvas: Boolean = false
 )
 
 class NotificacoesViewModel(
@@ -52,7 +53,8 @@ class NotificacoesViewModel(
                 disciplinasExpandido = false,
                 quadrosExpandido = false,
                 contatosExpandido = false,
-                botaoSalvarHabilitado = false
+                botaoSalvarHabilitado = false,
+                configuracoesSalvas = false
 
             )
         } catch (t: Throwable) {
@@ -79,9 +81,9 @@ class NotificacoesViewModel(
     fun setAvaliacoesAtivas(ativo: Boolean) = update { it.copy(avaliacoesAtivas = ativo) }
 
     fun setAntecedencia(p: Prioridade, a: Antecedencia) = update {
-        val novoMapa = it.avaliacoesConfig.periodicidade.toMutableMap()
+        val novoMapa = it.avaliacoesConfig.antecedencia.toMutableMap()
         novoMapa[p] = a
-        it.copy(avaliacoesConfig = AvaliacoesConfig(periodicidade = novoMapa))
+        it.copy(avaliacoesConfig = AvaliacoesConfig(antecedencia = novoMapa))
     }
 
     fun setCompartilhamentoDisciplina(ativo: Boolean) = update { it.copy(compartilhamentoDisciplina = ativo) }
@@ -95,7 +97,7 @@ class NotificacoesViewModel(
     @RequiresExtension(extension = Build.VERSION_CODES.S, version = 7)
     fun salvar() = viewModelScope.launch {
         val edit = _ui.value.edit
-        _ui.value = _ui.value.copy(isLoading = true, error = null)
+        _ui.value = _ui.value.copy(isLoading = true, error = null, configuracoesSalvas = false)
         try {
             // O 'edit' (NotificacoesConfig) agora contém TODOS os toggles
             val salvo = repository.salvarConfig(edit)
@@ -104,11 +106,19 @@ class NotificacoesViewModel(
                 isLoading = false,
                 original = snapshot,
                 edit = snapshot,
-                botaoSalvarHabilitado = false
+                botaoSalvarHabilitado = false,
+                configuracoesSalvas = true
             )
         } catch (t: Throwable) {
-            _ui.value = _ui.value.copy(isLoading = false, error = t.message ?: "Erro ao salvar")
+            _ui.value = _ui.value.copy(
+                isLoading = false,
+                error = t.message ?: "Erro ao salvar",
+                configuracoesSalvas = false
+            )
         }
+    }
+    fun confirmarConfiguracoesSalvas() {
+        _ui.value = _ui.value.copy(configuracoesSalvas = false)
     }
 
     /**

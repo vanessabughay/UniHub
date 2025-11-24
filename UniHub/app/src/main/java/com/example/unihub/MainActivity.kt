@@ -804,7 +804,7 @@ class MainActivity : ComponentActivity() {
                                         tarefaRepository = tarefaRepository,
                                         notificationHistoryRepository = NotificationHistoryRepository.getInstance(context),
                                         compartilhamentoSynchronizer = CompartilhamentoNotificationSynchronizer.getInstance(context),
-                                        contatoSynchronizer = ContatoNotificationSynchronizer.getInstance(context)
+                                        contatoSynchronizer = ContatoNotificationSynchronizer.getInstance(context),
                                     )
 
                                     val factory = NotificacoesViewModelFactory(notificacoesRepository)

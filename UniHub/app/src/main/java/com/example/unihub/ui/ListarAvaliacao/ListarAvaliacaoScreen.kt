@@ -71,7 +71,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.unihub.components.CabecalhoAlternativo
 import com.example.unihub.components.CampoBusca
 import androidx.compose.material3.HorizontalDivider
-import com.example.unihub.data.model.Antecedencia
 import com.example.unihub.data.model.Avaliacao
 import com.example.unihub.data.model.EstadoAvaliacao
 import com.example.unihub.notifications.AvaliacaoNotificationScheduler
@@ -150,21 +149,15 @@ fun ListarAvaliacaoScreen(
         val infos = avaliacoesState.mapNotNull { avaliacao ->
             val id = avaliacao.id ?: return@mapNotNull null
 
-            val disciplinaIdLong = (avaliacao.disciplina?.id as? String)?.toLongOrNull()
-
             AvaliacaoNotificationScheduler.AvaliacaoInfo(
                 id = id,
                 descricao = avaliacao.descricao ?: avaliacao.tipoAvaliacao,
-                disciplinaId = disciplinaIdLong,
+                disciplinaId = AvaliacaoNotificationScheduler.parseDisciplinaId(avaliacao.disciplina?.id),
                 disciplinaNome = avaliacao.disciplina?.nome,
                 dataHoraIso = avaliacao.dataEntrega,
-                reminderDuration = AvaliacaoNotificationScheduler.defaultReminderDuration(avaliacao.prioridade),
+                prioridade = avaliacao.prioridade,
 
-                // receberNotificacoes = avaliacao.receberNotificacoes,
-                // antecedenciaDias = Antecedencia.padrao.dias
                 receberNotificacoes = avaliacao.receberNotificacoes
-
-
             )
         }
         scheduler.scheduleNotifications(infos)

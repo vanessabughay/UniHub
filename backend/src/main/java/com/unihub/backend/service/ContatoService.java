@@ -205,9 +205,21 @@ public class ContatoService {
     }
 
     public void excluir(Long id) {
-        if (!repository.existsByIdAndOwnerId(id, currentUserId()))
-            throw new RuntimeException("Sem acesso");
-        repository.deleteById(id);
+        Long ownerId = currentUserId();
+        Contato contato = repository.findByIdAndOwnerId(id, ownerId)
+                .orElseThrow(() -> new RuntimeException("Sem acesso"));
+
+        repository.delete(contato);
+
+        Long contatoUsuarioId = contato.getIdContato();
+        if (contatoUsuarioId != null) {
+            repository.findByOwnerIdAndIdContato(contatoUsuarioId, ownerId)
+                    .ifPresent(contatoReciproco -> {
+                        if (!Objects.equals(contatoReciproco.getId(), contato.getId())) {
+                            repository.delete(contatoReciproco);
+                        }
+                    });
+        }
     }
 
     

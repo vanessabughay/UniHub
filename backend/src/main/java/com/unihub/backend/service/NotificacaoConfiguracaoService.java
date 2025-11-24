@@ -98,8 +98,8 @@ public class NotificacaoConfiguracaoService {
 
     private void atualizarAntecedencias(NotificacaoConfiguracao configuracao, AvaliacoesConfigDto dto) {
          EnumMap<Prioridade, Antecedencia> valores = new EnumMap<>(Prioridade.class);
-        if (dto != null && dto.getPeriodicidade() != null) {
-            valores.putAll(dto.getPeriodicidade());
+        if (dto != null && dto.getAntecedencia() != null) {
+            valores.putAll(dto.getAntecedencia());
         }
 
         Map<Prioridade, NotificacaoConfiguracaoAntecedencia> existentes = configuracao.getAntecedencias()
@@ -138,17 +138,17 @@ public class NotificacaoConfiguracaoService {
         response.setInclusoEmGrupo(configuracao.isInclusoEmGrupo());
 
         AvaliacoesConfigDto avaliacoesConfig = new AvaliacoesConfigDto();
-        Map<Prioridade, Antecedencia> periodicidade = new EnumMap<>(Prioridade.class);
+        Map<Prioridade, Antecedencia> antecedencias = new EnumMap<>(Prioridade.class);
 
         configuracao.getAntecedencias().forEach(registro ->
-                periodicidade.put(registro.getPrioridade(), registro.getAntecedencia())
+                antecedencias.put(registro.getPrioridade(), registro.getAntecedencia())
         );
 
         for (Prioridade prioridade : Prioridade.values()) {
-            periodicidade.putIfAbsent(prioridade, Antecedencia.padrao());
+            antecedencias.putIfAbsent(prioridade, Antecedencia.padrao());
         }
 
-        avaliacoesConfig.setPeriodicidade(periodicidade);
+        avaliacoesConfig.setAntecedencia(antecedencias);
         response.setAvaliacoesConfig(avaliacoesConfig);
         return response;
     }
