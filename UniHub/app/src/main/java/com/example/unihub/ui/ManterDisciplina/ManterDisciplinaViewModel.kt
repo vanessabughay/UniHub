@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.first
 import com.example.unihub.data.model.Ausencia
 import java.time.Instant
 import java.time.LocalDate
+import kotlin.math.ceil
+import kotlin.math.max
 
 data class DisciplinaFormState(
     val id: String? = null,
@@ -36,6 +38,7 @@ data class DisciplinaFormState(
     val salaProfessor: String = "",
     val ausenciasPermitidas: String = "",
     val ausenciasExistentes: List<Ausencia> = emptyList(),
+    val ausenciasEditadasManualmente: Boolean = false,
     val isAtiva: Boolean = true,
     val receberNotificacoes: Boolean = true,
     val isLoading: Boolean = false,
@@ -93,6 +96,7 @@ class ManterDisciplinaViewModel(
                                 telefoneProfessor = disciplina.telefoneProfessor.orEmpty(),
                                 salaProfessor = disciplina.salaProfessor.orEmpty(),
                                 ausenciasPermitidas = disciplina.ausenciasPermitidas?.toString() ?: "",
+                                ausenciasEditadasManualmente = true,
                                 ausenciasExistentes = disciplina.ausencias,
                                 isAtiva = disciplina.isAtiva,
                                 receberNotificacoes = disciplina.receberNotificacoes,
@@ -123,6 +127,14 @@ class ManterDisciplinaViewModel(
         }
     }
 
+    fun updateQtdSemanas(qtd: String) {
+        val valorLimpo = qtd.filter { it.isDigit() }
+        _uiState.update { state ->
+            val novoEstado = state.copy(qtdSemanas = valorLimpo)
+            aplicarAutoPreenchimentoLimite(novoEstado)
+        }
+    }
+
     fun updateQtdAulasSemana(qtd: String) {
         _uiState.update { state ->
             val quantidade = qtd.toIntOrNull() ?: 0
@@ -133,7 +145,17 @@ class ManterDisciplinaViewModel(
             } else {
                 state.aulas
             }
-            state.copy(qtdAulasSemana = qtd, aulas = novasAulas)
+            val novoEstado = state.copy(qtdAulasSemana = qtd, aulas = novasAulas)
+            aplicarAutoPreenchimentoLimite(novoEstado)
+        }
+    }
+
+    fun updateAusenciasPermitidas(valor: String) {
+        _uiState.update {
+            it.copy(
+                ausenciasPermitidas = valor,
+                ausenciasEditadasManualmente = true
+            )
         }
     }
 
@@ -232,10 +254,36 @@ class ManterDisciplinaViewModel(
         viewModelScope.launch {
             try {
                 val instituicao = instituicaoRepository.instituicaoUsuario()
-                _uiState.update { it.copy(frequenciaMinima = instituicao?.frequenciaMinima) }
+                _uiState.update { state ->
+                    val atualizado = state.copy(frequenciaMinima = instituicao?.frequenciaMinima)
+                    aplicarAutoPreenchimentoLimite(atualizado)
+                }
             } catch (e: Exception) {
                 _uiState.update { it.copy(erro = e.message) }
             }
         }
+    }
+    private fun aplicarAutoPreenchimentoLimite(state: DisciplinaFormState): DisciplinaFormState {
+        if (state.id != null || state.ausenciasEditadasManualmente) return state
+
+        val frequencia = state.frequenciaMinima ?: return state
+        val semanas = state.qtdSemanas.toIntOrNull() ?: return state
+        val aulasSemana = state.qtdAulasSemana.toIntOrNull() ?: return state
+
+        if (semanas <= 0 || aulasSemana <= 0) return state
+
+        val limiteCalculado = calcularLimiteAusenciasPermitidas(semanas, aulasSemana, frequencia)
+
+        return state.copy(ausenciasPermitidas = limiteCalculado.toString())
+    }
+
+    private fun calcularLimiteAusenciasPermitidas(
+        qtdSemanas: Int,
+        aulasSemana: Int,
+        frequenciaMinima: Int
+    ): Int {
+        val totalAulas = qtdSemanas * aulasSemana
+        val aulasObrigatorias = ceil(totalAulas * (frequenciaMinima / 100.0)).toInt()
+        return max(totalAulas - aulasObrigatorias, 0)
     }
 }

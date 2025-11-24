@@ -326,11 +326,7 @@ fun ManterDisciplinaScreen(
                             "Semanas (Total)",
                             uiState.qtdSemanas,
                             {
-                                viewModel.updateField(
-                                    it.filter { c -> c.isDigit() },
-                                    { s -> s.qtdSemanas },
-                                    { s, v -> s.copy(qtdSemanas = v) }
-                                )
+                                viewModel.updateQtdSemanas(it)
                             },
                             Modifier.weight(1f),
                             placeholder = "Ex: 18",
@@ -340,11 +336,7 @@ fun ManterDisciplinaScreen(
                             "Limite de Ausências",
                             uiState.ausenciasPermitidas,
                             {
-                                viewModel.updateField(
-                                    it.filter { c -> c.isDigit() },
-                                    { s -> s.ausenciasPermitidas },
-                                    { s, v -> s.copy(ausenciasPermitidas = v) }
-                                )
+                                viewModel.updateAusenciasPermitidas(it.filter { c -> c.isDigit() })
                             },
                             Modifier.weight(1f),
                             placeholder = "Ex: 4",
