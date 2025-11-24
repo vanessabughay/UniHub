@@ -8,17 +8,17 @@ import java.util.Map;
 
 public class AvaliacoesConfigDto {
 
-    private Map<Prioridade, Antecedencia> periodicidade = new EnumMap<>(Prioridade.class);
+    private Map<Prioridade, Antecedencia> antecedencia = new EnumMap<>(Prioridade.class);
 
-    public Map<Prioridade, Antecedencia> getPeriodicidade() {
-        return periodicidade;
+    public Map<Prioridade, Antecedencia> getAntecedencia() {
+        return antecedencia;
     }
 
-    public void setPeriodicidade(Map<Prioridade, Antecedencia> periodicidade) {
-        if (periodicidade == null) {
-            this.periodicidade = new EnumMap<>(Prioridade.class);
+    public void setAntecedencia(Map<Prioridade, Antecedencia> antecedencia) {
+        if (antecedencia == null) {
+            this.antecedencia = new EnumMap<>(Prioridade.class);
         } else {
-            this.periodicidade = new EnumMap<>(periodicidade);
+            this.antecedencia = new EnumMap<>(antecedencia);
         }
     }
 }

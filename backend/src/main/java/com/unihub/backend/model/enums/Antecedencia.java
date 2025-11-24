@@ -1,23 +1,31 @@
 package com.unihub.backend.model.enums;
 
+import java.time.Duration;
+
 public enum Antecedencia {
-    NO_DIA(0),
-    UM_DIA(1),
-    DOIS_DIAS(2),
-    TRES_DIAS(3),
-    UMA_SEMANA(7);
+    NA_HORA(Duration.ZERO),
+    UMA_HORA(Duration.ofHours(1)),
+    DUAS_HORAS(Duration.ofHours(2)),
+    TRES_HORAS(Duration.ofHours(3)),
+    SEIS_HORAS(Duration.ofHours(6)),
+    DOZE_HORAS(Duration.ofHours(12)),
+    UM_DIA(Duration.ofHours(24)),
+    DOIS_DIAS(Duration.ofDays(2)),
+    TRES_DIAS(Duration.ofDays(3)),
+    UMA_SEMANA(Duration.ofDays(7)),
+    DUAS_SEMANAS(Duration.ofDays(14));
 
-    private final int dias;
+    private final Duration duracao;
 
-    Antecedencia(int dias) {
-        this.dias = dias;
+    Antecedencia(Duration duracao) {
+        this.duracao = duracao;
     }
 
-    public int getDias() {
-        return dias;
+    public Duration getDuracao() {
+        return duracao;
     }
 
     public static Antecedencia padrao() {
-        return NO_DIA;
+        return NA_HORA;
     }
 }
