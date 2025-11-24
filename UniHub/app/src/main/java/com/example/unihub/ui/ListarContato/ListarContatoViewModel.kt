@@ -50,14 +50,20 @@ class ListarContatoViewModel(
             _errorMessage.value = null
 
             val emailParaBusca = TokenManager.emailUsuario?.trim().orEmpty()
+            val emailNormalizadoParaOcultar = emailParaBusca.lowercase().takeIf { it.isNotBlank() }
 
             try {
                 val contatosOrdenadosParaUi = repository.getContatoResumo()
                     .map { contatosDoRepositorio ->
-                        contatosDoRepositorio.map { contato ->
-                            ContatoResumoUi(
-                                id = contato.id,
-                                nome = contato.nome,
+                contatosDoRepositorio
+                    .filterNot { contato ->
+                        val emailNormalizado = contato.email.trim().lowercase()
+                        emailNormalizadoParaOcultar != null && emailNormalizado == emailNormalizadoParaOcultar
+                    }
+                    .map { contato ->
+                        ContatoResumoUi(
+                            id = contato.id,
+                            nome = contato.nome,
                                 email = contato.email,
                                 pendente = contato.pendente,
                                 registroId = contato.registroId,

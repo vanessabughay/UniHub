@@ -2,6 +2,7 @@ package com.example.unihub.ui.ManterAvaliacao
 
 import android.os.Build
 import androidx.annotation.RequiresExtension
+import com.example.unihub.data.config.TokenManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.unihub.data.dto.AvaliacaoRequestDto
@@ -302,10 +303,15 @@ class ManterAvaliacaoViewModel(
     fun loadAllAvailableContatos() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingAllContatos = true, errorLoadingAllContatos = null) }
+            val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario?.trim()?.lowercase()
             contatoRepository.getContatoResumo()
                 .map { lista ->
                     lista
                         .filter { !it.pendente }
+                        .filterNot { contato ->
+                            val emailNormalizado = contato.email.trim().lowercase()
+                            emailUsuarioLogadoNormalizado != null && emailNormalizado == emailUsuarioLogadoNormalizado
+                        }
                         .mapNotNull { m ->
                             val registroId = m.registroId ?: return@mapNotNull null
                             ContatoResumoUi(
