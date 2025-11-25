@@ -41,11 +41,16 @@ class QuadroFormViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val disciplinasAsync = async { disciplinaRepository.getDisciplinasResumo().first().map { DisciplinaResumoUi(it.id, it.nome) } }
+                val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario?.trim()?.lowercase()
                 val contatosAsync = async {
                     contatoRepository
                         .getContatoResumo()
                         .first()
                         .filter { !it.pendente }
+                        .filterNot { contato ->
+                            val emailNormalizado = contato.email.trim().lowercase()
+                            emailUsuarioLogadoNormalizado != null && emailNormalizado == emailUsuarioLogadoNormalizado
+                        }
                         .map {
                             ContatoResumoUi(
                                 id = it.id,

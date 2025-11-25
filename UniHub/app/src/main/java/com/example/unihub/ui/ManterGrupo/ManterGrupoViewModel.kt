@@ -273,12 +273,17 @@ class ManterGrupoViewModel(
                 }
                 return@launch
             }
+            val emailUsuarioLogadoNormalizado = TokenManager.emailUsuario?.trim()?.lowercase()
             contatoRepository.getContatoResumo() // usa o ContatoRepository injetado
                 .map { listaDeModelosContato -> // listaDeModelosContato é List<com.example.unihub.data.model.Contato>
                     listaDeModelosContato
                         .filter { !it.pendente }
                         .filter { modeloContato ->
                             modeloContato.ownerId == null || modeloContato.ownerId == usuarioLogadoId
+                        }
+                        .filterNot { modeloContato ->
+                            val emailNormalizado = modeloContato.email?.trim()?.lowercase()
+                            emailUsuarioLogadoNormalizado != null && emailNormalizado == emailUsuarioLogadoNormalizado
                         }
                         .mapNotNull { modeloContato -> // modeloContato é com.example.unihub.data.model.Contato
                             // Se id, nome, ou email forem essenciais e puderem ser nulos, decida como tratar.

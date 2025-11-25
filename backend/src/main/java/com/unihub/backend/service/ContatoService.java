@@ -204,6 +204,25 @@ public class ContatoService {
                 .orElseThrow(() -> new RuntimeException("Contato não encontrado"));
     }
 
+    public Contato atualizarNomePorIdContato(Long idContato, String novoNome) { 
+
+Contato contato = repository.findByIdContato(idContato).stream() 
+
+.findFirst() 
+
+.orElseThrow(() -> new RuntimeException("Contato não encontrado")); 
+
+if (novoNome != null && !novoNome.isBlank()) { 
+
+contato.setNome(novoNome); 
+
+} 
+
+return repository.save(contato); 
+
+}
+
+
     public void excluir(Long id) {
         Long ownerId = currentUserId();
         Contato contato = repository.findByIdAndOwnerId(id, ownerId)

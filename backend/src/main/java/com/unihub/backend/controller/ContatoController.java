@@ -36,17 +36,18 @@ public class ContatoController {
 
     @PostMapping
     public Contato criar(@RequestBody Contato contato) {
-        contato.setId(null);             
+        contato.setId(null);
         return service.salvar(contato);
     }
 
-    @PutMapping("/{id:\\d+}")
-    public Contato atualizar(@PathVariable Long id, @RequestBody Contato novoContato) {
-        Contato existente = service.buscarPorId(id); 
-        existente.setNome(novoContato.getNome());
-        existente.setPendente(novoContato.getPendente());
-        return service.salvar(existente);
-    }
+    @PutMapping("/{idContato:\\d+}") 
+
+public Contato atualizar(@PathVariable Long idContato, @RequestBody Contato novoContato) { 
+
+return service.atualizarNomePorIdContato(idContato, novoContato.getNome());
+}
+
+
 
     @DeleteMapping("/{id:\\d+}")
     @org.springframework.web.bind.annotation.ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)

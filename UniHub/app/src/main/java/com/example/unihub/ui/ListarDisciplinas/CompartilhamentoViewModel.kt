@@ -68,7 +68,9 @@ class CompartilhamentoViewModel(
         viewModelScope.launch {
             _isCarregandoContatos.value = true
             try {
-                _contatos.value = repository.listarContatos(usuarioId)
+                _contatos.value = repository
+                    .listarContatos(usuarioId)
+                    .filter { it.id != usuarioId }
             } catch (e: Exception) {
                 _erro.value = when (e) {
                     is IllegalStateException -> e.message ?: "Sessão expirada. Faça login novamente."
