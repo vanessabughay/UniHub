@@ -48,10 +48,13 @@ public interface QuadroPlanejamentoRepository extends JpaRepository<QuadroPlanej
         LEFT JOIN coluna.tarefas tarefa
         LEFT JOIN tarefa.responsaveis responsavel
         WHERE q.id = :quadroId AND (
-            q.usuario.id = :usuarioId
+           q.usuario.id = :usuarioId
             OR (contato.idContato IS NOT NULL AND contato.idContato = :usuarioId)
+            OR (contato.ownerId IS NOT NULL AND contato.ownerId = :usuarioId)
             OR (membro.idContato IS NOT NULL AND membro.idContato = :usuarioId)
+            OR (membro.ownerId IS NOT NULL AND membro.ownerId = :usuarioId)
             OR (responsavel.idContato IS NOT NULL AND responsavel.idContato = :usuarioId)
+            OR (responsavel.ownerId IS NOT NULL AND responsavel.ownerId = :usuarioId)
         )
         """)
     Optional<QuadroPlanejamento> findByIdAndUsuarioHasAccess(@Param("quadroId") Long quadroId, @Param("usuarioId") Long usuarioId);
