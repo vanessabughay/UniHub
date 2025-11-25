@@ -160,7 +160,7 @@ fun ManterInstituicaoScreen(
                                 text = {
                                     Text(
                                         "${inst.nome} (média:${NotaCampo.formatListValue(inst.mediaAprovacao)} " +
-                                                "freq:${PesoCampo.formatListValue(inst.frequenciaMinima.toDouble())}%)"
+                                                "freq:${PesoCampo.formatListValue(inst.frequenciaMinima.toDouble())})"
                                     )
                                 },
                                 onClick = {
