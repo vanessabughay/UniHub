@@ -370,7 +370,7 @@ class QuadroFormViewModel(
                 _formResult.value = FormResult.Success
             } catch (e: HttpException) {
                 val message = when (e.code()) {
-                    401, 403 -> "Sua sessão expirou. Faça login novamente para continuar."
+                    401, 403 -> "Sessão expirada. Faça login novamente."
                     else -> e.message()
                 } ?: "Erro do servidor ao salvar/atualizar quadro."
                 _formResult.value = FormResult.Error(message)
@@ -387,7 +387,7 @@ class QuadroFormViewModel(
                 _formResult.value = FormResult.Success
             } catch (e: HttpException) {
                 val message = when (e.code()) {
-                    401, 403 -> "Sua sessão expirou. Faça login novamente para continuar."
+                    401, 403 -> "Sessão expirada. Faça login novamente."
                     else -> e.message()
                 } ?: "Erro do servidor ao excluir quadro."
                 _formResult.value = FormResult.Error(message)
